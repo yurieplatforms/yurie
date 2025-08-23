@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       '\nYurie:'
 
     // Keep prompt within a reasonable character budget to avoid large requests
-    const MAX_PROMPT_CHARS = 10000
+    const MAX_PROMPT_CHARS = 100000
     const prompt =
       promptRaw.length > MAX_PROMPT_CHARS
         ? promptRaw.slice(promptRaw.length - MAX_PROMPT_CHARS)
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
 
     const stream = await client.responses.stream({
       model: selectedModel,
-      reasoning: { effort: "medium" },
+      reasoning: { effort: "high" },
       instructions:
         "You are Yurie, a creative and helpful AI assistant.",
       input: prompt,
