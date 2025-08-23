@@ -280,14 +280,10 @@ export default function ChatClient() {
   return (
     <section>
       <h1 className="mb-8 text-2xl font-semibold tracking-tighter">Playground</h1>
-      <p className="text-neutral-600 dark:text-neutral-300 mb-6">
-        Chat with Yurie. Powered by OpenAI's LLM.
-      </p>
-
       <div className="w-full">
         <div
           ref={outputRef}
-          className="border border-neutral-200 dark:border-neutral-800 rounded px-3 pt-2 pb-3 h-96 overflow-y-auto text-sm font-sans"
+          className="border border-neutral-200 dark:border-neutral-800 rounded px-3 pt-2 pb-3 h-[32rem] overflow-y-auto text-sm font-sans"
         >
           {messages.length === 0 ? (
             <p className="text-neutral-500">Yurie is ready. Start the conversation below.</p>
