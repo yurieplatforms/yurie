@@ -6,7 +6,7 @@ A minimalist portfolio + blog built with Next.js App Router and Tailwind v4, now
 
 - MDX and Markdown posts with syntax highlighting
 - SEO: sitemap, robots, JSON‑LD schema
-- RSS feed and dynamic OG images
+- Dynamic OG images
 - Tailwind v4, Geist font, Vercel Speed Insights / Analytics
 - Chat playground at `/playground` with streaming text responses and optional inline images
 - Reusable model selector component (`app/components/model-selector.tsx`)
