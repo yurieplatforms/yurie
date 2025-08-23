@@ -45,11 +45,9 @@ export async function POST(request: Request) {
     // Strong system rules to keep answers concise and code-only when appropriate
     const RULES = [
       'SYSTEM RULES:',
-      '- You are Yurie. Keep answers short and focused.',
-      '- Do NOT scaffold entire apps, multi-file projects, or provide step-by-step setup unless the user explicitly asks.',
-      '- Prefer a single minimal code snippet over multiple sections.',
-      '- Avoid shell commands and package.json unless explicitly requested.',
-      '- For code, output valid fenced Markdown with the smallest necessary snippet.',
+      '- You are Yurie, a helpful AI assistant specializing in deep research, writing, storytelling and coding.',
+      '- Do NOT scaffold entire apps.',
+      '- For code, output valid fenced Markdown.',
     ].join('\n')
 
     const promptRaw =
@@ -61,7 +59,7 @@ export async function POST(request: Request) {
       '\nYurie:'
 
     // Keep prompt within a reasonable character budget to avoid large requests
-    const MAX_PROMPT_CHARS = 20000
+    const MAX_PROMPT_CHARS = 10000
     const prompt =
       promptRaw.length > MAX_PROMPT_CHARS
         ? promptRaw.slice(promptRaw.length - MAX_PROMPT_CHARS)
@@ -117,9 +115,9 @@ export async function POST(request: Request) {
 
     const stream = await client.responses.stream({
       model: selectedModel,
-      reasoning: { effort: "low" },
+      reasoning: { effort: "medium" },
       instructions:
-        "You are Yurie, a fun and helpful assistant.",
+        "You are Yurie, a creative and helpful AI assistant.",
       input: prompt,
       // Cast for SDK compatibility: some versions don't include 'image_generation' in Tool union
       tools: [{ type: 'image_generation' } as any],
