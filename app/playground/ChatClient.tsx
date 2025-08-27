@@ -16,6 +16,13 @@ export default function ChatClient() {
   const [isLoading, setIsLoading] = useState(false)
   const [model, setModel] = useState<string>('gpt-5')
   const outputRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [inputImages, setInputImages] = useState<string[]>([])
+  const [lastResponseId, setLastResponseId] = useState<string | null>(null)
+  const [useWebSearch, setUseWebSearch] = useState<boolean>(
+    String(process.env.NEXT_PUBLIC_ENABLE_WEB_SEARCH || '').toLowerCase() === 'true'
+  )
+  // Advanced web search settings removed; server enforces sources and high context
 
   const placeholder = useMemo(
     () => 'Ask me anything...',
@@ -102,12 +109,13 @@ export default function ChatClient() {
     // 2) Legacy square-bracket token with data URL
     const legacyBracketPattern = "\\[" + "data:image" + "\\/[a-zA-Z]+;base64,[^\\]]+" + "\\]"
     const pattern = new RegExp(
-      `<image_partial:([^>]+)>|<image:([^>]+)>|${legacyBracketPattern}`,
+      `<image_partial:([^>]+)>|<image:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|${legacyBracketPattern}`,
       'g'
     )
     const parts: Array<
       { type: 'text'; value: string } |
-      { type: 'image'; src: string; partial?: boolean }
+      { type: 'image'; src: string; partial?: boolean } |
+      { type: 'meta'; key: 'revised_prompt' | 'response_id'; value: string }
     > = []
     let lastIndex = 0
     let match: RegExpExecArray | null
@@ -118,6 +126,8 @@ export default function ChatClient() {
       const full = match[0]
       const partialPayload = match[1]
       const finalPayload = match[2]
+      const revisedPayload = match[3]
+      const responseIdPayload = match[4]
       const src = partialPayload
         ? partialPayload
         : finalPayload
@@ -128,6 +138,12 @@ export default function ChatClient() {
       if (src) {
         const isPartial = Boolean(partialPayload)
         parts.push({ type: 'image', src, partial: isPartial })
+      }
+      if (typeof revisedPayload === 'string' && revisedPayload) {
+        parts.push({ type: 'meta', key: 'revised_prompt', value: revisedPayload })
+      }
+      if (typeof responseIdPayload === 'string' && responseIdPayload) {
+        parts.push({ type: 'meta', key: 'response_id', value: responseIdPayload })
       }
       lastIndex = match.index + full.length
     }
@@ -212,6 +228,18 @@ export default function ChatClient() {
             />
           )
         })}
+        {parts.map((p, i) => {
+          if ((p as any).type === 'meta') {
+            const meta = p as any
+            const label = meta.key === 'revised_prompt' ? 'Revised prompt' : 'Response ID'
+            return (
+              <div key={`meta-${i}`} className="text-xs text-neutral-500 mt-1">
+                <span className="font-medium">{label}:</span> {meta.value}
+              </div>
+            )
+          }
+          return null
+        })}
       </>
     )
   }
@@ -241,7 +269,15 @@ export default function ChatClient() {
       const res = await fetch('/api/playground', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: payloadMessages, model }),
+        body: JSON.stringify({
+          messages: payloadMessages,
+          model,
+          inputImages,
+          useWebSearch,
+          previousResponseId: lastResponseId,
+          // Advanced options removed; server uses defaults
+          webSearchOptions: undefined,
+        }),
       })
 
       if (!res.ok || !res.body) {
@@ -259,7 +295,11 @@ export default function ChatClient() {
       while (true) {
         const { value, done } = await reader.read()
         if (done) break
-        assistantText += decoder.decode(value, { stream: true })
+        const chunk = decoder.decode(value, { stream: true })
+        assistantText += chunk
+        // Capture response_id for follow-ups
+        const idMatch = /<response_id:([^>]+)>/g.exec(chunk)
+        if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
         setMessages((prev) => {
           const updated = [...prev]
           const lastIndex = updated.length - 1
@@ -280,6 +320,8 @@ export default function ChatClient() {
       const finalChunk = decoder.decode()
       if (finalChunk) {
         assistantText += finalChunk
+        const idMatch = /<response_id:([^>]+)>/g.exec(finalChunk)
+        if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
         setMessages((prev) => {
           const updated = [...prev]
           const lastIndex = updated.length - 1
@@ -325,13 +367,15 @@ export default function ChatClient() {
             })
           )}
         </div>
-        <form onSubmit={sendMessage} className="mt-3 flex items-center gap-2" aria-busy={isLoading}>
+        <form onSubmit={sendMessage} className="mt-3 flex items-center gap-2 flex-wrap" aria-busy={isLoading}>
           <ModelSelector
             value={model}
             onChange={setModel}
           />
+          {/* image routing and follow-up toggles removed */}
+          {/* Advanced search settings removed */}
           <input
-            className="stable-input flex-1 rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 py-2 outline-none transform-gpu will-change-transform placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
+            className="stable-input flex-1 min-w-[12rem] rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 py-2 outline-none transform-gpu will-change-transform placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
             placeholder={placeholder}
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -359,6 +403,56 @@ export default function ChatClient() {
             )}
           </button>
         </form>
+        <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+          <div className="flex flex-col gap-1 md:col-span-3">
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                className="sr-only"
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || [])
+                  const urls: string[] = []
+                  for (const f of files) {
+                    const dataUrl = await new Promise<string>((resolve, reject) => {
+                      const reader = new FileReader()
+                      reader.onload = () => resolve(String(reader.result))
+                      reader.onerror = () => reject(reader.error)
+                      reader.readAsDataURL(f)
+                    })
+                    urls.push(dataUrl)
+                  }
+                  setInputImages(urls)
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 flex items-center justify-between rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 text-sm text-left"
+                aria-label="Choose image files"
+              >
+                <span className="truncate text-neutral-600 dark:text-neutral-300">
+                  {inputImages.length > 0 ? `${inputImages.length} image(s) selected` : 'Choose files...'}
+                </span>
+                <span className="shrink-0 rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-700 dark:text-neutral-200">
+                  Browse
+                </span>
+              </button>
+              <label className="ml-1 flex items-center gap-2 text-sm rounded border border-neutral-200 dark:border-neutral-800 bg-transparent px-2 py-2 h-10 text-neutral-700 dark:text-neutral-300">
+                <input
+                  type="checkbox"
+                  className="accent-black dark:accent-white h-4 w-4"
+                  checked={useWebSearch}
+                  onChange={(e) => setUseWebSearch(e.target.checked)}
+                />
+                <span>Use web search</span>
+              </label>
+            </div>
+            {/* selection hint moved inside the button */}
+          </div>
+        </div>
       </div>
     </section>
   )

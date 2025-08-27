@@ -19,7 +19,6 @@ const DEFAULT_OPTIONS: ModelOption[] = [
   { value: 'gpt-5', label: 'GPT-5' },
   { value: 'gpt-5-mini', label: 'GPT-5 mini' },
   { value: 'gpt-5-nano', label: 'GPT-5 nano' },
-  { value: 'o3-2025-04-16', label: 'o3' },
 ]
 
 export function ModelSelector({
