@@ -200,33 +200,36 @@ export default function ChatClient() {
             )
           }
           // image part
-          if (!labelInjected) {
-            labelInjected = true
+          if (p.type === 'image') {
+            if (!labelInjected) {
+              labelInjected = true
+              return (
+                <div key={i} className="prose-message dark:prose-invert font-sans">
+                  <span className="font-semibold mr-2">{speaker}: </span>
+                  <img
+                    src={p.src}
+                    alt="Generated image"
+                    className="mt-2 rounded border border-neutral-200 dark:border-neutral-800 max-w-full"
+                  />
+                </div>
+              )
+            }
+            // Only render latest partial image; once a final image arrives, ignore older partials
+            const isPartial = p.partial === true
+            const isLatestPartial = latestPartialIndex === i
+            if (isPartial && (!isLatestPartial || hasFinalImage)) {
+              return null
+            }
             return (
-              <div key={i} className="prose-message dark:prose-invert font-sans">
-                <span className="font-semibold mr-2">{speaker}: </span>
-                <img
-                  src={p.src}
-                  alt="Generated image"
-                  className="mt-2 rounded border border-neutral-200 dark:border-neutral-800 max-w-full"
-                />
-              </div>
+              <img
+                key={i}
+                src={p.src}
+                alt="Generated image"
+                className="mt-2 rounded border border-neutral-200 dark:border-neutral-800 max-w-full"
+              />
             )
           }
-          // Only render latest partial image; once a final image arrives, ignore older partials
-          const isPartial = (p as any).partial === true
-          const isLatestPartial = latestPartialIndex === i
-          if (isPartial && (!isLatestPartial || hasFinalImage)) {
-            return null
-          }
-          return (
-            <img
-              key={i}
-              src={p.src}
-              alt="Generated image"
-              className="mt-2 rounded border border-neutral-200 dark:border-neutral-800 max-w-full"
-            />
-          )
+          return null
         })}
         {parts.map((p, i) => {
           if ((p as any).type === 'meta') {
