@@ -6,12 +6,12 @@
 }
 
 ::selection {
-  background-color: #98a9f4;
+  background-color: #7f91e0;
   color: #fefefe;
 }
 
 :root {
-  accent-color: #98a9f4;
+  accent-color: #7f91e0;
   --sh-class: #2d5e9d;
   --sh-identifier: #354150;
   --sh-sign: #8996a3;
@@ -226,6 +226,17 @@ input[type='email'] {
 
 .stable-input:focus {
   contain: paint;
+}
+
+/* Use accent color for focused borders/outlines on form controls */
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  border-color: #7f91e0;
+  outline-color: #7f91e0;
 }
 
 /* Hide native arrow on select elements used as custom dropdowns */
