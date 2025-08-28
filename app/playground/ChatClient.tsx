@@ -22,7 +22,19 @@ export default function ChatClient() {
   const [useWebSearch, setUseWebSearch] = useState<boolean>(
     String(process.env.NEXT_PUBLIC_ENABLE_WEB_SEARCH || '').toLowerCase() === 'true'
   )
+  const defaultWeb = String(process.env.NEXT_PUBLIC_ENABLE_WEB_SEARCH || '').toLowerCase() === 'true'
+  type ReasoningEffort = 'low' | 'medium' | 'high'
+  const [selectedTool, setSelectedTool] = useState<'file' | 'web' | 'r_low' | 'r_medium' | 'r_high'>(
+    defaultWeb ? 'web' : 'r_high'
+  )
+  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('high')
+  const [thinkingOpen, setThinkingOpen] = useState<boolean>(false)
+  const [thinkingText, setThinkingText] = useState<string>('')
   // Advanced web search settings removed; server enforces sources and high context
+
+  
+  
+  
 
   const placeholder = useMemo(
     () => 'Ask me anything...',
@@ -109,13 +121,13 @@ export default function ChatClient() {
     // 2) Legacy square-bracket token with data URL
     const legacyBracketPattern = "\\[" + "data:image" + "\\/[a-zA-Z]+;base64,[^\\]]+" + "\\]"
     const pattern = new RegExp(
-      `<image_partial:([^>]+)>|<image:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|${legacyBracketPattern}`,
+      `<image_partial:([^>]+)>|<image:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|${legacyBracketPattern}`,
       'g'
     )
     const parts: Array<
       { type: 'text'; value: string } |
       { type: 'image'; src: string; partial?: boolean } |
-      { type: 'meta'; key: 'revised_prompt' | 'response_id'; value: string }
+      { type: 'meta'; key: 'revised_prompt' | 'response_id' | 'summary_text' | 'incomplete'; value: string }
     > = []
     let lastIndex = 0
     let match: RegExpExecArray | null
@@ -128,6 +140,8 @@ export default function ChatClient() {
       const finalPayload = match[2]
       const revisedPayload = match[3]
       const responseIdPayload = match[4]
+      const summaryPayload = match[5]
+      const incompletePayload = match[6]
       const src = partialPayload
         ? partialPayload
         : finalPayload
@@ -145,11 +159,19 @@ export default function ChatClient() {
       if (typeof responseIdPayload === 'string' && responseIdPayload) {
         parts.push({ type: 'meta', key: 'response_id', value: responseIdPayload })
       }
+      if (typeof summaryPayload === 'string' && summaryPayload) {
+        parts.push({ type: 'meta', key: 'summary_text', value: summaryPayload })
+      }
+      if (typeof incompletePayload === 'string' && incompletePayload) {
+        parts.push({ type: 'meta', key: 'incomplete', value: incompletePayload })
+      }
       lastIndex = match.index + full.length
     }
     if (lastIndex < content.length) {
       parts.push({ type: 'text', value: content.slice(lastIndex) })
     }
+
+    // All <thinking:...> tokens are stripped during streaming; nothing to do here
 
     let labelInjected = false
 
@@ -234,7 +256,14 @@ export default function ChatClient() {
         {parts.map((p, i) => {
           if ((p as any).type === 'meta') {
             const meta = p as any
-            const label = meta.key === 'revised_prompt' ? 'Revised prompt' : 'Response ID'
+            const label =
+              meta.key === 'revised_prompt'
+                ? 'Revised prompt'
+                : meta.key === 'response_id'
+                  ? 'Response ID'
+                  : meta.key === 'summary_text'
+                    ? 'Reasoning summary'
+                    : 'Status'
             return (
               <div key={`meta-${i}`} className="text-xs text-neutral-500 mt-1">
                 <span className="font-medium">{label}:</span> {meta.value}
@@ -247,6 +276,11 @@ export default function ChatClient() {
     )
   }
 
+  // Keep web search flag in sync with the selected tool
+  useEffect(() => {
+    setUseWebSearch(selectedTool === 'web')
+  }, [selectedTool])
+
   async function sendMessage(event: React.FormEvent) {
     event.preventDefault()
     const trimmed = input.trim()
@@ -258,6 +292,8 @@ export default function ChatClient() {
     setIsLoading(true)
 
     try {
+      // reset thinking on new request
+      setThinkingText('')
       // Strip embedded base64 images before sending to the server to keep payloads small
       const stripImageData = (text: string): string => {
         const angleTag = /<image:[^>]+>/gi
@@ -280,6 +316,10 @@ export default function ChatClient() {
           previousResponseId: lastResponseId,
           // Advanced options removed; server uses defaults
           webSearchOptions: undefined,
+          reasoningEffort,
+          
+          
+          
         }),
       })
 
@@ -299,9 +339,18 @@ export default function ChatClient() {
         const { value, done } = await reader.read()
         if (done) break
         const chunk = decoder.decode(value, { stream: true })
-        assistantText += chunk
+        // Peel out thinking tokens and accumulate separately without showing in assistant message
+        const thoughtRegex = /<thinking:([^>]+)>/g
+        let cleanChunk = chunk
+        let tm: RegExpExecArray | null
+        while ((tm = thoughtRegex.exec(chunk)) !== null) {
+          const delta = tm[1]
+          if (delta) setThinkingText((prev) => prev + delta)
+        }
+        cleanChunk = cleanChunk.replace(thoughtRegex, '')
+        assistantText += cleanChunk
         // Capture response_id for follow-ups
-        const idMatch = /<response_id:([^>]+)>/g.exec(chunk)
+        const idMatch = /<response_id:([^>]+)>/g.exec(cleanChunk)
         if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
         setMessages((prev) => {
           const updated = [...prev]
@@ -322,8 +371,16 @@ export default function ChatClient() {
       // Flush any remaining decoded bytes
       const finalChunk = decoder.decode()
       if (finalChunk) {
-        assistantText += finalChunk
-        const idMatch = /<response_id:([^>]+)>/g.exec(finalChunk)
+        const thoughtRegex = /<thinking:([^>]+)>/g
+        let cleanFinal = finalChunk
+        let tm: RegExpExecArray | null
+        while ((tm = thoughtRegex.exec(finalChunk)) !== null) {
+          const delta = tm[1]
+          if (delta) setThinkingText((prev) => prev + delta)
+        }
+        cleanFinal = cleanFinal.replace(thoughtRegex, '')
+        assistantText += cleanFinal
+        const idMatch = /<response_id:([^>]+)>/g.exec(cleanFinal)
         if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
         setMessages((prev) => {
           const updated = [...prev]
@@ -360,8 +417,28 @@ export default function ChatClient() {
               const isFirst = i === 0
               const speakerChanged = !isFirst && messages[i - 1].role !== m.role
               const topMarginClass = isFirst ? 'mt-1' : speakerChanged ? 'mt-2' : 'mt-0.5'
+              const isLastAssistant = i === messages.length - 1 && m.role === 'assistant'
               return (
                 <div key={i} className={`${topMarginClass} mb-0`}>
+                  {thinkingText && isLastAssistant && (
+                    <div className="mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setThinkingOpen((v) => !v)}
+                        className="text-xs text-neutral-600 dark:text-neutral-300 underline"
+                      >
+                        {thinkingOpen ? 'Hide thinking' : 'Show thinking'}
+                      </button>
+                      {thinkingOpen && (
+                        <div className="mt-1 max-h-40 overflow-auto rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-2">
+                          <div
+                            className="prose-message dark:prose-invert font-sans text-xs"
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(thinkingText) as string) }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="min-w-0 w-full">
                     {renderMessageContent(m.role, m.content)}
                   </div>
@@ -375,6 +452,27 @@ export default function ChatClient() {
             value={model}
             onChange={setModel}
           />
+          <select
+            className="appearance-none no-native-arrow rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-2 h-10 text-sm"
+            value={selectedTool}
+            onChange={(e) => {
+              const next = e.target.value as 'file' | 'web' | 'r_low' | 'r_medium' | 'r_high'
+              setSelectedTool(next)
+              if (next !== 'file') {
+                setInputImages([])
+              }
+              if (next === 'r_low' || next === 'r_medium' || next === 'r_high') {
+                setReasoningEffort(next === 'r_low' ? 'low' : next === 'r_medium' ? 'medium' : 'high')
+              }
+            }}
+            aria-label="Select tool"
+          >
+            <option value="r_low">Reasoning: Low</option>
+            <option value="r_medium">Reasoning: Medium</option>
+            <option value="r_high">Reasoning: High</option>
+            <option value="file">Upload images</option>
+            <option value="web">Web search</option>
+          </select>
           {/* image routing and follow-up toggles removed */}
           {/* Advanced search settings removed */}
           <input
@@ -406,9 +504,14 @@ export default function ChatClient() {
             )}
           </button>
         </form>
-        <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
-          <div className="flex flex-col gap-1 md:col-span-3">
-            <div className="flex items-center gap-2">
+        <div className="mt-2 grid grid-cols-1 gap-2 text-xs">
+          {(selectedTool === 'r_low' || selectedTool === 'r_medium' || selectedTool === 'r_high') && (
+            <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-3 py-2 text-neutral-700 dark:text-neutral-300">
+              Reasoning effort: {selectedTool === 'r_low' ? 'Low' : selectedTool === 'r_medium' ? 'Medium' : 'High'}
+            </div>
+          )}
+          {selectedTool === 'file' && (
+            <div className="flex flex-col gap-2">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -427,34 +530,64 @@ export default function ChatClient() {
                     })
                     urls.push(dataUrl)
                   }
+                  if (urls.length > 0) setSelectedTool('file')
                   setInputImages(urls)
                 }}
               />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1 flex items-center justify-between rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 text-sm text-left"
-                aria-label="Choose image files"
-              >
-                <span className="truncate text-neutral-600 dark:text-neutral-300">
-                  {inputImages.length > 0 ? `${inputImages.length} image(s) selected` : 'Choose files...'}
-                </span>
-                <span className="shrink-0 rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-700 dark:text-neutral-200">
-                  Browse
-                </span>
-              </button>
-              <label className="ml-1 flex items-center gap-2 text-sm rounded border border-neutral-200 dark:border-neutral-800 bg-transparent px-2 py-2 h-10 text-neutral-700 dark:text-neutral-300">
-                <input
-                  type="checkbox"
-                  className="accent-black dark:accent-white h-4 w-4"
-                  checked={useWebSearch}
-                  onChange={(e) => setUseWebSearch(e.target.checked)}
-                />
-                <span>Use web search</span>
-              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 flex items-center justify-between rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 text-sm text-left"
+                  aria-label="Choose image files"
+                >
+                  <span className="truncate text-neutral-600 dark:text-neutral-300">
+                    {inputImages.length > 0 ? `${inputImages.length} image(s) selected` : 'Choose images...'}
+                  </span>
+                  <span className="shrink-0 rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-700 dark:text-neutral-200">
+                    Browse
+                  </span>
+                </button>
+                {inputImages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setInputImages([])}
+                    className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 text-sm"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {inputImages.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {inputImages.map((src, idx) => (
+                    <div key={idx} className="relative">
+                      <img
+                        src={src}
+                        alt={`Selected ${idx + 1}`}
+                        className="h-16 w-16 object-cover rounded border border-neutral-200 dark:border-neutral-800"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Remove image"
+                        onClick={() =>
+                          setInputImages((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                        className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            {/* selection hint moved inside the button */}
-          </div>
+          )}
+          {selectedTool === 'web' && (
+            <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-3 py-2 text-neutral-700 dark:text-neutral-300">
+              Web search is enabled. I may browse and cite sources in my answer.
+            </div>
+          )}
         </div>
       </div>
     </section>

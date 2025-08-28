@@ -31,6 +31,7 @@ export async function POST(request: Request) {
       useWebSearch,
       previousResponseId,
       webSearchOptions,
+      reasoningEffort,
     } = (await request.json()) as {
       messages: ChatMessage[]
       model?: string
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
         includeSources?: boolean
         userLocation?: { country?: string; city?: string; region?: string; timezone?: string }
       }
+      reasoningEffort?: 'low' | 'medium' | 'high'
     }
 
     if (!Array.isArray(messages)) {
@@ -155,17 +157,21 @@ export async function POST(request: Request) {
     const analysisIntent =
       /\b(describe|explain|analy[sz]e|caption|tell me about)\b[^\n]*\b(image|picture|photo|it|this)\b/i
     const hasInputImages = Array.isArray(inputImages) && inputImages.length > 0
+    const webSearchAllowed = useWebSearchEffective && !hasInputImages
     const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
 
     // If user attached images and is not explicitly asking to generate/edit an image, do vision analysis
     if (hasInputImages && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
       const encoder = new TextEncoder()
       const visionTools: any[] = []
-      if (useWebSearchEffective) {
+      if (webSearchAllowed) {
         visionTools.push(buildWebSearchTool())
       }
       const responseCreateParams: any = {
         model: selectedModel,
+        reasoning: reasoningEffort
+          ? ({ effort: reasoningEffort, summary: 'auto' } as any)
+          : ({ summary: 'auto' } as any),
         input: [
           {
             role: 'user',
@@ -178,15 +184,22 @@ export async function POST(request: Request) {
         tools: visionTools as any,
         previous_response_id: previousResponseId ?? undefined,
         tool_choice: 'auto',
-        include: useWebSearchEffective ? (['web_search_call.action.sources'] as any) : undefined,
+        include: webSearchAllowed ? (['web_search_call.results'] as any) : undefined,
       }
       const stream = await client.responses.stream(responseCreateParams)
       const readable = new ReadableStream<Uint8Array>({
         async start(controller) {
           try {
             for await (const event of stream) {
-              if (event.type === 'response.output_text.delta') {
-                controller.enqueue(encoder.encode(event.delta))
+              const type = String((event as any)?.type || '')
+              if (type === 'response.output_text.delta') {
+                controller.enqueue(encoder.encode((event as any).delta))
+                continue
+              }
+              // Forward any reasoning deltas as <thinking:...> tokens for the client UI
+              if (type.startsWith('response.reasoning') && (event as any)?.delta) {
+                controller.enqueue(encoder.encode(`\n<thinking:${String((event as any).delta)}>`))
+                continue
               }
             }
           } catch (error) {
@@ -205,6 +218,8 @@ export async function POST(request: Request) {
                   if (citations.some((c) => c.url === url)) return
                   citations.push({ url, title })
                 }
+                // Extract reasoning summary if present
+                let reasoningSummaryText: string | undefined
                 for (const out of outputs) {
                   if (out?.type === 'message') {
                     const content = Array.isArray(out.content) ? out.content : []
@@ -220,6 +235,14 @@ export async function POST(request: Request) {
                     const srcs = out?.action?.sources
                     if (Array.isArray(srcs)) for (const s of srcs) addCitation(s?.url, s?.title)
                   }
+                  if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
+                    for (const s of out.summary) {
+                      if (s?.type === 'summary_text' && typeof s.text === 'string' && s.text) {
+                        reasoningSummaryText = s.text
+                        break
+                      }
+                    }
+                  }
                 }
                 if (citations.length > 0) {
                   controller.enqueue(encoder.encode(`\n\nSources:\n`))
@@ -227,6 +250,9 @@ export async function POST(request: Request) {
                     const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
                     controller.enqueue(encoder.encode(`- [${title}](${s.url})\n`))
                   }
+                }
+                if (reasoningSummaryText) {
+                  controller.enqueue(encoder.encode(`\n<summary_text:${reasoningSummaryText}>\n`))
                 }
               } catch {}
               const respId: unknown = (finalResponse as any)?.id
@@ -345,6 +371,9 @@ export async function POST(request: Request) {
         const responseCreateParams: any = {
           model: selectedModel,
           instructions: 'You are Yurie, generate an image for the user request.',
+          reasoning: reasoningEffort
+            ? ({ effort: reasoningEffort, summary: 'auto' } as any)
+            : ({ summary: 'auto' } as any),
           tools: [toolOptions as any],
           previous_response_id: previousResponseId ?? undefined,
         }
@@ -375,6 +404,11 @@ export async function POST(request: Request) {
                   if (b64) controller.enqueue(encoder.encode(`\n<image_partial:data:image/png;base64,${b64}>\n`))
                   continue
                 }
+                // Forward any reasoning deltas as <thinking:...> tokens for the client UI
+                if (type.startsWith('response.reasoning') && (event as any)?.delta) {
+                  controller.enqueue(encoder.encode(`\n<thinking:${String((event as any).delta)}>`))
+                  continue
+                }
                 if (type.endsWith('.error') || type === 'error') {
                   const msg = (event as any)?.error || 'Unknown image generation error'
                   controller.enqueue(encoder.encode(`\n[error] ${String(msg)}\n`))
@@ -393,6 +427,8 @@ export async function POST(request: Request) {
                 const imageCalls = Array.isArray(outputs)
                   ? outputs.filter((o: any) => o && o.type === 'image_generation_call')
                   : []
+                // Extract reasoning summary if present
+                let reasoningSummaryText: string | undefined
                 for (const call of imageCalls) {
                   const base64: unknown = (call && (call as any).result) as unknown
                   if (typeof base64 === 'string' && base64.length > 0) {
@@ -406,6 +442,20 @@ export async function POST(request: Request) {
                       encoder.encode(`\n<revised_prompt:${revised}>\n`)
                     )
                   }
+                }
+                // scan full outputs for reasoning summary
+                for (const out of outputs) {
+                  if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
+                    for (const s of out.summary) {
+                      if (s?.type === 'summary_text' && typeof s.text === 'string' && s.text) {
+                        reasoningSummaryText = s.text
+                        break
+                      }
+                    }
+                  }
+                }
+                if (reasoningSummaryText) {
+                  controller.enqueue(encoder.encode(`\n<summary_text:${reasoningSummaryText}>\n`))
                 }
                 const respId: unknown = (finalResponse as any)?.id
                 if (typeof respId === 'string' && respId) {
@@ -434,34 +484,45 @@ export async function POST(request: Request) {
     }
 
     const toolList: any[] = [{ type: 'image_generation' } as any]
-    if (useWebSearchEffective) {
+    if (webSearchAllowed) {
       toolList.push(buildWebSearchTool())
     }
+    const includeList: any[] = []
+    if (webSearchAllowed) includeList.push('web_search_call.results')
     const stream = await client.responses.stream({
       model: selectedModel,
-      reasoning: { effort: 'high' },
+      reasoning: reasoningEffort
+        ? ({ effort: reasoningEffort, summary: 'auto' } as any)
+        : ({ effort: 'high' as any, summary: 'auto' } as any),
       instructions: 'You are Yurie, a creative and helpful AI assistant.',
       input: prompt,
       tools: toolList as any,
       previous_response_id: previousResponseId ?? undefined,
       tool_choice: 'auto',
-      include: useWebSearchEffective ? (['web_search_call.action.sources'] as any) : undefined,
+      include: includeList.length > 0 ? (includeList as any) : undefined,
     })
 
     const encoder = new TextEncoder()
     const readable = new ReadableStream<Uint8Array>({
       async start(controller) {
         try {
-          for await (const event of stream) {
-            if (event.type === 'response.output_text.delta') {
-              controller.enqueue(encoder.encode(event.delta))
+          for await (const event of stream as any) {
+            const type = String((event as any)?.type || '')
+            if (type === 'response.output_text.delta') {
+              controller.enqueue(encoder.encode((event as any).delta))
+              continue
+            }
+            // Forward any reasoning deltas as <thinking:...> tokens for the client UI
+            if (type.startsWith('response.reasoning') && (event as any)?.delta) {
+              controller.enqueue(encoder.encode(`\n<thinking:${String((event as any).delta)}>`))
+              continue
             }
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown error'
           controller.enqueue(encoder.encode(`\n[error] ${message}`))
         } finally {
-          // Try to finalize, then emit any generated images at the end
+          // Try to finalize, then emit any generated images and reasoning summary at the end
           try {
             const hasFinal = typeof (stream as any).final === 'function'
             const finalResponse = hasFinal ? await (stream as any).final() : undefined
@@ -479,6 +540,8 @@ export async function POST(request: Request) {
                 )
               }
             }
+            // Extract reasoning summary if present
+            let reasoningSummaryText: string | undefined
             // Append sources/citations if present
             try {
               const outputsAny: any[] = (finalResponse && (finalResponse as any).output) || []
@@ -503,6 +566,14 @@ export async function POST(request: Request) {
                   const srcs = out?.action?.sources
                   if (Array.isArray(srcs)) for (const s of srcs) addCitation(s?.url, s?.title)
                 }
+                if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
+                  for (const s of out.summary) {
+                    if (s?.type === 'summary_text' && typeof s.text === 'string' && s.text) {
+                      reasoningSummaryText = s.text
+                      break
+                    }
+                  }
+                }
               }
               if (citations.length > 0) {
                 controller.enqueue(encoder.encode(`\n\nSources:\n`))
@@ -511,10 +582,19 @@ export async function POST(request: Request) {
                   controller.enqueue(encoder.encode(`- [${title}](${s.url})\n`))
                 }
               }
+              if (reasoningSummaryText) {
+                controller.enqueue(encoder.encode(`\n<summary_text:${reasoningSummaryText}>\n`))
+              }
             } catch {}
             const respId: unknown = (finalResponse as any)?.id
             if (typeof respId === 'string' && respId) {
               controller.enqueue(encoder.encode(`\n<response_id:${respId}>\n`))
+            }
+            // If response was incomplete due to max tokens, emit a marker
+            const status: unknown = (finalResponse as any)?.status
+            const incompleteReason: unknown = (finalResponse as any)?.incomplete_details?.reason
+            if (status === 'incomplete' && typeof incompleteReason === 'string' && incompleteReason) {
+              controller.enqueue(encoder.encode(`\n<incomplete:${incompleteReason}>\n`))
             }
           } catch {}
           controller.close()

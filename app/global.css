@@ -228,6 +228,14 @@ input[type='email'] {
   contain: paint;
 }
 
+/* Hide native arrow on select elements used as custom dropdowns */
+.no-native-arrow {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: none !important;
+}
+
 table {
   display: block;
   max-width: fit-content;
