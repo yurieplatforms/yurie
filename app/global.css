@@ -228,16 +228,7 @@ input[type='email'] {
   contain: paint;
 }
 
-/* Use accent color for focused borders/outlines on form controls */
-input:focus,
-input:focus-visible,
-select:focus,
-select:focus-visible,
-textarea:focus,
-textarea:focus-visible {
-  border-color: #7f91e0;
-  outline-color: #7f91e0;
-}
+/* (Removed custom focus border/outline to reduce distraction) */
 
 /* Hide native arrow on select elements used as custom dropdowns */
 .no-native-arrow {
@@ -245,6 +236,22 @@ textarea:focus-visible {
   -moz-appearance: none;
   appearance: none;
   background-image: none !important;
+}
+
+/* Accent chevron for custom selects (uses app accent color) */
+.select-chevron {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7l5 5 5-5' stroke='%237f91e0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem 1rem;
+  padding-right: 2rem;
+}
+
+/* Remove default blue focus ring on specific elements */
+.no-focus-outline:focus,
+.no-focus-outline:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 table {

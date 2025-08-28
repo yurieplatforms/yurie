@@ -29,7 +29,7 @@ export function ModelSelector({
   options = DEFAULT_OPTIONS,
 }: ModelSelectorProps) {
   const baseClass =
-    'rounded border border-neutral-200 dark:border-neutral-800 bg-transparent px-2 py-2 h-10 text-sm appearance-none'
+    'appearance-none no-native-arrow select-chevron no-focus-outline outline-none rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-2 py-2 h-10 text-sm'
 
   return (
     <select

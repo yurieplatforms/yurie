@@ -454,7 +454,7 @@ export default function ChatClient() {
             onChange={setModel}
           />
           <select
-            className="appearance-none no-native-arrow rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-2 h-10 text-sm"
+            className="appearance-none no-native-arrow select-chevron no-focus-outline outline-none rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-2 h-10 text-sm"
             value={selectedTool}
             onChange={(e) => {
               const next = e.target.value as 'file' | 'image' | 'web' | 'r_low' | 'r_medium' | 'r_high'
@@ -478,7 +478,7 @@ export default function ChatClient() {
           {/* image routing and follow-up toggles removed */}
           {/* Advanced search settings removed */}
           <input
-            className="stable-input flex-1 min-w-[12rem] rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 outline-none transform-gpu will-change-transform placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
+            className="stable-input no-focus-outline outline-none flex-1 min-w-[12rem] rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 transform-gpu will-change-transform placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
             placeholder={placeholder}
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -498,7 +498,7 @@ export default function ChatClient() {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                className="h-5 w-5"
+                className="h-5 w-5 text-[#7f91e0]"
                 aria-hidden="true"
               >
                 <path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z" />
