@@ -8,10 +8,14 @@ A minimalist portfolio + blog built with Next.js App Router and Tailwind v4, now
 - SEO: sitemap, robots, JSON‑LD schema
 - Dynamic OG images
 - Tailwind v4, Geist font, Vercel Speed Insights / Analytics
-- Chat playground at `/playground` with streaming text responses and optional inline images
+- Chat playground at `/playground` with streaming text responses and image tools
+  - Tools in selector:
+    - Analyze images: upload image(s) to describe, answer questions, or get captions
+    - Image generation: create images from text; upload reference images or a mask to edit
   - Defaults: size=auto, quality=high, background=auto, format=png, partial_images=3, input_fidelity=high, moderation=auto
   - Streaming partial frames (0-3), revised prompt + response ID metadata
   - Attach images for analysis or edits; mask-based edits supported when a mask is provided
+  - Clicking “playground” in the navbar while on `/playground` refreshes the page to reset chat
 - Reusable model selector component (`app/components/model-selector.tsx`)
 
 ## Quickstart
@@ -75,7 +79,7 @@ See `app/api/playground/route.ts`.
 
 ### Images and vision (analyze or edit)
 
-- By default, image requests use the Responses API image_generation tool with streaming.
+- Image generation mode can be chosen explicitly in the UI; it always uses the image tool with streaming.
 - When images are attached and you ask to analyze, the server uses vision to describe or answer questions.
 - When a mask is attached, the server auto-routes to the Image API for inpainting-style edits (first attached image is edited by the mask).
 - Server defaults (no options UI): size=auto, quality=high, background=auto, format=png, partial_images=3, input_fidelity=high, moderation=auto

@@ -24,7 +24,7 @@ export default function ChatClient() {
   )
   const defaultWeb = String(process.env.NEXT_PUBLIC_ENABLE_WEB_SEARCH || '').toLowerCase() === 'true'
   type ReasoningEffort = 'low' | 'medium' | 'high'
-  const [selectedTool, setSelectedTool] = useState<'file' | 'web' | 'r_low' | 'r_medium' | 'r_high'>(
+  const [selectedTool, setSelectedTool] = useState<'file' | 'image' | 'web' | 'r_low' | 'r_medium' | 'r_high'>(
     defaultWeb ? 'web' : 'r_high'
   )
   const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('high')
@@ -317,6 +317,7 @@ export default function ChatClient() {
           // Advanced options removed; server uses defaults
           webSearchOptions: undefined,
           reasoningEffort,
+          forceImageGeneration: selectedTool === 'image',
           
           
           
@@ -456,9 +457,9 @@ export default function ChatClient() {
             className="appearance-none no-native-arrow rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-2 h-10 text-sm"
             value={selectedTool}
             onChange={(e) => {
-              const next = e.target.value as 'file' | 'web' | 'r_low' | 'r_medium' | 'r_high'
+              const next = e.target.value as 'file' | 'image' | 'web' | 'r_low' | 'r_medium' | 'r_high'
               setSelectedTool(next)
-              if (next !== 'file') {
+              if (next !== 'file' && next !== 'image') {
                 setInputImages([])
               }
               if (next === 'r_low' || next === 'r_medium' || next === 'r_high') {
@@ -470,13 +471,14 @@ export default function ChatClient() {
             <option value="r_low">Reasoning: Low</option>
             <option value="r_medium">Reasoning: Medium</option>
             <option value="r_high">Reasoning: High</option>
-            <option value="file">Upload images</option>
+            <option value="file">Analyze images</option>
+            <option value="image">Image generation</option>
             <option value="web">Web search</option>
           </select>
           {/* image routing and follow-up toggles removed */}
           {/* Advanced search settings removed */}
           <input
-            className="stable-input flex-1 min-w-[12rem] rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 py-2 outline-none transform-gpu will-change-transform placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
+            className="stable-input flex-1 min-w-[12rem] rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 outline-none transform-gpu will-change-transform placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
             placeholder={placeholder}
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -510,7 +512,7 @@ export default function ChatClient() {
               Reasoning effort: {selectedTool === 'r_low' ? 'Low' : selectedTool === 'r_medium' ? 'Medium' : 'High'}
             </div>
           )}
-          {selectedTool === 'file' && (
+          {(selectedTool === 'file' || selectedTool === 'image') && (
             <div className="flex flex-col gap-2">
               <input
                 ref={fileInputRef}
@@ -530,7 +532,7 @@ export default function ChatClient() {
                     })
                     urls.push(dataUrl)
                   }
-                  if (urls.length > 0) setSelectedTool('file')
+                  if (urls.length > 0 && selectedTool !== 'image') setSelectedTool('file')
                   setInputImages(urls)
                 }}
               />

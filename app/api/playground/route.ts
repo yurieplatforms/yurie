@@ -32,6 +32,7 @@ export async function POST(request: Request) {
       previousResponseId,
       webSearchOptions,
       reasoningEffort,
+      forceImageGeneration,
     } = (await request.json()) as {
       messages: ChatMessage[]
       model?: string
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
         userLocation?: { country?: string; city?: string; region?: string; timezone?: string }
       }
       reasoningEffort?: 'low' | 'medium' | 'high'
+      forceImageGeneration?: boolean
     }
 
     if (!Array.isArray(messages)) {
@@ -161,7 +163,7 @@ export async function POST(request: Request) {
     const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
 
     // If user attached images and is not explicitly asking to generate/edit an image, do vision analysis
-    if (hasInputImages && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
+    if (!forceImageGeneration && hasInputImages && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
       const encoder = new TextEncoder()
       const visionTools: any[] = []
       if (webSearchAllowed) {
@@ -275,6 +277,7 @@ export async function POST(request: Request) {
     }
 
     const wantsImage =
+      Boolean(forceImageGeneration) ||
       ((explicitImageVerb.test(lastUserMessage) || imageDescriptorTerms.test(lastUserMessage) || editIntent.test(lastUserMessage)) &&
         !analysisIntent.test(lastUserMessage)) ||
       hasInputImages ||
