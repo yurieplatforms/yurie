@@ -7,7 +7,6 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Yurie',
     start_url: '/',
     display: 'standalone',
-    // Use dark background to avoid white flash on splash screen when A2HS
     background_color: '#000000',
     theme_color: '#000000',
     icons: [
@@ -20,5 +19,3 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
   }
 }
-
-

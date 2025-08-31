@@ -3,6 +3,26 @@
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New";
+  --color-background: oklch(1 0 0);
+  --color-foreground: oklch(0.141 0.005 285.823);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.141 0.005 285.823);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.141 0.005 285.823);
+  --color-primary: oklch(0.21 0.006 285.885);
+  --color-primary-foreground: oklch(0.985 0 0);
+  --color-secondary: oklch(0.967 0.001 286.375);
+  --color-secondary-foreground: oklch(0.21 0.006 285.885);
+  --color-muted: oklch(0.967 0.001 286.375);
+  --color-muted-foreground: oklch(0.552 0.016 285.938);
+  --color-accent: #98a9f4;
+  --color-accent-foreground: oklch(0.21 0.006 285.885);
+  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-destructive-foreground: oklch(0.577 0.245 27.325);
+  --color-border: oklch(0.92 0.004 286.32);
+  --color-input: oklch(0.92 0.004 286.32);
+  --color-ring: oklch(0.705 0.015 286.067);
+  --radius: 0.625rem;
 }
 
 ::selection {
@@ -41,31 +61,8 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.prose .anchor {
-  @apply absolute invisible no-underline;
-
-  margin-left: -1em;
-  padding-right: 0.5em;
-  width: 80%;
-  max-width: 700px;
-  cursor: pointer;
-}
-
-.anchor:hover {
-  @apply visible;
-}
-
 .prose a {
   @apply underline transition-all decoration-neutral-400 dark:decoration-neutral-600 underline-offset-2 decoration-[0.1em];
-}
-
-.prose .anchor:after {
-  @apply text-neutral-300 dark:text-neutral-700;
-  content: '#';
-}
-
-.prose *:hover > .anchor {
-  @apply visible;
 }
 
 .prose pre {
@@ -87,7 +84,6 @@ html {
 }
 
 .prose img {
-  /* Don't apply styles to next/image */
   @apply m-0;
 }
 
@@ -124,12 +120,10 @@ html {
 }
 
 .prose > :first-child {
-  /* Override removing top margin, causing layout shift */
   margin-top: 1.25em !important;
   margin-bottom: 1.25em !important;
 }
 
-/* Tighter spacing for inline chat messages that use prose rendering */
 .prose-message > :first-child {
   margin-top: 0 !important;
 }
@@ -138,7 +132,6 @@ html {
   margin-bottom: 0 !important;
 }
 
-/* Tighter spacing and full-width for chat-rendered markdown */
 .prose-message {
   @apply w-full;
   max-width: 100% !important;
@@ -146,16 +139,14 @@ html {
   display: block;
 }
 
-/* Ensure children cannot reintroduce a max-width constraint */
 .prose-message > * {
   max-width: 100% !important;
 }
 
 .prose-message p {
-  @apply my-2; /* reduce paragraph spacing inside chat */
+  @apply my-2;
 }
 
-/* Markdown hierarchy for chat messages */
 .prose-message h1 {
   @apply text-2xl font-semibold tracking-tight mt-3 mb-1.5;
 }
@@ -169,7 +160,6 @@ html {
   @apply font-semibold tracking-tight mt-2 mb-1;
 }
 
-/* Emphasis and inline formatting */
 .prose-message strong {
   @apply font-bold;
 }
@@ -177,7 +167,6 @@ html {
   font-style: italic;
 }
 
-/* Lists inside chat */
 .prose-message ul {
   @apply list-disc pl-5 my-2;
 }
@@ -189,31 +178,31 @@ html {
   @apply mt-1 mb-0;
 }
 
-/* Links */
 .prose-message a {
   @apply underline transition-all decoration-neutral-400 dark:decoration-neutral-600 underline-offset-2 decoration-[0.1em];
 }
 
-/* Blockquotes */
 .prose-message blockquote {
   @apply border-l-4 border-neutral-200 dark:border-neutral-800 pl-3 my-2 text-neutral-700 dark:text-neutral-300;
 }
 
-/* Horizontal rule */
 .prose-message hr {
   @apply my-3 border-neutral-200 dark:border-neutral-800;
 }
 
-/* Wrap long lines so all code is visible in chat messages */
+.prose-thinking h1 { @apply text-lg mt-2 mb-1; }
+.prose-thinking h2 { @apply text-base mt-2 mb-1; }
+.prose-thinking h3 { @apply text-sm mt-1.5 mb-1; }
+.prose-thinking h4 { @apply text-xs mt-1.5 mb-1; }
+.prose-thinking p  { @apply my-1; }
+
 .prose-message pre,
 .prose-message pre code {
-  /* Preserve full code/text content on one line; scroll horizontally if needed */
   white-space: pre;
   word-break: normal;
   overflow-x: auto;
 }
 
-/* Chat code block chrome */
 .chat-code {
   @apply border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden mb-2;
 }
@@ -230,16 +219,14 @@ html {
   @apply bg-transparent m-0 p-3 text-sm;
 }
 
-/* Re-enable horizontal scrollbar visibility for chat code blocks */
 .prose-message pre::-webkit-scrollbar {
   display: initial;
   height: 8px;
 }
 .prose-message pre {
-  scrollbar-width: thin; /* Firefox */
+  scrollbar-width: thin;
 }
 
-/* Slightly bolder body text in chat for readability, without affecting code */
 .prose-message p,
 .prose-message li {
   @apply font-medium;
@@ -250,11 +237,10 @@ pre::-webkit-scrollbar {
 }
 
 pre {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* Remove Safari input shadow on mobile */
 input[type='text'],
 input[type='email'] {
   -webkit-appearance: none;
@@ -264,7 +250,6 @@ input[type='email'] {
   text-rendering: optimizeLegibility;
 }
 
-/* Stabilize input text rendering on iOS to prevent overlap when placeholder transitions */
 .stable-input {
   line-height: 1.5;
   white-space: nowrap;
@@ -277,26 +262,6 @@ input[type='email'] {
   contain: paint;
 }
 
-/* (Removed custom focus border/outline to reduce distraction) */
-
-/* Hide native arrow on select elements used as custom dropdowns */
-.no-native-arrow {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: none !important;
-}
-
-/* Accent chevron for custom selects (uses app accent color) */
-.select-chevron {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7l5 5 5-5' stroke='%237f91e0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
-  background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  background-size: 1rem 1rem;
-  padding-right: 2rem;
-}
-
-/* Remove default blue focus ring on specific elements */
 .no-focus-outline:focus,
 .no-focus-outline:focus-visible {
   outline: none !important;
@@ -310,12 +275,11 @@ table {
   white-space: nowrap;
 }
 
-/* Chat tables: full-width, readable borders, and subtle zebra stripes */
 .prose-message table {
-  display: block; /* enable horizontal scroll if needed */
+  display: block;
   max-width: 100%;
   overflow-x: auto;
-  white-space: nowrap; /* keep table cells intact; scroll horizontally */
+  white-space: nowrap;
   border: 1px solid theme(colors.neutral.200);
   border-radius: 0.5rem;
 }

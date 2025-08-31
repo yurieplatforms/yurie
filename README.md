@@ -8,15 +8,14 @@ A minimalist portfolio + blog built with Next.js App Router and Tailwind v4, now
 - SEO: sitemap, robots, JSON‑LD schema
 - Dynamic OG images
 - Tailwind v4, Geist font, Vercel Speed Insights / Analytics
-- Chat playground at `/playground` with streaming text responses and image tools
-  - Tools in selector:
-    - Analyze images: upload image(s) to describe, answer questions, or get captions
-    - Image generation: create images from text; upload reference images or a mask to edit
+- Chat playground at `/playground` with streaming responses and image tools
+  - Attach image(s) to analyze or provide reference context
+  - Image generation is triggered automatically based on your prompt or attached images
   - Defaults: size=auto, quality=high, background=auto, format=png, partial_images=3, input_fidelity=high, moderation=auto
   - Streaming partial frames (0-3), revised prompt + response ID metadata
-  - Attach images for analysis or edits; mask-based edits supported when a mask is provided
+  - Mask-based edits are supported by the API, but the UI does not include a mask upload control
   - Clicking “playground” in the navbar while on `/playground` refreshes the page to reset chat
-- Reusable model selector component (`app/components/model-selector.tsx`)
+  
 
 ## Quickstart
 
@@ -34,10 +33,8 @@ Create a `.env` file in the project root:
 
 ```bash
 OPENAI_API_KEY=your_openai_key
-# Optional: enable web search tool on server by default
-ENABLE_WEB_SEARCH=true
-# Optional: enable web search toggle default in client UI
-NEXT_PUBLIC_ENABLE_WEB_SEARCH=true
+# Optional: restrict web search to specific domains (comma‑separated)
+WEB_SEARCH_ALLOWED_DOMAINS=example.com,another.example
 ```
 
 3) Run the dev server
@@ -61,8 +58,7 @@ Open the printed URL (typically `http://localhost:3000`) and visit `/playground`
 
 ```json
 {
-  "messages": [{ "role": "user", "content": "Hello" }],
-  "model": "gpt-5" // optional, defaults to gpt-5
+  "messages": [{ "role": "user", "content": "Hello" }]
 }
 ```
 
@@ -79,9 +75,9 @@ See `app/api/playground/route.ts`.
 
 ### Images and vision (analyze or edit)
 
-- Image generation mode can be chosen explicitly in the UI; it always uses the image tool with streaming.
+- The UI streams image generation automatically when your prompt implies image creation or when images are provided.
 - When images are attached and you ask to analyze, the server uses vision to describe or answer questions.
-- When a mask is attached, the server auto-routes to the Image API for inpainting-style edits (first attached image is edited by the mask).
+- The API supports mask-based edits when a mask is provided; the default UI does not include a mask uploader.
 - Server defaults (no options UI): size=auto, quality=high, background=auto, format=png, partial_images=3, input_fidelity=high, moderation=auto
 - The stream includes tokens:
   - `<image_partial:data:image/...>` for partial frames
@@ -91,16 +87,10 @@ See `app/api/playground/route.ts`.
 
 ### Web search
 
-- Web search is enabled via a toggle in the `/playground` UI.
-- When enabled, the server uses the GA `web_search` tool and will always:
+- The server may use the GA `web_search` tool automatically for non‑image prompts and will:
   - Include sources (appended as a “Sources” section at the end of responses)
   - Use high search context size for richer results
-- Optional env flags:
-  - `ENABLE_WEB_SEARCH=true` to enable by default on the server
-  - `NEXT_PUBLIC_ENABLE_WEB_SEARCH=true` to show the toggle as on in the client
-
-Notes:
-- Inline citations in the model output are preserved; the UI appends a Sources list based on citations and tool-returned sources.
+- Web search always uses high context with no domain/location restrictions.
 
 ## Customization
 

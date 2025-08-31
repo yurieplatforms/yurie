@@ -17,7 +17,6 @@ function parseDataUrl(dataUrl: string): { mime: string; buffer: Buffer } {
 async function dataUrlToFile(dataUrl: string, filename: string) {
   const { mime, buffer } = parseDataUrl(dataUrl)
   const blob = new Blob([buffer], { type: mime })
-  // toFile converts Blob/Stream into a File compatible with the SDK
   return await toFile(blob, filename)
 }
 
@@ -25,27 +24,16 @@ export async function POST(request: Request) {
   try {
     const {
       messages,
-      model,
       inputImages,
       maskDataUrl,
-      useWebSearch,
       previousResponseId,
-      webSearchOptions,
       reasoningEffort,
       forceImageGeneration,
     } = (await request.json()) as {
       messages: ChatMessage[]
-      model?: string
       inputImages?: string[]
       maskDataUrl?: string | null
-      useWebSearch?: boolean
       previousResponseId?: string | null
-      webSearchOptions?: {
-        allowedDomains?: string[]
-        contextSize?: 'low' | 'medium' | 'high'
-        includeSources?: boolean
-        userLocation?: { country?: string; city?: string; region?: string; timezone?: string }
-      }
       reasoningEffort?: 'low' | 'medium' | 'high'
       forceImageGeneration?: boolean
     }
@@ -67,7 +55,6 @@ export async function POST(request: Request) {
 
     const client = new OpenAI({ apiKey })
 
-    // Remove embedded base64 image payloads from history to keep requests small
     const stripImageData = (text: string): string => {
       if (!text) return text
       const angleTag = /<image:[^>]+>/gi
@@ -79,83 +66,59 @@ export async function POST(request: Request) {
         .replace(bareDataUrl, '[image omitted]')
     }
 
-    // Strong system rules to keep answers consistent and Markdown-formatted
     const RULES = [
       'SYSTEM RULES:',
       '- You are Yurie, a helpful AI assistant specializing in deep research, writing, storytelling and coding.',
       '- Always format responses in Markdown. Use headings (##, ###) to structure content, bold text for key terms, and bullet/numbered lists when helpful.',
-      '- For code, use fenced Markdown code blocks with a language tag.',
+      '- Start with a brief, direct answer or TL;DR when appropriate, then elaborate.',
+      "- Structure sections using headings like 'Answer', 'Why', 'Steps', and 'Caveats' when helpful.",
+      '- Prefer concise paragraphs and numbered steps for procedures.',
+      '- For code, use fenced Markdown code blocks with a language tag. Keep code minimal and focused.',
       '- Avoid raw HTML unless explicitly requested; prefer Markdown.',
+      "- Default to the user's language; fall back to English if unclear.",
+      "- If the request is ambiguous, ask up to one clarifying question. If you must proceed, list brief assumptions under 'Assumptions'.",
+      '- For factual claims, prefer including dates/timeframes and state uncertainty if applicable.',
+      "- End with 'Next steps' only when action items will help the user.",
+      '- Keep answers concise by default; expand on request.',
+      '- For code answers, prefer minimal, runnable snippets and briefly note trade-offs.',
+      '- Decide when to use tools automatically: use web_search for up-to-date facts (and always include a Sources list with citations), analyze any attached images, and use image generation only when the user asks to create or edit an image. If a mask is provided, perform inpainting-style edits.',
+      '- If tools are unnecessary, answer directly without calling them.',
       '- Do NOT scaffold entire apps.',
     ].join('\n')
 
     const INSTRUCTIONS_MARKDOWN =
-      'You are Yurie, a creative and helpful AI assistant. Always format your responses in Markdown with clear hierarchy (##, ###), use bold for key points, and bullet/numbered lists when useful. For code, use fenced Markdown blocks with a language tag. Avoid raw HTML.'
+      "You are Yurie, a creative and helpful AI assistant. Begin with a concise answer or TL;DR when appropriate, then provide details. Always format responses in Markdown with clear hierarchy (##, ###), use bold for key points, and bullet/numbered lists when useful. Prefer numbered steps for procedures and include concise caveats when relevant. For code, use fenced Markdown blocks with a language tag and keep snippets minimal. Avoid raw HTML. Autonomously use tools when helpful: use web_search for current facts and include a Sources list; analyze attached images; use image generation only when the user asks to create/edit an image (perform inpainting when a mask is provided). If no tool is needed, answer directly."
 
-    const promptRaw =
-      RULES +
-      '\n\nConversation history follows. Respond as Yurie.\n' +
-      messages
-        .map((m) => `${m.role === 'user' ? 'User' : 'Yurie'}: ${stripImageData(m.content)}`)
-        .join('\n') +
-      '\nYurie:'
+    const header = RULES + '\n\nConversation history follows. Respond as Yurie.\n'
+    const messagesStr = messages
+      .map((m) => `${m.role === 'user' ? 'User' : 'Yurie'}: ${stripImageData(m.content)}`)
+      .join('\n')
+    const tail = '\nYurie:'
 
-    // Keep prompt within a reasonable character budget to avoid large requests
     const MAX_PROMPT_CHARS = 100000
-    const prompt =
-      promptRaw.length > MAX_PROMPT_CHARS
-        ? promptRaw.slice(promptRaw.length - MAX_PROMPT_CHARS)
-        : promptRaw
+    let prompt: string
+    if (header.length + messagesStr.length + tail.length <= MAX_PROMPT_CHARS) {
+      prompt = header + messagesStr + tail
+    } else {
+      const budget = MAX_PROMPT_CHARS - header.length - tail.length
+      const trimmedHistory = budget > 0 ? messagesStr.slice(messagesStr.length - budget) : ''
+      prompt = header + trimmedHistory + tail
+    }
 
-    // Force default model to gpt-5 regardless of client input
     const selectedModel = 'gpt-5'
-    // Always allow web search tool; the model will decide when to use it
     const useWebSearchEffective = true
 
-    // Build GA web_search tool config and helpers
-    const parseEnvDomains = (value: unknown): string[] => {
-      const raw = typeof value === 'string' ? value : ''
-      return raw
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
-    }
-    const defaultAllowedDomains = parseEnvDomains(process.env.WEB_SEARCH_ALLOWED_DOMAINS)
-    const allowedDomains = defaultAllowedDomains
-    const contextSize = 'high' as 'high'
-    const includeSources = true
-    const h = request.headers
-    const approxCountry = h.get('x-vercel-ip-country') || undefined
-    const approxCity = h.get('x-vercel-ip-city') || undefined
-    const approxRegion = h.get('x-vercel-ip-country-region') || undefined
-    const userLocation = {
-      type: 'approximate',
-      country: webSearchOptions?.userLocation?.country || approxCountry,
-      city: webSearchOptions?.userLocation?.city || approxCity,
-      region: webSearchOptions?.userLocation?.region || approxRegion,
-      timezone: webSearchOptions?.userLocation?.timezone || undefined,
-    }
     const buildWebSearchTool = (): any => {
-      const tool: any = { type: 'web_search' as const }
-      if (allowedDomains && allowedDomains.length > 0) {
-        tool.filters = { allowed_domains: allowedDomains }
-      }
-      if (contextSize && ['low', 'medium', 'high'].includes(contextSize)) {
-        tool.search_context_size = contextSize
-      }
-      const hasLoc = userLocation.country || userLocation.city || userLocation.region || userLocation.timezone
-      if (hasLoc) {
-        tool.user_location = userLocation as any
-      }
-      return tool
+      return { type: 'web_search' as const, search_context_size: 'high' as const }
     }
 
-    // Heuristic: if the latest user message looks like an image request,
-    // call the dedicated image generation endpoint for reliability.
+    const selectedEffort: 'low' | 'medium' | 'high' =
+      reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
+        ? reasoningEffort
+        : 'high'
+
     const lastUserMessage =
       [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
-    // Only treat as an image-generation request when the user explicitly asks
-    // to create/draw/render something visual, not merely when they mention an image.
     const explicitImageVerb =
       /\b(generate|create|make|draw|paint|illustrate|render|design|produce|show)\b[^\n]*\b(image|picture|photo|photograph|illustration|art|logo|icon|wallpaper)\b/i
     const imageDescriptorTerms =
@@ -166,7 +129,6 @@ export async function POST(request: Request) {
     const webSearchAllowed = useWebSearchEffective && !hasInputImages
     const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
 
-    // If user attached images and is not explicitly asking to generate/edit an image, do vision analysis
     if (!forceImageGeneration && hasInputImages && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
       const encoder = new TextEncoder()
       const visionTools: any[] = []
@@ -176,7 +138,7 @@ export async function POST(request: Request) {
       const responseCreateParams: any = {
         model: selectedModel,
         instructions: INSTRUCTIONS_MARKDOWN,
-        reasoning: ({ effort: 'high' as any, summary: 'auto' } as any),
+        reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
         input: [
           {
             role: 'user',
@@ -201,7 +163,6 @@ export async function POST(request: Request) {
                 controller.enqueue(encoder.encode((event as any).delta))
                 continue
               }
-              // Forward any reasoning deltas as <thinking:...> tokens for the client UI
               if (type.startsWith('response.reasoning') && (event as any)?.delta) {
                 controller.enqueue(encoder.encode(`\n<thinking:${String((event as any).delta)}>`))
                 continue
@@ -214,7 +175,6 @@ export async function POST(request: Request) {
             try {
               const hasFinal = typeof (stream as any).final === 'function'
               const finalResponse = hasFinal ? await (stream as any).final() : undefined
-              // Append sources/citations if present
               try {
                 const outputs: any[] = (finalResponse && (finalResponse as any).output) || []
                 const citations: { url?: string; title?: string }[] = []
@@ -223,7 +183,6 @@ export async function POST(request: Request) {
                   if (citations.some((c) => c.url === url)) return
                   citations.push({ url, title })
                 }
-                // Extract reasoning summary if present
                 let reasoningSummaryText: string | undefined
                 for (const out of outputs) {
                   if (out?.type === 'message') {
@@ -287,7 +246,6 @@ export async function POST(request: Request) {
       Boolean(maskDataUrl)
 
     if (wantsImage) {
-      // Prefer Responses API image tool for generation and reference-image edits without mask
       try {
         const encoder = new TextEncoder()
         const toolOptions: any = {
@@ -302,14 +260,11 @@ export async function POST(request: Request) {
           moderation: 'auto',
         }
 
-        // Route to Image API automatically when edits/mask or reference images are present
         if (maskDataUrl) {
-          // Use Image API generate/edit (non-streaming). Compose and return a streaming-like response with final image token.
           const readable = new ReadableStream<Uint8Array>({
             async start(controller) {
               try {
                 const result = await (async () => {
-                  // Edit when mask is provided or when multiple input images are present
                   if (maskDataUrl) {
                     const maskFile = maskDataUrl
                       ? await dataUrlToFile(maskDataUrl, 'mask.png')
@@ -331,7 +286,6 @@ export async function POST(request: Request) {
 
                     return await client.images.edit(editParams)
                   }
-                  // Fallback generate (no mask, Image API)
                   const genParams: any = {
                     model: 'gpt-image-1',
                     prompt: lastUserMessage,
@@ -372,12 +326,10 @@ export async function POST(request: Request) {
           })
         }
 
-        // Build structured input if reference images are provided
-        const hasInputImages = Array.isArray(inputImages) && inputImages.length > 0
         const responseCreateParams: any = {
           model: selectedModel,
           instructions: INSTRUCTIONS_MARKDOWN,
-          reasoning: ({ effort: 'high' as any, summary: 'auto' } as any),
+          reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
           tools: [toolOptions as any],
           previous_response_id: previousResponseId ?? undefined,
         }
@@ -408,7 +360,6 @@ export async function POST(request: Request) {
                   if (b64) controller.enqueue(encoder.encode(`\n<image_partial:data:image/png;base64,${b64}>\n`))
                   continue
                 }
-                // Forward any reasoning deltas as <thinking:...> tokens for the client UI
                 if (type.startsWith('response.reasoning') && (event as any)?.delta) {
                   controller.enqueue(encoder.encode(`\n<thinking:${String((event as any).delta)}>`))
                   continue
@@ -423,7 +374,6 @@ export async function POST(request: Request) {
               const message = err instanceof Error ? err.message : 'Unknown error'
               controller.enqueue(encoder.encode(`\n[error] ${message}\n`))
             } finally {
-              // Emit final image(s) from the completed response output
               try {
                 const hasFinal = typeof (stream as any).final === 'function'
                 const finalResponse = hasFinal ? await (stream as any).final() : undefined
@@ -431,7 +381,6 @@ export async function POST(request: Request) {
                 const imageCalls = Array.isArray(outputs)
                   ? outputs.filter((o: any) => o && o.type === 'image_generation_call')
                   : []
-                // Extract reasoning summary if present
                 let reasoningSummaryText: string | undefined
                 for (const call of imageCalls) {
                   const base64: unknown = (call && (call as any).result) as unknown
@@ -447,7 +396,6 @@ export async function POST(request: Request) {
                     )
                   }
                 }
-                // scan full outputs for reasoning summary
                 for (const out of outputs) {
                   if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
                     for (const s of out.summary) {
@@ -495,7 +443,7 @@ export async function POST(request: Request) {
     if (webSearchAllowed) includeList.push('web_search_call.results')
     const stream = await client.responses.stream({
       model: selectedModel,
-      reasoning: ({ effort: 'high' as any, summary: 'auto' } as any),
+      reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
       instructions: INSTRUCTIONS_MARKDOWN,
       input: prompt,
       tools: toolList as any,
@@ -514,7 +462,6 @@ export async function POST(request: Request) {
               controller.enqueue(encoder.encode((event as any).delta))
               continue
             }
-            // Forward any reasoning deltas as <thinking:...> tokens for the client UI
             if (type.startsWith('response.reasoning') && (event as any)?.delta) {
               controller.enqueue(encoder.encode(`\n<thinking:${String((event as any).delta)}>`))
               continue
@@ -524,7 +471,6 @@ export async function POST(request: Request) {
           const message = error instanceof Error ? error.message : 'Unknown error'
           controller.enqueue(encoder.encode(`\n[error] ${message}`))
         } finally {
-          // Try to finalize, then emit any generated images and reasoning summary at the end
           try {
             const hasFinal = typeof (stream as any).final === 'function'
             const finalResponse = hasFinal ? await (stream as any).final() : undefined
@@ -536,15 +482,12 @@ export async function POST(request: Request) {
             for (const call of imageCalls) {
               const base64: unknown = (call && call.result) as unknown
               if (typeof base64 === 'string' && base64.length > 0) {
-                // Emit as data URL (angle-bracket sentinel) so the client can render it inline
                 controller.enqueue(
                   encoder.encode(`\n<image:data:image/png;base64,${base64}>\n`)
                 )
               }
             }
-            // Extract reasoning summary if present
             let reasoningSummaryText: string | undefined
-            // Append sources/citations if present
             try {
               const outputsAny: any[] = (finalResponse && (finalResponse as any).output) || []
               const citations: { url?: string; title?: string }[] = []
@@ -592,7 +535,6 @@ export async function POST(request: Request) {
             if (typeof respId === 'string' && respId) {
               controller.enqueue(encoder.encode(`\n<response_id:${respId}>\n`))
             }
-            // If response was incomplete due to max tokens, emit a marker
             const status: unknown = (finalResponse as any)?.status
             const incompleteReason: unknown = (finalResponse as any)?.incomplete_details?.reason
             if (status === 'incomplete' && typeof incompleteReason === 'string' && incompleteReason) {

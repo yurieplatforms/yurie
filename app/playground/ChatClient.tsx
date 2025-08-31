@@ -1,12 +1,321 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
+import { ArrowUp, Stop, Paperclip, X } from '@phosphor-icons/react'
+import { AnimatePresence, motion } from 'motion/react'
+import clsx, { type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
 
 type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
+}
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+const PromptInputContext = createContext<any>(null)
+function usePromptInput() {
+  return useContext(PromptInputContext)
+}
+
+function PromptInput({ className, isLoading = false, maxHeight = 240, value, onValueChange, onSubmit, children }: any) {
+  const [internalValue, setInternalValue] = useState(value || '')
+  const handleChange = (newValue: string) => {
+    setInternalValue(newValue)
+    onValueChange?.(newValue)
+  }
+  return (
+    <PromptInputContext.Provider
+      value={{ isLoading, value: value ?? internalValue, setValue: onValueChange ?? handleChange, maxHeight, onSubmit }}
+    >
+      <div className={cn('bg-white dark:bg-black rounded-3xl border border-neutral-200 dark:border-neutral-800 p-2 shadow-xs', className)}>
+        {children}
+      </div>
+    </PromptInputContext.Provider>
+  )
+}
+
+function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ...props }: any) {
+  const { value, setValue, maxHeight, onSubmit } = usePromptInput()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    if (disableAutosize || !textareaRef.current) return
+    textareaRef.current.style.height = 'auto'
+    textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+  }, [value, disableAutosize])
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      onSubmit?.()
+    }
+    onKeyDown?.(e)
+  }
+  const maxHeightStyle = typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight
+  return (
+    <textarea
+      ref={textareaRef}
+      autoFocus
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onKeyDown={handleKeyDown}
+      className={cn(
+        'text-neutral-900 dark:text-neutral-100 min-h-[44px] w-full resize-none border-none bg-transparent shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
+        'overflow-y-auto',
+        className
+      )}
+      style={{ maxHeight: maxHeightStyle }}
+      rows={1}
+      
+      {...props}
+    />
+  )
+}
+
+function PromptInputActions({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn('flex items-center gap-2', className)} {...props}>
+      {children}
+    </div>
+  )
+}
+
+function PromptInputAction({ tooltip, children, className }: { className?: string, tooltip: React.ReactNode, children: React.ReactNode } & React.ComponentProps<any>) {
+  return (
+    <div title={tooltip} className={className}>
+      {children}
+    </div>
+  )
+}
+
+function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => void }) {
+  const [isRemoving, setIsRemoving] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const isLikelyImage = useMemo(() => {
+    const mime = (file.type || '').toLowerCase()
+    if (mime.startsWith('image/')) return true
+    const ext = (file.name.split('.').pop() || '').toLowerCase()
+    const imageExts = ['png','jpg','jpeg','gif','webp','bmp','svg','heic','heif','tif','tiff','avif']
+    return imageExts.includes(ext)
+  }, [file])
+  const hasTriedDataUrlRef = useRef(false)
+  const loadDataUrlFallback = useCallback(() => {
+    if (hasTriedDataUrlRef.current) return
+    hasTriedDataUrlRef.current = true
+    try {
+      const reader = new FileReader()
+      reader.onload = () => setPreviewUrl(String(reader.result))
+      reader.readAsDataURL(file)
+    } catch {}
+  }, [file])
+  useEffect(() => {
+    if (!isLikelyImage) return
+    const url = URL.createObjectURL(file)
+    setPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file, isLikelyImage])
+  const handleRemove = () => {
+    setIsRemoving(true)
+    onRemove(file)
+  }
+  return (
+    <div className="relative mr-2 mb-0 flex items-center">
+      <div className="bg-white dark:bg-black hover:bg-neutral-50 dark:hover:bg-neutral-900 border-neutral-200 dark:border-neutral-800 flex w-full items-center gap-3 rounded-2xl border p-2 pr-3 transition-colors">
+        <div className="bg-neutral-200 dark:bg-neutral-700 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md">
+          {isLikelyImage ? (
+            previewUrl ? (
+              <img src={previewUrl} alt={file.name} className="h-full w-full object-cover" loading="eager" decoding="async" onError={loadDataUrlFallback} />
+            ) : null
+          ) : (
+            <div className="text-center text-xs text-gray-400">{file.name.split('.').pop()?.toUpperCase()}</div>
+          )}
+        </div>
+        <div className="flex flex-col overflow-hidden">
+          <span className="truncate text-xs font-medium">{file.name}</span>
+          <span className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)}kB</span>
+        </div>
+      </div>
+      {!isRemoving ? (
+        <button
+          type="button"
+          onClick={handleRemove}
+          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 shadow-none transition-colors"
+          aria-label="Remove file"
+        >
+          <X className="size-3" />
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
+function FileList({ files, onFileRemove }: { files: File[]; onFileRemove: (file: File) => void }) {
+  const TRANSITION = { type: 'spring', duration: 0.2, bounce: 0 } as const
+  return (
+    <AnimatePresence initial={false}>
+      {files.length > 0 && (
+        <motion.div
+          key="files-list"
+          initial={{ height: 0 }}
+          animate={{ height: 'auto' }}
+          exit={{ height: 0 }}
+          transition={TRANSITION}
+          className="overflow-hidden"
+        >
+          <div className="flex flex-row overflow-x-auto pl-3">
+            <AnimatePresence initial={false}>
+              {files.map((file) => (
+                <motion.div
+                  key={`${file.name}-${file.size}-${file.lastModified}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: 180 }}
+                  exit={{ width: 0 }}
+                  transition={TRANSITION}
+                  className="relative shrink-0 overflow-hidden pt-2"
+                >
+                  <FileItem key={`${file.name}-${file.size}-${file.lastModified}`} file={file} onRemove={onFileRemove} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const inputId = useId()
+  return (
+    <>
+      <input
+        ref={inputRef}
+        id={inputId}
+        type="file"
+        multiple
+        className="sr-only"
+        onChange={e => {
+          const files = Array.from(e.target.files ?? [])
+          onFileUpload(files)
+          if (inputRef.current) inputRef.current.value = ''
+        }}
+      />
+      <label
+        htmlFor={inputId}
+        role="button"
+        tabIndex={0}
+        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black cursor-pointer"
+        aria-label="Add files"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            inputRef.current?.click()
+          }
+        }}
+      >
+        <Paperclip className="size-4" weight="bold" aria-hidden="true" />
+      </label>
+    </>
+  )
+}
+
+type ChatInputProps = {
+  value: string
+  onValueChange: (value: string) => void
+  onSend: () => void
+  isSubmitting?: boolean
+  files: File[]
+  onFileUpload: (files: File[]) => void
+  onFileRemove: (file: File) => void
+  stop: () => void
+  status?: 'submitted' | 'streaming' | 'ready' | 'error'
+}
+function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUpload, onFileRemove, stop, status }: ChatInputProps) {
+  const isOnlyWhitespace = (text: string) => !/[^\s]/.test(text)
+
+  const handleSend = useCallback(() => {
+    if (isSubmitting) return
+    if (status === 'streaming' || status === 'submitted') {
+      stop()
+      return
+    }
+    onSend()
+  }, [isSubmitting, onSend, status, stop])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (isSubmitting) {
+      e.preventDefault()
+      return
+    }
+    if (e.key === 'Enter' && (status === 'streaming' || status === 'submitted')) {
+      e.preventDefault()
+      return
+    }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      if (isOnlyWhitespace(value) && files.length === 0) return
+      e.preventDefault()
+      onSend()
+    }
+  }, [files.length, isSubmitting, onSend, status, value])
+
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+    const hasImageContent = Array.from(items).some((item) => item.type.startsWith('image/'))
+    if (hasImageContent) {
+      const imageFiles: File[] = []
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile()
+          if (file) {
+            const newFile = new File([file], `pasted-image-${Date.now()}.${file.type.split('/')[1]}`, { type: file.type })
+            imageFiles.push(newFile)
+          }
+        }
+      }
+      if (imageFiles.length > 0) onFileUpload(imageFiles)
+    }
+  }, [onFileUpload])
+
+  return (
+    <div className="relative flex w-full flex-col gap-4">
+      <div className="relative order-2 pb-3 sm:pb-4 md:order-1">
+        <PromptInput className="relative z-10 w-full p-0 pt-1 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange}>
+          <FileList files={files} onFileRemove={onFileRemove} />
+          <PromptInputTextarea
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            placeholder="Ask anything"
+            className="min-h-[44px] pt-3 pl-4 text-base leading-[1.3] sm:text-base md:text-base"
+          />
+          <PromptInputActions className="mt-3 w-full justify-between p-2">
+            <div className="flex flex-wrap gap-2">
+              <ButtonFileUpload onFileUpload={onFileUpload} />
+            </div>
+            <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
+              <button
+                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white"
+                disabled={
+                  status !== 'streaming' &&
+                  status !== 'submitted' &&
+                  (isSubmitting || (isOnlyWhitespace(value) && files.length === 0))
+                }
+                type="button"
+                onClick={handleSend}
+                aria-label={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send message'}
+              >
+                {status === 'streaming' || status === 'submitted' ? <Stop className="size-4" weight="bold" aria-hidden="true" /> : <ArrowUp className="size-4" weight="bold" aria-hidden="true" />}
+              </button>
+            </PromptInputAction>
+          </PromptInputActions>
+        </PromptInput>
+      </div>
+    </div>
+  )
 }
 
 export default function ChatClient() {
@@ -14,23 +323,13 @@ export default function ChatClient() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const outputRef = useRef<HTMLDivElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [inputImages, setInputImages] = useState<string[]>([])
+  const [files, setFiles] = useState<File[]>([])
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
   const [thinkingOpen, setThinkingOpen] = useState<boolean>(false)
   const [thinkingText, setThinkingText] = useState<string>('')
-  // Advanced web search settings removed; server enforces sources and high context
+  const [status, setStatus] = useState<'submitted' | 'streaming' | 'ready' | 'error'>('ready')
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-  
-  
-  
-
-  const placeholder = useMemo(
-    () => 'Ask me anything...',
-    []
-  )
-
-  // Configure a markdown parser with code highlighting once
   const md = useMemo(() => {
     const instance = new Marked({ gfm: true, breaks: true })
     instance.use({
@@ -58,7 +357,6 @@ export default function ChatClient() {
     return instance
   }, [])
 
-  // Attach a delegated handler for copy buttons inside streamed messages
   useEffect(() => {
     const root = outputRef.current
     if (!root) return
@@ -82,32 +380,98 @@ export default function ChatClient() {
     return () => root.removeEventListener('click', handle)
   }, [])
 
-  // Very small sanitizer to prevent injected HTML from altering the page
+  function formatThinkingForMarkdown(input: string): string {
+    if (!input) return input
+    const normalized = input.replace(/\r\n?/g, '\n')
+    const lines = normalized.split('\n')
+    const result: string[] = []
+    let inFence = false
+
+    const isHeadingCandidate = (text: string): boolean => {
+      const trimmed = text.trim()
+      if (trimmed.length < 8 || trimmed.length > 80) return false
+      if (/[.!?;:]\s*$/.test(trimmed)) return false
+      if (/^[-*+]\s+/.test(trimmed)) return false
+      if (/^\d+\.\s+/.test(trimmed)) return false
+      if (/^>\s+/.test(trimmed)) return false
+      if (/^#{1,6}\s/.test(trimmed)) return false
+      return /^[A-Z][A-Za-z0-9'’()\[\]\/,&\- ]+$/.test(trimmed)
+    }
+
+    const boldenLabels = (line: string): string =>
+      line.replace(/(^|\n)([A-Z][A-Za-z\- ]{2,40}):\s/g, (_m, p1, p2) => `${p1}**${p2}:** `)
+
+    const promoteInlineHeadings = (line: string): string => {
+      const inlineHeadingRe = /([.!?;:])\s*([A-Z][A-Za-z0-9'’()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
+      const dashHeadingRe = /(\s[\-–—]\s)\s*([A-Z][A-Za-z0-9'’()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
+      const gluedHeadingRe = /([a-z])([A-Z][a-zA-Z]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
+      let out = line.replace(inlineHeadingRe, (_m, p1, p2) => `${p1}\n\n### ${p2}\n\n`)
+      out = out.replace(dashHeadingRe, (_m, _sep, p2) => `\n\n### ${p2}\n\n`)
+      out = out.replace(gluedHeadingRe, (_m, prev, title) => `${prev}\n\n### ${title}\n\n`)
+      return out
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      const trimmed = line.trim()
+
+      if (/^```/.test(trimmed)) {
+        inFence = !inFence
+        result.push(line)
+        continue
+      }
+
+      if (!inFence) {
+        const withInlineHeadings = promoteInlineHeadings(line)
+        if (withInlineHeadings.includes('\n\n### ')) {
+          const chunks = withInlineHeadings.split('\n')
+          for (const chunk of chunks) {
+            const ctrim = chunk.trim()
+            if (ctrim.startsWith('### ')) {
+              if (result.length > 0 && result[result.length - 1].trim() !== '') {
+                result.push('')
+              }
+              result.push(ctrim)
+            } else if (ctrim.length === 0) {
+              result.push('')
+            } else {
+              result.push(boldenLabels(chunk))
+            }
+          }
+          continue
+        }
+        if (isHeadingCandidate(trimmed)) {
+          if (result.length > 0 && result[result.length - 1].trim() !== '') {
+            result.push('')
+          }
+          result.push(`### ${trimmed}`)
+          continue
+        }
+        result.push(boldenLabels(line))
+        continue
+      }
+
+      result.push(line)
+    }
+
+    return result.join('\n')
+  }
+
   function sanitizeHtml(html: string): string {
     if (!html) return html
-    // Remove dangerous whole tags (and their content where applicable)
     const blockedContentTags = ['script', 'style', 'title', 'iframe', 'object', 'embed', 'noscript']
     const contentTagPattern = new RegExp(`<\\s*(${blockedContentTags.join('|')})\\b[\\s\\S]*?<\\/\\s*\\1\\s*>`, 'gi')
     html = html.replace(contentTagPattern, '')
-
-    // Remove dangerous void/standalone tags
     const blockedVoidTags = ['link', 'meta', 'base', 'form', 'input', 'select', 'option', 'textarea', 'frame', 'frameset']
     const voidTagPattern = new RegExp(`<\\s*(${blockedVoidTags.join('|')})\\b[^>]*>`, 'gi')
     html = html.replace(voidTagPattern, '')
-
-    // Strip inline event handlers like onclick="..."
     html = html.replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-
-    // Neutralize javascript: URLs in href/src
     html = html.replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"')
 
     return html
   }
 
   function renderMessageContent(role: 'user' | 'assistant', content: string) {
-    // Supported image tokens:
-    // 1) <image:data:image/<type>;base64,...>
-    // 2) Legacy square-bracket token with data URL
     const legacyBracketPattern = "\\[" + "data:image" + "\\/[a-zA-Z]+;base64,[^\\]]+" + "\\]"
     const pattern = new RegExp(
       `<image_partial:([^>]+)>|<image:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|${legacyBracketPattern}`,
@@ -160,11 +524,8 @@ export default function ChatClient() {
       parts.push({ type: 'text', value: content.slice(lastIndex) })
     }
 
-    // All <thinking:...> tokens are stripped during streaming; nothing to do here
-
     let labelInjected = false
 
-    // Coalesce partial frames: render only the latest partial until a final image appears
     const latestPartialIndex = (() => {
       for (let i = parts.length - 1; i >= 0; i--) {
         const p = parts[i]
@@ -210,7 +571,6 @@ export default function ChatClient() {
               />
             )
           }
-          // image part
           if (p.type === 'image') {
             if (!labelInjected) {
               labelInjected = true
@@ -225,7 +585,6 @@ export default function ChatClient() {
                 </div>
               )
             }
-            // Only render latest partial image; once a final image arrives, ignore older partials
             const isPartial = p.partial === true
             const isLatestPartial = latestPartialIndex === i
             if (isPartial && (!isLatestPartial || hasFinalImage)) {
@@ -265,10 +624,7 @@ export default function ChatClient() {
     )
   }
 
-  // No explicit tool selection; server auto-selects tools
-
-  async function sendMessage(event: React.FormEvent) {
-    event.preventDefault()
+  async function handleSend() {
     const trimmed = input.trim()
     if (!trimmed || isLoading) return
     const userMsg: ChatMessage = { role: 'user', content: trimmed }
@@ -276,11 +632,22 @@ export default function ChatClient() {
     setMessages(nextMessages)
     setInput('')
     setIsLoading(true)
+    setStatus('submitted')
 
     try {
-      // reset thinking on new request
       setThinkingText('')
-      // Strip embedded base64 images before sending to the server to keep payloads small
+      const imageFiles = files.filter((f) => f.type.startsWith('image/'))
+      const inputImages: string[] = await Promise.all(
+        imageFiles.map(
+          (f) =>
+            new Promise<string>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(String(reader.result))
+              reader.onerror = () => reject(reader.error)
+              reader.readAsDataURL(f)
+            })
+        )
+      )
       const stripImageData = (text: string): string => {
         const angleTag = /<image:[^>]+>/gi
         const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
@@ -291,6 +658,8 @@ export default function ChatClient() {
           .replace(bareDataUrl, '[image omitted]')
       }
       const payloadMessages = nextMessages.map((m) => ({ ...m, content: stripImageData(m.content) }))
+      const ac = new AbortController()
+      abortControllerRef.current = ac
       const res = await fetch('/api/playground', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -298,14 +667,8 @@ export default function ChatClient() {
           messages: payloadMessages,
           inputImages,
           previousResponseId: lastResponseId,
-          // Advanced options removed; server uses defaults
-          webSearchOptions: undefined,
-          useWebSearch: undefined,
-          forceImageGeneration: undefined,
-          
-          
-          
         }),
+        signal: ac.signal,
       })
 
       if (!res.ok || !res.body) {
@@ -316,15 +679,13 @@ export default function ChatClient() {
       const decoder = new TextDecoder()
       let assistantText = ''
 
-      // Add placeholder assistant message to preserve previous assistant turns
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
+      setStatus('streaming')
 
-      // Stream chunks
       while (true) {
         const { value, done } = await reader.read()
         if (done) break
         const chunk = decoder.decode(value, { stream: true })
-        // Peel out thinking tokens and accumulate separately without showing in assistant message
         const thoughtRegex = /<thinking:([^>]+)>/g
         let cleanChunk = chunk
         let tm: RegExpExecArray | null
@@ -334,7 +695,6 @@ export default function ChatClient() {
         }
         cleanChunk = cleanChunk.replace(thoughtRegex, '')
         assistantText += cleanChunk
-        // Capture response_id for follow-ups
         const idMatch = /<response_id:([^>]+)>/g.exec(cleanChunk)
         if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
         setMessages((prev) => {
@@ -347,13 +707,11 @@ export default function ChatClient() {
           }
           return updated
         })
-        // Keep view scrolled
         queueMicrotask(() => {
           outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight })
         })
       }
 
-      // Flush any remaining decoded bytes
       const finalChunk = decoder.decode()
       if (finalChunk) {
         const thoughtRegex = /<thinking:([^>]+)>/g
@@ -382,10 +740,21 @@ export default function ChatClient() {
         ...prev,
         { role: 'assistant', content: `There was an error: ${message}` },
       ])
+      setStatus('error')
     } finally {
       setIsLoading(false)
+      setStatus('ready')
+      abortControllerRef.current = null
     }
   }
+
+  const stop = useCallback(() => {
+    try {
+      abortControllerRef.current?.abort()
+    } catch {}
+    setIsLoading(false)
+    setStatus('ready')
+  }, [])
 
   return (
     <section>
@@ -417,8 +786,8 @@ export default function ChatClient() {
                       {thinkingOpen && (
                         <div className="mt-1 max-h-40 overflow-auto rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-2">
                           <div
-                            className="prose-message dark:prose-invert font-sans text-xs"
-                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(thinkingText) as string) }}
+                            className="prose-message prose-thinking dark:prose-invert font-sans text-xs leading-5"
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(formatThinkingForMarkdown(thinkingText)) as string) }}
                           />
                         </div>
                       )}
@@ -432,109 +801,18 @@ export default function ChatClient() {
             })
           )}
         </div>
-        <form onSubmit={sendMessage} className="mt-3 flex items-center gap-2 flex-wrap" aria-busy={isLoading}>
-          {/* Tool selector removed; server auto-selects tools */}
-          <input
-            className="stable-input no-focus-outline outline-none flex-1 min-w-[12rem] rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 transform-gpu will-change-transform placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
-            placeholder={placeholder}
+        <div className="mt-3" aria-busy={isLoading}>
+          <ChatInput
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onValueChange={setInput}
+            onSend={handleSend}
+            isSubmitting={isLoading}
+            files={files}
+            onFileUpload={(newFiles) => setFiles((prev) => [...prev, ...newFiles])}
+            onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
+            stop={stop}
+            status={status}
           />
-          <button
-            type="submit"
-            aria-label="Send message"
-            className="rounded border border-neutral-200 dark:border-neutral-800 bg-white text-black dark:bg-black dark:text-white h-10 w-10 flex items-center justify-center"
-          >
-            {isLoading ? (
-              <div
-                className="h-5 w-5 rounded-full border-2 border-current border-t-transparent animate-spin"
-                aria-hidden="true"
-              />
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="h-5 w-5 text-[#7f91e0]"
-                aria-hidden="true"
-              >
-                <path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z" />
-              </svg>
-            )}
-          </button>
-        </form>
-        <div className="mt-2 grid grid-cols-1 gap-2 text-xs">
-          {/* Image attachments */}
-          <div className="flex flex-col gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*"
-              className="sr-only"
-              onChange={async (e) => {
-                const files = Array.from(e.target.files || [])
-                const urls: string[] = []
-                for (const f of files) {
-                  const dataUrl = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader()
-                    reader.onload = () => resolve(String(reader.result))
-                    reader.onerror = () => reject(reader.error)
-                    reader.readAsDataURL(f)
-                  })
-                  urls.push(dataUrl)
-                }
-                setInputImages(urls)
-              }}
-            />
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1 flex items-center justify-between rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 text-sm text-left"
-                aria-label="Choose image files"
-              >
-                <span className="truncate text-neutral-600 dark:text-neutral-300">
-                  {inputImages.length > 0 ? `${inputImages.length} image(s) selected` : 'Choose images...'}
-                </span>
-                <span className="shrink-0 rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-700 dark:text-neutral-200">
-                  Browse
-                </span>
-              </button>
-              {inputImages.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setInputImages([])}
-                  className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 text-sm"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            {inputImages.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {inputImages.map((src, idx) => (
-                  <div key={idx} className="relative">
-                    <img
-                      src={src}
-                      alt={`Selected ${idx + 1}`}
-                      className="h-16 w-16 object-cover rounded border border-neutral-200 dark:border-neutral-800"
-                    />
-                    <button
-                      type="button"
-                      aria-label="Remove image"
-                      onClick={() =>
-                        setInputImages((prev) => prev.filter((_, i) => i !== idx))
-                      }
-                      className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </section>
