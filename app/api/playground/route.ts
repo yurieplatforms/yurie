@@ -79,13 +79,18 @@ export async function POST(request: Request) {
         .replace(bareDataUrl, '[image omitted]')
     }
 
-    // Strong system rules to keep answers concise and code-only when appropriate
+    // Strong system rules to keep answers consistent and Markdown-formatted
     const RULES = [
       'SYSTEM RULES:',
       '- You are Yurie, a helpful AI assistant specializing in deep research, writing, storytelling and coding.',
+      '- Always format responses in Markdown. Use headings (##, ###) to structure content, bold text for key terms, and bullet/numbered lists when helpful.',
+      '- For code, use fenced Markdown code blocks with a language tag.',
+      '- Avoid raw HTML unless explicitly requested; prefer Markdown.',
       '- Do NOT scaffold entire apps.',
-      '- For code, output valid fenced Markdown.',
     ].join('\n')
+
+    const INSTRUCTIONS_MARKDOWN =
+      'You are Yurie, a creative and helpful AI assistant. Always format your responses in Markdown with clear hierarchy (##, ###), use bold for key points, and bullet/numbered lists when useful. For code, use fenced Markdown blocks with a language tag. Avoid raw HTML.'
 
     const promptRaw =
       RULES +
@@ -102,11 +107,10 @@ export async function POST(request: Request) {
         ? promptRaw.slice(promptRaw.length - MAX_PROMPT_CHARS)
         : promptRaw
 
-    const selectedModel = typeof model === 'string' && model.trim() ? model : 'gpt-5'
-    const useWebSearchEffective =
-      typeof useWebSearch === 'boolean'
-        ? useWebSearch
-        : String(process.env.ENABLE_WEB_SEARCH || '').toLowerCase() === 'true'
+    // Force default model to gpt-5 regardless of client input
+    const selectedModel = 'gpt-5'
+    // Always allow web search tool; the model will decide when to use it
+    const useWebSearchEffective = true
 
     // Build GA web_search tool config and helpers
     const parseEnvDomains = (value: unknown): string[] => {
@@ -171,9 +175,8 @@ export async function POST(request: Request) {
       }
       const responseCreateParams: any = {
         model: selectedModel,
-        reasoning: reasoningEffort
-          ? ({ effort: reasoningEffort, summary: 'auto' } as any)
-          : ({ summary: 'auto' } as any),
+        instructions: INSTRUCTIONS_MARKDOWN,
+        reasoning: ({ effort: 'high' as any, summary: 'auto' } as any),
         input: [
           {
             role: 'user',
@@ -373,10 +376,8 @@ export async function POST(request: Request) {
         const hasInputImages = Array.isArray(inputImages) && inputImages.length > 0
         const responseCreateParams: any = {
           model: selectedModel,
-          instructions: 'You are Yurie, generate an image for the user request.',
-          reasoning: reasoningEffort
-            ? ({ effort: reasoningEffort, summary: 'auto' } as any)
-            : ({ summary: 'auto' } as any),
+          instructions: INSTRUCTIONS_MARKDOWN,
+          reasoning: ({ effort: 'high' as any, summary: 'auto' } as any),
           tools: [toolOptions as any],
           previous_response_id: previousResponseId ?? undefined,
         }
@@ -494,10 +495,8 @@ export async function POST(request: Request) {
     if (webSearchAllowed) includeList.push('web_search_call.results')
     const stream = await client.responses.stream({
       model: selectedModel,
-      reasoning: reasoningEffort
-        ? ({ effort: reasoningEffort, summary: 'auto' } as any)
-        : ({ effort: 'high' as any, summary: 'auto' } as any),
-      instructions: 'You are Yurie, a creative and helpful AI assistant.',
+      reasoning: ({ effort: 'high' as any, summary: 'auto' } as any),
+      instructions: INSTRUCTIONS_MARKDOWN,
       input: prompt,
       tools: toolList as any,
       previous_response_id: previousResponseId ?? undefined,

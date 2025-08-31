@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ModelSelector } from '../components/model-selector'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
 
@@ -14,20 +13,10 @@ export default function ChatClient() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [model, setModel] = useState<string>('gpt-5')
   const outputRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [inputImages, setInputImages] = useState<string[]>([])
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
-  const [useWebSearch, setUseWebSearch] = useState<boolean>(
-    String(process.env.NEXT_PUBLIC_ENABLE_WEB_SEARCH || '').toLowerCase() === 'true'
-  )
-  const defaultWeb = String(process.env.NEXT_PUBLIC_ENABLE_WEB_SEARCH || '').toLowerCase() === 'true'
-  type ReasoningEffort = 'low' | 'medium' | 'high'
-  const [selectedTool, setSelectedTool] = useState<'file' | 'image' | 'web' | 'r_low' | 'r_medium' | 'r_high'>(
-    defaultWeb ? 'web' : 'r_high'
-  )
-  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('high')
   const [thinkingOpen, setThinkingOpen] = useState<boolean>(false)
   const [thinkingText, setThinkingText] = useState<string>('')
   // Advanced web search settings removed; server enforces sources and high context
@@ -276,10 +265,7 @@ export default function ChatClient() {
     )
   }
 
-  // Keep web search flag in sync with the selected tool
-  useEffect(() => {
-    setUseWebSearch(selectedTool === 'web')
-  }, [selectedTool])
+  // No explicit tool selection; server auto-selects tools
 
   async function sendMessage(event: React.FormEvent) {
     event.preventDefault()
@@ -310,14 +296,12 @@ export default function ChatClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: payloadMessages,
-          model,
           inputImages,
-          useWebSearch,
           previousResponseId: lastResponseId,
           // Advanced options removed; server uses defaults
           webSearchOptions: undefined,
-          reasoningEffort,
-          forceImageGeneration: selectedTool === 'image',
+          useWebSearch: undefined,
+          forceImageGeneration: undefined,
           
           
           
@@ -449,34 +433,7 @@ export default function ChatClient() {
           )}
         </div>
         <form onSubmit={sendMessage} className="mt-3 flex items-center gap-2 flex-wrap" aria-busy={isLoading}>
-          <ModelSelector
-            value={model}
-            onChange={setModel}
-          />
-          <select
-            className="appearance-none no-native-arrow select-chevron no-focus-outline outline-none rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-2 h-10 text-sm"
-            value={selectedTool}
-            onChange={(e) => {
-              const next = e.target.value as 'file' | 'image' | 'web' | 'r_low' | 'r_medium' | 'r_high'
-              setSelectedTool(next)
-              if (next !== 'file' && next !== 'image') {
-                setInputImages([])
-              }
-              if (next === 'r_low' || next === 'r_medium' || next === 'r_high') {
-                setReasoningEffort(next === 'r_low' ? 'low' : next === 'r_medium' ? 'medium' : 'high')
-              }
-            }}
-            aria-label="Select tool"
-          >
-            <option value="r_low">Reasoning: Low</option>
-            <option value="r_medium">Reasoning: Medium</option>
-            <option value="r_high">Reasoning: High</option>
-            <option value="file">Analyze images</option>
-            <option value="image">Image generation</option>
-            <option value="web">Web search</option>
-          </select>
-          {/* image routing and follow-up toggles removed */}
-          {/* Advanced search settings removed */}
+          {/* Tool selector removed; server auto-selects tools */}
           <input
             className="stable-input no-focus-outline outline-none flex-1 min-w-[12rem] rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 transform-gpu will-change-transform placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
             placeholder={placeholder}
@@ -507,89 +464,77 @@ export default function ChatClient() {
           </button>
         </form>
         <div className="mt-2 grid grid-cols-1 gap-2 text-xs">
-          {(selectedTool === 'r_low' || selectedTool === 'r_medium' || selectedTool === 'r_high') && (
-            <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-3 py-2 text-neutral-700 dark:text-neutral-300">
-              Reasoning effort: {selectedTool === 'r_low' ? 'Low' : selectedTool === 'r_medium' ? 'Medium' : 'High'}
-            </div>
-          )}
-          {(selectedTool === 'file' || selectedTool === 'image') && (
-            <div className="flex flex-col gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*"
-                className="sr-only"
-                onChange={async (e) => {
-                  const files = Array.from(e.target.files || [])
-                  const urls: string[] = []
-                  for (const f of files) {
-                    const dataUrl = await new Promise<string>((resolve, reject) => {
-                      const reader = new FileReader()
-                      reader.onload = () => resolve(String(reader.result))
-                      reader.onerror = () => reject(reader.error)
-                      reader.readAsDataURL(f)
-                    })
-                    urls.push(dataUrl)
-                  }
-                  if (urls.length > 0 && selectedTool !== 'image') setSelectedTool('file')
-                  setInputImages(urls)
-                }}
-              />
-              <div className="flex items-center gap-2">
+          {/* Image attachments */}
+          <div className="flex flex-col gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              className="sr-only"
+              onChange={async (e) => {
+                const files = Array.from(e.target.files || [])
+                const urls: string[] = []
+                for (const f of files) {
+                  const dataUrl = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader()
+                    reader.onload = () => resolve(String(reader.result))
+                    reader.onerror = () => reject(reader.error)
+                    reader.readAsDataURL(f)
+                  })
+                  urls.push(dataUrl)
+                }
+                setInputImages(urls)
+              }}
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 flex items-center justify-between rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 text-sm text-left"
+                aria-label="Choose image files"
+              >
+                <span className="truncate text-neutral-600 dark:text-neutral-300">
+                  {inputImages.length > 0 ? `${inputImages.length} image(s) selected` : 'Choose images...'}
+                </span>
+                <span className="shrink-0 rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-700 dark:text-neutral-200">
+                  Browse
+                </span>
+              </button>
+              {inputImages.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex-1 flex items-center justify-between rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 text-sm text-left"
-                  aria-label="Choose image files"
+                  onClick={() => setInputImages([])}
+                  className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 text-sm"
                 >
-                  <span className="truncate text-neutral-600 dark:text-neutral-300">
-                    {inputImages.length > 0 ? `${inputImages.length} image(s) selected` : 'Choose images...'}
-                  </span>
-                  <span className="shrink-0 rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-2 py-1 text-xs text-neutral-700 dark:text-neutral-200">
-                    Browse
-                  </span>
+                  Clear
                 </button>
-                {inputImages.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setInputImages([])}
-                    className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 h-10 text-sm"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-              {inputImages.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {inputImages.map((src, idx) => (
-                    <div key={idx} className="relative">
-                      <img
-                        src={src}
-                        alt={`Selected ${idx + 1}`}
-                        className="h-16 w-16 object-cover rounded border border-neutral-200 dark:border-neutral-800"
-                      />
-                      <button
-                        type="button"
-                        aria-label="Remove image"
-                        onClick={() =>
-                          setInputImages((prev) => prev.filter((_, i) => i !== idx))
-                        }
-                        className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
               )}
             </div>
-          )}
-          {selectedTool === 'web' && (
-            <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-3 py-2 text-neutral-700 dark:text-neutral-300">
-              Web search is enabled. I may browse and cite sources in my answer.
-            </div>
-          )}
+            {inputImages.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {inputImages.map((src, idx) => (
+                  <div key={idx} className="relative">
+                    <img
+                      src={src}
+                      alt={`Selected ${idx + 1}`}
+                      className="h-16 w-16 object-cover rounded border border-neutral-200 dark:border-neutral-800"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Remove image"
+                      onClick={() =>
+                        setInputImages((prev) => prev.filter((_, i) => i !== idx))
+                      }
+                      className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-black text-white dark:bg-white dark:text-black flex items-center justify-center"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </section>

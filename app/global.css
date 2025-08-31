@@ -155,6 +155,55 @@ html {
   @apply my-2; /* reduce paragraph spacing inside chat */
 }
 
+/* Markdown hierarchy for chat messages */
+.prose-message h1 {
+  @apply text-2xl font-semibold tracking-tight mt-3 mb-1.5;
+}
+.prose-message h2 {
+  @apply text-xl font-semibold tracking-tight mt-3 mb-1.5;
+}
+.prose-message h3 {
+  @apply text-lg font-semibold tracking-tight mt-2 mb-1;
+}
+.prose-message h4 {
+  @apply font-semibold tracking-tight mt-2 mb-1;
+}
+
+/* Emphasis and inline formatting */
+.prose-message strong {
+  @apply font-bold;
+}
+.prose-message em {
+  font-style: italic;
+}
+
+/* Lists inside chat */
+.prose-message ul {
+  @apply list-disc pl-5 my-2;
+}
+.prose-message ol {
+  @apply list-decimal pl-5 my-2;
+}
+.prose-message li > ul,
+.prose-message li > ol {
+  @apply mt-1 mb-0;
+}
+
+/* Links */
+.prose-message a {
+  @apply underline transition-all decoration-neutral-400 dark:decoration-neutral-600 underline-offset-2 decoration-[0.1em];
+}
+
+/* Blockquotes */
+.prose-message blockquote {
+  @apply border-l-4 border-neutral-200 dark:border-neutral-800 pl-3 my-2 text-neutral-700 dark:text-neutral-300;
+}
+
+/* Horizontal rule */
+.prose-message hr {
+  @apply my-3 border-neutral-200 dark:border-neutral-800;
+}
+
 /* Wrap long lines so all code is visible in chat messages */
 .prose-message pre,
 .prose-message pre code {
