@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       prompt = header + trimmedHistory + tail
     }
 
-    const selectedModel = 'gpt-5'
+    const selectedModel = 'gpt-5-nano'
     const useWebSearchEffective = true
 
     const buildWebSearchTool = (): any => {

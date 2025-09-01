@@ -2,9 +2,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "pnpm run build:blog-index && next build",
-    "start": "next start",
-    "build:blog-index": "node --experimental-strip-types ./scripts/build-blog-index.mjs"
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

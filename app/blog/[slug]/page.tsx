@@ -11,19 +11,21 @@ export async function generateStaticParams() {
   }))
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   let post = getBlogPosts().find((post) => post.slug === slug)
   if (!post) {
     return
   }
 
+  const safePost = post!
+
   let {
     title,
     publishedAt: publishedTime,
     summary: description,
     image,
-  } = post.metadata
+  } = safePost.metadata
   let ogImage = image
     ? image
     : `${baseUrl}/og?title=${encodeURIComponent(title)}`
@@ -36,7 +38,7 @@ export async function generateMetadata({ params }) {
       description,
       type: 'article',
       publishedTime,
-      url: `${baseUrl}/blog/${post.slug}`,
+      url: `${baseUrl}/blog/${safePost.slug}`,
       images: [
         {
           url: ogImage,
@@ -52,13 +54,16 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default async function Blog({ params }) {
+export default async function Blog({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   let post = getBlogPosts().find((post) => post.slug === slug)
 
   if (!post) {
     notFound()
   }
+
+  // TypeScript still thinks post might be undefined, so we use non-null assertion
+  const safePost = post!
 
   return (
     <section>
@@ -69,14 +74,14 @@ export default async function Blog({ params }) {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'BlogPosting',
-            headline: post.metadata.title,
-            datePublished: post.metadata.publishedAt,
-            dateModified: post.metadata.publishedAt,
-            description: post.metadata.summary,
-            image: post.metadata.image
-              ? `${baseUrl}${post.metadata.image}`
-              : `/og?title=${encodeURIComponent(post.metadata.title)}`,
-            url: `${baseUrl}/blog/${post.slug}`,
+            headline: safePost.metadata.title,
+            datePublished: safePost.metadata.publishedAt,
+            dateModified: safePost.metadata.publishedAt,
+            description: safePost.metadata.summary,
+            image: safePost.metadata.image
+              ? `${baseUrl}${safePost.metadata.image}`
+              : `/og?title=${encodeURIComponent(safePost.metadata.title)}`,
+            url: `${baseUrl}/blog/${safePost.slug}`,
             author: {
               '@type': 'Person',
               name: 'Yurie',
@@ -85,16 +90,16 @@ export default async function Blog({ params }) {
         }}
       />
       <h1 className="title font-semibold text-2xl tracking-tighter">
-        {post.metadata.title}
+        {safePost.metadata.title}
       </h1>
       <div className="flex justify-between items-center mt-2 mb-8 text-sm">
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          {formatDate(post.metadata.publishedAt)}
+          {formatDate(safePost.metadata.publishedAt)}
         </p>
       </div>
       <article className="prose prose-neutral dark:prose-invert">
         <div
-          dangerouslySetInnerHTML={{ __html: marked.parse(post.content) as string }}
+          dangerouslySetInnerHTML={{ __html: marked.parse(safePost.content) as string }}
         />
       </article>
     </section>

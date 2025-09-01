@@ -334,7 +334,7 @@ export default function ChatClient() {
     const instance = new Marked({ gfm: true, breaks: true })
     instance.use({
       renderer: {
-        code({ text, lang }) {
+        code({ text, lang }: { text: string; lang?: string }) {
           const language = (lang || '').trim().split(/\s+/)[0]
           const html = highlight(text)
           const langClass = language ? `language-${language}` : ''
@@ -348,7 +348,7 @@ export default function ChatClient() {
   <pre><code class=\"${langClass}\">${html}</code></pre>
 </div>`
         },
-        codespan({ text }) {
+        codespan({ text }: { text: string }) {
           const html = highlight(text)
           return `<code>${html}</code>`
         },
