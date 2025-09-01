@@ -764,9 +764,7 @@ export default function ChatClient() {
           ref={outputRef}
           className="rounded pt-2 pb-3 h-[32rem] overflow-y-auto text-sm font-sans"
         >
-          {messages.length === 0 ? (
-            <p className="text-neutral-500">Yurie is ready. Start the conversation below.</p>
-          ) : (
+          {messages.length === 0 ? null : (
             messages.map((m, i) => {
               const isFirst = i === 0
               const speakerChanged = !isFirst && messages[i - 1].role !== m.role
