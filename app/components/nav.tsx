@@ -1,6 +1,7 @@
 "use client"
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 const navItems = {
@@ -39,7 +40,17 @@ export function Navbar() {
                   className="transition-all hover:text-neutral-800 dark:hover:text-neutral-200 flex align-middle relative py-1 px-2 m-1"
                   onClick={path === '/playground' ? handlePlaygroundClick : undefined}
                 >
-                  {name}
+                  {path === '/' ? (
+                    <Image
+                      src="/favicon.ico"
+                      alt="Home"
+                      width={32}
+                      height={32}
+                      className="w-8 h-8 -mt-0.5"
+                    />
+                  ) : (
+                    name
+                  )}
                 </Link>
               )
             })}
