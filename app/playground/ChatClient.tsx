@@ -762,7 +762,7 @@ export default function ChatClient() {
       <div className="w-full">
         <div
           ref={outputRef}
-          className="border border-neutral-200 dark:border-neutral-800 rounded px-3 pt-2 pb-3 h-[32rem] overflow-y-auto text-sm font-sans"
+          className="rounded pt-2 pb-3 h-[32rem] overflow-y-auto text-sm font-sans"
         >
           {messages.length === 0 ? (
             <p className="text-neutral-500">Yurie is ready. Start the conversation below.</p>
