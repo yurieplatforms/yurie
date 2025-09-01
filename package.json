@@ -4,7 +4,7 @@
     "dev": "next dev",
     "build": "pnpm run build:blog-index && next build",
     "start": "next start",
-    "build:blog-index": "node --env-file=.env --experimental-strip-types ./scripts/build-blog-index.mjs"
+    "build:blog-index": "node --experimental-strip-types ./scripts/build-blog-index.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

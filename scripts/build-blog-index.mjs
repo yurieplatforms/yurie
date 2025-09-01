@@ -43,7 +43,15 @@ function chunk(text, size = 1200, overlap = 200) {
 }
 
 async function main() {
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  // Check if OPENAI_API_KEY is available
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.log("OPENAI_API_KEY not found. Creating fallback blog index without embeddings.");
+    await createFallbackIndex();
+    return;
+  }
+
+  const client = new OpenAI({ apiKey });
   const files = (await fs.readdir(POSTS_DIR)).filter(f => f.endsWith(".mdx"));
 
   const docs = [];
@@ -86,6 +94,42 @@ async function main() {
 
   await fs.writeFile(OUT_FILE, JSON.stringify(out, null, 2), "utf8");
   console.log(`Wrote ${docs.length} chunks → ${OUT_FILE}`);
+}
+
+async function createFallbackIndex() {
+  const files = (await fs.readdir(POSTS_DIR)).filter(f => f.endsWith(".mdx"));
+
+  const docs = [];
+  for (const filename of files) {
+    const full = path.join(POSTS_DIR, filename);
+    const raw = await fs.readFile(full, "utf8");
+    const { metadata, content } = parseFrontmatter(raw);
+    const slug = path.basename(filename, path.extname(filename));
+    const title = metadata.title || slug;
+    const url = `${BASE_URL}/blog/${slug}`;
+
+    const chunks = chunk(content);
+    for (let i = 0; i < chunks.length; i++) {
+      docs.push({
+        id: `${slug}-${i}`,
+        slug,
+        title,
+        url,
+        chunk: chunks[i],
+        embedding: new Array(1536).fill(0), // Dummy embedding for text-embedding-3-small
+      });
+    }
+  }
+
+  const out = {
+    model: MODEL,
+    base_url: BASE_URL,
+    built_at: new Date().toISOString(),
+    docs,
+  };
+
+  await fs.writeFile(OUT_FILE, JSON.stringify(out, null, 2), "utf8");
+  console.log(`Created fallback index with ${docs.length} chunks (no embeddings) → ${OUT_FILE}`);
 }
 
 main().catch(err => {
