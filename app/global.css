@@ -61,7 +61,16 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Global link color uses the accent token */
+a { color: var(--color-accent); }
+a:visited { color: var(--color-accent); }
+a:hover { opacity: 0.9; }
+
+/* Keep navigation text color unchanged */
+#nav a { color: inherit; }
+
 .prose a {
+  color: var(--color-accent);
   @apply underline transition-all decoration-neutral-400 dark:decoration-neutral-600 underline-offset-2 decoration-[0.1em];
 }
 
@@ -179,6 +188,7 @@ html {
 }
 
 .prose-message a {
+  color: var(--color-accent);
   @apply underline transition-all decoration-neutral-400 dark:decoration-neutral-600 underline-offset-2 decoration-[0.1em];
 }
 
