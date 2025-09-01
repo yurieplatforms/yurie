@@ -1,4 +1,5 @@
 import OpenAI, { toFile } from 'openai'
+import { loadBlogIndex, searchBlog } from 'app/lib/blog-rag'
 export const runtime = 'nodejs'
 
 type ChatMessage = {
@@ -119,6 +120,27 @@ export async function POST(request: Request) {
 
     const lastUserMessage =
       [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
+
+    // Add blog context retrieval
+    let blogContext = ''
+    try {
+      const hasIndex = Boolean(loadBlogIndex())
+      if (hasIndex && lastUserMessage) {
+        const top = await searchBlog(client, lastUserMessage, 6)
+        if (top.length > 0) {
+          const bullets = top.map((d, i) => {
+            const preview = d.chunk.replace(/\s+/g, ' ').slice(0, 350)
+            return `(${i + 1}) [${d.title}](${d.url})\n"${preview}"`
+          })
+          blogContext =
+            `\n\nBLOG CONTEXT (from your site):\n` +
+            `Use these snippets only if relevant. If not relevant, ignore.\n\n` +
+            bullets.join('\n\n') + '\n\n'
+        }
+      }
+    } catch {
+      // ignore retrieval errors
+    }
     const explicitImageVerb =
       /\b(generate|create|make|draw|paint|illustrate|render|design|produce|show)\b[^\n]*\b(image|picture|photo|photograph|illustration|art|logo|icon|wallpaper)\b/i
     const imageDescriptorTerms =
@@ -445,7 +467,7 @@ export async function POST(request: Request) {
       model: selectedModel,
       reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
       instructions: INSTRUCTIONS_MARKDOWN,
-      input: prompt,
+      input: prompt + blogContext,
       tools: toolList as any,
       previous_response_id: previousResponseId ?? undefined,
       tool_choice: 'auto',
