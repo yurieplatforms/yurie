@@ -758,10 +758,11 @@ export default function ChatClient() {
 
   return (
     <section>
+      <h1 className="mb-8 text-2xl font-semibold tracking-tighter">Playground</h1>
       <div className="w-full">
         <div
           ref={outputRef}
-          className="rounded pt-2 pb-3 h-[36rem] sm:h-[60vh] md:h-[45vh] overflow-y-auto text-sm font-sans"
+          className="rounded pt-2 pb-3 h-[32rem] overflow-y-auto text-sm font-sans"
         >
           {messages.length === 0 ? null : (
             messages.map((m, i) => {
@@ -798,7 +799,7 @@ export default function ChatClient() {
             })
           )}
         </div>
-        <div className="mt-1 md:mt-48" aria-busy={isLoading}>
+        <div className="mt-2" aria-busy={isLoading}>
           <ChatInput
             value={input}
             onValueChange={setInput}
