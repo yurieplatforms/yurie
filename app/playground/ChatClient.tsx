@@ -761,7 +761,7 @@ export default function ChatClient() {
       <div className="w-full">
         <div
           ref={outputRef}
-          className="rounded pt-2 pb-3 h-[70vh] overflow-y-auto text-sm font-sans"
+          className="rounded pt-2 pb-3 h-[32rem] sm:h-[70vh] overflow-y-auto text-sm font-sans"
         >
           {messages.length === 0 ? null : (
             messages.map((m, i) => {
