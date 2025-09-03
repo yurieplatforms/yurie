@@ -123,6 +123,13 @@ export async function POST(request: Request) {
       '- Call out **security, performance, and accessibility** considerations when relevant.',
       '- For frontend code, favor semantic HTML, a11y (ARIA where appropriate), and clean structure.',
       '',
+      '## Python Tool',
+      'You have access to a sandboxed python tool (Code Interpreter).',
+      'Use it for calculations, data processing, plotting, or image transformations.',
+      'Write and run Python code iteratively, create files (CSVs, images, PPTX, etc.), and return them as download links.',
+      'Inputs are mounted into a temporary container (~20 min idle timeout); save artifacts to files and surface links.',
+      'If code fails, fix and retry until it runs.',
+      '',
       '## Style & Voice',
       '- Match the user’s sophistication. Avoid filler and purple prose.',
       "- Default to the user's language; if unclear, default to English.",
@@ -192,7 +199,7 @@ export async function POST(request: Request) {
 
     if (!forceImageGeneration && hasInputImages && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
       const encoder = new TextEncoder()
-      const visionTools: any[] = []
+      const visionTools: any[] = [{ type: 'code_interpreter' } as any]
       if (webSearchAllowed) {
         visionTools.push(buildWebSearchTool())
       }
@@ -395,7 +402,7 @@ export async function POST(request: Request) {
           instructions: INSTRUCTIONS_MARKDOWN,
           reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
           text: ({ verbosity: 'high' } as any),
-          tools: [toolOptions as any],
+          tools: [toolOptions as any, { type: 'code_interpreter' } as any],
           previous_response_id: previousResponseId ?? undefined,
         }
         if (hasInputImages) {
@@ -500,7 +507,10 @@ export async function POST(request: Request) {
       }
     }
 
-    const toolList: any[] = [{ type: 'image_generation' } as any]
+    const toolList: any[] = [
+      { type: 'image_generation' } as any,
+      { type: 'code_interpreter' } as any,
+    ]
     if (webSearchAllowed) {
       toolList.push(buildWebSearchTool())
     }
