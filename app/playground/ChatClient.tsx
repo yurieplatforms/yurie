@@ -788,7 +788,7 @@ export default function ChatClient() {
     <section ref={containerRef} className="w-full">
       <div
         ref={outputRef}
-        className="rounded pt-2 pb-3 overflow-y-auto text-sm font-sans"
+        className="rounded pt-2 pb-3 overflow-y-auto text-base font-sans"
         style={{ height: outputHeight ? `${outputHeight}px` : undefined }}
       >
         {messages.length === 0 ? null : (
