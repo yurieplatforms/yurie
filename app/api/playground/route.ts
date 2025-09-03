@@ -166,7 +166,7 @@ export async function POST(request: Request) {
       prompt = header + trimmedHistory + tail
     }
 
-    const selectedModel = 'gpt-5-nano'
+    const selectedModel = 'gpt-5'
     const useWebSearchEffective = true
 
     const buildWebSearchTool = (): any => {
@@ -176,7 +176,7 @@ export async function POST(request: Request) {
     const selectedEffort: 'low' | 'medium' | 'high' =
       reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
         ? reasoningEffort
-        : 'high'
+        : 'low'
 
     const lastUserMessage =
       [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
@@ -200,6 +200,7 @@ export async function POST(request: Request) {
         model: selectedModel,
         instructions: INSTRUCTIONS_MARKDOWN,
         reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
+        text: ({ verbosity: 'high' } as any),
         input: [
           {
             role: 'user',
@@ -393,6 +394,7 @@ export async function POST(request: Request) {
           model: selectedModel,
           instructions: INSTRUCTIONS_MARKDOWN,
           reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
+          text: ({ verbosity: 'high' } as any),
           tools: [toolOptions as any],
           previous_response_id: previousResponseId ?? undefined,
         }
@@ -507,13 +509,14 @@ export async function POST(request: Request) {
     const stream = await client.responses.stream({
       model: selectedModel,
       reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
+      text: ({ verbosity: 'high' } as any),
       instructions: INSTRUCTIONS_MARKDOWN,
       input: prompt,
       tools: toolList as any,
       previous_response_id: previousResponseId ?? undefined,
       tool_choice: 'auto',
       include: includeList.length > 0 ? (includeList as any) : undefined,
-    })
+    } as any)
 
     const encoder = new TextEncoder()
     const readable = new ReadableStream<Uint8Array>({
