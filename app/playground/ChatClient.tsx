@@ -574,7 +574,7 @@ export default function ChatClient() {
               if (isParagraph) {
                 const withLabel = rawHtml.replace(
                   /<p(.*?)>/,
-                  `<p$1><span class="font-bold mr-1">${speaker}:</span>`
+                  `<p$1><span class="font-bold mr-1 text-neutral-800 dark:text-neutral-200">${speaker}:</span>`
                 )
                 return (
                   <div
@@ -586,7 +586,7 @@ export default function ChatClient() {
               }
               return (
                 <div key={`block-${i}`} className="prose-message font-sans">
-                  <div className="chat-label font-bold mb-1">{speaker}:</div>
+                  <div className="chat-label font-bold mb-1 text-neutral-800 dark:text-neutral-200">{speaker}:</div>
                   <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawHtml) }} />
                 </div>
               )
