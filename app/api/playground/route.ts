@@ -42,7 +42,6 @@ export async function POST(request: Request) {
     const {
       messages,
       inputImages,
-      inputFiles,
       maskDataUrl,
       previousResponseId,
       reasoningEffort,
@@ -50,7 +49,6 @@ export async function POST(request: Request) {
     } = (await request.json()) as {
       messages: ChatMessage[]
       inputImages?: string[]
-      inputFiles?: Array<{ name: string; type: string; dataUrl: string }>
       maskDataUrl?: string | null
       previousResponseId?: string | null
       reasoningEffort?: 'low' | 'medium' | 'high'
@@ -199,32 +197,11 @@ export async function POST(request: Request) {
     const webSearchAllowed = useWebSearchEffective && !hasInputImages
     const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
 
-    // Prepare input files for python tool container mounting
-    const uploadedFileIds: string[] = []
-    if (Array.isArray(inputFiles) && inputFiles.length > 0) {
-      for (const f of inputFiles) {
-        try {
-          const { buffer, mime } = parseDataUrl(f.dataUrl)
-          const blob = new Blob([buffer], { type: f.type || mime || 'application/octet-stream' })
-          const file = await toFile(blob, f.name || 'file')
-          const created = await client.files.create({ file, purpose: 'assistants' as any })
-          if (created && (created as any).id) uploadedFileIds.push((created as any).id)
-        } catch (err) {
-          console.error('Failed to upload input file for container', err)
-        }
-      }
-    }
-
-    const buildCodeInterpreterTool = (): any => {
-      if (uploadedFileIds.length > 0) {
-        return { type: 'code_interpreter', container: { type: 'auto', file_ids: uploadedFileIds } } as any
-      }
-      return { type: 'code_interpreter' } as any
-    }
+    // Code Interpreter tool removed
 
     if (!forceImageGeneration && hasInputImages && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
       const encoder = new TextEncoder()
-      const visionTools: any[] = [buildCodeInterpreterTool()]
+      const visionTools: any[] = []
       if (webSearchAllowed) {
         visionTools.push(buildWebSearchTool())
       }
@@ -279,7 +256,6 @@ export async function POST(request: Request) {
                   if (citations.some((c) => c.url === url)) return
                   citations.push({ url, title })
                 }
-                const fileCitations: { container_id: string; file_id: string; filename?: string }[] = []
                 let reasoningSummaryText: string | undefined
                 for (const out of outputs) {
                   if (out?.type === 'message') {
@@ -288,9 +264,6 @@ export async function POST(request: Request) {
                       if (c?.type === 'output_text' && Array.isArray(c.annotations)) {
                         for (const ann of c.annotations) {
                           if (ann?.type === 'url_citation') addCitation(ann.url, ann.title)
-                          if (ann?.type === 'container_file_citation' && ann.container_id && ann.file_id) {
-                            fileCitations.push({ container_id: ann.container_id, file_id: ann.file_id, filename: ann.filename })
-                          }
                         }
                       }
                     }
@@ -313,14 +286,6 @@ export async function POST(request: Request) {
                   for (const s of citations) {
                     const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
                     controller.enqueue(encoder.encode(`- [${title}](${s.url})\n`))
-                  }
-                }
-                if (fileCitations.length > 0) {
-                  controller.enqueue(encoder.encode(`\n\nFiles:\n`))
-                  for (const f of fileCitations) {
-                    const name = f.filename && String(f.filename).trim().length > 0 ? f.filename : f.file_id
-                    const url = `/api/playground/container-file?container_id=${encodeURIComponent(f.container_id)}&file_id=${encodeURIComponent(f.file_id)}&filename=${encodeURIComponent(name)}`
-                    controller.enqueue(encoder.encode(`- [${name}](${url})\n`))
                   }
                 }
                 if (reasoningSummaryText) {
@@ -439,7 +404,7 @@ export async function POST(request: Request) {
           instructions: INSTRUCTIONS_MARKDOWN,
           reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
           text: ({ verbosity: 'high' } as any),
-          tools: [toolOptions as any, buildCodeInterpreterTool()],
+          tools: [toolOptions as any],
           previous_response_id: previousResponseId ?? undefined,
         }
         if (hasInputImages) {
@@ -491,7 +456,6 @@ export async function POST(request: Request) {
                   ? outputs.filter((o: any) => o && o.type === 'image_generation_call')
                   : []
                 let reasoningSummaryText: string | undefined
-                const fileCitations: { container_id: string; file_id: string; filename?: string }[] = []
                 for (const call of imageCalls) {
                   const base64: unknown = (call && (call as any).result) as unknown
                   if (typeof base64 === 'string' && base64.length > 0) {
@@ -520,9 +484,7 @@ export async function POST(request: Request) {
                     for (const c of content) {
                       if (c?.type === 'output_text' && Array.isArray(c.annotations)) {
                         for (const ann of c.annotations) {
-                          if (ann?.type === 'container_file_citation' && ann.container_id && ann.file_id) {
-                            fileCitations.push({ container_id: ann.container_id, file_id: ann.file_id, filename: ann.filename })
-                          }
+                          // removed container_file_citation handling
                         }
                       }
                     }
@@ -530,14 +492,6 @@ export async function POST(request: Request) {
                 }
                 if (reasoningSummaryText) {
                   controller.enqueue(encoder.encode(`\n<summary_text:${reasoningSummaryText}>\n`))
-                }
-                if (fileCitations.length > 0) {
-                  controller.enqueue(encoder.encode(`\n\nFiles:\n`))
-                  for (const f of fileCitations) {
-                    const name = f.filename && String(f.filename).trim().length > 0 ? f.filename : f.file_id
-                    const url = `/api/playground/container-file?container_id=${encodeURIComponent(f.container_id)}&file_id=${encodeURIComponent(f.file_id)}&filename=${encodeURIComponent(name)}`
-                    controller.enqueue(encoder.encode(`- [${name}](${url})\n`))
-                  }
                 }
                 const respId: unknown = (finalResponse as any)?.id
                 if (typeof respId === 'string' && respId) {
@@ -565,17 +519,12 @@ export async function POST(request: Request) {
       }
     }
 
-    const toolList: any[] = [
-      { type: 'image_generation' } as any,
-      buildCodeInterpreterTool(),
-    ]
+    const toolList: any[] = [{ type: 'image_generation' } as any]
     if (webSearchAllowed) {
       toolList.push(buildWebSearchTool())
     }
     const includeList: any[] = []
     if (webSearchAllowed) includeList.push('web_search_call.results')
-    // If user explicitly asks to use python tool, set tool_choice to required
-    const wantsPythonTool = /\b(use|run|with)\b[^\n]*\b(python|python tool|code interpreter)\b/i.test(lastUserMessage)
     const stream = await client.responses.stream({
       model: selectedModel,
       reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
@@ -584,7 +533,7 @@ export async function POST(request: Request) {
       input: prompt,
       tools: toolList as any,
       previous_response_id: previousResponseId ?? undefined,
-      tool_choice: wantsPythonTool ? ({ type: 'tool', tool: 'code_interpreter' } as any) : 'auto',
+      tool_choice: 'auto',
       include: includeList.length > 0 ? (includeList as any) : undefined,
     } as any)
 
@@ -634,7 +583,6 @@ export async function POST(request: Request) {
                 if (citations.some((c) => c.url === url)) return
                 citations.push({ url, title })
               }
-              const fileCitations: { container_id: string; file_id: string; filename?: string }[] = []
               for (const out of outputsAny) {
                 if (out?.type === 'message') {
                   const content = Array.isArray(out.content) ? out.content : []
@@ -642,9 +590,6 @@ export async function POST(request: Request) {
                     if (c?.type === 'output_text' && Array.isArray(c.annotations)) {
                       for (const ann of c.annotations) {
                         if (ann?.type === 'url_citation') addCitation(ann.url, ann.title)
-                        if (ann?.type === 'container_file_citation' && ann.container_id && ann.file_id) {
-                          fileCitations.push({ container_id: ann.container_id, file_id: ann.file_id, filename: ann.filename })
-                        }
                       }
                     }
                   }
@@ -667,14 +612,6 @@ export async function POST(request: Request) {
                 for (const s of citations) {
                   const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
                   controller.enqueue(encoder.encode(`- [${title}](${s.url})\n`))
-                }
-              }
-              if (fileCitations.length > 0) {
-                controller.enqueue(encoder.encode(`\n\nFiles:\n`))
-                for (const f of fileCitations) {
-                  const name = f.filename && String(f.filename).trim().length > 0 ? f.filename : f.file_id
-                  const url = `/api/playground/container-file?container_id=${encodeURIComponent(f.container_id)}&file_id=${encodeURIComponent(f.file_id)}&filename=${encodeURIComponent(name)}`
-                  controller.enqueue(encoder.encode(`- [${name}](${url})\n`))
                 }
               }
               if (reasoningSummaryText) {
