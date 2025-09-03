@@ -176,7 +176,7 @@ export async function POST(request: Request) {
     const selectedEffort: 'low' | 'medium' | 'high' =
       reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
         ? reasoningEffort
-        : 'low'
+        : 'medium'
 
     const lastUserMessage =
       [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
