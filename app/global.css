@@ -134,11 +134,12 @@ a:hover { opacity: 0.9; }
 }
 
 .prose-message > :first-child {
-  margin-top: 0 !important;
+  margin-top: 1.25em !important;
+  margin-bottom: 1.25em !important;
 }
 
 .prose-message > :last-child {
-  margin-bottom: 0 !important;
+  margin-bottom: 1.25em !important;
 }
 
 .prose-message {
@@ -153,34 +154,34 @@ a:hover { opacity: 0.9; }
 }
 
 .prose-message p {
-  @apply my-2;
+  @apply my-4 text-neutral-800 dark:text-neutral-200;
 }
 
 .prose-message h1 {
-  @apply text-2xl font-semibold tracking-tight mt-3 mb-1.5;
+  @apply text-4xl font-medium tracking-tight mt-6 mb-2;
 }
 .prose-message h2 {
-  @apply text-xl font-semibold tracking-tight mt-3 mb-1.5;
+  @apply text-xl font-medium tracking-tight mt-6 mb-2;
 }
 .prose-message h3 {
-  @apply text-lg font-semibold tracking-tight mt-2 mb-1;
+  @apply text-xl font-medium tracking-tight mt-6 mb-2;
 }
 .prose-message h4 {
-  @apply font-semibold tracking-tight mt-2 mb-1;
+  @apply text-lg font-medium tracking-tight mt-6 mb-2;
 }
 
 .prose-message strong {
-  @apply font-bold;
+  @apply font-medium;
 }
 .prose-message em {
   font-style: italic;
 }
 
 .prose-message ul {
-  @apply list-disc pl-5 my-2;
+  @apply list-disc pl-6;
 }
 .prose-message ol {
-  @apply list-decimal pl-5 my-2;
+  @apply list-decimal pl-6;
 }
 .prose-message li > ul,
 .prose-message li > ol {
@@ -239,7 +240,7 @@ a:hover { opacity: 0.9; }
 
 .prose-message p,
 .prose-message li {
-  @apply font-medium;
+  @apply font-normal;
 }
 
 pre::-webkit-scrollbar {
