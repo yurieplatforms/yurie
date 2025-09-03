@@ -282,8 +282,8 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
   }, [onFileUpload])
 
   return (
-    <div className="relative flex w-full flex-col gap-4">
-      <div className="relative order-2 pb-3 sm:pb-4 md:order-1">
+    <div className="relative flex w-full flex-col gap-2">
+      <div className="relative order-2 pb-2 sm:pb-4 md:order-1">
         <PromptInput className="relative z-10 w-full p-0 pt-1 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange}>
           <FileList files={files} onFileRemove={onFileRemove} />
           <PromptInputTextarea
@@ -292,7 +292,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
             placeholder="Ask anything"
             className="min-h-[44px] pt-3 px-4 text-base leading-[1.3] sm:text-base md:text-base"
           />
-          <PromptInputActions className="mt-3 w-full justify-between p-2">
+          <PromptInputActions className="mt-2 w-full justify-between p-1.5">
             <div className="flex flex-wrap gap-2">
               <ButtonFileUpload onFileUpload={onFileUpload} />
             </div>
@@ -762,7 +762,7 @@ export default function ChatClient() {
       <div className="w-full">
         <div
           ref={outputRef}
-          className="rounded pt-2 pb-3 h-[32rem] overflow-y-auto text-sm font-sans"
+          className="rounded pt-2 pb-2 h-[calc(100vh-12rem)] max-h-[32rem] overflow-y-auto text-sm font-sans"
         >
           {messages.length === 0 ? null : (
             messages.map((m, i) => {
@@ -799,7 +799,7 @@ export default function ChatClient() {
             })
           )}
         </div>
-        <div className="mt-2 mb-[calc(env(safe-area-inset-bottom)+8px)] sm:mb-0" aria-busy={isLoading}>
+        <div className="mt-1 mb-[env(safe-area-inset-bottom)] sm:mb-0" aria-busy={isLoading}>
           <ChatInput
             value={input}
             onValueChange={setInput}
