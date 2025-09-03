@@ -143,7 +143,7 @@ a:hover { opacity: 0.9; }
 }
 
 .prose-message {
-  @apply w-full;
+  @apply w-full text-neutral-800 dark:text-neutral-200;
   max-width: 100% !important;
   width: 100% !important;
   display: block;
