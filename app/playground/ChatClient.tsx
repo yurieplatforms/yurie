@@ -799,7 +799,7 @@ export default function ChatClient() {
             })
           )}
         </div>
-        <div className="mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0" aria-busy={isLoading}>
+        <div className="mt-2 mb-[calc(env(safe-area-inset-bottom)+20px)] sm:mb-0" aria-busy={isLoading}>
           <ChatInput
             value={input}
             onValueChange={setInput}
