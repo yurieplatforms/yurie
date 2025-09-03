@@ -323,6 +323,9 @@ export default function ChatClient() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const outputRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inputWrapperRef = useRef<HTMLDivElement>(null)
+  const [outputHeight, setOutputHeight] = useState<number>(0)
   const [files, setFiles] = useState<File[]>([])
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
   const [thinkingOpen, setThinkingOpen] = useState<boolean>(false)
@@ -378,6 +381,31 @@ export default function ChatClient() {
     }
     root.addEventListener('click', handle)
     return () => root.removeEventListener('click', handle)
+  }, [])
+
+  useEffect(() => {
+    const recompute = () => {
+      try {
+        const viewportHeight = (window.visualViewport?.height ?? window.innerHeight)
+        const containerTop = containerRef.current?.getBoundingClientRect().top ?? 0
+        const inputEl = inputWrapperRef.current
+        const inputBox = inputEl?.getBoundingClientRect()
+        const inputHeight = inputBox?.height ?? 0
+        const mt = inputEl ? parseFloat(getComputedStyle(inputEl).marginTop || '0') : 0
+        const available = Math.max(0, viewportHeight - containerTop - inputHeight - mt)
+        setOutputHeight(Math.floor(available))
+      } catch {}
+    }
+    recompute()
+    const ro = inputWrapperRef.current ? new ResizeObserver(recompute) : null
+    if (ro && inputWrapperRef.current) ro.observe(inputWrapperRef.current)
+    window.addEventListener('resize', recompute)
+    window.visualViewport?.addEventListener('resize', recompute)
+    return () => {
+      if (ro) ro.disconnect()
+      window.removeEventListener('resize', recompute)
+      window.visualViewport?.removeEventListener('resize', recompute)
+    }
   }, [])
 
   function formatThinkingForMarkdown(input: string): string {
@@ -757,61 +785,59 @@ export default function ChatClient() {
   }, [])
 
   return (
-    <section>
-      <h1 className="mb-8 text-2xl font-semibold tracking-tighter">Playground</h1>
-      <div className="w-full">
-        <div
-          ref={outputRef}
-          className="rounded pt-2 pb-3 h-[32rem] overflow-y-auto text-sm font-sans"
-        >
-          {messages.length === 0 ? null : (
-            messages.map((m, i) => {
-              const isFirst = i === 0
-              const speakerChanged = !isFirst && messages[i - 1].role !== m.role
-              const topMarginClass = isFirst ? 'mt-1' : speakerChanged ? 'mt-2' : 'mt-0.5'
-              const isLastAssistant = i === messages.length - 1 && m.role === 'assistant'
-              return (
-                <div key={i} className={`${topMarginClass} mb-0`}>
-                  {thinkingText && isLastAssistant && (
-                    <div className="mb-2">
-                      <button
-                        type="button"
-                        onClick={() => setThinkingOpen((v) => !v)}
-                        className="text-xs text-neutral-600 dark:text-neutral-300 underline"
-                      >
-                        {thinkingOpen ? 'Hide thinking' : 'Show thinking'}
-                      </button>
-                      {thinkingOpen && (
-                        <div className="mt-1 max-h-40 overflow-auto rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-2">
-                          <div
-                            className="prose-message prose-thinking dark:prose-invert font-sans text-xs leading-5"
-                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(formatThinkingForMarkdown(thinkingText)) as string) }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="min-w-0 w-full">
-                    {renderMessageContent(m.role, m.content)}
+    <section ref={containerRef} className="w-full">
+      <div
+        ref={outputRef}
+        className="rounded pt-2 pb-3 overflow-y-auto text-sm font-sans"
+        style={{ height: outputHeight ? `${outputHeight}px` : undefined }}
+      >
+        {messages.length === 0 ? null : (
+          messages.map((m, i) => {
+            const isFirst = i === 0
+            const speakerChanged = !isFirst && messages[i - 1].role !== m.role
+            const topMarginClass = isFirst ? 'mt-1' : speakerChanged ? 'mt-2' : 'mt-0.5'
+            const isLastAssistant = i === messages.length - 1 && m.role === 'assistant'
+            return (
+              <div key={i} className={`${topMarginClass} mb-0`}>
+                {thinkingText && isLastAssistant && (
+                  <div className="mb-2">
+                    <button
+                      type="button"
+                      onClick={() => setThinkingOpen((v) => !v)}
+                      className="text-xs text-neutral-600 dark:text-neutral-300 underline"
+                    >
+                      {thinkingOpen ? 'Hide thinking' : 'Show thinking'}
+                    </button>
+                    {thinkingOpen && (
+                      <div className="mt-1 max-h-40 overflow-auto rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-2">
+                        <div
+                          className="prose-message prose-thinking dark:prose-invert font-sans text-xs leading-5"
+                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(formatThinkingForMarkdown(thinkingText)) as string) }}
+                        />
+                      </div>
+                    )}
                   </div>
+                )}
+                <div className="min-w-0 w-full">
+                  {renderMessageContent(m.role, m.content)}
                 </div>
-              )
-            })
-          )}
-        </div>
-        <div className="mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0" aria-busy={isLoading}>
-          <ChatInput
-            value={input}
-            onValueChange={setInput}
-            onSend={handleSend}
-            isSubmitting={isLoading}
-            files={files}
-            onFileUpload={(newFiles) => setFiles((prev) => [...prev, ...newFiles])}
-            onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
-            stop={stop}
-            status={status}
-          />
-        </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+      <div ref={inputWrapperRef} className="mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0" aria-busy={isLoading}>
+        <ChatInput
+          value={input}
+          onValueChange={setInput}
+          onSend={handleSend}
+          isSubmitting={isLoading}
+          files={files}
+          onFileUpload={(newFiles) => setFiles((prev) => [...prev, ...newFiles])}
+          onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
+          stop={stop}
+          status={status}
+        />
       </div>
     </section>
   )
