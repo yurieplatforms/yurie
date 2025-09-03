@@ -676,6 +676,17 @@ export default function ChatClient() {
             })
         )
       )
+      const inputFiles: Array<{ name: string; type: string; dataUrl: string }> = await Promise.all(
+        files.map(
+          (f) =>
+            new Promise<{ name: string; type: string; dataUrl: string }>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve({ name: f.name, type: f.type || 'application/octet-stream', dataUrl: String(reader.result) })
+              reader.onerror = () => reject(reader.error)
+              reader.readAsDataURL(f)
+            })
+        )
+      )
       const stripImageData = (text: string): string => {
         const angleTag = /<image:[^>]+>/gi
         const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
@@ -694,6 +705,7 @@ export default function ChatClient() {
         body: JSON.stringify({
           messages: payloadMessages,
           inputImages,
+          inputFiles,
           previousResponseId: lastResponseId,
         }),
         signal: ac.signal,
