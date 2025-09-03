@@ -123,13 +123,6 @@ export async function POST(request: Request) {
       '- Call out **security, performance, and accessibility** considerations when relevant.',
       '- For frontend code, favor semantic HTML, a11y (ARIA where appropriate), and clean structure.',
       '',
-      '## Python Tool',
-      'You have access to a sandboxed python tool (Code Interpreter).',
-      'Use it for calculations, data processing, plotting, or image transformations.',
-      'Write and run Python code iteratively, create files (CSVs, images, PPTX, etc.), and return them as download links.',
-      'Inputs are mounted into a temporary container (~20 min idle timeout); save artifacts to files and surface links.',
-      'If code fails, fix and retry until it runs.',
-      '',
       '## Style & Voice',
       '- Match the user’s sophistication. Avoid filler and purple prose.',
       "- Default to the user's language; if unclear, default to English.",
@@ -196,8 +189,6 @@ export async function POST(request: Request) {
     const hasInputImages = Array.isArray(inputImages) && inputImages.length > 0
     const webSearchAllowed = useWebSearchEffective && !hasInputImages
     const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
-
-    // Code Interpreter tool removed
 
     if (!forceImageGeneration && hasInputImages && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
       const encoder = new TextEncoder()
@@ -479,14 +470,6 @@ export async function POST(request: Request) {
                       }
                     }
                   }
-                  if (out?.type === 'message') {
-                    const content = Array.isArray(out.content) ? out.content : []
-                    for (const c of content) {
-                      if (c?.type === 'output_text' && Array.isArray(c.annotations)) {
-                        // removed container_file_citation handling
-                      }
-                    }
-                  }
                 }
                 if (reasoningSummaryText) {
                   controller.enqueue(encoder.encode(`\n<summary_text:${reasoningSummaryText}>\n`))
@@ -646,4 +629,3 @@ export async function POST(request: Request) {
     })
   }
 }
-
