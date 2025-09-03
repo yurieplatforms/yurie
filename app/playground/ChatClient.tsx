@@ -758,11 +758,11 @@ export default function ChatClient() {
 
   return (
     <section>
-      <h1 className="mb-8 text-2xl font-semibold tracking-tighter">Playground</h1>
+      <h1 className="hidden sm:block mb-8 text-2xl font-semibold tracking-tighter">Playground</h1>
       <div className="w-full">
         <div
           ref={outputRef}
-          className="rounded pt-2 pb-2 h-[calc(100vh-12rem)] max-h-[32rem] overflow-y-auto text-sm font-sans"
+          className="rounded pt-2 pb-2 h-[calc(100svh-10rem)] sm:h-[32rem] max-h-none sm:max-h-[32rem] overflow-y-auto text-sm font-sans"
         >
           {messages.length === 0 ? null : (
             messages.map((m, i) => {
