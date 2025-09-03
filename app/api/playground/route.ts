@@ -483,9 +483,7 @@ export async function POST(request: Request) {
                     const content = Array.isArray(out.content) ? out.content : []
                     for (const c of content) {
                       if (c?.type === 'output_text' && Array.isArray(c.annotations)) {
-                        for (const ann of c.annotations) {
-                          // removed container_file_citation handling
-                        }
+                        // removed container_file_citation handling
                       }
                     }
                   }
