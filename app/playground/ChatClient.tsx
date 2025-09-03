@@ -433,9 +433,9 @@ export default function ChatClient() {
       const inlineHeadingRe = /([.!?;:])\s*([A-Z][A-Za-z0-9'’()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
       const dashHeadingRe = /(\s[\-–—]\s)\s*([A-Z][A-Za-z0-9'’()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
       const gluedHeadingRe = /([a-z])([A-Z][a-zA-Z]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
-      let out = line.replace(inlineHeadingRe, (_m, p1, p2) => `${p1}\n\n### ${p2}\n\n`)
-      out = out.replace(dashHeadingRe, (_m, _sep, p2) => `\n\n### ${p2}\n\n`)
-      out = out.replace(gluedHeadingRe, (_m, prev, title) => `${prev}\n\n### ${title}\n\n`)
+      let out = line.replace(inlineHeadingRe, (_m, p1, p2) => `${p1}\n\n## ${p2}\n\n`)
+      out = out.replace(dashHeadingRe, (_m, _sep, p2) => `\n\n## ${p2}\n\n`)
+      out = out.replace(gluedHeadingRe, (_m, prev, title) => `${prev}\n\n## ${title}\n\n`)
       return out
     }
 
@@ -451,11 +451,11 @@ export default function ChatClient() {
 
       if (!inFence) {
         const withInlineHeadings = promoteInlineHeadings(line)
-        if (withInlineHeadings.includes('\n\n### ')) {
+        if (withInlineHeadings.includes('\n\n## ')) {
           const chunks = withInlineHeadings.split('\n')
           for (const chunk of chunks) {
             const ctrim = chunk.trim()
-            if (ctrim.startsWith('### ')) {
+            if (ctrim.startsWith('## ')) {
               if (result.length > 0 && result[result.length - 1].trim() !== '') {
                 result.push('')
               }
@@ -472,7 +472,7 @@ export default function ChatClient() {
           if (result.length > 0 && result[result.length - 1].trim() !== '') {
             result.push('')
           }
-          result.push(`### ${trimmed}`)
+          result.push(`## ${trimmed}`)
           continue
         }
         result.push(boldenLabels(line))
@@ -574,19 +574,19 @@ export default function ChatClient() {
               if (isParagraph) {
                 const withLabel = rawHtml.replace(
                   /<p(.*?)>/,
-                  `<p$1><span class=\\"font-semibold mr-2\\">${speaker}:&nbsp;</span>`
+                  `<p$1><span class="font-bold mr-1">${speaker}:</span>`
                 )
                 return (
                   <div
                     key={i}
-                    className="prose-message dark:prose-invert font-sans"
+                    className="prose-message font-sans"
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(withLabel) }}
                   />
                 )
               }
               return (
-                <div key={`block-${i}`} className="prose-message dark:prose-invert font-sans">
-                  <div className="font-semibold mb-2">{speaker}:</div>
+                <div key={`block-${i}`} className="prose-message font-sans">
+                  <div className="chat-label font-bold mb-1">{speaker}:</div>
                   <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawHtml) }} />
                 </div>
               )
@@ -594,7 +594,7 @@ export default function ChatClient() {
             return (
               <div
                 key={i}
-                className="prose-message dark:prose-invert font-sans"
+                className="prose-message font-sans"
                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawHtml) }}
               />
             )
@@ -604,7 +604,7 @@ export default function ChatClient() {
               labelInjected = true
               return (
                 <div key={i} className="prose-message dark:prose-invert font-sans">
-                  <span className="font-semibold mr-2">{speaker}: </span>
+                  <span className="font-bold mr-1">{speaker}:</span>
                   <img
                     src={p.src}
                     alt="Generated image"
@@ -811,7 +811,7 @@ export default function ChatClient() {
                     {thinkingOpen && (
                       <div className="mt-1 max-h-40 overflow-auto rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-2">
                         <div
-                          className="prose-message prose-thinking dark:prose-invert font-sans text-xs leading-5"
+                          className="prose-message prose-thinking font-sans text-xs leading-5"
                           dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(formatThinkingForMarkdown(thinkingText)) as string) }}
                         />
                       </div>

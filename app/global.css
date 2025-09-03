@@ -157,6 +157,17 @@ a:hover { opacity: 0.9; }
   @apply my-4 text-neutral-800 dark:text-neutral-200;
 }
 
+/* Ensure AI messages use dark text colors like blog posts */
+.prose-message:not(.prose-thinking) p,
+.prose-message:not(.prose-thinking) li,
+.prose-message:not(.prose-thinking) blockquote {
+  @apply text-neutral-800 dark:text-neutral-200;
+}
+
+.prose-message:not(.prose-thinking) strong {
+  @apply font-medium text-neutral-800 dark:text-neutral-200;
+}
+
 .prose-message h1 {
   @apply text-4xl font-medium tracking-tight mt-6 mb-2;
 }
@@ -202,8 +213,8 @@ a:hover { opacity: 0.9; }
 }
 
 .prose-thinking h1 { @apply text-lg mt-2 mb-1; }
-.prose-thinking h2 { @apply text-base mt-2 mb-1; }
-.prose-thinking h3 { @apply text-sm mt-1.5 mb-1; }
+.prose-thinking h2 { @apply text-sm mt-1.5 mb-1; }
+.prose-thinking h3 { @apply text-xs mt-1.5 mb-1; }
 .prose-thinking h4 { @apply text-xs mt-1.5 mb-1; }
 .prose-thinking p  { @apply my-1; }
 
@@ -241,6 +252,11 @@ a:hover { opacity: 0.9; }
 .prose-message p,
 .prose-message li {
   @apply font-normal;
+}
+
+/* Tighter spacing for explicit chat labels placed before content blocks */
+.prose-message .chat-label {
+  margin-top: 0 !important;
 }
 
 pre::-webkit-scrollbar {
