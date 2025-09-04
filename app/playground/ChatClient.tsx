@@ -67,6 +67,7 @@ function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ..
   return (
     <textarea
       ref={textareaRef}
+      autoFocus
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={handleKeyDown}
@@ -77,9 +78,6 @@ function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ..
       )}
       style={{ maxHeight: maxHeightStyle }}
       rows={1}
-      enterKeyHint="send"
-      inputMode="text"
-      aria-label="Message"
       
       {...props}
     />
@@ -262,7 +260,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         htmlFor={inputId}
         role="button"
         tabIndex={0}
-        className="size-10 sm:size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black cursor-pointer active:scale-95"
+        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black cursor-pointer"
         aria-label="Add files"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -343,8 +341,8 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
           <PromptInputTextarea
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder="Message Yurie"
-            className="min-h-[44px] pt-3 px-4 text-[15px] sm:text-base md:text-[17px] leading-[1.3]"
+            placeholder="Ask anything"
+            className="min-h-[44px] pt-3 px-4 text-base leading-[1.3] sm:text-base md:text-base"
           />
           <PromptInputActions className="mt-3 w-full justify-between p-2">
             <div className="flex flex-wrap gap-2">
@@ -352,7 +350,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
             </div>
             <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
               <button
-                className="size-10 sm:size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white active:scale-95"
+                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white"
                 disabled={
                   status !== 'streaming' &&
                   status !== 'submitted' &&
@@ -361,7 +359,6 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                 type="button"
                 onClick={handleSend}
                 aria-label={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send message'}
-                style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
               >
                 {status === 'streaming' || status === 'submitted' ? <Stop className="size-4" weight="bold" aria-hidden="true" /> : <ArrowUp className="size-4" weight="bold" aria-hidden="true" />}
               </button>
@@ -395,27 +392,6 @@ export default function ChatClient() {
       try {
         for (const url of createdObjectUrlsRef.current) URL.revokeObjectURL(url)
       } catch {}
-    }
-  }, [])
-
-  // Lock the page from scrolling/bouncing on mobile while the playground is open
-  useEffect(() => {
-    const html = document.documentElement
-    const prevHtmlOverflow = html.style.overflow
-    const prevHtmlOverscroll = (html.style as any).overscrollBehaviorY
-    const prevBodyOverflow = document.body.style.overflow
-    const prevBodyOverscroll = (document.body.style as any).overscrollBehaviorY
-
-    ;(html.style as any).overscrollBehaviorY = 'none'
-    html.style.overflow = 'hidden'
-    ;(document.body.style as any).overscrollBehaviorY = 'none'
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      ;(html.style as any).overscrollBehaviorY = prevHtmlOverscroll
-      html.style.overflow = prevHtmlOverflow
-      ;(document.body.style as any).overscrollBehaviorY = prevBodyOverscroll
-      document.body.style.overflow = prevBodyOverflow
     }
   }, [])
 
@@ -910,10 +886,7 @@ export default function ChatClient() {
     <section ref={containerRef} className="w-full">
       <div
         ref={outputRef}
-        className="rounded pt-2 pb-3 overflow-y-auto overscroll-contain scroll-smooth ios-momentum text-[15px] sm:text-base md:text-[17px] font-sans"
-        role="log"
-        aria-live="polite"
-        aria-relevant="additions text"
+        className="rounded pt-2 pb-3 overflow-y-auto text-base font-sans"
         style={{ height: outputHeight ? `${outputHeight}px` : undefined }}
       >
         {messages.length === 0 ? null : (
@@ -954,20 +927,18 @@ export default function ChatClient() {
           })
         )}
       </div>
-      <div ref={inputWrapperRef} className="mt-2 fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-black/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur touch-manipulation pb-[calc(env(safe-area-inset-bottom)+8px)] sm:pb-0" aria-busy={isLoading}>
-        <div className="max-w-3xl mx-4 lg:mx-auto px-2 md:px-0">
-          <ChatInput
-            value={input}
-            onValueChange={setInput}
-            onSend={handleSend}
-            isSubmitting={isLoading}
-            files={files}
-            onFileUpload={(newFiles) => setFiles((prev) => [...prev, ...newFiles])}
-            onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
-            stop={stop}
-            status={status}
-          />
-        </div>
+      <div ref={inputWrapperRef} className="mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0" aria-busy={isLoading}>
+        <ChatInput
+          value={input}
+          onValueChange={setInput}
+          onSend={handleSend}
+          isSubmitting={isLoading}
+          files={files}
+          onFileUpload={(newFiles) => setFiles((prev) => [...prev, ...newFiles])}
+          onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
+          stop={stop}
+          status={status}
+        />
       </div>
     </section>
   )
