@@ -60,6 +60,15 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ios-momentum {
+  -webkit-overflow-scrolling: touch;
+}
+
 
 /* Global link color uses the accent token */
 a { color: var(--color-accent); }
