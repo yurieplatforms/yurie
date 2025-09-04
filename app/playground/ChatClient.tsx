@@ -400,25 +400,23 @@ export default function ChatClient() {
 
   // Lock the page from scrolling/bouncing on mobile while the playground is open
   useEffect(() => {
-    try {
-      const html = document.documentElement
-      const prevHtmlOverflow = html.style.overflow
-      const prevHtmlOverscroll = (html.style as any).overscrollBehaviorY
-      const prevBodyOverflow = document.body.style.overflow
-      const prevBodyOverscroll = (document.body.style as any).overscrollBehaviorY
+    const html = document.documentElement
+    const prevHtmlOverflow = html.style.overflow
+    const prevHtmlOverscroll = (html.style as any).overscrollBehaviorY
+    const prevBodyOverflow = document.body.style.overflow
+    const prevBodyOverscroll = (document.body.style as any).overscrollBehaviorY
 
-      ;(html.style as any).overscrollBehaviorY = 'none'
-      html.style.overflow = 'hidden'
-      ;(document.body.style as any).overscrollBehaviorY = 'none'
-      document.body.style.overflow = 'hidden'
+    ;(html.style as any).overscrollBehaviorY = 'none'
+    html.style.overflow = 'hidden'
+    ;(document.body.style as any).overscrollBehaviorY = 'none'
+    document.body.style.overflow = 'hidden'
 
-      return () => {
-        ;(html.style as any).overscrollBehaviorY = prevHtmlOverscroll
-        html.style.overflow = prevHtmlOverflow
-        ;(document.body.style as any).overscrollBehaviorY = prevBodyOverscroll
-        document.body.style.overflow = prevBodyOverflow
-      }
-    } catch {}
+    return () => {
+      ;(html.style as any).overscrollBehaviorY = prevHtmlOverscroll
+      html.style.overflow = prevHtmlOverflow
+      ;(document.body.style as any).overscrollBehaviorY = prevBodyOverscroll
+      document.body.style.overflow = prevBodyOverflow
+    }
   }, [])
 
   const md = useMemo(() => {
