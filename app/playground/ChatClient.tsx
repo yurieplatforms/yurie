@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
-import { ArrowUp, Stop, Paperclip, X } from '@phosphor-icons/react'
+import { ArrowUp, Stop, Paperclip, X, FilePdf } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -11,6 +11,15 @@ import { twMerge } from 'tailwind-merge'
 type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
+}
+
+type AttachmentPreview = {
+  id: string
+  name: string
+  size: number
+  mime: string
+  objectUrl: string
+  isImage: boolean
 }
 
 function cn(...inputs: ClassValue[]) {
@@ -83,6 +92,41 @@ function PromptInputActions({ children, className, ...props }: React.HTMLAttribu
   )
 }
 
+function MessageAttachmentList({ attachments }: { attachments: AttachmentPreview[] }) {
+  if (!attachments || attachments.length === 0) return null
+  return (
+    <div className="mt-2 flex flex-row flex-wrap gap-2">
+      {attachments.map((att) => (
+        att.isImage ? (
+          <img
+            key={att.id}
+            src={att.objectUrl}
+            alt={att.name}
+            className="rounded border border-neutral-200 dark:border-neutral-800 max-h-56 object-cover"
+          />
+        ) : (
+          <a
+            key={att.id}
+            href={att.objectUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="bg-white dark:bg-black hover:bg-neutral-50 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-md px-3 py-2 text-xs inline-flex items-center gap-2"
+          >
+            {(() => {
+              const isPdf = att.mime === 'application/pdf' || (att.name.split('.').pop() || '').toLowerCase() === 'pdf'
+              return isPdf ? (
+                <FilePdf className="size-4 text-[#7f91e0]" weight="fill" aria-hidden="true" />
+              ) : null
+            })()}
+            <span className="font-medium">{att.name}</span>
+            <span className="text-neutral-500 ml-2">{(att.size / 1024).toFixed(2)}kB</span>
+          </a>
+        )
+      ))}
+    </div>
+  )
+}
+
 function PromptInputAction({ tooltip, children, className }: { className?: string, tooltip: React.ReactNode, children: React.ReactNode } & React.ComponentProps<any>) {
   return (
     <div title={tooltip} className={className}>
@@ -130,7 +174,14 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
               <img src={previewUrl} alt={file.name} className="h-full w-full object-cover" loading="eager" decoding="async" onError={loadDataUrlFallback} />
             ) : null
           ) : (
-            <div className="text-center text-xs text-gray-400">{file.name.split('.').pop()?.toUpperCase()}</div>
+            (() => {
+              const ext = (file.name.split('.').pop() || '').toLowerCase()
+              const isPdf = (file.type || '').toLowerCase() === 'application/pdf' || ext === 'pdf'
+              if (isPdf) {
+                return <FilePdf className="size-6 text-[#7f91e0]" weight="fill" aria-hidden="true" />
+              }
+              return <div className="text-center text-xs text-gray-400">{ext.toUpperCase()}</div>
+            })()
           )}
         </div>
         <div className="flex flex-col overflow-hidden">
@@ -333,6 +384,16 @@ export default function ChatClient() {
   const [thinkingText, setThinkingText] = useState<string>('')
   const [status, setStatus] = useState<'submitted' | 'streaming' | 'ready' | 'error'>('ready')
   const abortControllerRef = useRef<AbortController | null>(null)
+  const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
+  const createdObjectUrlsRef = useRef<string[]>([])
+
+  useEffect(() => {
+    return () => {
+      try {
+        for (const url of createdObjectUrlsRef.current) URL.revokeObjectURL(url)
+      } catch {}
+    }
+  }, [])
 
   const md = useMemo(() => {
     const instance = new Marked({ gfm: true, breaks: true })
@@ -665,6 +726,27 @@ export default function ChatClient() {
 
     try {
       setThinkingText('')
+      // Capture current files as message attachments for preview in the chat container
+      const attachmentsForPreview: AttachmentPreview[] = files.map((f) => {
+        const url = URL.createObjectURL(f)
+        createdObjectUrlsRef.current.push(url)
+        const mime = (f.type || '').toLowerCase()
+        const ext = (f.name.split('.').pop() || '').toLowerCase()
+        const imageExts = ['png','jpg','jpeg','gif','webp','bmp','svg','heic','heif','tif','tiff','avif']
+        const isImage = mime.startsWith('image/') || imageExts.includes(ext)
+        return {
+          id: `${f.name}-${f.size}-${f.lastModified}-${Math.random().toString(36).slice(2)}`,
+          name: f.name,
+          size: f.size,
+          mime: f.type,
+          objectUrl: url,
+          isImage,
+        }
+      })
+      if (attachmentsForPreview.length > 0) {
+        const indexForThisMessage = nextMessages.length - 1
+        setSentAttachmentsByMessageIndex((prev) => ({ ...prev, [indexForThisMessage]: attachmentsForPreview }))
+      }
       const imageFiles = files.filter((f) => f.type.startsWith('image/'))
       const inputImages: string[] = await Promise.all(
         imageFiles.map(
@@ -689,6 +771,8 @@ export default function ChatClient() {
             })
         )
       )
+      // Clear input files after capturing previews and data URLs
+      setFiles([])
       const stripImageData = (text: string): string => {
         const angleTag = /<image:[^>]+>/gi
         const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
@@ -834,6 +918,9 @@ export default function ChatClient() {
                 )}
                 <div className="min-w-0 w-full">
                   {renderMessageContent(m.role, m.content)}
+                  {m.role === 'user' && sentAttachmentsByMessageIndex[i]?.length ? (
+                    <MessageAttachmentList attachments={sentAttachmentsByMessageIndex[i]} />
+                  ) : null}
                 </div>
               </div>
             )
