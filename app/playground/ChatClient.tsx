@@ -360,7 +360,11 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                 onClick={handleSend}
                 aria-label={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send message'}
               >
-                {status === 'streaming' || status === 'submitted' ? <Stop className="size-4" weight="bold" aria-hidden="true" /> : <ArrowUp className="size-4" weight="bold" aria-hidden="true" />}
+                {status === 'streaming' || status === 'submitted' ? (
+                  <Stop className="size-4" weight="bold" aria-hidden="true" />
+                ) : (
+                  <ArrowUp className="size-4" weight="bold" aria-hidden="true" />
+                )}
               </button>
             </PromptInputAction>
           </PromptInputActions>
@@ -481,7 +485,7 @@ export default function ChatClient() {
       const trimmed = text.trim()
       if (trimmed.length < 8 || trimmed.length > 80) return false
       if (/[.!?;:]\s*$/.test(trimmed)) return false
-      if (/^[-*+]\s+/.test(trimmed)) return false
+      if (/[-*+]\s+/.test(trimmed)) return false
       if (/^\d+\.\s+/.test(trimmed)) return false
       if (/^>\s+/.test(trimmed)) return false
       if (/^#{1,6}\s/.test(trimmed)) return false
@@ -523,7 +527,7 @@ export default function ChatClient() {
               }
               result.push(ctrim)
             } else if (ctrim.length === 0) {
-              result.push('')
+              result.push(boldenLabels(chunk))
             } else {
               result.push(boldenLabels(chunk))
             }
@@ -927,7 +931,7 @@ export default function ChatClient() {
           })
         )}
       </div>
-      <div ref={inputWrapperRef} className="mt-2 mb-0" aria-busy={isLoading}>
+      <div ref={inputWrapperRef} className="mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0" aria-busy={isLoading}>
         <ChatInput
           value={input}
           onValueChange={setInput}

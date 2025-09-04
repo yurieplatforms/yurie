@@ -61,12 +61,6 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Safe-area bottom margin utility for iOS Safari and PWA standalone */
-.mb-safe {
-  margin-bottom: env(safe-area-inset-bottom);
-  margin-bottom: constant(safe-area-inset-bottom);
-}
-
 /* Global link color uses the accent token */
 a { color: var(--color-accent); }
 a:visited { color: var(--color-accent); }
