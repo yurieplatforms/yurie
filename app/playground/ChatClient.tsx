@@ -196,6 +196,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         ref={inputRef}
         id={inputId}
         type="file"
+        accept="image/*,application/pdf"
         multiple
         className="sr-only"
         onChange={e => {
@@ -676,6 +677,18 @@ export default function ChatClient() {
             })
         )
       )
+      const pdfFiles = files.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
+      const inputPdfs: { filename: string; dataUrl: string }[] = await Promise.all(
+        pdfFiles.map(
+          (f) =>
+            new Promise<{ filename: string; dataUrl: string }>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve({ filename: f.name, dataUrl: String(reader.result) })
+              reader.onerror = () => reject(reader.error)
+              reader.readAsDataURL(f)
+            })
+        )
+      )
       const stripImageData = (text: string): string => {
         const angleTag = /<image:[^>]+>/gi
         const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
@@ -694,6 +707,7 @@ export default function ChatClient() {
         body: JSON.stringify({
           messages: payloadMessages,
           inputImages,
+          inputPdfs,
           previousResponseId: lastResponseId,
         }),
         signal: ac.signal,

@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     const {
       messages,
       inputImages,
+      inputPdfs,
       maskDataUrl,
       previousResponseId,
       reasoningEffort,
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
     } = (await request.json()) as {
       messages: ChatMessage[]
       inputImages?: string[]
+      inputPdfs?: { filename: string; dataUrl: string }[]
       maskDataUrl?: string | null
       previousResponseId?: string | null
       reasoningEffort?: 'low' | 'medium' | 'high'
@@ -187,10 +189,11 @@ export async function POST(request: Request) {
     const analysisIntent =
       /\b(describe|explain|analy[sz]e|caption|tell me about)\b[^\n]*\b(image|picture|photo|it|this)\b/i
     const hasInputImages = Array.isArray(inputImages) && inputImages.length > 0
-    const webSearchAllowed = useWebSearchEffective && !hasInputImages
+    const hasInputPdfs = Array.isArray(inputPdfs) && inputPdfs.length > 0
+    const webSearchAllowed = useWebSearchEffective && !hasInputImages && !hasInputPdfs
     const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
 
-    if (!forceImageGeneration && hasInputImages && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
+    if (!forceImageGeneration && (hasInputImages || hasInputPdfs) && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
       const encoder = new TextEncoder()
       const visionTools: any[] = []
       if (webSearchAllowed) {
@@ -205,8 +208,9 @@ export async function POST(request: Request) {
           {
             role: 'user',
             content: [
-              { type: 'input_text', text: lastUserMessage || 'Analyze these images' },
-              ...inputImages.map((url) => ({ type: 'input_image', image_url: url })),
+              { type: 'input_text', text: lastUserMessage || 'Analyze the attached files' },
+              ...((inputImages || []).map((url) => ({ type: 'input_image', image_url: url }))),
+              ...((inputPdfs || []).map((p) => ({ type: 'input_file', filename: p.filename, file_data: p.dataUrl }))),
             ],
           },
         ],
@@ -307,6 +311,8 @@ export async function POST(request: Request) {
       ((explicitImageVerb.test(lastUserMessage) || imageDescriptorTerms.test(lastUserMessage) || editIntent.test(lastUserMessage)) &&
         !analysisIntent.test(lastUserMessage)) ||
       hasInputImages ||
+      // PDF inputs should not trigger image generation path
+      false ||
       Boolean(maskDataUrl)
 
     if (wantsImage) {
