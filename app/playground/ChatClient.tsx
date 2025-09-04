@@ -927,7 +927,7 @@ export default function ChatClient() {
           })
         )}
       </div>
-      <div ref={inputWrapperRef} className="mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0" aria-busy={isLoading}>
+      <div ref={inputWrapperRef} className="mt-2 mb-[env(safe-area-inset-bottom)] sm:mb-0" aria-busy={isLoading}>
         <ChatInput
           value={input}
           onValueChange={setInput}
