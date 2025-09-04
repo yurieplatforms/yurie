@@ -933,18 +933,20 @@ export default function ChatClient() {
           })
         )}
       </div>
-      <div ref={inputWrapperRef} className="mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0 sticky bottom-0 left-0 right-0 bg-white/80 dark:bg-black/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur touch-manipulation" aria-busy={isLoading}>
-        <ChatInput
-          value={input}
-          onValueChange={setInput}
-          onSend={handleSend}
-          isSubmitting={isLoading}
-          files={files}
-          onFileUpload={(newFiles) => setFiles((prev) => [...prev, ...newFiles])}
-          onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
-          stop={stop}
-          status={status}
-        />
+      <div ref={inputWrapperRef} className="mt-2 fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-black/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur touch-manipulation pb-[calc(env(safe-area-inset-bottom)+8px)] sm:pb-0" aria-busy={isLoading}>
+        <div className="max-w-3xl mx-4 lg:mx-auto px-2 md:px-0">
+          <ChatInput
+            value={input}
+            onValueChange={setInput}
+            onSend={handleSend}
+            isSubmitting={isLoading}
+            files={files}
+            onFileUpload={(newFiles) => setFiles((prev) => [...prev, ...newFiles])}
+            onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
+            stop={stop}
+            status={status}
+          />
+        </div>
       </div>
     </section>
   )
