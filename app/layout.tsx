@@ -52,8 +52,6 @@ export const viewport: Viewport = {
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
-  viewportFit: 'cover',
-  interactiveWidget: 'resizes-visual',
 }
 
 const cx = (...classes) => classes.filter(Boolean).join(' ')
