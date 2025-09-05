@@ -66,7 +66,7 @@ export default async function Blog({ params }: { params: Promise<{ slug: string 
   const safePost = post!
 
   return (
-    <section>
+    <section className="px-4">
       <script
         type="application/ld+json"
         suppressHydrationWarning

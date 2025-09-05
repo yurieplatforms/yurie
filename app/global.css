@@ -320,11 +320,13 @@ a:hover { opacity: 0.9; }
   @apply my-3 border-neutral-200 dark:border-neutral-800;
 }
 
-.prose-thinking h1 { @apply text-lg mt-2 mb-1; }
-.prose-thinking h2 { @apply text-sm mt-1.5 mb-1; }
-.prose-thinking h3 { @apply text-xs mt-1.5 mb-1; }
-.prose-thinking h4 { @apply text-xs mt-1.5 mb-1; }
-.prose-thinking p  { @apply my-1; }
+.prose-thinking h1 { @apply text-base font-medium tracking-tight mt-2 mb-1 text-neutral-800 dark:text-neutral-200; }
+.prose-thinking h2 { @apply text-sm font-medium tracking-tight mt-1.5 mb-1 text-neutral-800 dark:text-neutral-200; }
+.prose-thinking h3 { @apply text-[13px] font-medium tracking-tight mt-1.5 mb-1 text-neutral-800 dark:text-neutral-200; }
+.prose-thinking h4 { @apply text-xs font-medium tracking-tight mt-1.5 mb-1 text-neutral-800 dark:text-neutral-200; }
+.prose-thinking p  { @apply my-1 text-neutral-700 dark:text-neutral-300; }
+.prose-thinking strong { @apply font-medium text-neutral-800 dark:text-neutral-200; }
+.prose-thinking em { font-style: italic; }
 
 .prose-message pre,
 .prose-message pre code {
@@ -348,6 +350,12 @@ a:hover { opacity: 0.9; }
 .chat-code pre {
   @apply bg-transparent m-0 p-3 text-sm;
 }
+
+/* Unified speaker chip styling for chat messages */
+.chat-speaker {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-black/70 backdrop-blur px-2 py-0.5 text-sm leading-4 text-neutral-700 dark:text-neutral-300 mr-2;
+}
+.chat-speaker-text { @apply font-bold text-white; }
 
 .prose-message pre::-webkit-scrollbar {
   display: initial;

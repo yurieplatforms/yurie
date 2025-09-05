@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
-import { ArrowUp, Stop, Paperclip, X, FilePdf } from '@phosphor-icons/react'
+import { ArrowUp, Stop, Paperclip, X, FilePdf, Brain, CaretDown } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -384,8 +384,9 @@ export default function ChatClient() {
   const [outputHeight, setOutputHeight] = useState<number>(0)
   const [files, setFiles] = useState<File[]>([])
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
-  const [thinkingOpen, setThinkingOpen] = useState<boolean>(false)
-  const [thinkingText, setThinkingText] = useState<string>('')
+  const [reasoningByMessageIndex, setReasoningByMessageIndex] = useState<Record<number, string>>({})
+  const [reasoningOpenByIndex, setReasoningOpenByIndex] = useState<Record<number, boolean>>({})
+  const currentAssistantIndexRef = useRef<number | null>(null)
   const [status, setStatus] = useState<'submitted' | 'streaming' | 'ready' | 'error'>('ready')
   const abortControllerRef = useRef<AbortController | null>(null)
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
@@ -677,7 +678,7 @@ export default function ChatClient() {
               if (isParagraph) {
                 const withLabel = rawHtml.replace(
                   /<p(.*?)>/,
-                  `<p$1><span class="font-bold mr-1 text-neutral-800 dark:text-neutral-200">${speaker}:</span>`
+                  `<p$1><span class="chat-speaker"><span class="chat-speaker-text">${speaker}</span></span>`
                 )
                 return (
                   <div
@@ -689,7 +690,9 @@ export default function ChatClient() {
               }
               return (
                 <div key={`block-${i}`} className="prose-message font-sans">
-                  <div className="chat-label font-bold mb-1 text-neutral-800 dark:text-neutral-200">{speaker}:</div>
+                  <div className="chat-label mb-1">
+                    <span className="chat-speaker"><span className="chat-speaker-text">{speaker}</span></span>
+                  </div>
                   <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawHtml) }} />
                 </div>
               )
@@ -707,7 +710,7 @@ export default function ChatClient() {
               labelInjected = true
               return (
                 <div key={i} className="prose-message dark:prose-invert font-sans">
-                  <span className="font-bold mr-1">{speaker}:</span>
+                  <span className="chat-speaker"><span className="chat-speaker-text">{speaker}</span></span>
                   <img
                     src={p.src}
                     alt="Generated image"
@@ -766,7 +769,6 @@ export default function ChatClient() {
     setStatus('submitted')
 
     try {
-      setThinkingText('')
       // Capture current files as message attachments for preview in the chat container
       const attachmentsForPreview: AttachmentPreview[] = files.map((f) => {
         const url = URL.createObjectURL(f)
@@ -846,6 +848,11 @@ export default function ChatClient() {
       const decoder = new TextDecoder()
       let assistantText = ''
 
+      // Prepare per-message reasoning index for this assistant reply
+      const assistantIndex = nextMessages.length
+      currentAssistantIndexRef.current = assistantIndex
+      setReasoningByMessageIndex((prev) => ({ ...prev, [assistantIndex]: '' }))
+
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
       setStatus('streaming')
 
@@ -858,7 +865,10 @@ export default function ChatClient() {
         let tm: RegExpExecArray | null
         while ((tm = thoughtRegex.exec(chunk)) !== null) {
           const delta = tm[1]
-          if (delta) setThinkingText((prev) => prev + delta)
+          if (delta && currentAssistantIndexRef.current !== null) {
+            const idx = currentAssistantIndexRef.current
+            setReasoningByMessageIndex((prev) => ({ ...prev, [idx!]: (prev[idx!] || '') + delta }))
+          }
         }
         cleanChunk = cleanChunk.replace(thoughtRegex, '')
         assistantText += cleanChunk
@@ -888,7 +898,10 @@ export default function ChatClient() {
         let tm: RegExpExecArray | null
         while ((tm = thoughtRegex.exec(finalChunk)) !== null) {
           const delta = tm[1]
-          if (delta) setThinkingText((prev) => prev + delta)
+          if (delta && currentAssistantIndexRef.current !== null) {
+            const idx = currentAssistantIndexRef.current
+            setReasoningByMessageIndex((prev) => ({ ...prev, [idx!]: (prev[idx!] || '') + delta }))
+          }
         }
         cleanFinal = cleanFinal.replace(thoughtRegex, '')
         assistantText += cleanFinal
@@ -913,6 +926,7 @@ export default function ChatClient() {
     } finally {
       setIsLoading(false)
       setStatus('ready')
+      currentAssistantIndexRef.current = null
       abortControllerRef.current = null
     }
   }
@@ -926,7 +940,7 @@ export default function ChatClient() {
   }, [])
 
   return (
-    <section ref={containerRef} className={cn('w-full flex flex-col', messages.length === 0 && 'justify-center min-h-[60vh]')}>
+    <section ref={containerRef} className={cn('w-full flex flex-col pl-4 pr-4', messages.length === 0 && 'justify-center min-h-[60vh]')}>
       <div
         ref={outputRef}
         className={cn('rounded pt-2 pb-3 overflow-y-auto text-base font-sans', messages.length === 0 && 'hidden')}
@@ -937,26 +951,52 @@ export default function ChatClient() {
             const isFirst = i === 0
             const speakerChanged = !isFirst && messages[i - 1].role !== m.role
             const topMarginClass = isFirst ? 'mt-1' : speakerChanged ? 'mt-2' : 'mt-0.5'
-            const isLastAssistant = i === messages.length - 1 && m.role === 'assistant'
+            const reasoningText = reasoningByMessageIndex[i] || ''
+            const hasReasoning = m.role === 'assistant' && reasoningText.trim().length > 0
+            const isOpen = reasoningOpenByIndex[i] === true
             return (
               <div key={i} className={`${topMarginClass} mb-0`}>
-                {thinkingText && isLastAssistant && (
+                {hasReasoning && (
                   <div className="mb-2">
                     <button
                       type="button"
-                      onClick={() => setThinkingOpen((v) => !v)}
-                      className="text-xs text-neutral-600 dark:text-neutral-300 underline"
+                      onClick={() => setReasoningOpenByIndex((prev) => ({ ...prev, [i]: !prev[i] }))}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-800',
+                        'bg-white/70 dark:bg-black/70 backdrop-blur px-2.5 py-1 text-xs text-neutral-700 dark:text-neutral-300',
+                        'hover:bg-white dark:hover:bg-black transition-colors'
+                      )}
+                      aria-expanded={isOpen}
+                      aria-controls={`thinking-panel-${i}`}
                     >
-                      {thinkingOpen ? 'Hide thinking' : 'Show thinking'}
+                      <Brain className="size-3.5 text-[#7f91e0]" weight="fill" aria-hidden="true" />
+                      <span className="font-medium">{isOpen ? 'Hide reasoning' : 'Show reasoning'}</span>
+                      <CaretDown className={cn('size-3 transition-transform', isOpen && 'rotate-180')} aria-hidden="true" />
                     </button>
-                    {thinkingOpen && (
-                      <div className="mt-1 max-h-40 overflow-auto thinking-scroll rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-2">
-                        <div
-                          className="prose-message prose-thinking font-sans text-xs leading-5"
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(formatThinkingForMarkdown(thinkingText)) as string) }}
-                        />
-                      </div>
-                    )}
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          id={`thinking-panel-${i}`}
+                          key={`thinking-panel-${i}`}
+                          initial={{ height: 0, opacity: 0, y: -2 }}
+                          animate={{ height: 'auto', opacity: 1, y: 0 }}
+                          exit={{ height: 0, opacity: 0, y: -2 }}
+                          transition={{ duration: 0.2, ease: 'easeOut' }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-2 max-h-64 overflow-auto thinking-scroll rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
+                            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1">
+                              <span className="inline-flex size-1.5 rounded-full" style={{ backgroundColor: '#7f91e0' }} />
+                              <span>Reasoning</span>
+                            </div>
+                            <div
+                              className="prose-message prose-thinking font-sans text-[13px] leading-5"
+                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(formatThinkingForMarkdown(reasoningText)) as string) }}
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
                 <div className="min-w-0 w-full">

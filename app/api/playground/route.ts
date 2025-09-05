@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       inputPdfs?: { filename: string; dataUrl: string }[]
       maskDataUrl?: string | null
       previousResponseId?: string | null
-      reasoningEffort?: 'low' | 'medium' | 'high'
+      reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
       forceImageGeneration?: boolean
     }
 
@@ -135,10 +135,10 @@ export async function POST(request: Request) {
       return { type: 'code_interpreter' as const, container: { type: 'auto' as const } }
     }
 
-    const selectedEffort: 'low' | 'medium' | 'high' =
-      reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
+    const selectedEffort: 'minimal' | 'low' | 'medium' | 'high' =
+      reasoningEffort === 'minimal' || reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
         ? reasoningEffort
-        : 'medium'
+        : 'low'
 
     const lastUserMessage =
       [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
