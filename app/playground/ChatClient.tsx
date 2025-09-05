@@ -887,10 +887,10 @@ export default function ChatClient() {
   }, [])
 
   return (
-    <section ref={containerRef} className="w-full">
+    <section ref={containerRef} className={cn('w-full flex flex-col', messages.length === 0 && 'justify-center min-h-[60vh]')}>
       <div
         ref={outputRef}
-        className="rounded pt-2 pb-3 overflow-y-auto text-base font-sans"
+        className={cn('rounded pt-2 pb-3 overflow-y-auto text-base font-sans', messages.length === 0 && 'hidden')}
         style={{ height: outputHeight ? `${outputHeight}px` : undefined }}
       >
         {messages.length === 0 ? null : (
@@ -931,7 +931,16 @@ export default function ChatClient() {
           })
         )}
       </div>
-      <div ref={inputWrapperRef} className="mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0" aria-busy={isLoading}>
+      <div
+        ref={inputWrapperRef}
+        className={cn(messages.length === 0 ? 'mt-0 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
+        aria-busy={isLoading}
+      >
+        {messages.length === 0 ? (
+          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-3 sm:mt-4 mb-10 sm:mb-12">
+            What's on your mind today?
+          </div>
+        ) : null}
         <ChatInput
           value={input}
           onValueChange={setInput}
