@@ -49,6 +49,7 @@
     --sh-identifier: white;
     --sh-keyword: #f47067;
     --sh-string: #0fa295;
+    --scrollbar-thumb: #171717;
   }
   html {
     color-scheme: dark;
@@ -59,6 +60,113 @@ html {
   min-width: 360px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar color variables aligned to thinking background (neutral-50 / neutral-900) */
+:root {
+  --scrollbar-thumb: #fafafa; /* tailwind neutral-50 */
+}
+.dark {
+  --scrollbar-thumb: #171717; /* tailwind neutral-900 */
+}
+
+/* Desktop-only auto-hide scrollbar helper for scrollable containers */
+@media (hover: hover) and (pointer: fine) {
+  .scrollbar-auto-hide {
+    scrollbar-width: none; /* Firefox */
+  }
+  .scrollbar-auto-hide::-webkit-scrollbar {
+    width: 0; /* Chrome/Safari */
+    height: 0;
+    background: transparent;
+  }
+  /* When explicitly shown, render a thin scrollbar */
+  .scrollbar-auto-hide.show-scrollbar {
+    scrollbar-width: thin;
+  }
+  .scrollbar-auto-hide.show-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-auto-hide.show-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(120, 120, 120, 0.5);
+    border-radius: 8px;
+  }
+  .dark .scrollbar-auto-hide.show-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(160, 160, 160, 0.4);
+  }
+}
+
+/* Scoped scrollbar styling only for thinking container */
+@media (hover: hover) and (pointer: fine) {
+  .thinking-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+  .dark .thinking-scroll { scrollbar-color: var(--scrollbar-thumb) transparent; }
+
+  .thinking-scroll::-webkit-scrollbar {
+    width: 1px;
+    height: 1px;
+  }
+  .thinking-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .thinking-scroll::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+  }
+  .thinking-scroll::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+/* Ensure dark mode uses dark thumb on thinking container even if variables aren't picked up */
+@media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
+  .thinking-scroll { scrollbar-color: #171717 transparent; }
+  .thinking-scroll::-webkit-scrollbar-thumb { background-color: #171717 !important; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html.dark .thinking-scroll { scrollbar-color: #171717 transparent; }
+  html.dark .thinking-scroll::-webkit-scrollbar-thumb { background-color: #171717 !important; }
+}
+
+/* Page-level scrollbar: thinner and lighter for outer page only */
+@media (hover: hover) and (pointer: fine) {
+  html, body {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #ffffff transparent;
+  }
+  html::-webkit-scrollbar, body::-webkit-scrollbar {
+    width: 1px;
+    height: 1px;
+  }
+  html::-webkit-scrollbar-track, body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+    background-color: #ffffff;
+    border-radius: 8px;
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
+  html, body {
+    scrollbar-color: #000000 transparent;
+  }
+  html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+    background-color: #000000 !important;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  html.dark, html.dark body {
+    scrollbar-color: #000000 transparent;
+  }
+  html.dark::-webkit-scrollbar-thumb, html.dark body::-webkit-scrollbar-thumb {
+    background-color: #000000 !important;
+  }
 }
 
 /* Global link color uses the accent token */
@@ -243,7 +351,7 @@ a:hover { opacity: 0.9; }
 
 .prose-message pre::-webkit-scrollbar {
   display: initial;
-  height: 8px;
+  height: 4px;
 }
 .prose-message pre {
   scrollbar-width: thin;
@@ -260,14 +368,7 @@ a:hover { opacity: 0.9; }
   @apply text-neutral-800 dark:text-neutral-200;
 }
 
-pre::-webkit-scrollbar {
-  display: none;
-}
-
-pre {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+/* Always show code block scrollbars; do not hide globally */
 
 input[type='text'],
 input[type='email'] {

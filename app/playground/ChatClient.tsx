@@ -390,6 +390,7 @@ export default function ChatClient() {
   const abortControllerRef = useRef<AbortController | null>(null)
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
+  const pinnedToBottomRef = useRef<boolean>(true)
 
   useEffect(() => {
     return () => {
@@ -473,6 +474,42 @@ export default function ChatClient() {
       window.visualViewport?.removeEventListener('resize', recompute)
     }
   }, [])
+
+  // Maintain pinned-to-bottom state and toggle auto-hide scrollbar visibility
+  useEffect(() => {
+    const el = outputRef.current
+    if (!el) return
+    const updatePinned = () => {
+      try {
+        const threshold = 16
+        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+        pinnedToBottomRef.current = distanceFromBottom <= threshold
+      } catch {}
+    }
+    updatePinned()
+    el.addEventListener('scroll', updatePinned, { passive: true })
+    return () => {
+      el.removeEventListener('scroll', updatePinned as any)
+    }
+  }, [])
+
+  // If the output area resizes and user is pinned, keep them pinned
+  useEffect(() => {
+    if (pinnedToBottomRef.current) {
+      queueMicrotask(() => {
+        outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight })
+      })
+    }
+  }, [outputHeight])
+
+  // When a new message is appended and user is pinned, keep pinned
+  useEffect(() => {
+    if (pinnedToBottomRef.current) {
+      queueMicrotask(() => {
+        outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight })
+      })
+    }
+  }, [messages.length])
 
   function formatThinkingForMarkdown(input: string): string {
     if (!input) return input
@@ -838,7 +875,9 @@ export default function ChatClient() {
           return updated
         })
         queueMicrotask(() => {
-          outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight })
+          if (pinnedToBottomRef.current) {
+            outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight })
+          }
         })
       }
 
@@ -911,7 +950,7 @@ export default function ChatClient() {
                       {thinkingOpen ? 'Hide thinking' : 'Show thinking'}
                     </button>
                     {thinkingOpen && (
-                      <div className="mt-1 max-h-40 overflow-auto rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-2">
+                      <div className="mt-1 max-h-40 overflow-auto thinking-scroll rounded bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-2">
                         <div
                           className="prose-message prose-thinking font-sans text-xs leading-5"
                           dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(formatThinkingForMarkdown(thinkingText)) as string) }}
