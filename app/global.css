@@ -407,7 +407,7 @@ a:hover { opacity: 0.9; }
 .chat-row.user { @apply justify-end; }
 
 .chat-bubble {
-  @apply max-w-[80%] break-words rounded-3xl px-3 py-0.5 text-[14px] leading-[1.3] shadow-xs border bg-white text-neutral-900 dark:bg-black dark:text-white border-neutral-200 dark:border-neutral-800;
+  @apply max-w-[80%] break-words rounded-3xl px-3 py-0.5 text-base leading-6 shadow-xs border bg-white text-neutral-900 dark:bg-black dark:text-white border-neutral-200 dark:border-neutral-800;
   /* Ensure long words/URLs wrap nicely inside bubbles */
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -423,17 +423,15 @@ a:hover { opacity: 0.9; }
 
 /* Ensure markdown inside bubbles fits and inherits */
 .chat-bubble .prose { @apply m-0 w-full py-1 px-1; }
-.chat-bubble .prose p { @apply my-0.5 text-neutral-900 dark:text-white; }
-.chat-bubble .prose > :first-child { margin-top: 0.25rem !important; margin-bottom: 0.25rem !important; }
+/* Darker horizontal rule inside chat bubbles for better contrast */
+.chat-bubble .prose hr { @apply my-3 border-neutral-300 dark:border-neutral-700; }
+/* Keep internal blog spacing intact but trim outer edges inside chat bubbles */
+.chat-bubble .prose > :first-child { margin-top: 0.25rem !important; }
 .chat-bubble .prose > :last-child { margin-bottom: 0.25rem !important; }
-.chat-bubble .prose li { @apply my-0.5 text-neutral-900 dark:text-white; }
-.chat-bubble .prose strong { @apply text-neutral-900 dark:text-white; }
-.chat-bubble .prose blockquote { @apply text-neutral-800 dark:text-neutral-200; }
-.chat-bubble .prose a { color: var(--color-accent); }
 
 /* Tighter code blocks inside bubbles */
 .chat-bubble .chat-code { @apply mb-1; }
-.chat-bubble .chat-code pre { @apply p-2 text-[13px]; }
+.chat-bubble .chat-code pre { @apply p-2 text-sm; }
 
 .prose-message pre::-webkit-scrollbar {
   display: initial;
