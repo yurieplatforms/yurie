@@ -92,6 +92,7 @@ export async function POST(request: Request) {
       'Output',
       '- Always respond in Markdown. Never plain text or HTML.',
       '- Use headings, bullet lists, and fenced code blocks with language tags when relevant.',
+      '- For coding tasks, include actual code inline in fenced blocks with language tags. Do not provide downloadable links or attachments for code unless explicitly requested. Prefer complete, runnable snippets.',
       '',
       'Behavior',
       '- Prefer correctness and brevity. Expand only when asked or when the task requires depth.',

@@ -123,6 +123,39 @@ html {
   }
 }
 
+/* Scoped scrollbar styling for chat output area */
+@media (hover: hover) and (pointer: fine) {
+  .chat-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+  }
+  .dark .chat-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
+
+  .chat-scroll::-webkit-scrollbar {
+    width: 1px;
+    height: 1px;
+  }
+  .chat-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .chat-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.18);
+    border-radius: 8px;
+  }
+  .chat-scroll::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+/* Ensure dark mode uses dark thumb on chat container even if variables aren't picked up */
+@media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
+  .chat-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
+  .chat-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
+}
+@media (hover: hover) and (pointer: fine) {
+  html.dark .chat-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
+  html.dark .chat-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
+}
+
 /* Ensure dark mode uses dark thumb on thinking container even if variables aren't picked up */
 @media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
   .thinking-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
@@ -138,7 +171,7 @@ html {
 @media (hover: hover) and (pointer: fine) {
   html, body {
     scrollbar-width: thin; /* Firefox */
-    scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+    scrollbar-color: rgba(0, 0, 0, 0.10) transparent;
   }
   html::-webkit-scrollbar, body::-webkit-scrollbar {
     width: 1px;
@@ -148,23 +181,32 @@ html {
     background: transparent;
   }
   html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.18);
+    background-color: rgba(0, 0, 0, 0.10);
     border-radius: 8px;
+  }
+  html:hover::-webkit-scrollbar-thumb, body:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.18);
   }
 }
 @media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
   html, body {
-    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
   }
   html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.16) !important;
+  }
+  html:hover::-webkit-scrollbar-thumb, body:hover::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.22) !important;
   }
 }
 @media (hover: hover) and (pointer: fine) {
   html.dark, html.dark body {
-    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
   }
   html.dark::-webkit-scrollbar-thumb, html.dark body::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.16) !important;
+  }
+  html.dark:hover::-webkit-scrollbar-thumb, html.dark body:hover::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.22) !important;
   }
 }
@@ -357,9 +399,45 @@ a:hover { opacity: 0.9; }
 }
 .chat-speaker-text { @apply font-bold text-white; }
 
+/* Chat bubble containers */
+.chat-row {
+  @apply w-full flex items-end gap-1;
+}
+.chat-row.assistant { @apply justify-start; }
+.chat-row.user { @apply justify-end; }
+
+.chat-bubble {
+  @apply max-w-[80%] break-words rounded-3xl px-3 py-0.5 text-[14px] leading-[1.3] shadow-xs border bg-white text-neutral-900 dark:bg-black dark:text-white border-neutral-200 dark:border-neutral-800;
+  /* Ensure long words/URLs wrap nicely inside bubbles */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+  text-wrap: pretty;
+}
+.chat-bubble.assistant {
+  @apply bg-white text-neutral-900 dark:bg-black dark:text-white;
+}
+.chat-bubble.user {
+  @apply bg-white text-neutral-900 dark:bg-black dark:text-white;
+}
+
+/* Ensure markdown inside bubbles fits and inherits */
+.chat-bubble .prose { @apply m-0 w-full py-1 px-1; }
+.chat-bubble .prose p { @apply my-0.5 text-neutral-900 dark:text-white; }
+.chat-bubble .prose > :first-child { margin-top: 0.25rem !important; margin-bottom: 0.25rem !important; }
+.chat-bubble .prose > :last-child { margin-bottom: 0.25rem !important; }
+.chat-bubble .prose li { @apply my-0.5 text-neutral-900 dark:text-white; }
+.chat-bubble .prose strong { @apply text-neutral-900 dark:text-white; }
+.chat-bubble .prose blockquote { @apply text-neutral-800 dark:text-neutral-200; }
+.chat-bubble .prose a { color: var(--color-accent); }
+
+/* Tighter code blocks inside bubbles */
+.chat-bubble .chat-code { @apply mb-1; }
+.chat-bubble .chat-code pre { @apply p-2 text-[13px]; }
+
 .prose-message pre::-webkit-scrollbar {
   display: initial;
-  height: 4px;
+  height: 1px;
 }
 .prose-message pre {
   scrollbar-width: thin;
