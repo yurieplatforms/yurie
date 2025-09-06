@@ -18,6 +18,7 @@ const navItems = {
 
 export function Navbar() {
   const pathname = usePathname()
+  const isPlayground = pathname.startsWith('/playground')
   const handlePlaygroundClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
     if (pathname === '/playground') {
       e.preventDefault()
@@ -25,7 +26,7 @@ export function Navbar() {
     }
   }
   return (
-    <aside className="mb-16 tracking-tight">
+    <aside className={isPlayground ? 'mb-4 tracking-tight' : 'mb-16 tracking-tight'}>
       <div className="lg:sticky lg:top-20">
         <nav
           className="flex flex-row items-center relative px-0 pl-3 pr-3 sm:pl-4 sm:pr-4 pb-0 md:overflow-auto scroll-pr-6 md:relative"
