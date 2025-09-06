@@ -672,7 +672,7 @@ export default function ChatClient() {
             return (
               <div
                 key={i}
-                className="prose prose-neutral dark:prose-invert"
+                className={cn(role === 'assistant' ? 'prose-message' : 'prose prose-neutral dark:prose-invert')}
                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawHtml) }}
               />
             )
@@ -919,57 +919,64 @@ export default function ChatClient() {
             return (
               <div key={i} className={`${topMarginClass} mb-0`}>
                 <div className={cn('chat-row', m.role === 'user' ? 'user' : 'assistant')}>
-                  <div className={cn('chat-bubble', m.role === 'user' ? 'user' : 'assistant', 'min-w-0')}>
-                    {hasReasoning && (
-                      <div className="mt-3 mb-2">
-                        <button
-                          type="button"
-                          onClick={() => setReasoningOpenByIndex((prev) => ({ ...prev, [i]: !prev[i] }))}
-                          className={cn(
-                            'inline-flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-800',
-                            'bg-white/70 dark:bg-black/70 backdrop-blur px-2.5 py-1 text-xs text-neutral-700 dark:text-neutral-300',
-                            'hover:bg-white dark:hover:bg-black transition-colors'
-                          )}
-                          aria-expanded={isOpen}
-                          aria-controls={`thinking-panel-${i}`}
-                        >
-                          <Brain className="size-3.5 text-[#7f91e0]" weight="fill" aria-hidden="true" />
-                          <span className="font-medium">{isOpen ? 'Hide reasoning' : 'Show reasoning'}</span>
-                          <CaretDown className={cn('size-3 transition-transform', isOpen && 'rotate-180')} aria-hidden="true" />
-                        </button>
-                        <AnimatePresence initial={false}>
-                          {isOpen && (
-                            <motion.div
-                              id={`thinking-panel-${i}`}
-                              key={`thinking-panel-${i}`}
-                              initial={{ height: 0, opacity: 0, y: -2 }}
-                              animate={{ height: 'auto', opacity: 1, y: 0 }}
-                              exit={{ height: 0, opacity: 0, y: -2 }}
-                              transition={{ duration: 0.2, ease: 'easeOut' }}
-                              className="overflow-hidden"
-                            >
-                              <div className="mt-2 max-h-64 overflow-auto thinking-scroll rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
-                                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1">
-                                  <span className="inline-flex size-1.5 rounded-full" style={{ backgroundColor: '#7f91e0' }} />
-                                  <span>Reasoning</span>
-                                </div>
-                                <div
-                                  className="prose-message prose-thinking font-sans text-[13px] leading-5"
-                                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(formatThinkingForMarkdown(reasoningText)) as string) }}
-                                />
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                  {m.role === 'user' ? (
+                    <div className={cn('chat-bubble', 'user', 'min-w-0')}>
+                      <div className="min-w-0 w-full">
+                        {renderMessageContent(m.role, m.content)}
+                        {sentAttachmentsByMessageIndex[i]?.length ? (
+                          <MessageAttachmentList attachments={sentAttachmentsByMessageIndex[i]} />
+                        ) : null}
                       </div>
-                    )}
-                    <div className="min-w-0 w-full">
-                      {renderMessageContent(m.role, m.content)}
-                      {m.role === 'user' && sentAttachmentsByMessageIndex[i]?.length ? (
-                        <MessageAttachmentList attachments={sentAttachmentsByMessageIndex[i]} />
-                      ) : null}
                     </div>
-                  </div>
+                  ) : (
+                    <div className={cn('min-w-0 w-full')}>
+                      {hasReasoning && (
+                        <div className="mt-3 mb-2">
+                          <button
+                            type="button"
+                            onClick={() => setReasoningOpenByIndex((prev) => ({ ...prev, [i]: !prev[i] }))}
+                            className={cn(
+                              'inline-flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 px-0 py-0',
+                              'hover:opacity-80 transition-opacity'
+                            )}
+                            aria-expanded={isOpen}
+                            aria-controls={`thinking-panel-${i}`}
+                          >
+                            <Brain className="size-3.5 text-[#7f91e0]" weight="fill" aria-hidden="true" />
+                            <span className="font-medium">{isOpen ? 'Hide reasoning' : 'Show reasoning'}</span>
+                            <CaretDown className={cn('size-3 transition-transform', isOpen && 'rotate-180')} aria-hidden="true" />
+                          </button>
+                          <AnimatePresence initial={false}>
+                            {isOpen && (
+                              <motion.div
+                                id={`thinking-panel-${i}`}
+                                key={`thinking-panel-${i}`}
+                                initial={{ height: 0, opacity: 0, y: -2 }}
+                                animate={{ height: 'auto', opacity: 1, y: 0 }}
+                                exit={{ height: 0, opacity: 0, y: -2 }}
+                                transition={{ duration: 0.2, ease: 'easeOut' }}
+                                className="overflow-hidden"
+                              >
+                                <div className="mt-2 max-h-64 overflow-auto thinking-scroll rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
+                                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1">
+                                    <span className="inline-flex size-1.5 rounded-full" style={{ backgroundColor: '#7f91e0' }} />
+                                    <span>Reasoning</span>
+                                  </div>
+                                  <div
+                                    className="prose-message prose-thinking font-sans text-[13px] leading-5"
+                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(formatThinkingForMarkdown(reasoningText)) as string) }}
+                                  />
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
+                      <div className="min-w-0 w-full">
+                        {renderMessageContent(m.role, m.content)}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )

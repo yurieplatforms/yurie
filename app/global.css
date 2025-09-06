@@ -452,6 +452,15 @@ a:hover { opacity: 0.9; }
   @apply text-neutral-800 dark:text-neutral-200;
 }
 
+/* Remove outlines/borders for assistant (AI) messages */
+.chat-row.assistant > div img { border: 0 !important; outline: 0 !important; }
+.chat-row.assistant > div .thinking-scroll { border: 0 !important; box-shadow: none !important; }
+.chat-row.assistant > div button[aria-controls^="thinking-panel-"] { border: 0 !important; box-shadow: none !important; }
+.chat-row.assistant > div .chat-code { border: 0 !important; }
+.chat-row.assistant > div .chat-code-header { border-bottom: 0 !important; }
+.chat-row.assistant > div .chat-copy { border: 0 !important; }
+.chat-row.assistant > div .prose pre { border: 0 !important; outline: 0 !important; }
+
 /* Always show code block scrollbars; do not hide globally */
 
 input[type='text'],
