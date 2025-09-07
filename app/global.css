@@ -531,3 +531,18 @@ table {
 .title {
   text-wrap: balance;
 }
+
+/* Glowing border effect for Ask AI while generating */
+@keyframes aiBorderGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(127, 145, 224, 0.40), 0 0 0 1px rgba(127, 145, 224, 0.95) inset;
+  }
+  50% {
+    box-shadow: 0 0 18px 6px rgba(127, 145, 224, 0.55), 0 0 0 1px rgba(127, 145, 224, 1) inset;
+  }
+}
+
+.ai-border-glow {
+  border-color: #7f91e0 !important;
+  animation: aiBorderGlow 1.6s ease-in-out infinite;
+}

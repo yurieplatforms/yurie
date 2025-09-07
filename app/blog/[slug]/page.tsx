@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { marked } from 'marked'
 import { formatDate, getBlogPosts } from 'app/blog/utils'
+import AskAISummary from 'app/blog/AskAISummary'
 import { baseUrl } from 'app/sitemap'
 
 export async function generateStaticParams() {
@@ -96,8 +97,10 @@ export default async function Blog({ params }: { params: Promise<{ slug: string 
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
           {formatDate(safePost.metadata.publishedAt)}
         </p>
+        <AskAISummary title={safePost.metadata.title} content={safePost.content} inline portalTargetId="ai-summary-slot" />
       </div>
       <article className="prose prose-neutral dark:prose-invert">
+        <div id="ai-summary-slot" />
         <div
           dangerouslySetInnerHTML={{ __html: marked.parse(safePost.content) as string }}
         />

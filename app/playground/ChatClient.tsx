@@ -41,7 +41,7 @@ function PromptInput({ className, isLoading = false, maxHeight = 240, value, onV
     <PromptInputContext.Provider
       value={{ isLoading, value: value ?? internalValue, setValue: onValueChange ?? handleChange, maxHeight, onSubmit }}
     >
-      <div className={cn('bg-white dark:bg-black rounded-3xl border border-neutral-200 dark:border-neutral-800 p-2 shadow-xs', className)}>
+      <div className={cn('bg-white dark:bg-black rounded-3xl border border-neutral-200 dark:border-neutral-800 p-2 shadow-xs', isLoading && 'ai-border-glow', className)}>
         {children}
       </div>
     </PromptInputContext.Provider>
@@ -338,7 +338,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
   return (
     <div className="relative flex w-full flex-col gap-4">
       <div className="relative order-2 pb-3 sm:pb-4 md:order-1">
-        <PromptInput className="relative z-10 w-full p-0 pt-1 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange}>
+        <PromptInput className="relative z-10 w-full p-0 pt-1 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange} isLoading={status === 'streaming' || status === 'submitted'}>
           <FileList files={files} onFileRemove={onFileRemove} />
           <PromptInputTextarea
             onKeyDown={handleKeyDown}
