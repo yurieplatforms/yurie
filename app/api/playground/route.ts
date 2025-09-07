@@ -23,6 +23,13 @@ function redactPotentialInstructionLeaks(text: string): string {
   return out
 }
 
+// Enqueue helper to avoid throwing when the stream controller has already closed
+function safeEnqueue(controller: any, encoder: TextEncoder, text: string) {
+  try {
+    controller.enqueue(encoder.encode(text))
+  } catch {}
+}
+
 function parseDataUrl(dataUrl: string): { mime: string; buffer: Buffer } {
   const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl)
   if (!match) throw new Error('Invalid data URL')
@@ -162,6 +169,14 @@ export async function POST(request: Request) {
       if (webSearchAllowed) {
         visionTools.push(buildWebSearchTool())
       }
+      const pdfContentItems: any[] = await Promise.all(
+        (inputPdfs || []).map(async (p) => {
+          const file = await dataUrlToFile(p.dataUrl, p.filename || 'document.pdf')
+          const uploaded = await client.files.create({ file, purpose: 'user_data' as any })
+          return { type: 'input_file', file_id: uploaded.id }
+        })
+      )
+
       const responseCreateParams: any = {
         model: selectedModel,
         instructions: INSTRUCTIONS_MARKDOWN,
@@ -173,7 +188,7 @@ export async function POST(request: Request) {
             content: [
               { type: 'input_text', text: lastUserMessage || 'Analyze the attached files' },
               ...((inputImages || []).map((url) => ({ type: 'input_image', image_url: url }))),
-              ...((inputPdfs || []).map((p) => ({ type: 'input_file', filename: p.filename, file_data: p.dataUrl }))),
+              ...pdfContentItems,
             ],
           },
         ],
@@ -190,18 +205,18 @@ export async function POST(request: Request) {
               const type = String((event as any)?.type || '')
               if (type === 'response.output_text.delta') {
                 const delta = String((event as any).delta || '')
-                controller.enqueue(encoder.encode(redactPotentialInstructionLeaks(delta)))
+                safeEnqueue(controller, encoder, redactPotentialInstructionLeaks(delta))
                 continue
               }
               if (ALLOW_REASONING_STREAM && type.startsWith('response.reasoning') && (event as any)?.delta) {
                 const thought = redactPotentialInstructionLeaks(String((event as any).delta))
-                controller.enqueue(encoder.encode(`\n<thinking:${thought}>`))
+                safeEnqueue(controller, encoder, `\n<thinking:${thought}>`)
                 continue
               }
             }
           } catch (error) {
             console.error('Vision stream error', error)
-            controller.enqueue(encoder.encode(`\n[error] A server error occurred. Please try again.\n`))
+            safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.\n`)
           } finally {
             try {
               const hasFinal = typeof (stream as any).final === 'function'
@@ -240,19 +255,19 @@ export async function POST(request: Request) {
                   }
                 }
                 if (citations.length > 0) {
-                  controller.enqueue(encoder.encode(`\n\nSources:\n`))
+                  safeEnqueue(controller, encoder, `\n\nSources:\n`)
                   for (const s of citations) {
                     const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
-                    controller.enqueue(encoder.encode(`- [${title}](${s.url})\n`))
+                    safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
                   }
                 }
                 if (reasoningSummaryText) {
-                  controller.enqueue(encoder.encode(`\n<summary_text:${reasoningSummaryText}>\n`))
+                  safeEnqueue(controller, encoder, `\n<summary_text:${reasoningSummaryText}>\n`)
                 }
               } catch {}
               const respId: unknown = (finalResponse as any)?.id
               if (typeof respId === 'string' && respId) {
-                controller.enqueue(encoder.encode(`\n<response_id:${respId}>\n`))
+                safeEnqueue(controller, encoder, `\n<response_id:${respId}>\n`)
               }
             } catch {}
             controller.close()
@@ -333,17 +348,13 @@ export async function POST(request: Request) {
 
                 const image_base64 = (result as any).data?.[0]?.b64_json
                 if (typeof image_base64 === 'string' && image_base64.length > 0) {
-                  controller.enqueue(
-                    encoder.encode(`\n<image:data:image/png;base64,${image_base64}>\n`)
-                  )
+                  safeEnqueue(controller, encoder, `\n<image:data:image/png;base64,${image_base64}>\n`)
                 } else {
-                  controller.enqueue(
-                    encoder.encode(`\n[error] No image returned from Image API\n`)
-                  )
+                  safeEnqueue(controller, encoder, `\n[error] No image returned from Image API\n`)
                 }
               } catch (err) {
                 const message = err instanceof Error ? err.message : 'Unknown error'
-                controller.enqueue(encoder.encode(`\n[error] ${message}\n`))
+                safeEnqueue(controller, encoder, `\n[error] ${message}\n`)
               } finally {
                 controller.close()
               }
@@ -391,22 +402,22 @@ export async function POST(request: Request) {
                 const type: string = String(event?.type || '')
                 if (type === 'response.image_generation_call.partial_image') {
                   const b64 = (event as any).partial_image_b64 as string | undefined
-                  if (b64) controller.enqueue(encoder.encode(`\n<image_partial:data:image/png;base64,${b64}>\n`))
+                  if (b64) safeEnqueue(controller, encoder, `\n<image_partial:data:image/png;base64,${b64}>\n`)
                   continue
                 }
                 if (ALLOW_REASONING_STREAM && type.startsWith('response.reasoning') && (event as any)?.delta) {
                   const thought = redactPotentialInstructionLeaks(String((event as any).delta))
-                  controller.enqueue(encoder.encode(`\n<thinking:${thought}>`))
+                  safeEnqueue(controller, encoder, `\n<thinking:${thought}>`)
                   continue
                 }
                 if (type.endsWith('.error') || type === 'error') {
-                  controller.enqueue(encoder.encode(`\n[error] Image generation error. Please try again.\n`))
+                  safeEnqueue(controller, encoder, `\n[error] Image generation error. Please try again.\n`)
                   continue
                 }
               }
             } catch (err) {
               console.error('Image generation stream error', err)
-              controller.enqueue(encoder.encode(`\n[error] Image generation failed. Please try again.\n`))
+              safeEnqueue(controller, encoder, `\n[error] Image generation failed. Please try again.\n`)
             } finally {
               try {
                 const hasFinal = typeof (stream as any).final === 'function'
@@ -419,15 +430,11 @@ export async function POST(request: Request) {
                 for (const call of imageCalls) {
                   const base64: unknown = (call && (call as any).result) as unknown
                   if (typeof base64 === 'string' && base64.length > 0) {
-                    controller.enqueue(
-                      encoder.encode(`\n<image:data:image/png;base64,${base64}>\n`)
-                    )
+                    safeEnqueue(controller, encoder, `\n<image:data:image/png;base64,${base64}>\n`)
                   }
                   const revised: unknown = (call as any)?.revised_prompt
                   if (typeof revised === 'string' && revised) {
-                    controller.enqueue(
-                      encoder.encode(`\n<revised_prompt:${revised}>\n`)
-                    )
+                    safeEnqueue(controller, encoder, `\n<revised_prompt:${revised}>\n`)
                   }
                 }
                 for (const out of outputs) {
@@ -441,11 +448,11 @@ export async function POST(request: Request) {
                   }
                 }
                 if (reasoningSummaryText) {
-                  controller.enqueue(encoder.encode(`\n<summary_text:${reasoningSummaryText}>\n`))
+                  safeEnqueue(controller, encoder, `\n<summary_text:${reasoningSummaryText}>\n`)
                 }
                 const respId: unknown = (finalResponse as any)?.id
                 if (typeof respId === 'string' && respId) {
-                  controller.enqueue(encoder.encode(`\n<response_id:${respId}>\n`))
+                  safeEnqueue(controller, encoder, `\n<response_id:${respId}>\n`)
                 }
               } catch {}
               controller.close()
@@ -495,18 +502,18 @@ export async function POST(request: Request) {
             const type = String((event as any)?.type || '')
             if (type === 'response.output_text.delta') {
               const delta = String((event as any).delta || '')
-              controller.enqueue(encoder.encode(redactPotentialInstructionLeaks(delta)))
+              safeEnqueue(controller, encoder, redactPotentialInstructionLeaks(delta))
               continue
             }
             if (ALLOW_REASONING_STREAM && type.startsWith('response.reasoning') && (event as any)?.delta) {
               const thought = redactPotentialInstructionLeaks(String((event as any).delta))
-              controller.enqueue(encoder.encode(`\n<thinking:${thought}>`))
+              safeEnqueue(controller, encoder, `\n<thinking:${thought}>`)
               continue
             }
           }
         } catch (error) {
           console.error('Text stream error', error)
-          controller.enqueue(encoder.encode(`\n[error] A server error occurred. Please try again.`))
+          safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
         } finally {
           try {
             const hasFinal = typeof (stream as any).final === 'function'
@@ -519,9 +526,7 @@ export async function POST(request: Request) {
             for (const call of imageCalls) {
               const base64: unknown = (call && call.result) as unknown
               if (typeof base64 === 'string' && base64.length > 0) {
-                controller.enqueue(
-                  encoder.encode(`\n<image:data:image/png;base64,${base64}>\n`)
-                )
+                safeEnqueue(controller, encoder, `\n<image:data:image/png;base64,${base64}>\n`)
               }
             }
             let reasoningSummaryText: string | undefined
@@ -558,24 +563,24 @@ export async function POST(request: Request) {
                 }
               }
               if (citations.length > 0) {
-                controller.enqueue(encoder.encode(`\n\nSources:\n`))
+                safeEnqueue(controller, encoder, `\n\nSources:\n`)
                 for (const s of citations) {
                   const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
-                  controller.enqueue(encoder.encode(`- [${title}](${s.url})\n`))
+                  safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
                 }
               }
               if (reasoningSummaryText) {
-                controller.enqueue(encoder.encode(`\n<summary_text:${reasoningSummaryText}>\n`))
+                safeEnqueue(controller, encoder, `\n<summary_text:${reasoningSummaryText}>\n`)
               }
             } catch {}
             const respId: unknown = (finalResponse as any)?.id
             if (typeof respId === 'string' && respId) {
-              controller.enqueue(encoder.encode(`\n<response_id:${respId}>\n`))
+              safeEnqueue(controller, encoder, `\n<response_id:${respId}>\n`)
             }
             const status: unknown = (finalResponse as any)?.status
             const incompleteReason: unknown = (finalResponse as any)?.incomplete_details?.reason
             if (status === 'incomplete' && typeof incompleteReason === 'string' && incompleteReason) {
-              controller.enqueue(encoder.encode(`\n<incomplete:${incompleteReason}>\n`))
+              safeEnqueue(controller, encoder, `\n<incomplete:${incompleteReason}>\n`)
             }
           } catch {}
           controller.close()
