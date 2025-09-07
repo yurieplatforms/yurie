@@ -39,7 +39,7 @@ export function Navbar() {
                 <Link
                   key={path}
                   href={path}
-                  className={`${isActive ? 'font-bold text-neutral-900 dark:text-neutral-100' : 'font-normal text-neutral-600 dark:text-neutral-400'} transition-all hover:text-neutral-800 dark:hover:text-neutral-200 flex items-center align-middle relative py-1 pl-0 pr-4 sm:pr-5 lg:pr-6 my-1 mr-0 ml-0`}
+                  className={`${isActive ? 'font-bold text-neutral-900 dark:text-neutral-100' : 'font-normal text-neutral-600 dark:text-neutral-400'} ${path === '/' ? 'select-none' : ''} transition-all hover:text-neutral-800 dark:hover:text-neutral-200 flex items-center align-middle relative py-1 pl-0 pr-4 sm:pr-5 lg:pr-6 my-1 mr-0 ml-0`}
                   onClick={path === '/playground' ? handlePlaygroundClick : undefined}
                 >
                   {path === '/' ? (
@@ -48,7 +48,8 @@ export function Navbar() {
                       alt="Home"
                       width={32}
                       height={32}
-                      className="w-8 h-8"
+                      className="w-8 h-8 select-none"
+                      draggable={false}
                     />
                   ) : (
                     name
