@@ -285,8 +285,10 @@ type ChatInputProps = {
   onFileRemove: (file: File) => void
   stop: () => void
   status?: 'submitted' | 'streaming' | 'ready' | 'error'
+  modelChoice: string
+  onModelChange: (value: string) => void
 }
-function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUpload, onFileRemove, stop, status }: ChatInputProps) {
+function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUpload, onFileRemove, stop, status, modelChoice, onModelChange }: ChatInputProps) {
   const isOnlyWhitespace = (text: string) => !/[^\s]/.test(text)
 
   const handleSend = useCallback(() => {
@@ -347,6 +349,30 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
           <PromptInputActions className="mt-3 w-full justify-between p-2">
             <div className="flex flex-wrap gap-2">
               <ButtonFileUpload onFileUpload={onFileUpload} />
+              <div className="relative inline-flex items-center">
+                <label className="sr-only" htmlFor="model-select">Model</label>
+                <select
+                  id="model-select"
+                  value={modelChoice}
+                  onChange={(e) => onModelChange(e.target.value)}
+                  className={cn(
+                    'h-9 text-xs rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black pl-3 pr-9 appearance-none',
+                    'text-neutral-900 dark:text-neutral-100 focus:outline-none'
+                  )}
+                >
+                  <option value="openai:gpt-5">OpenAI GPT-5</option>
+                  <option value="xai/grok-4">xAI Grok-4</option>
+                  <option value="gateway:zai/glm-4.5">ZAI GLM-4.5</option>
+                  <option value="gateway:cohere/command-a">Cohere Command A</option>
+                  <option value="gateway:anthropic/claude-3.5-haiku">Claude 3.5 Haiku</option>
+                  <option value="gateway:google/gemini-2.5-flash-image-preview">Gemini 2.5 Flash Image</option>
+                </select>
+                <CaretDown
+                  className={cn('pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 size-4 text-neutral-600 dark:text-neutral-300')}
+                  weight="bold"
+                  aria-hidden="true"
+                />
+              </div>
             </div>
             <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
               <button
@@ -392,6 +418,7 @@ export default function ChatClient() {
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
+  const [modelChoice, setModelChoice] = useState<string>('openai:gpt-5')
 
   useEffect(() => {
     return () => {
@@ -790,6 +817,13 @@ export default function ChatClient() {
       const payloadMessages = nextMessages.map((m) => ({ ...m, content: stripImageData(m.content) }))
       const ac = new AbortController()
       abortControllerRef.current = ac
+      const [prov, model] = (() => {
+        const idx = modelChoice.indexOf(':')
+        if (idx === -1) return ['openai', null] as const
+        const p = modelChoice.slice(0, idx)
+        const m = modelChoice.slice(idx + 1)
+        return [p, m] as const
+      })()
       const res = await fetch('/api/playground', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -798,12 +832,22 @@ export default function ChatClient() {
           inputImages,
           inputPdfs,
           previousResponseId: lastResponseId,
+          provider: prov === 'gateway' ? 'gateway' : 'openai',
+          gatewayModel: prov === 'gateway' ? model : undefined,
         }),
         signal: ac.signal,
       })
 
-      if (!res.ok || !res.body) {
-        throw new Error(`Request failed: ${res.status}`)
+      if (!res.ok) {
+        let details = ''
+        try {
+          details = await res.text()
+        } catch {}
+        const msg = details && details.trim().length > 0 ? details : `Request failed: ${res.status}`
+        throw new Error(msg)
+      }
+      if (!res.body) {
+        throw new Error('No response body received from server')
       }
 
       const reader = res.body.getReader()
@@ -1003,6 +1047,8 @@ export default function ChatClient() {
           onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
           stop={stop}
           status={status}
+          modelChoice={modelChoice}
+          onModelChange={setModelChoice}
         />
       </div>
     </section>
