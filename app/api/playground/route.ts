@@ -108,6 +108,7 @@ export async function POST(request: Request) {
     const DEFAULT_AI_PROVIDER = (process.env.MODEL_PROVIDER || 'openai').toLowerCase()
     const provider = (requestedProvider || DEFAULT_AI_PROVIDER) === 'gateway' ? 'gateway' : 'openai'
     const hasInputPdfsEarly = Array.isArray(inputPdfs) && inputPdfs.length > 0
+    const hasInputImagesEarly = Array.isArray(inputImages) && inputImages.length > 0
 
     // Utilities for AI Gateway (OpenAI-compatible Chat Completions)
     const extractBase64FromDataUrl = (dataUrl: string): { mime: string; base64: string } => {
@@ -338,9 +339,16 @@ export async function POST(request: Request) {
     }
 
     if (provider === 'gateway') {
-      // If PDFs are attached and OpenAI is configured, prefer OpenAI path which supports file uploads
-      if (hasInputPdfsEarly && process.env.OPENAI_API_KEY) {
-        // Intentionally fall through to the OpenAI flow below
+      const hasAttachments = hasInputPdfsEarly || hasInputImagesEarly
+      if (hasAttachments) {
+        if (process.env.OPENAI_API_KEY) {
+          // Intentionally fall through to the OpenAI flow below
+        } else {
+          return new Response(
+            'Attachment analysis is not supported by the selected provider. Please switch to OpenAI GPT-5 or remove image/PDF attachments.',
+            { status: 400, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
+          )
+        }
       } else {
         return await handleGateway()
       }
@@ -348,10 +356,10 @@ export async function POST(request: Request) {
 
     // If OpenAI is requested but not configured, transparently fall back to the Gateway if available
     if (!process.env.OPENAI_API_KEY && (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
-      // Gateway does not support PDF file parts; provide a clearer error when PDFs are present
-      if (hasInputPdfsEarly) {
+      // Gateway cannot handle large inline attachments; provide clear guidance when any are present
+      if (hasInputPdfsEarly || hasInputImagesEarly) {
         return new Response(
-          'PDF analysis is not supported by the selected provider. Please switch to OpenAI GPT-5 or remove the PDFs.',
+          'Attachment analysis is not supported by the selected provider. Please switch to OpenAI GPT-5 or remove image/PDF attachments.',
           { status: 400, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
         )
       }
