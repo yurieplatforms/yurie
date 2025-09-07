@@ -159,7 +159,7 @@ export async function POST(request: Request) {
       return out
     }
 
-    async function handleGateway(): Promise<Response> {
+    const handleGateway = async (): Promise<Response> => {
       const apiKeyGw = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN
       if (!apiKeyGw) {
         return new Response(JSON.stringify({ error: 'Missing AI_GATEWAY_API_KEY or VERCEL_OIDC_TOKEN server env var' }), {
