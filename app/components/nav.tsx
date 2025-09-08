@@ -42,20 +42,24 @@ export function Navbar() {
                 <Link
                   key={path}
                   href={path}
-                  className={`${isActive ? 'font-bold text-neutral-900 dark:text-neutral-100' : 'font-normal text-neutral-600 dark:text-neutral-400'} ${path === '/' ? 'select-none' : ''} rounded-xl px-3 sm:px-4 py-1 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700 flex items-center align-middle relative my-1 mr-0 ml-0`}
+                  className={`${isActive ? 'font-bold text-neutral-900 dark:text-neutral-100' : 'font-normal text-neutral-600 dark:text-neutral-400'} ${path === '/' ? 'select-none' : ''} group rounded-xl px-3 sm:px-4 py-1 transition-colors hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700 flex items-center align-middle relative my-1 mr-0 ml-0`}
                   onClick={path === '/playground' ? handlePlaygroundClick : undefined}
                 >
                   {path === '/' ? (
-                    <Image
-                      src="/favicon.ico"
-                      alt="Home"
-                      width={32}
-                      height={32}
-                      className="w-8 h-8 select-none"
-                      draggable={false}
-                    />
+                    <span className="inline-flex items-center justify-center rounded-xl p-2 -m-2 transition-colors group-hover:bg-neutral-50 dark:group-hover:bg-neutral-900">
+                      <Image
+                        src="/favicon.ico"
+                        alt="Home"
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 select-none"
+                        draggable={false}
+                      />
+                    </span>
                   ) : (
-                    name
+                    <span className="inline-block rounded-xl px-3 py-1.5 -mx-3 -my-1.5 transition-colors group-hover:bg-neutral-50 dark:group-hover:bg-neutral-900">
+                      {name}
+                    </span>
                   )}
                 </Link>
               )
