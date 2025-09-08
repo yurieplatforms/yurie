@@ -340,12 +340,19 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
       <div className="relative order-2 pb-3 sm:pb-4 md:order-1">
         <PromptInput className="relative z-10 w-full p-0 pt-1 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange} isLoading={status === 'streaming' || status === 'submitted'}>
           <FileList files={files} onFileRemove={onFileRemove} />
-          <PromptInputTextarea
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            placeholder="Ask anything"
-            className="min-h-[44px] pt-3 px-4 text-base leading-[1.3] sm:text-base md:text-base"
-          />
+          <div className="relative">
+            {(status === 'streaming' || status === 'submitted') && (value.trim().length === 0) && (
+              <div className="pointer-events-none absolute left-4 top-3">
+                <span className="ai-text-shimmer text-base leading-[1.3] select-none">One moment…</span>
+              </div>
+            )}
+            <PromptInputTextarea
+              onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
+              placeholder={(status === 'streaming' || status === 'submitted') ? '' : 'Ask anything'}
+              className="min-h-[44px] pt-3 px-4 text-base leading-[1.3] sm:text-base md:text-base"
+            />
+          </div>
           <PromptInputActions className="mt-3 w-full justify-between p-2">
             <div className="flex flex-wrap gap-2">
               <ButtonFileUpload onFileUpload={onFileUpload} />

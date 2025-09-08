@@ -34,7 +34,7 @@ export default function AskAISummary({ title, content, inline, className, portal
       .replace(/<[^>]+>/g, '')
       .replace(/\n{3,}/g, '\n\n')
       .trim()
-    return `Summarize the following Yurie Blog post in 5-7 concise bullet points.\n- Focus on the key facts and outcomes.\n- Keep each bullet under 20 words.\n- End with \\\"Why it matters\\\": 1 short line.\n\nTitle: ${title}\n\nContent:\n${stripped}`
+    return `Summarize the following Yurie Blog/Research post in 5-7 concise bullet points.\n- Focus on the key facts and outcomes.\n- Keep each bullet under 20 words.\n- End with \\\"Why it matters\\\": 1 short line.\n\nTitle: ${title}\n\nContent:\n${stripped}`
   }, [title, content])
 
   // Abort is handled on unmount; clicking while loading is disabled (no stop action)
@@ -157,7 +157,7 @@ export default function AskAISummary({ title, content, inline, className, portal
             (isActive
               ? "border-[#7f91e0] text-[#7f91e0] bg-white dark:bg-black"
               : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black") +
-            " active:border-[#7f91e0] active:text-[#7f91e0] active:bg-[#7f91e0]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7f91e0]" +
+            " active:border-[#7f91e0] active:text-[#7f91e0] active:bg-[#7f91e0]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7f91e0] ai-hover-glow" +
             (loading ? " ai-border-glow" : "")
           }
           aria-busy={loading}
@@ -165,7 +165,7 @@ export default function AskAISummary({ title, content, inline, className, portal
           disabled={loading}
         >
           <img src="/favicon.ico" alt="" className="h-4 w-4" aria-hidden="true" />
-          <span>{loading ? 'Generating summary…' : 'Ask AI'}</span>
+          <span className={loading ? 'ai-text-shimmer' : undefined}>{loading ? 'Generating summary…' : 'Ask AI'}</span>
         </button>
         ) })()}
       </div>
