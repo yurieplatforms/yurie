@@ -32,7 +32,7 @@ export function Navbar() {
     <aside className={isPlayground ? 'mb-4 tracking-tight' : 'mb-16 tracking-tight'}>
       <div className="lg:sticky lg:top-20">
         <nav
-          className="flex flex-row items-center relative px-0 pl-3 pr-3 sm:pl-4 sm:pr-4 pb-0 md:overflow-auto scroll-pr-6 md:relative"
+          className="flex flex-row items-center relative px-0 pb-0 md:overflow-auto scroll-pr-6 md:relative"
           id="nav"
         >
           <div className="flex flex-row space-x-8 sm:space-x-10 lg:space-x-12 xl:space-x-16 pr-6 sm:pr-10">
@@ -42,7 +42,7 @@ export function Navbar() {
                 <Link
                   key={path}
                   href={path}
-                  className={`${isActive ? 'font-bold text-neutral-900 dark:text-neutral-100' : 'font-normal text-neutral-600 dark:text-neutral-400'} ${path === '/' ? 'select-none' : ''} transition-all hover:text-neutral-800 dark:hover:text-neutral-200 flex items-center align-middle relative py-1 pl-0 pr-4 sm:pr-5 lg:pr-6 my-1 mr-0 ml-0`}
+                  className={`${isActive ? 'font-bold text-neutral-900 dark:text-neutral-100' : 'font-normal text-neutral-600 dark:text-neutral-400'} ${path === '/' ? 'select-none' : ''} rounded-xl px-3 sm:px-4 py-1 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700 flex items-center align-middle relative my-1 mr-0 ml-0`}
                   onClick={path === '/playground' ? handlePlaygroundClick : undefined}
                 >
                   {path === '/' ? (
