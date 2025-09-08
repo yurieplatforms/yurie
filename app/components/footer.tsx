@@ -11,7 +11,7 @@ export default function Footer() {
   return (
     <footer className="mb-16 px-3 sm:px-4">
       <p className="mt-8 text-neutral-600 dark:text-neutral-300">
-        © {new Date().getFullYear()} Yurie. All rights reserved.
+        © {new Date().getFullYear()} Yurie Platforms. All rights reserved.
       </p>
     </footer>
   )

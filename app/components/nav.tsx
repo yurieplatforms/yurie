@@ -9,13 +9,13 @@ const navItems = {
     name: 'home',
   },
   '/blog': {
-    name: 'blog',
+    name: 'Blog',
   },
   '/research': {
-    name: 'research',
+    name: 'Research',
   },
   '/playground': {
-    name: 'playground',
+    name: 'Playground',
   },
 }
 

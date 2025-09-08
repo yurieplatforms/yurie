@@ -636,13 +636,13 @@ table {
   }
 }
 
-/* Left-to-right shimmer for loading text */
+/* Right-to-left shimmer for loading text */
 @keyframes aiTextShimmer {
   0% {
-    background-position: 0% 50%;
+    background-position: 200% 50%;
   }
   100% {
-    background-position: 200% 50%;
+    background-position: 0% 50%;
   }
 }
 
