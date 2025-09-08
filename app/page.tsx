@@ -1,4 +1,4 @@
-import { BlogPosts } from 'app/components/posts'
+import { BlogPosts, ResearchPosts } from 'app/components/posts'
 
 export default function Page() {
   return (
@@ -7,10 +7,15 @@ export default function Page() {
         Welcome to Yurie
       </h1>
       <p className="mb-4 px-3 sm:px-4">
-        {`a quiet corner of the internet for clear, thoughtful reporting on complex tech and science. We cut through noise and hype to explain what matters, with context you can trust and zero doomscroll. Settle in, follow your curiosity, and leave with clarity, not anxiety.`}
+        {`a quiet corner for complex tech and finance. what happened, why it matters, what to watch—grounded in documents and data, with definitions, timelines, and next checks.`}
       </p>
       <div className="my-8">
-        <BlogPosts />
+        <h2 className="mb-4 text-lg font-medium px-3 sm:px-4">Read Latest Blog</h2>
+        <BlogPosts limit={5} />
+      </div>
+      <div className="my-8">
+        <h2 className="mb-4 text-lg font-medium px-3 sm:px-4">Explore Research Papers</h2>
+        <ResearchPosts limit={5} />
       </div>
     </section>
   )
