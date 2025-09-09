@@ -370,7 +370,6 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                   <option value="openai:gpt-5">OpenAI GPT-5</option>
                   <option value="xai/grok-4">xAI Grok-4</option>
                   <option value="gateway:zai/glm-4.5">ZAI GLM-4.5</option>
-                  <option value="gateway:cohere/command-a">Cohere Command A</option>
                   <option value="gateway:anthropic/claude-3.5-haiku">Claude 3.5 Haiku</option>
                   <option value="gateway:google/gemini-2.5-flash-image-preview">Gemini 2.5 Flash Image</option>
                 </select>
@@ -994,7 +993,14 @@ export default function ChatClient() {
                             aria-controls={`thinking-panel-${i}`}
                           >
                             <Brain className="size-3.5 text-[#7f91e0]" weight="fill" aria-hidden="true" />
-                            <span className="font-medium">{isOpen ? 'Hide reasoning' : 'Show reasoning'}</span>
+                            <span
+                              className={cn(
+                                'font-medium',
+                                (!isOpen && (status === 'streaming' || status === 'submitted')) && 'ai-text-shimmer'
+                              )}
+                            >
+                              {isOpen ? 'Hide reasoning' : 'Show reasoning'}
+                            </span>
                             <CaretDown className={cn('size-3 transition-transform', isOpen && 'rotate-180')} aria-hidden="true" />
                           </button>
                           <AnimatePresence initial={false}>

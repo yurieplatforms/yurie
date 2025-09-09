@@ -46,7 +46,7 @@ export function Navbar() {
                   onClick={path === '/playground' ? handlePlaygroundClick : undefined}
                 >
                   {path === '/' ? (
-                    <span className="inline-flex items-center justify-center rounded-xl p-2 -m-2 transition-colors group-hover:bg-neutral-50 dark:group-hover:bg-neutral-900">
+                    <span className="inline-flex items-center justify-center rounded-xl p-2 -m-2 transition-colors">
                       <Image
                         src="/favicon.ico"
                         alt="Home"
