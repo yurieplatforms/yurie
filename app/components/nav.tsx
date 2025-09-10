@@ -7,11 +7,11 @@ const navItems = {
   '/playground': {
     name: 'Playground',
   },
-  '/blog': {
-    name: 'Blog',
-  },
   '/research': {
     name: 'Research',
+  },
+  '/blog': {
+    name: 'Blog',
   },
 }
 
@@ -47,11 +47,21 @@ export function Navbar() {
                         <img
                           src="/favicon.ico"
                           alt="Yurie"
-                          width={18}
-                          height={18}
-                          className="w-4 h-4 sm:w-5 sm:h-5"
+                          width={20}
+                          height={20}
+                          className="w-5 h-5 sm:w-6 sm:h-6 transform transition-transform duration-200 ease-out origin-center group-hover:scale-110"
                           draggable={false}
                         />
+                        <span>{name}</span>
+                      </>
+                    ) : path === '/research' ? (
+                      <>
+                        <span className="inline-block text-[16px] sm:text-[20px] transform transition-transform duration-200 ease-out origin-center group-hover:scale-110" aria-hidden="true">🔬</span>
+                        <span>{name}</span>
+                      </>
+                    ) : path === '/blog' ? (
+                      <>
+                        <span className="inline-block text-[16px] sm:text-[20px] transform transition-transform duration-200 ease-out origin-center group-hover:scale-110" aria-hidden="true">📰</span>
                         <span>{name}</span>
                       </>
                     ) : (
