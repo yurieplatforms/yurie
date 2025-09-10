@@ -425,6 +425,20 @@ export default function ChatClient() {
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
   const [modelChoice, setModelChoice] = useState<string>('openai:gpt-5')
+  const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>('today')
+
+  useEffect(() => {
+    const compute = () => {
+      try {
+        const hours = new Date().getHours()
+        const isNight = hours < 6 || hours >= 18
+        setTimeOfDayWord(isNight ? 'tonight' : 'today')
+      } catch {}
+    }
+    compute()
+    const id = window.setInterval(compute, 60000)
+    return () => window.clearInterval(id)
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -1047,7 +1061,7 @@ export default function ChatClient() {
       >
         {messages.length === 0 ? (
           <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-3 sm:mt-4 mb-10 sm:mb-12">
-            What's on your mind today?
+            {`What's on your mind ${timeOfDayWord}?`}
           </div>
         ) : null}
         <ChatInput
