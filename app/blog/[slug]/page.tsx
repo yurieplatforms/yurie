@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { marked } from 'marked'
 import { formatDate, getBlogPosts } from 'app/blog/utils'
-import AskAISummary from 'app/blog/AskAISummary'
+import AskAISummary from 'app/api/AskAISummary'
 import { baseUrl } from 'app/sitemap'
 
 export async function generateStaticParams() {
