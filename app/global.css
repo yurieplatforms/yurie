@@ -454,6 +454,9 @@ a:hover { opacity: 0.9; }
   hyphens: auto;
   text-wrap: pretty;
 }
+.chat-bubble.compact {
+  @apply p-0 bg-transparent border-0 shadow-none rounded-2xl;
+}
 .chat-bubble.assistant {
   @apply bg-white text-neutral-900 dark:bg-black dark:text-white;
 }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
-import { ArrowUp, Stop, Paperclip, X, FilePdf, Brain, CaretDown } from '@phosphor-icons/react'
+import { ArrowUp, Stop, Paperclip, X, Brain, CaretDown } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -92,10 +92,10 @@ function PromptInputActions({ children, className, ...props }: React.HTMLAttribu
   )
 }
 
-function MessageAttachmentList({ attachments }: { attachments: AttachmentPreview[] }) {
+function MessageAttachmentList({ attachments, compact = false }: { attachments: AttachmentPreview[]; compact?: boolean }) {
   if (!attachments || attachments.length === 0) return null
   return (
-    <div className="mt-2 mb-3 flex flex-row flex-wrap gap-2">
+    <div className={cn(compact ? 'm-0' : 'mt-2 mb-3', 'flex flex-row flex-wrap gap-2')}>
       {attachments.map((att) => (
         att.isImage ? (
           <img
@@ -112,12 +112,6 @@ function MessageAttachmentList({ attachments }: { attachments: AttachmentPreview
             rel="noreferrer"
             className="bg-white dark:bg-black hover:bg-neutral-50 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-md px-3 py-2 text-xs inline-flex items-center gap-2"
           >
-            {(() => {
-              const isPdf = att.mime === 'application/pdf' || (att.name.split('.').pop() || '').toLowerCase() === 'pdf'
-              return isPdf ? (
-                <FilePdf className="size-4 text-[#7f91e0]" weight="fill" aria-hidden="true" />
-              ) : null
-            })()}
             <span className="font-medium">{att.name}</span>
             <span className="text-neutral-500 ml-2">{(att.size / 1024).toFixed(2)}kB</span>
           </a>
@@ -168,22 +162,13 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
   return (
     <div className="relative mr-2 mb-0 flex items-center">
       <div className="bg-white dark:bg-black hover:bg-neutral-50 dark:hover:bg-neutral-900 border-neutral-200 dark:border-neutral-800 flex w-full items-center gap-3 rounded-2xl border p-2 pr-3 transition-colors">
-        <div className="bg-neutral-200 dark:bg-neutral-700 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md">
-          {isLikelyImage ? (
-            previewUrl ? (
+        {isLikelyImage ? (
+          <div className="bg-neutral-200 dark:bg-neutral-700 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md">
+            {previewUrl ? (
               <img src={previewUrl} alt={file.name} className="h-full w-full object-cover" loading="eager" decoding="async" onError={loadDataUrlFallback} />
-            ) : null
-          ) : (
-            (() => {
-              const ext = (file.name.split('.').pop() || '').toLowerCase()
-              const isPdf = (file.type || '').toLowerCase() === 'application/pdf' || ext === 'pdf'
-              if (isPdf) {
-                return <FilePdf className="size-6 text-[#7f91e0]" weight="fill" aria-hidden="true" />
-              }
-              return <div className="text-center text-xs text-gray-400">{ext.toUpperCase()}</div>
-            })()
-          )}
-        </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex flex-col overflow-hidden">
           <span className="truncate text-xs font-medium">{file.name}</span>
           <span className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)}kB</span>
@@ -196,7 +181,7 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
           className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 shadow-none transition-colors"
           aria-label="Remove file"
         >
-          <X className="size-3" />
+          <X className="size-3" weight="bold" />
         </button>
       ) : null}
     </div>
@@ -260,7 +245,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         htmlFor={inputId}
         role="button"
         tabIndex={0}
-        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black cursor-pointer"
+        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
         aria-label="Add files"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -363,7 +348,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                   value={modelChoice}
                   onChange={(e) => onModelChange(e.target.value)}
                   className={cn(
-                    'h-9 text-xs rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black pl-3 pr-9 appearance-none',
+                    'h-9 text-xs rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black pl-3 pr-9 appearance-none transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700',
                     'text-neutral-900 dark:text-neutral-100 focus:outline-none'
                   )}
                 >
@@ -382,7 +367,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
             </div>
             <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
               <button
-                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white"
+                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700"
                 disabled={
                   status !== 'streaming' &&
                   status !== 'submitted' &&
@@ -425,7 +410,15 @@ export default function ChatClient() {
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
   const [modelChoice, setModelChoice] = useState<string>('openai:gpt-5')
-  const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>('today')
+  const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(() => {
+    try {
+      const hours = new Date().getHours()
+      const isNight = hours < 6 || hours >= 18
+      return isNight ? 'tonight' : 'today'
+    } catch {
+      return 'today'
+    }
+  })
 
   useEffect(() => {
     const compute = () => {
@@ -435,7 +428,6 @@ export default function ChatClient() {
         setTimeOfDayWord(isNight ? 'tonight' : 'today')
       } catch {}
     }
-    compute()
     const id = window.setInterval(compute, 60000)
     return () => window.clearInterval(id)
   }, [])
@@ -769,7 +761,8 @@ export default function ChatClient() {
 
   async function handleSend() {
     const trimmed = input.trim()
-    if (!trimmed || isLoading) return
+    if (isLoading) return
+    if (trimmed.length === 0 && files.length === 0) return
     const userMsg: ChatMessage = { role: 'user', content: trimmed }
     const nextMessages: ChatMessage[] = [...messages, userMsg]
     setMessages(nextMessages)
@@ -984,14 +977,29 @@ export default function ChatClient() {
               <div key={i} className={`${topMarginClass} mb-0`}>
                 <div className={cn('chat-row', m.role === 'user' ? 'user' : 'assistant')}>
                   {m.role === 'user' ? (
-                    <div className={cn('chat-bubble', 'user', 'min-w-0')}>
-                      <div className="min-w-0 w-full">
-                        {renderMessageContent(m.role, m.content)}
-                        {sentAttachmentsByMessageIndex[i]?.length ? (
-                          <MessageAttachmentList attachments={sentAttachmentsByMessageIndex[i]} />
-                        ) : null}
-                      </div>
-                    </div>
+                    (() => {
+                      const attachments = sentAttachmentsByMessageIndex[i] || []
+                      const hasText = (m.content || '').trim().length > 0
+                      const hasAttachments = attachments.length > 0
+                      const attachmentsOnly = !hasText && hasAttachments
+                      if (attachmentsOnly) {
+                        return (
+                          <div className={cn('chat-bubble', 'user', 'compact', 'inline-flex')}>
+                            <MessageAttachmentList attachments={attachments} compact />
+                          </div>
+                        )
+                      }
+                      return (
+                        <div className={cn('chat-bubble', 'user', 'min-w-0')}>
+                          <div className="min-w-0 w-full">
+                            {renderMessageContent(m.role, m.content)}
+                            {hasAttachments ? (
+                              <MessageAttachmentList attachments={attachments} />
+                            ) : null}
+                          </div>
+                        </div>
+                      )
+                    })()
                   ) : (
                     <div className={cn('min-w-0 w-full')}>
                       {hasReasoning && (
@@ -1015,7 +1023,7 @@ export default function ChatClient() {
                             >
                               {isOpen ? 'Hide reasoning' : 'Show reasoning'}
                             </span>
-                            <CaretDown className={cn('size-3 transition-transform', isOpen && 'rotate-180')} aria-hidden="true" />
+                            <CaretDown className={cn('size-3 transition-transform', isOpen && 'rotate-180')} weight="bold" aria-hidden="true" />
                           </button>
                           <AnimatePresence initial={false}>
                             {isOpen && (
