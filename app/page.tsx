@@ -4,7 +4,7 @@ import ChatClient from './playground/ChatClient'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Playground',
+  title: { absolute: 'Yurie' },
   description: 'Try Yurie AI in the Playground.',
 }
 
