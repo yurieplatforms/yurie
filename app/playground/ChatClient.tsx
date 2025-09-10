@@ -367,9 +367,9 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                     'text-neutral-900 dark:text-neutral-100 focus:outline-none'
                   )}
                 >
-                  <option value="openai:gpt-5">OpenAI GPT-5</option>
                   <option value="xai/grok-4">xAI Grok-4</option>
                   <option value="gateway:zai/glm-4.5">ZAI GLM-4.5</option>
+                  <option value="openai:gpt-5">OpenAI GPT-5</option>
                   <option value="gateway:anthropic/claude-3.5-haiku">Claude 3.5 Haiku</option>
                   <option value="gateway:google/gemini-2.5-flash-image-preview">Gemini 2.5 Flash Image</option>
                 </select>

@@ -70,32 +70,6 @@ html {
   --scrollbar-thumb: #171717; /* tailwind neutral-900 */
 }
 
-/* Desktop-only auto-hide scrollbar helper for scrollable containers */
-@media (hover: hover) and (pointer: fine) {
-  .scrollbar-auto-hide {
-    scrollbar-width: none; /* Firefox */
-  }
-  .scrollbar-auto-hide::-webkit-scrollbar {
-    width: 0; /* Chrome/Safari */
-    height: 0;
-    background: transparent;
-  }
-  /* When explicitly shown, render a thin scrollbar */
-  .scrollbar-auto-hide.show-scrollbar {
-    scrollbar-width: thin;
-  }
-  .scrollbar-auto-hide.show-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  .scrollbar-auto-hide.show-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(120, 120, 120, 0.5);
-    border-radius: 8px;
-  }
-  .dark .scrollbar-auto-hide.show-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(160, 160, 160, 0.4);
-  }
-}
 
 /* Scoped scrollbar styling only for thinking container */
 @media (hover: hover) and (pointer: fine) {
@@ -464,11 +438,6 @@ a:hover { opacity: 0.9; }
   @apply bg-transparent m-0 p-3 text-sm;
 }
 
-/* Unified speaker chip styling for chat messages */
-.chat-speaker {
-  @apply inline-flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-black/70 backdrop-blur px-2 py-0.5 text-sm leading-4 text-neutral-700 dark:text-neutral-300 mr-2;
-}
-.chat-speaker-text { @apply font-bold text-white; }
 
 /* Chat bubble containers */
 .chat-row {
@@ -517,11 +486,6 @@ a:hover { opacity: 0.9; }
   @apply font-normal;
 }
 
-/* Tighter spacing for explicit chat labels placed before content blocks */
-.prose-message .chat-label {
-  margin-top: 0 !important;
-  @apply text-neutral-800 dark:text-neutral-200;
-}
 
 /* Remove outlines/borders for assistant (AI) messages */
 .chat-row.assistant > div img { border: 0 !important; outline: 0 !important; }
@@ -543,23 +507,6 @@ input[type='email'] {
   text-rendering: optimizeLegibility;
 }
 
-.stable-input {
-  line-height: 1.5;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  contain: layout paint style;
-}
-
-.stable-input:focus {
-  contain: paint;
-}
-
-.no-focus-outline:focus,
-.no-focus-outline:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}
 
 table {
   display: block;
