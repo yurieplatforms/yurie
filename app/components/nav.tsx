@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const navItems = {
-  '/playground': {
+  '/': {
     name: 'Playground',
   },
   '/research': {
@@ -17,11 +17,11 @@ const navItems = {
 
 export function Navbar() {
   const pathname = usePathname()
-  const isPlayground = pathname.startsWith('/playground')
+  const isPlayground = pathname === '/'
   const handlePlaygroundClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
-    if (pathname === '/playground') {
+    if (pathname === '/') {
       e.preventDefault()
-      window.location.assign('/playground')
+      window.location.assign('/')
     }
   }
   return (
@@ -33,16 +33,16 @@ export function Navbar() {
         >
           <div className="flex flex-row space-x-8 sm:space-x-10 lg:space-x-12 xl:space-x-16 pr-6 sm:pr-10">
             {Object.entries(navItems).map(([path, { name }]) => {
-              const isActive = pathname.startsWith(path)
+              const isActive = path === '/' ? pathname === '/' : pathname.startsWith(path)
               return (
                 <Link
                   key={path}
                   href={path}
                   className={`${isActive ? 'font-bold text-neutral-900 dark:text-neutral-100' : 'font-normal text-neutral-600 dark:text-neutral-400'} group rounded-xl px-3 sm:px-4 py-1 transition-colors hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700 flex items-center align-middle relative my-1 mr-0 ml-0`}
-                  onClick={path === '/playground' ? handlePlaygroundClick : undefined}
+                  onClick={path === '/' ? handlePlaygroundClick : undefined}
                 >
                   <span className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 -mx-3 -my-1.5 transition-colors group-hover:bg-neutral-50 dark:group-hover:bg-neutral-900">
-                    {path === '/playground' ? (
+                    {path === '/' ? (
                       <>
                         <img
                           src="/favicon.ico"
