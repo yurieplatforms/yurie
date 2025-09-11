@@ -55,15 +55,9 @@ export function Navbar() {
                         <span>{name}</span>
                       </>
                     ) : path === '/research' ? (
-                      <>
-                        <span className="inline-block text-[16px] sm:text-[20px] transform transition-transform duration-200 ease-out origin-center group-hover:scale-110" aria-hidden="true">🔬</span>
-                        <span>{name}</span>
-                      </>
+                      <span>{name}</span>
                     ) : path === '/blog' ? (
-                      <>
-                        <span className="inline-block text-[16px] sm:text-[20px] transform transition-transform duration-200 ease-out origin-center group-hover:scale-110" aria-hidden="true">📰</span>
-                        <span>{name}</span>
-                      </>
+                      <span>{name}</span>
                     ) : (
                       name
                     )}

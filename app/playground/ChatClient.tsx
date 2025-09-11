@@ -353,10 +353,11 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                   )}
                 >
                   <option value="xai/grok-4">xAI Grok-4</option>
-                  <option value="gateway:zai/glm-4.5">ZAI GLM-4.5</option>
+                  <option value="gateway:zai/glm-4.5">zAI GLM-4.5</option>
+                  <option value="gateway:google/gemini-2.5-flash-image-preview">Nano Banana</option>
                   <option value="openai:gpt-5">OpenAI GPT-5</option>
-                  <option value="gateway:anthropic/claude-3.5-haiku">Claude 3.5 Haiku</option>
-                  <option value="gateway:google/gemini-2.5-flash-image-preview">Gemini 2.5 Flash Image</option>
+                  <option value="gateway:anthropic/claude-sonnet-4">Claude Sonnet 4</option>
+                  <option value="gateway:anthropic/claude-3.5-haiku">Claude Haiku 3.5</option>
                 </select>
                 <CaretDown
                   className={cn('pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 size-4 text-neutral-600 dark:text-neutral-300')}
@@ -1018,7 +1019,7 @@ export default function ChatClient() {
                             <span
                               className={cn(
                                 'font-medium',
-                                (!isOpen && (status === 'streaming' || status === 'submitted')) && 'ai-text-shimmer'
+                                (status === 'streaming' || status === 'submitted') && 'ai-text-shimmer'
                               )}
                             >
                               {isOpen ? 'Hide reasoning' : 'Show reasoning'}
