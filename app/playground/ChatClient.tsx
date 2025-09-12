@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
-import { ArrowUp, Stop, Paperclip, X, Brain, CaretDown } from '@phosphor-icons/react'
+import { ArrowUp, Stop, Paperclip, X, Brain, CaretDown, Globe } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -272,8 +272,12 @@ type ChatInputProps = {
   status?: 'submitted' | 'streaming' | 'ready' | 'error'
   modelChoice: string
   onModelChange: (value: string) => void
+  useTavily: boolean
+  onUseTavilyToggle: () => void
+  hasActiveImageAttachments: boolean
+  hasActivePdfAttachments: boolean
 }
-function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUpload, onFileRemove, stop, status, modelChoice, onModelChange }: ChatInputProps) {
+function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUpload, onFileRemove, stop, status, modelChoice, onModelChange, useTavily, onUseTavilyToggle, hasActiveImageAttachments, hasActivePdfAttachments }: ChatInputProps) {
   const isOnlyWhitespace = (text: string) => !/[^\s]/.test(text)
 
   const handleSend = useCallback(() => {
@@ -322,10 +326,9 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
 
   const modelOptions = useMemo(
     () => [
-      { value: 'xai/grok-4', label: 'xAI Grok-4' },
       { value: 'gateway:zai/glm-4.5', label: 'zAI GLM-4.5' },
       { value: 'gateway:google/gemini-2.5-flash-image-preview', label: 'Nano Banana' },
-      { value: 'openai:gpt-5', label: 'OpenAI GPT-5' },
+      { value: 'gateway:openai/gpt-5', label: 'OpenAI GPT-5' },
       { value: 'gateway:anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
       { value: 'gateway:anthropic/claude-3.5-haiku', label: 'Claude Haiku 3.5' },
     ],
@@ -345,7 +348,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
           <div className="relative">
             {(status === 'streaming' || status === 'submitted') && (value.trim().length === 0) && (
               <div className="pointer-events-none absolute left-4 top-3">
-                <span className="ai-text-shimmer text-base leading-[1.3] select-none">One moment…</span>
+                <span className="ai-text-shimmer text-base leading-[1.3] select-none">{useTavily ? 'Researching…' : (hasActivePdfAttachments ? 'Analyzing file…' : (hasActiveImageAttachments ? 'Analyzing image…' : 'One moment…'))}</span>
               </div>
             )}
             <PromptInputTextarea
@@ -358,6 +361,21 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
           <PromptInputActions className="mt-3 w-full justify-between p-2">
             <div className="flex flex-wrap gap-2">
               <ButtonFileUpload onFileUpload={onFileUpload} />
+              <button
+                type="button"
+                onClick={onUseTavilyToggle}
+                className={cn(
+                  'size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black transition-colors',
+                  useTavily
+                    ? 'ring-1 ring-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                    : 'hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700'
+                )}
+                aria-pressed={useTavily}
+                aria-label="Web search"
+                title="Web search"
+              >
+                <Globe className="size-4" weight="bold" aria-hidden="true" />
+              </button>
               <div className="relative inline-flex items-center">
                 <label className="sr-only" htmlFor="model-select">Model</label>
                 <div className="relative group">
@@ -431,7 +449,10 @@ export default function ChatClient() {
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
-  const [modelChoice, setModelChoice] = useState<string>('openai:gpt-5')
+  const [modelChoice, setModelChoice] = useState<string>('gateway:openai/gpt-5')
+  const [useTavily, setUseTavily] = useState<boolean>(false)
+  const [lastRequestHadImage, setLastRequestHadImage] = useState<boolean>(false)
+  const [lastRequestHadPdf, setLastRequestHadPdf] = useState<boolean>(false)
   const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(() => {
     try {
       const hours = new Date().getHours()
@@ -826,7 +847,9 @@ export default function ChatClient() {
             })
         )
       )
+      setLastRequestHadImage(imageFiles.length > 0)
       const pdfFiles = files.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
+      setLastRequestHadPdf(pdfFiles.length > 0)
       const inputPdfs: { filename: string; dataUrl: string }[] = await Promise.all(
         pdfFiles.map(
           (f) =>
@@ -869,6 +892,7 @@ export default function ChatClient() {
           previousResponseId: lastResponseId,
           provider: prov === 'gateway' ? 'gateway' : 'openai',
           gatewayModel: prov === 'gateway' ? model : undefined,
+          useTavily,
         }),
         signal: ac.signal,
       })
@@ -967,6 +991,8 @@ export default function ChatClient() {
     } finally {
       setIsLoading(false)
       setStatus('ready')
+      setLastRequestHadImage(false)
+      setLastRequestHadPdf(false)
       currentAssistantIndexRef.current = null
       abortControllerRef.current = null
     }
@@ -1106,6 +1132,10 @@ export default function ChatClient() {
           status={status}
           modelChoice={modelChoice}
           onModelChange={setModelChoice}
+          useTavily={useTavily}
+          onUseTavilyToggle={() => setUseTavily((v) => !v)}
+          hasActiveImageAttachments={lastRequestHadImage}
+          hasActivePdfAttachments={lastRequestHadPdf}
         />
       </div>
     </section>

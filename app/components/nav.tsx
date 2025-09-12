@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { IconFlare } from '@tabler/icons-react'
+import { IconArticle } from '@tabler/icons-react'
 
 const navItems = {
   '/': {
@@ -55,9 +57,25 @@ export function Navbar() {
                         <span>{name}</span>
                       </>
                     ) : path === '/research' ? (
-                      <span>{name}</span>
+                      <>
+                        <IconFlare
+                          size={20}
+                          stroke={1.75}
+                          className="text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-neutral-100 transition-colors"
+                          aria-hidden
+                        />
+                        <span>{name}</span>
+                      </>
                     ) : path === '/blog' ? (
-                      <span>{name}</span>
+                      <>
+                        <IconArticle
+                          size={20}
+                          stroke={1.75}
+                          className="text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-neutral-100 transition-colors"
+                          aria-hidden
+                        />
+                        <span>{name}</span>
+                      </>
                     ) : (
                       name
                     )}

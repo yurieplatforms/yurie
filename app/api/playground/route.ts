@@ -1,4 +1,5 @@
 import OpenAI, { toFile } from 'openai'
+import { tavily } from '@tavily/core'
 export const runtime = 'nodejs'
 
 type ChatMessage = {
@@ -7,6 +8,7 @@ type ChatMessage = {
 }
 
 const ALLOW_REASONING_STREAM = process.env.ALLOW_REASONING_STREAM !== '0'
+const MAX_OUTPUT_TOKENS = Number(process.env.PLAYGROUND_MAX_OUTPUT_TOKENS || 4096)
 
 // Simple streaming leak guard to prevent accidental disclosure of internal instructions
 function redactPotentialInstructionLeaks(text: string): string {
@@ -53,9 +55,10 @@ const INSTRUCTIONS_MARKDOWN = [
   '- Always respond in Markdown. Never plain text or HTML.',
   '- Use headings, bullet lists, and fenced code blocks with language tags when relevant.',
   '- For coding tasks, include actual code inline in fenced blocks with language tags. Do not provide downloadable links or attachments for code unless explicitly requested. Prefer complete, runnable snippets.',
+  '- Lead with a brief summary, then provide detailed, comprehensive content.',
   '',
   'Behavior',
-  '- Prefer correctness and brevity. Expand only when asked or when the task requires depth.',
+  '- Prefer correctness and thoroughness. Default to comprehensive, well-structured answers with context, assumptions, examples, and caveats when helpful.',
   '- Use available tools (web search, code interpreter, image generation) when they improve freshness, precision, or task completion. Cite sources when you use web search.',
   '- Web search policy: ALWAYS prioritize `yurie.ai` and `yurie.ai/blog` for information about Yurie. Try site-restricted queries first (e.g., "site:yurie.ai" or "site:yurie.ai/blog"), then broaden only if needed.',
   '- When the user asks about Yurie features, pricing, documentation, or blog topics, search and cite `yurie.ai` and `yurie.ai/blog` first. Prefer these sources in citation order when relevant.',
@@ -84,6 +87,7 @@ export async function POST(request: Request) {
       provider: requestedProvider,
       gatewayModel: requestedGatewayModel,
       providerOptions,
+      useTavily,
     } = (await request.json()) as {
       messages: ChatMessage[]
       inputImages?: string[]
@@ -95,6 +99,7 @@ export async function POST(request: Request) {
       provider?: 'openai' | 'gateway'
       gatewayModel?: string
       providerOptions?: any
+      useTavily?: boolean
     }
 
     if (!Array.isArray(messages)) {
@@ -102,6 +107,45 @@ export async function POST(request: Request) {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       })
+    }
+
+    // Optional Tavily context
+    const lastUserMessageUniversal = [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
+    const useTavilyEnabled = Boolean(useTavily)
+    let tavilyContextStr = ''
+    let tavilySources: { url?: string; title?: string }[] = []
+    if (useTavilyEnabled && process.env.TAVILY_API_KEY && lastUserMessageUniversal) {
+      try {
+        const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY as string })
+        const tvlyRes: any = await tvly.search(lastUserMessageUniversal, {
+          search_depth: 'advanced',
+          max_results: 12,
+          include_answer: true,
+          include_images: false,
+          include_raw_content: true,
+          topic: 'general',
+        } as any)
+        const resultsArray: any[] = Array.isArray(tvlyRes?.results) ? tvlyRes.results : []
+        const topResults = resultsArray.slice(0, 10)
+        const contentLines: string[] = []
+        if (typeof tvlyRes?.answer === 'string' && tvlyRes.answer.trim().length > 0) {
+          contentLines.push(`Answer: ${tvlyRes.answer}`)
+        }
+        for (const r of topResults) {
+          const title: string = typeof r?.title === 'string' && r.title ? r.title : (r?.url || 'Source')
+          const raw: string = typeof r?.raw_content === 'string' && r.raw_content
+            ? r.raw_content
+            : (typeof r?.content === 'string' ? r.content : '')
+          const snippetRaw = raw
+          const snippet = snippetRaw.length > 280 ? `${snippetRaw.slice(0, 280)}…` : snippetRaw
+          const url: string = r?.url || ''
+          contentLines.push(`- ${title}: ${snippet}${url ? `\n  Source: ${url}` : ''}`)
+        }
+        if (contentLines.length > 0) {
+          tavilyContextStr = `Web context (from Tavily):\n${contentLines.join('\n')}`
+        }
+        tavilySources = topResults.map((r: any) => ({ url: r?.url, title: r?.title }))
+      } catch {}
     }
 
     // Provider selection (default to OpenAI unless explicitly configured)
@@ -117,10 +161,13 @@ export async function POST(request: Request) {
       return { mime: match[1], base64: match[2] }
     }
 
-    const buildGatewayMessages = (allMessages: ChatMessage[], imgs?: string[], pdfs?: { filename: string; dataUrl: string }[]) => {
+    const buildGatewayMessages = (allMessages: ChatMessage[], imgs?: string[], pdfs?: { filename: string; dataUrl: string }[], extraSystem?: string) => {
       const out: any[] = []
       // Preserve system instructions as a system message
       out.push({ role: 'system', content: INSTRUCTIONS_MARKDOWN })
+      if (typeof extraSystem === 'string' && extraSystem.trim().length > 0) {
+        out.push({ role: 'system', content: extraSystem })
+      }
 
       const lastUserMessage = [...allMessages].reverse().find((m) => m.role === 'user')?.content ?? ''
       const hasImgs = Array.isArray(imgs) && imgs.length > 0
@@ -188,10 +235,11 @@ export async function POST(request: Request) {
       if (prefersAnalysis) {
         try {
           const model = requestedGatewayModel || process.env.AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4'
-          const gwMessages = buildGatewayMessages(messages, inputImages, inputPdfs)
+          const gwMessages = buildGatewayMessages(messages, inputImages, inputPdfs, tavilyContextStr)
           const stream = await (gw as any).chat.completions.create({
             model,
             messages: gwMessages,
+            max_tokens: MAX_OUTPUT_TOKENS,
             stream: true,
             ...(providerOptions ? { providerOptions } : {}),
           })
@@ -217,6 +265,15 @@ export async function POST(request: Request) {
               } catch {
                 safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
               } finally {
+                try {
+                  if (Array.isArray(tavilySources) && tavilySources.length > 0) {
+                    safeEnqueue(controller, encoder, `\n\nSources (Tavily):\n`)
+                    for (const s of tavilySources) {
+                      const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
+                      if (s.url) safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
+                    }
+                  }
+                } catch {}
                 controller.close()
               }
             },
@@ -250,6 +307,7 @@ export async function POST(request: Request) {
           const completion: any = await (gw as any).chat.completions.create({
             model,
             messages: gwMessages,
+            max_tokens: MAX_OUTPUT_TOKENS,
             // @ts-ignore - modalities is gateway-specific
             modalities: ['text', 'image'],
             stream: false,
@@ -292,11 +350,12 @@ export async function POST(request: Request) {
 
       // Text or multimodal analysis path using Chat Completions streaming (fallback when not in image-gen)
       const model = requestedGatewayModel || process.env.AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4'
-      const gwMessages = buildGatewayMessages(messages, inputImages, inputPdfs)
+      const gwMessages = buildGatewayMessages(messages, inputImages, inputPdfs, tavilyContextStr)
 
       const stream = await (gw as any).chat.completions.create({
         model,
         messages: gwMessages,
+        max_tokens: MAX_OUTPUT_TOKENS,
         stream: true,
         // Forward provider options if given
         ...(providerOptions ? { providerOptions } : {}),
@@ -324,6 +383,15 @@ export async function POST(request: Request) {
           } catch (error) {
             safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
           } finally {
+            try {
+              if (Array.isArray(tavilySources) && tavilySources.length > 0) {
+                safeEnqueue(controller, encoder, `\n\nSources (Tavily):\n`)
+                for (const s of tavilySources) {
+                  const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
+                  if (s.url) safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
+                }
+              }
+            } catch {}
             controller.close()
           }
         },
@@ -389,7 +457,8 @@ export async function POST(request: Request) {
 
     
 
-    const header = 'Conversation history follows. Respond as Yurie.\n'
+    const headerPrefix = tavilyContextStr ? tavilyContextStr + '\n\n' : ''
+    const header = headerPrefix + 'Conversation history follows. Respond as Yurie.\n'
     const messagesStr = messages
       .map((m) => `${m.role === 'user' ? 'User' : 'Yurie'}: ${stripImageData(m.content)}`)
       .join('\n')
@@ -419,7 +488,7 @@ export async function POST(request: Request) {
     const selectedEffort: 'minimal' | 'low' | 'medium' | 'high' =
       reasoningEffort === 'minimal' || reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
         ? reasoningEffort
-        : 'medium'
+        : 'high'
 
     const lastUserMessage =
       [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
@@ -431,7 +500,7 @@ export async function POST(request: Request) {
       /\b(describe|explain|analy[sz]e|caption|tell me about)\b[^\n]*\b(image|picture|photo|it|this)\b/i
     const hasInputImages = Array.isArray(inputImages) && inputImages.length > 0
     const hasInputPdfs = Array.isArray(inputPdfs) && inputPdfs.length > 0
-    const webSearchAllowed = useWebSearchEffective && !hasInputImages && !hasInputPdfs
+    const webSearchAllowed = useWebSearchEffective && !hasInputImages && !hasInputPdfs && !useTavilyEnabled
     const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
 
     if (!forceImageGeneration && (hasInputImages || hasInputPdfs) && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
@@ -762,7 +831,7 @@ export async function POST(request: Request) {
     const stream = await client.responses.stream({
       model: selectedModel,
       reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
-      text: ({ verbosity: 'high' } as any),
+      text: ({ verbosity: 'high', max_output_tokens: MAX_OUTPUT_TOKENS } as any),
       instructions: INSTRUCTIONS_MARKDOWN,
       input: prompt,
       tools: toolList as any,
@@ -848,6 +917,15 @@ export async function POST(request: Request) {
               }
               if (reasoningSummaryText) {
                 safeEnqueue(controller, encoder, `\n<summary_text:${reasoningSummaryText}>\n`)
+              }
+            } catch {}
+            try {
+              if (Array.isArray(tavilySources) && tavilySources.length > 0) {
+                safeEnqueue(controller, encoder, `\n\nSources (Tavily):\n`)
+                for (const s of tavilySources) {
+                  const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
+                  if (s.url) safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
+                }
               }
             } catch {}
             const respId: unknown = (finalResponse as any)?.id
