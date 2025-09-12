@@ -320,6 +320,23 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
     }
   }, [onFileUpload])
 
+  const modelOptions = useMemo(
+    () => [
+      { value: 'xai/grok-4', label: 'xAI Grok-4' },
+      { value: 'gateway:zai/glm-4.5', label: 'zAI GLM-4.5' },
+      { value: 'gateway:google/gemini-2.5-flash-image-preview', label: 'Nano Banana' },
+      { value: 'openai:gpt-5', label: 'OpenAI GPT-5' },
+      { value: 'gateway:anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
+      { value: 'gateway:anthropic/claude-3.5-haiku', label: 'Claude Haiku 3.5' },
+    ],
+    []
+  )
+
+  const selectedModelLabel = useMemo(() => {
+    const found = modelOptions.find((o) => o.value === modelChoice)
+    return found ? found.label : modelChoice
+  }, [modelChoice, modelOptions])
+
   return (
     <div className="relative flex w-full flex-col gap-4">
       <div className="relative order-2 pb-3 sm:pb-4 md:order-1">
@@ -343,27 +360,31 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
               <ButtonFileUpload onFileUpload={onFileUpload} />
               <div className="relative inline-flex items-center">
                 <label className="sr-only" htmlFor="model-select">Model</label>
-                <select
-                  id="model-select"
-                  value={modelChoice}
-                  onChange={(e) => onModelChange(e.target.value)}
-                  className={cn(
-                    'h-9 text-xs rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black pl-3 pr-9 appearance-none transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700',
-                    'text-neutral-900 dark:text-neutral-100 focus:outline-none'
-                  )}
-                >
-                  <option value="xai/grok-4">xAI Grok-4</option>
-                  <option value="gateway:zai/glm-4.5">zAI GLM-4.5</option>
-                  <option value="gateway:google/gemini-2.5-flash-image-preview">Nano Banana</option>
-                  <option value="openai:gpt-5">OpenAI GPT-5</option>
-                  <option value="gateway:anthropic/claude-sonnet-4">Claude Sonnet 4</option>
-                  <option value="gateway:anthropic/claude-3.5-haiku">Claude Haiku 3.5</option>
-                </select>
-                <CaretDown
-                  className={cn('pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 size-4 text-neutral-600 dark:text-neutral-300')}
-                  weight="bold"
-                  aria-hidden="true"
-                />
+                <div className="relative group">
+                  <div
+                    aria-hidden="true"
+                    className={cn(
+                      'inline-flex items-center h-9 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 transition-colors',
+                      'group-hover:bg-neutral-50 dark:group-hover:bg-neutral-900 group-hover:border-neutral-300 dark:group-hover:border-neutral-700'
+                    )}
+                  >
+                    <span className="text-xs text-neutral-900 dark:text-neutral-100">{selectedModelLabel}</span>
+                    <CaretDown className="ml-1.5 size-4 text-neutral-600 dark:text-neutral-300" weight="bold" aria-hidden="true" />
+                  </div>
+                  <select
+                    id="model-select"
+                    value={modelChoice}
+                    onChange={(e) => onModelChange(e.target.value)}
+                    className={cn(
+                      'absolute inset-0 h-9 w-full opacity-0 cursor-pointer text-[11px]',
+                      'focus:outline-none'
+                    )}
+                  >
+                    {modelOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
             <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
