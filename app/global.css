@@ -3,7 +3,8 @@
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New";
-  --color-background: oklch(1 0 0);
+  /* Light mode background */
+  --color-background: #E7E7EB;
   --color-foreground: oklch(0.141 0.005 285.823);
   --color-card: oklch(1 0 0);
   --color-card-foreground: oklch(0.141 0.005 285.823);
@@ -41,10 +42,30 @@
   --sh-jsxliterals: #6266d1;
   --sh-property: #e25a1c;
   --sh-entity: #e25a1c;
+  /* Surface tokens tuned for PURPLE WATER background */
+  --surface: #ffffff;
+  --surface-hover: #F1F2F6;
+  --border-color: #D4D7DF;
+  --border-color-hover: #C3C7D2;
+  --text-primary: #0B0B0E;
+  /* Chat bubble tokens */
+  --bubble-assistant-bg: var(--surface);
+  --bubble-user-bg: var(--surface-hover);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Dark mode background */
+    --color-background: #0A0A0A;
+    /* Surface tokens tuned for RICH BLACK background */
+    --surface: #0E0E10;
+    --surface-hover: #141416;
+    --border-color: #1A1A1D;
+    --border-color-hover: #26262A;
+    --text-primary: #F5F5F6;
+    /* Chat bubble tokens */
+    --bubble-assistant-bg: var(--surface);
+    --bubble-user-bg: var(--surface-hover);
     --sh-class: #4c97f8;
     --sh-identifier: white;
     --sh-keyword: #f47067;
@@ -64,7 +85,7 @@ html {
   overflow-y: auto;
 }
 
-/* Scrollbar color variables aligned to thinking background (neutral-50 / neutral-900) */
+/* Scrollbar color variables */
 :root {
   --scrollbar-thumb: #fafafa; /* tailwind neutral-50 */
 }
@@ -73,31 +94,7 @@ html {
 }
 
 
-/* Scoped scrollbar styling only for thinking container */
-@media (hover: hover) and (pointer: fine) {
-  .thinking-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
-  }
-  .dark .thinking-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
-
-  .thinking-scroll::-webkit-scrollbar {
-    width: 1px;
-    height: 1px;
-  }
-  .thinking-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .thinking-scroll::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.18);
-    border-radius: 8px;
-    border: 1px solid transparent;
-    background-clip: padding-box;
-  }
-  .thinking-scroll::-webkit-scrollbar-corner {
-    background: transparent;
-  }
-}
+/* Removed deprecated thinking-scroll styles */
 
 /* Scoped scrollbar styling for chat output area */
 @media (hover: hover) and (pointer: fine) {
@@ -132,16 +129,7 @@ html {
   html.dark .chat-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
 }
 
-/* Ensure dark mode uses dark thumb on thinking container even if variables aren't picked up */
-@media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
-  .thinking-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
-  .thinking-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  html.dark .thinking-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
-  html.dark .thinking-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
-}
+/* Removed deprecated thinking-scroll dark overrides */
 
 /* Page-level scrollbar: thinner and lighter for outer page only */
 @media (hover: hover) and (pointer: fine) {
@@ -235,7 +223,8 @@ a:hover { opacity: 0.9; }
 
 /* Blog post line elements: lighter in light mode, darker in dark mode */
 .prose hr {
-  @apply my-6 border-neutral-200 dark:border-neutral-800;
+  @apply my-6;
+  border-color: var(--border-color);
 }
 
 .prose blockquote {
@@ -300,13 +289,13 @@ a:hover { opacity: 0.9; }
 }
 
 /* Ensure AI messages use dark text colors like blog posts */
-.prose-message:not(.prose-thinking) p,
-.prose-message:not(.prose-thinking) li,
-.prose-message:not(.prose-thinking) blockquote {
+.prose-message p,
+.prose-message li,
+.prose-message blockquote {
   @apply text-neutral-800 dark:text-neutral-200;
 }
 
-.prose-message:not(.prose-thinking) strong {
+.prose-message strong {
   @apply font-medium text-neutral-800 dark:text-neutral-200;
 }
 
@@ -351,28 +340,30 @@ a:hover { opacity: 0.9; }
 }
 
 .prose-message hr {
-  @apply my-3 border-neutral-200 dark:border-neutral-800;
+  @apply my-3;
+  border-color: var(--border-color);
 }
 
 /* Blog tables: lighter borders in light mode, darker in dark mode */
 .prose table {
-  border: 1px solid theme(colors.neutral.200);
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   display: block;
   max-width: 100%;
   overflow-x: auto;
   white-space: nowrap;
 }
-.dark .prose table { border-color: theme(colors.neutral.800); }
 
 /* Consistent header styling and cell padding for blog post tables */
 .prose table thead th {
-  @apply bg-neutral-50 dark:bg-neutral-900 font-medium;
+  @apply font-medium;
+  background-color: var(--surface-hover);
 }
 
 .prose table th,
 .prose table td {
-  @apply px-3 py-2 text-left border-r border-neutral-200 dark:border-neutral-800;
+  @apply px-3 py-2 text-left border-r;
+  border-right-color: var(--border-color);
 }
 
 .prose table th:last-child,
@@ -382,7 +373,7 @@ a:hover { opacity: 0.9; }
 
 /* Subtle zebra striping for readability */
 .prose table tbody tr:nth-child(odd) td {
-  @apply bg-neutral-50 dark:bg-neutral-900/30;
+  background-color: var(--surface-hover);
 }
 
 /* Match page-level scrollbar styling for blog tables */
@@ -416,13 +407,7 @@ a:hover { opacity: 0.9; }
   html.dark .prose table:hover::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
 }
 
-.prose-thinking h1 { @apply text-base font-medium tracking-tight mt-2 mb-1 text-neutral-800 dark:text-neutral-200; }
-.prose-thinking h2 { @apply text-sm font-medium tracking-tight mt-1.5 mb-1 text-neutral-800 dark:text-neutral-200; }
-.prose-thinking h3 { @apply text-[13px] font-medium tracking-tight mt-1.5 mb-1 text-neutral-800 dark:text-neutral-200; }
-.prose-thinking h4 { @apply text-xs font-medium tracking-tight mt-1.5 mb-1 text-neutral-800 dark:text-neutral-200; }
-.prose-thinking p  { @apply my-1 text-neutral-700 dark:text-neutral-300; }
-.prose-thinking strong { @apply font-medium text-neutral-800 dark:text-neutral-200; }
-.prose-thinking em { font-style: italic; }
+/* Removed deprecated prose-thinking styles */
 
 .prose-message pre,
 .prose-message pre code {
@@ -442,6 +427,8 @@ a:hover { opacity: 0.9; }
 }
 .chat-copy {
   @apply rounded px-2 py-0.5 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 bg-white dark:bg-black;
+  background-color: var(--surface);
+  border-color: var(--border-color);
 }
 .chat-code pre {
   @apply bg-transparent m-0 p-3 text-sm;
@@ -457,6 +444,9 @@ a:hover { opacity: 0.9; }
 
 .chat-bubble {
   @apply max-w-[80%] break-words rounded-3xl px-3 py-0.5 text-base leading-6 shadow-xs border bg-white text-neutral-900 dark:bg-black dark:text-white border-neutral-200 dark:border-neutral-800;
+  background-color: var(--bubble-assistant-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
   /* Ensure long words/URLs wrap nicely inside bubbles */
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -468,9 +458,11 @@ a:hover { opacity: 0.9; }
 }
 .chat-bubble.assistant {
   @apply bg-white text-neutral-900 dark:bg-black dark:text-white;
+  background-color: var(--bubble-assistant-bg);
 }
 .chat-bubble.user {
   @apply bg-white text-neutral-900 dark:bg-black dark:text-white;
+  background-color: var(--bubble-user-bg);
 }
 
 /* Ensure markdown inside bubbles fits and inherits */
@@ -501,8 +493,7 @@ a:hover { opacity: 0.9; }
 
 /* Remove outlines/borders for assistant (AI) messages */
 .chat-row.assistant > div img { border: 0 !important; outline: 0 !important; }
-.chat-row.assistant > div .thinking-scroll { border: 0 !important; box-shadow: none !important; }
-.chat-row.assistant > div button[aria-controls^="thinking-panel-"] { border: 0 !important; box-shadow: none !important; }
+/* Removed deprecated thinking panel overrides */
 .chat-row.assistant > div .chat-code { border: 0 !important; }
 .chat-row.assistant > div .chat-code-header { border-bottom: 0 !important; }
 .chat-row.assistant > div .chat-copy { border: 0 !important; }

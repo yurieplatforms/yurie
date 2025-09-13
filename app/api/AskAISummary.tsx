@@ -132,7 +132,7 @@ export default function AskAISummary({ title, content, inline, className, portal
   }, [])
 
   const panel = open && (error || summary) ? (
-    <div className="mt-1 rounded-2xl border bg-neutral-100 text-neutral-900 border-neutral-200 dark:bg-neutral-950 dark:text-neutral-100 dark:border-neutral-900 p-4 text-[13px] leading-snug font-semibold prose prose-neutral dark:prose-invert prose-p:my-0.5 prose-ul:my-0.5 prose-ol:my-0.5 prose-li:my-0.5 prose-ul:pl-3 prose-ol:pl-3 prose-headings:mt-1 prose-headings:mb-0.5 prose-headings:text-inherit">
+    <div className="mt-1 rounded-2xl border p-4 text-[13px] leading-snug font-semibold prose prose-neutral dark:prose-invert prose-p:my-0.5 prose-ul:my-0.5 prose-ol:my-0.5 prose-li:my-0.5 prose-ul:pl-3 prose-ol:pl-3 prose-headings:mt-1 prose-headings:mb-0.5 prose-headings:text-inherit bg-[var(--surface-hover)] text-[var(--text-primary)] border-[var(--border-color)]">
       {error ? (
         <div className="text-red-600 dark:text-red-400">{error}</div>
       ) : (
@@ -153,12 +153,12 @@ export default function AskAISummary({ title, content, inline, className, portal
           type="button"
           onClick={handleClick}
           className={
-            "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors " +
+            "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors text-[var(--text-primary)] " +
             (loading ? "cursor-default " : "cursor-pointer ") +
             (isActive
-              ? "border-[#7f91e0] text-[#7f91e0] bg-white dark:bg-black"
-              : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black") +
-            " active:border-[#7f91e0] active:text-[#7f91e0] active:bg-[#7f91e0]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7f91e0] ai-hover-glow" +
+              ? "ring-1 ring-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--surface-hover)]"
+              : "border-[var(--border-color)] bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)]") +
+            " active:border-[var(--color-accent)] active:text-[var(--color-accent)] active:bg-[var(--color-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ai-hover-glow" +
             (loading ? " ai-border-glow" : "")
           }
           aria-busy={loading}

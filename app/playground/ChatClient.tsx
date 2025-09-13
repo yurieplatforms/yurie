@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
-import { ArrowUp, Stop, Paperclip, X, Brain, CaretDown, Globe } from '@phosphor-icons/react'
+import { ArrowUp, Stop, Paperclip, X, CaretDown, Globe } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -104,7 +104,7 @@ function MessageAttachmentList({ attachments, compact = false }: { attachments: 
             href={att.objectUrl}
             target="_blank"
             rel="noreferrer"
-            className="bg-white dark:bg-black hover:bg-neutral-50 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-md px-3 py-2 text-xs inline-flex items-center gap-2"
+            className="bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border-color)] rounded-md px-3 py-2 text-xs inline-flex items-center gap-2"
           >
             <span className="font-medium">{att.name}</span>
             <span className="text-neutral-500 ml-2">{(att.size / 1024).toFixed(2)}kB</span>
@@ -147,7 +147,7 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
   }
   return (
     <div className="relative mr-2 mb-0 flex items-center">
-      <div className="bg-white dark:bg-black hover:bg-neutral-50 dark:hover:bg-neutral-900 border-neutral-200 dark:border-neutral-800 flex w-full items-center gap-3 rounded-2xl border p-2 pr-3 transition-colors">
+      <div className="bg-[var(--surface)] hover:bg-[var(--surface-hover)] border-[var(--border-color)] flex w-full items-center gap-3 rounded-2xl border p-2 pr-3 transition-colors">
         {isLikelyImage ? (
           <div className="bg-neutral-200 dark:bg-neutral-700 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md">
             {previewUrl ? (
@@ -164,7 +164,7 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
         <button
           type="button"
           onClick={handleRemove}
-          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 shadow-none transition-colors"
+          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-[var(--border-color)] bg-[var(--surface)] text-black dark:text-white hover:bg-[var(--surface-hover)] shadow-none transition-colors"
           aria-label="Remove file"
         >
           <X className="size-3" weight="bold" />
@@ -231,7 +231,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         htmlFor={inputId}
         role="button"
         tabIndex={0}
-        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-[var(--border-color)] bg-[var(--surface)] cursor-pointer hover:bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)] transition-colors"
         aria-label="Add files"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -314,7 +314,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
     () => [
       { value: 'gateway:anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
       { value: 'gateway:anthropic/claude-3.5-haiku', label: 'Claude Haiku 3.5' },
-      { value: 'gateway:google/gemini-2.5-flash-image-preview', label: 'Nano Banana' },
+      { value: 'gateway:anthropic/claude-opus-4.1', label: 'Claude Opus 4.1' },
     ],
     []
   )
@@ -351,16 +351,16 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                 type="button"
                 onClick={onUseTavilyToggle}
                 className={cn(
-                  'size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black transition-colors cursor-pointer',
+                  'size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-[var(--border-color)] bg-[var(--surface)] transition-colors cursor-pointer',
                   useTavily
-                    ? 'ring-1 ring-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-neutral-50 dark:hover:bg-neutral-900'
-                    : 'hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700'
+                    ? 'ring-1 ring-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--surface-hover)]'
+                    : 'hover:bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)]'
                 )}
                 aria-pressed={useTavily}
                 aria-label="Web search"
                 title="Web search"
               >
-                <Globe className="size-4" weight="bold" aria-hidden="true" />
+                <Globe className="size-5" weight="bold" aria-hidden="true" />
               </button>
               <div className="relative inline-flex items-center">
                 <label className="sr-only" htmlFor="model-select">Model</label>
@@ -368,8 +368,8 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                   <div
                     aria-hidden="true"
                     className={cn(
-                      'inline-flex items-center h-9 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black px-3 transition-colors',
-                      'group-hover:bg-neutral-50 dark:group-hover:bg-neutral-900 group-hover:border-neutral-300 dark:group-hover:border-neutral-700'
+                      'inline-flex items-center h-9 rounded-full border border-[var(--border-color)] bg-[var(--surface)] px-3 transition-colors',
+                      'group-hover:bg-[var(--surface-hover)] group-hover:border-[var(--border-color-hover)]'
                     )}
                   >
                     <span className="text-xs text-neutral-900 dark:text-neutral-100">{selectedModelLabel}</span>
@@ -393,7 +393,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
             </div>
             <div className="pr-1">
               <button
-                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 cursor-pointer"
+                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-[var(--border-color)] bg-[var(--surface)] text-black dark:text-white hover:bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)] cursor-pointer"
                 disabled={
                   status !== 'streaming' &&
                   status !== 'submitted' &&
@@ -427,9 +427,6 @@ export default function ChatClient() {
   const [outputHeight, setOutputHeight] = useState<number>(0)
   const [files, setFiles] = useState<File[]>([])
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
-  const [reasoningByMessageIndex, setReasoningByMessageIndex] = useState<Record<number, string>>({})
-  const [reasoningOpenByIndex, setReasoningOpenByIndex] = useState<Record<number, boolean>>({})
-  const currentAssistantIndexRef = useRef<number | null>(null)
   const [status, setStatus] = useState<'submitted' | 'streaming' | 'ready' | 'error'>('ready')
   const abortControllerRef = useRef<AbortController | null>(null)
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
@@ -580,82 +577,7 @@ export default function ChatClient() {
     }
   }, [messages.length])
 
-  function formatThinkingForMarkdown(input: string): string {
-    if (!input) return input
-    const normalized = input.replace(/\r\n?/g, '\n')
-    const lines = normalized.split('\n')
-    const result: string[] = []
-    let inFence = false
-
-    const isHeadingCandidate = (text: string): boolean => {
-      const trimmed = text.trim()
-      if (trimmed.length < 8 || trimmed.length > 80) return false
-      if (/[.!?;:]\s*$/.test(trimmed)) return false
-      if (/[-*+]\s+/.test(trimmed)) return false
-      if (/^\d+\.\s+/.test(trimmed)) return false
-      if (/^>\s+/.test(trimmed)) return false
-      if (/^#{1,6}\s/.test(trimmed)) return false
-      return /^[A-Z][A-Za-z0-9'’()\[\]\/,&\- ]+$/.test(trimmed)
-    }
-
-    const boldenLabels = (line: string): string =>
-      line.replace(/(^|\n)([A-Z][A-Za-z\- ]{2,40}):\s/g, (_m, p1, p2) => `${p1}**${p2}:** `)
-
-    const promoteInlineHeadings = (line: string): string => {
-      const inlineHeadingRe = /([.!?;:])\s*([A-Z][A-Za-z0-9'’()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
-      const dashHeadingRe = /(\s[\-–—]\s)\s*([A-Z][A-Za-z0-9'’()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
-      const gluedHeadingRe = /([a-z])([A-Z][a-zA-Z]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
-      let out = line.replace(inlineHeadingRe, (_m, p1, p2) => `${p1}\n\n## ${p2}\n\n`)
-      out = out.replace(dashHeadingRe, (_m, _sep, p2) => `\n\n## ${p2}\n\n`)
-      out = out.replace(gluedHeadingRe, (_m, prev, title) => `${prev}\n\n## ${title}\n\n`)
-      return out
-    }
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
-      const trimmed = line.trim()
-
-      if (/^```/.test(trimmed)) {
-        inFence = !inFence
-        result.push(line)
-        continue
-      }
-
-      if (!inFence) {
-        const withInlineHeadings = promoteInlineHeadings(line)
-        if (withInlineHeadings.includes('\n\n## ')) {
-          const chunks = withInlineHeadings.split('\n')
-          for (const chunk of chunks) {
-            const ctrim = chunk.trim()
-            if (ctrim.startsWith('## ')) {
-              if (result.length > 0 && result[result.length - 1].trim() !== '') {
-                result.push('')
-              }
-              result.push(ctrim)
-            } else if (ctrim.length === 0) {
-              result.push(boldenLabels(chunk))
-            } else {
-              result.push(boldenLabels(chunk))
-            }
-          }
-          continue
-        }
-        if (isHeadingCandidate(trimmed)) {
-          if (result.length > 0 && result[result.length - 1].trim() !== '') {
-            result.push('')
-          }
-          result.push(`## ${trimmed}`)
-          continue
-        }
-        result.push(boldenLabels(line))
-        continue
-      }
-
-      result.push(line)
-    }
-
-    return result.join('\n')
-  }
+  //
 
   function sanitizeHtml(html: string): string {
     if (!html) return html
@@ -774,7 +696,7 @@ export default function ChatClient() {
                 : meta.key === 'response_id'
                   ? 'Response ID'
                   : meta.key === 'summary_text'
-                    ? 'Reasoning summary'
+                    ? 'Summary'
                     : 'Status'
             return (
               <div key={`meta-${i}`} className="text-xs text-neutral-500 mt-1">
@@ -899,11 +821,6 @@ export default function ChatClient() {
       const decoder = new TextDecoder()
       let assistantText = ''
 
-      // Prepare per-message reasoning index for this assistant reply
-      const assistantIndex = nextMessages.length
-      currentAssistantIndexRef.current = assistantIndex
-      setReasoningByMessageIndex((prev) => ({ ...prev, [assistantIndex]: '' }))
-
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
       setStatus('streaming')
 
@@ -911,19 +828,8 @@ export default function ChatClient() {
         const { value, done } = await reader.read()
         if (done) break
         const chunk = decoder.decode(value, { stream: true })
-        const thoughtRegex = /<thinking:([^>]+)>/g
-        let cleanChunk = chunk
-        let tm: RegExpExecArray | null
-        while ((tm = thoughtRegex.exec(chunk)) !== null) {
-          const delta = tm[1]
-          if (delta && currentAssistantIndexRef.current !== null) {
-            const idx = currentAssistantIndexRef.current
-            setReasoningByMessageIndex((prev) => ({ ...prev, [idx!]: (prev[idx!] || '') + delta }))
-          }
-        }
-        cleanChunk = cleanChunk.replace(thoughtRegex, '')
-        assistantText += cleanChunk
-        const idMatch = /<response_id:([^>]+)>/g.exec(cleanChunk)
+        assistantText += chunk
+        const idMatch = /<response_id:([^>]+)>/g.exec(chunk)
         if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
         setMessages((prev) => {
           const updated = [...prev]
@@ -944,19 +850,8 @@ export default function ChatClient() {
 
       const finalChunk = decoder.decode()
       if (finalChunk) {
-        const thoughtRegex = /<thinking:([^>]+)>/g
-        let cleanFinal = finalChunk
-        let tm: RegExpExecArray | null
-        while ((tm = thoughtRegex.exec(finalChunk)) !== null) {
-          const delta = tm[1]
-          if (delta && currentAssistantIndexRef.current !== null) {
-            const idx = currentAssistantIndexRef.current
-            setReasoningByMessageIndex((prev) => ({ ...prev, [idx!]: (prev[idx!] || '') + delta }))
-          }
-        }
-        cleanFinal = cleanFinal.replace(thoughtRegex, '')
-        assistantText += cleanFinal
-        const idMatch = /<response_id:([^>]+)>/g.exec(cleanFinal)
+        assistantText += finalChunk
+        const idMatch = /<response_id:([^>]+)>/g.exec(finalChunk)
         if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
         setMessages((prev) => {
           const updated = [...prev]
@@ -979,7 +874,6 @@ export default function ChatClient() {
       setStatus('ready')
       setLastRequestHadImage(false)
       setLastRequestHadPdf(false)
-      currentAssistantIndexRef.current = null
       abortControllerRef.current = null
     }
   }
@@ -1004,9 +898,6 @@ export default function ChatClient() {
             const isFirst = i === 0
             const speakerChanged = !isFirst && messages[i - 1].role !== m.role
             const topMarginClass = isFirst ? 'mt-1' : speakerChanged ? 'mt-2' : 'mt-0.5'
-            const reasoningText = reasoningByMessageIndex[i] || ''
-            const hasReasoning = m.role === 'assistant' && reasoningText.trim().length > 0
-            const isOpen = reasoningOpenByIndex[i] === true
             return (
               <div key={i} className={`${topMarginClass} mb-0`}>
                 <div className={cn('chat-row', m.role === 'user' ? 'user' : 'assistant')}>
@@ -1036,55 +927,6 @@ export default function ChatClient() {
                     })()
                   ) : (
                     <div className={cn('min-w-0 w-full')}>
-                      {hasReasoning && (
-                        <div className="mt-3 mb-2">
-                          <button
-                            type="button"
-                            onClick={() => setReasoningOpenByIndex((prev) => ({ ...prev, [i]: !prev[i] }))}
-                            className={cn(
-                              'inline-flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 px-0 py-0',
-                              'hover:opacity-80 transition-opacity'
-                            )}
-                            aria-expanded={isOpen}
-                            aria-controls={`thinking-panel-${i}`}
-                          >
-                            <Brain className="size-3.5 text-[#7f91e0]" weight="fill" aria-hidden="true" />
-                            <span
-                              className={cn(
-                                'font-medium',
-                                (status === 'streaming' || status === 'submitted') && 'ai-text-shimmer'
-                              )}
-                            >
-                              {isOpen ? 'Hide reasoning' : 'Show reasoning'}
-                            </span>
-                            <CaretDown className={cn('size-3 transition-transform', isOpen && 'rotate-180')} weight="bold" aria-hidden="true" />
-                          </button>
-                          <AnimatePresence initial={false}>
-                            {isOpen && (
-                              <motion.div
-                                id={`thinking-panel-${i}`}
-                                key={`thinking-panel-${i}`}
-                                initial={{ height: 0, opacity: 0, y: -2 }}
-                                animate={{ height: 'auto', opacity: 1, y: 0 }}
-                                exit={{ height: 0, opacity: 0, y: -2 }}
-                                transition={{ duration: 0.2, ease: 'easeOut' }}
-                                className="overflow-hidden"
-                              >
-                                <div className="mt-2 max-h-64 overflow-auto thinking-scroll rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
-                                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1">
-                                    <span className="inline-flex size-1.5 rounded-full" style={{ backgroundColor: '#7f91e0' }} />
-                                    <span>Reasoning</span>
-                                  </div>
-                                  <div
-                                    className="prose-message prose-thinking font-sans text-[13px] leading-5"
-                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(formatThinkingForMarkdown(reasoningText)) as string) }}
-                                  />
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      )}
                       <div className="min-w-0 w-full">
                         {renderMessageContent(m.role, m.content)}
                       </div>

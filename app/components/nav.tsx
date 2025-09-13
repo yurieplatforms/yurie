@@ -43,7 +43,7 @@ export function Navbar() {
                   className={`${isActive ? 'font-bold text-neutral-900 dark:text-neutral-100' : 'font-normal text-neutral-600 dark:text-neutral-400'} group rounded-xl px-3 sm:px-4 py-1 transition-colors hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700 flex items-center align-middle relative my-1 mr-0 ml-0`}
                   onClick={path === '/' ? handlePlaygroundClick : undefined}
                 >
-                  <span className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 -mx-3 -my-1.5 transition-colors group-hover:bg-neutral-50 dark:group-hover:bg-neutral-900">
+                  <span className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 -mx-3 -my-1.5 transition-colors group-hover:bg-[var(--surface-hover)]">
                     {path === '/' ? (
                       <>
                         <img
