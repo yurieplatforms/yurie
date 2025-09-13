@@ -180,8 +180,8 @@ export default function Orb({
   `
 
   useEffect(() => {
-    const container = ctnDom.current
-    if (!container) return
+    const el = ctnDom.current
+    if (!el) return
 
     const renderer = new Renderer({ alpha: true, premultipliedAlpha: false })
     const gl = renderer.gl
@@ -192,8 +192,8 @@ export default function Orb({
 
     function initSize() {
       const dpr = window.devicePixelRatio || 1
-      const width = container.clientWidth || 1
-      const height = container.clientHeight || 1
+      const width = el.clientWidth || 1
+      const height = el.clientHeight || 1
       renderer.setSize(width * dpr, height * dpr)
       gl.canvas.style.width = width + 'px'
       gl.canvas.style.height = height + 'px'
@@ -201,7 +201,7 @@ export default function Orb({
 
     // Size the canvas BEFORE mounting to avoid initial flash/jump
     initSize()
-    container.appendChild(gl.canvas)
+    el.appendChild(gl.canvas)
 
     const geometry = new Triangle(gl)
     const program = new Program(gl, {
@@ -222,7 +222,7 @@ export default function Orb({
     const mesh = new Mesh(gl, { geometry, program })
 
     function resize() {
-      if (!container) return
+      if (!el) return
       initSize()
       program.uniforms.iResolution.value.set(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height)
     }
@@ -236,7 +236,7 @@ export default function Orb({
     let hasShown = false
 
     const handleMouseMove = (e: MouseEvent) => {
-      const rect = container.getBoundingClientRect()
+      const rect = el.getBoundingClientRect()
       const x = e.clientX - rect.left
       const y = e.clientY - rect.top
       const width = rect.width
@@ -258,8 +258,8 @@ export default function Orb({
       targetHover = 0
     }
 
-    container.addEventListener('mousemove', handleMouseMove)
-    container.addEventListener('mouseleave', handleMouseLeave)
+    el.addEventListener('mousemove', handleMouseMove)
+    el.addEventListener('mouseleave', handleMouseLeave)
 
     let rafId: number
     const update = (t: number) => {
@@ -290,9 +290,9 @@ export default function Orb({
     return () => {
       cancelAnimationFrame(rafId)
       window.removeEventListener('resize', resize)
-      container.removeEventListener('mousemove', handleMouseMove)
-      container.removeEventListener('mouseleave', handleMouseLeave)
-      container.removeChild(gl.canvas)
+      el.removeEventListener('mousemove', handleMouseMove)
+      el.removeEventListener('mouseleave', handleMouseLeave)
+      el.removeChild(gl.canvas)
       // Avoid forcing context loss to reduce GPU flashes on quick unmount/mount
     }
   }, [hue, hoverIntensity, rotateOnHover, forceHoverState])
