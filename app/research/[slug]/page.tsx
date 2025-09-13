@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { marked } from 'marked'
 import { formatDate, getResearchPosts } from 'app/research/utils'
-import AskAISummary from 'app/api/AskAISummary'
+import AskAISummary from 'app/components/AskAISummary'
 import { baseUrl } from 'app/sitemap'
 
 export async function generateStaticParams() {

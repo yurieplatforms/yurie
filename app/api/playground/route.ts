@@ -462,7 +462,6 @@ export async function POST(request: Request) {
     // Gateway only
     return await handleGateway()
   } catch (error) {
-    console.error('Playground API error', error)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
