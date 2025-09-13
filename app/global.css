@@ -60,6 +60,8 @@ html {
   min-width: 360px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scrollbar-gutter: stable;
+  overflow-y: auto;
 }
 
 /* Scrollbar color variables aligned to thinking background (neutral-50 / neutral-900) */
@@ -182,6 +184,13 @@ html {
   }
   html.dark:hover::-webkit-scrollbar-thumb, html.dark body:hover::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.22) !important;
+  }
+}
+
+/* Reserve vertical scrollbar space across pages; Safari fallback */
+@supports not (scrollbar-gutter: stable) {
+  html {
+    overflow-y: scroll;
   }
 }
 
