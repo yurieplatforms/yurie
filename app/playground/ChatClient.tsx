@@ -339,7 +339,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
             {(status === 'streaming' || status === 'submitted') && (value.trim().length === 0) && (
               <div className="pointer-events-none absolute left-3 top-3">
                 <div style={{ width: 44, height: 44, position: 'relative' }} aria-hidden>
-                  <Orb rotateOnHover={false} forceHoverState={false} hue={25} hoverIntensity={2} />
+                  <Orb rotateOnHover={false} forceHoverState={true} hue={25} hoverIntensity={2} />
                 </div>
               </div>
             )}

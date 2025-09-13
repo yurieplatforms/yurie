@@ -132,7 +132,7 @@ export default function AskAISummary({ title, content, inline, className, portal
   }, [])
 
   const panel = open && (error || summary) ? (
-    <div className="mt-1 rounded-2xl border p-4 text-[13px] leading-snug font-semibold prose prose-neutral dark:prose-invert prose-p:my-0.5 prose-ul:my-0.5 prose-ol:my-0.5 prose-li:my-0.5 prose-ul:pl-3 prose-ol:pl-3 prose-headings:mt-1 prose-headings:mb-0.5 prose-headings:text-inherit bg-[var(--surface-hover)] text-[var(--text-primary)] border-[var(--border-color)]">
+    <div className="mt-1 rounded-2xl border p-4 text-[13px] leading-snug font-semibold prose prose-neutral dark:prose-invert prose-p:my-0.5 prose-ul:my-0.5 prose-ol:my-0.5 prose-li:my-0.5 prose-ul:pl-3 prose-ol:pl-3 prose-headings:mt-1 prose-headings:mb-0.5 prose-headings:text-inherit bg-[#F0F0F3] dark:bg-[#0C0C0C] text-[var(--text-primary)] border-[var(--border-color)]">
       {error ? (
         <div className="text-red-600 dark:text-red-400">{error}</div>
       ) : (
@@ -153,11 +153,11 @@ export default function AskAISummary({ title, content, inline, className, portal
           type="button"
           onClick={handleClick}
           className={
-            "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors text-[var(--text-primary)] " +
+            "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors text-[var(--text-primary)] dark:bg-[#0C0C0C] dark:active:bg-[#0C0C0C] " +
             (loading ? "cursor-default " : "cursor-pointer ") +
             (isActive
-              ? "ring-1 ring-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent)] bg-[var(--surface-hover)]"
-              : "border-[var(--border-color)] bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)]") +
+              ? "ring-1 ring-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent)] bg-[#F0F0F3]"
+              : "border-[var(--border-color)] bg-[#F0F0F3] hover:border-[var(--border-color-hover)]") +
             " active:border-[var(--color-accent)] active:text-[var(--color-accent)] active:bg-[var(--color-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ai-hover-glow" +
             (loading ? " ai-border-glow" : "")
           }

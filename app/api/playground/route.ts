@@ -1,6 +1,7 @@
 // Using fetch to AI Gateway
 import { tavily } from '@tavily/core'
 export const runtime = 'nodejs'
+export const maxDuration = 300
 
 type ChatMessage = {
   role: 'system' | 'user' | 'assistant'
