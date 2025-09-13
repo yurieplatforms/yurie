@@ -312,11 +312,9 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
 
   const modelOptions = useMemo(
     () => [
-      { value: 'gateway:zai/glm-4.5', label: 'zAI GLM-4.5' },
-      { value: 'gateway:google/gemini-2.5-flash-image-preview', label: 'Nano Banana' },
-      { value: 'gateway:openai/gpt-5', label: 'OpenAI GPT-5' },
       { value: 'gateway:anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
       { value: 'gateway:anthropic/claude-3.5-haiku', label: 'Claude Haiku 3.5' },
+      { value: 'gateway:google/gemini-2.5-flash-image-preview', label: 'Nano Banana' },
     ],
     []
   )
@@ -437,7 +435,7 @@ export default function ChatClient() {
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
-  const [modelChoice, setModelChoice] = useState<string>('gateway:openai/gpt-5')
+  const [modelChoice, setModelChoice] = useState<string>('gateway:anthropic/claude-sonnet-4')
   const [useTavily, setUseTavily] = useState<boolean>(false)
   const [lastRequestHadImage, setLastRequestHadImage] = useState<boolean>(false)
   const [lastRequestHadPdf, setLastRequestHadPdf] = useState<boolean>(false)
@@ -865,7 +863,7 @@ export default function ChatClient() {
       abortControllerRef.current = ac
       const [prov, model] = (() => {
         const idx = modelChoice.indexOf(':')
-        if (idx === -1) return ['openai', null] as const
+        if (idx === -1) return ['gateway', modelChoice] as const
         const p = modelChoice.slice(0, idx)
         const m = modelChoice.slice(idx + 1)
         return [p, m] as const
@@ -878,7 +876,7 @@ export default function ChatClient() {
           inputImages,
           inputPdfs,
           previousResponseId: lastResponseId,
-          provider: prov === 'gateway' ? 'gateway' : 'openai',
+          provider: 'gateway',
           gatewayModel: prov === 'gateway' ? model : undefined,
           useTavily,
         }),

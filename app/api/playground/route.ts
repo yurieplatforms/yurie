@@ -1,4 +1,4 @@
-import OpenAI, { toFile } from 'openai'
+// Using fetch to AI Gateway
 import { tavily } from '@tavily/core'
 export const runtime = 'nodejs'
 
@@ -30,20 +30,6 @@ function safeEnqueue(controller: any, encoder: TextEncoder, text: string) {
   try {
     controller.enqueue(encoder.encode(text))
   } catch {}
-}
-
-function parseDataUrl(dataUrl: string): { mime: string; buffer: Buffer } {
-  const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl)
-  if (!match) throw new Error('Invalid data URL')
-  const mime = match[1]
-  const buffer = Buffer.from(match[2], 'base64')
-  return { mime, buffer }
-}
-
-async function dataUrlToFile(dataUrl: string, filename: string) {
-  const { mime, buffer } = parseDataUrl(dataUrl)
-  const blob = new Blob([buffer], { type: mime })
-  return await toFile(blob, filename)
 }
 
 // Shared system instructions used across providers
@@ -96,7 +82,7 @@ export async function POST(request: Request) {
       previousResponseId?: string | null
       reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
       forceImageGeneration?: boolean
-      provider?: 'openai' | 'gateway'
+      provider?: 'gateway'
       gatewayModel?: string
       providerOptions?: any
       useTavily?: boolean
@@ -148,13 +134,12 @@ export async function POST(request: Request) {
       } catch {}
     }
 
-    // Provider selection (default to OpenAI unless explicitly configured)
-    const DEFAULT_AI_PROVIDER = (process.env.MODEL_PROVIDER || 'openai').toLowerCase()
-    const provider = (requestedProvider || DEFAULT_AI_PROVIDER) === 'gateway' ? 'gateway' : 'openai'
+    // Provider: Gateway only
+    const provider = 'gateway'
     const hasInputPdfsEarly = Array.isArray(inputPdfs) && inputPdfs.length > 0
     const hasInputImagesEarly = Array.isArray(inputImages) && inputImages.length > 0
 
-    // Utilities for AI Gateway (OpenAI-compatible Chat Completions)
+    // Utilities for AI Gateway (Chat Completions-compatible)
     const extractBase64FromDataUrl = (dataUrl: string): { mime: string; base64: string } => {
       const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl)
       if (!match) throw new Error('Invalid data URL')
@@ -217,11 +202,11 @@ export async function POST(request: Request) {
       }
 
       const baseURL = process.env.AI_GATEWAY_BASE_URL || 'https://ai-gateway.vercel.sh/v1'
-      const gw = new OpenAI({ apiKey: apiKeyGw, baseURL })
-
+      const headers = { Authorization: `Bearer ${apiKeyGw}`, 'Content-Type': 'application/json' }
       const encoder = new TextEncoder()
+      const decoder = new TextDecoder()
 
-      // Heuristics similar to OpenAI Responses path
+      // Heuristics similar to common Responses paths
       const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
       const explicitImageVerb = /\b(generate|create|make|draw|paint|illustrate|render|design|produce|show)\b[^\n]*\b(image|picture|photo|photograph|illustration|art|logo|icon|wallpaper)\b/i
       const imageDescriptorTerms = /\b(watercolor|illustration|pastel|photorealistic|cinematic|bokeh|portrait|vector|logo|icon|wallpaper|sticker|pixel art|line art|sketch|ink|charcoal|oil|acrylic|concept art|digital painting|3d|isometric|octane|unreal|anime|pixar|8k|hdr)\b/i
@@ -239,36 +224,51 @@ export async function POST(request: Request) {
             // For attachments, prefer a model that supports chat.completions with image/file parts
             if ((hasInputImages || hasInputPdfs)) {
               if (!requested) return 'anthropic/claude-sonnet-4'
-              if (/^openai\//i.test(requested)) return 'anthropic/claude-sonnet-4'
+              // Allow only known providers for attachments; otherwise fallback
+              if (!/^anthropic\//i.test(requested) && !/^google\//i.test(requested)) return 'anthropic/claude-sonnet-4'
               return requested
             }
             return requested || 'anthropic/claude-sonnet-4'
           })()
           const gwMessages = buildGatewayMessages(messages, inputImages, inputPdfs, tavilyContextStr)
-          const stream = await (gw as any).chat.completions.create({
-            model,
-            messages: gwMessages,
-            max_tokens: MAX_OUTPUT_TOKENS,
-            stream: true,
-            ...(providerOptions ? { providerOptions } : {}),
+          const res = await fetch(`${baseURL}/chat/completions`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ model, messages: gwMessages, max_tokens: MAX_OUTPUT_TOKENS, stream: true, ...(providerOptions ? { providerOptions } : {}) }),
           })
-
+          if (!res.ok || !res.body) {
+            const text = await res.text().catch(() => '')
+            return new Response(`Analysis failed: ${text || `HTTP ${res.status}`}`, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+          }
           const readable = new ReadableStream<Uint8Array>({
             async start(controller) {
+              const reader = res.body!.getReader()
+              let buffer = ''
               try {
-                for await (const chunk of stream as any) {
-                  const content: unknown = chunk?.choices?.[0]?.delta?.content
-                  if (typeof content === 'string' && content) {
-                    safeEnqueue(controller, encoder, redactPotentialInstructionLeaks(content))
-                  }
-                  const deltaImages: any[] | undefined = chunk?.choices?.[0]?.delta?.images
-                  if (Array.isArray(deltaImages)) {
-                    for (const img of deltaImages) {
-                      const url = img?.image_url?.url
-                      if (typeof url === 'string' && url.startsWith('data:image')) {
-                        safeEnqueue(controller, encoder, `\n<image:${url}>\n`)
+                while (true) {
+                  const { done, value } = await reader.read()
+                  if (done) break
+                  buffer += decoder.decode(value, { stream: true })
+                  let idx
+                  while ((idx = buffer.indexOf('\n\n')) >= 0) {
+                    const rawEvent = buffer.slice(0, idx)
+                    buffer = buffer.slice(idx + 2)
+                    const lines = rawEvent.split('\n').filter((l) => l.startsWith('data:'))
+                    if (lines.length === 0) continue
+                    const payload = lines.map((l) => l.slice(5).trim()).join('')
+                    if (!payload || payload === '[DONE]') continue
+                    try {
+                      const json = JSON.parse(payload)
+                      const content: unknown = json?.choices?.[0]?.delta?.content
+                      if (typeof content === 'string' && content) safeEnqueue(controller, encoder, redactPotentialInstructionLeaks(content))
+                      const deltaImages: any[] | undefined = json?.choices?.[0]?.delta?.images
+                      if (Array.isArray(deltaImages)) {
+                        for (const img of deltaImages) {
+                          const url = img?.image_url?.url
+                          if (typeof url === 'string' && url.startsWith('data:image')) safeEnqueue(controller, encoder, `\n<image:${url}>\n`)
+                        }
                       }
-                    }
+                    } catch {}
                   }
                 }
               } catch {
@@ -313,14 +313,16 @@ export async function POST(request: Request) {
         try {
           const model = 'google/gemini-2.5-flash-image-preview'
           const gwMessages = buildGatewayMessages(messages, inputImages, [])
-          const completion: any = await (gw as any).chat.completions.create({
-            model,
-            messages: gwMessages,
-            max_tokens: MAX_OUTPUT_TOKENS,
-            // @ts-ignore - modalities is gateway-specific
-            modalities: ['text', 'image'],
-            stream: false,
+          const res = await fetch(`${baseURL}/chat/completions`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ model, messages: gwMessages, max_tokens: MAX_OUTPUT_TOKENS, modalities: ['text', 'image'], stream: false }),
           })
+          if (!res.ok) {
+            const text = await res.text().catch(() => '')
+            return new Response(`Image generation failed: ${text || `HTTP ${res.status}`}`, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+          }
+          const completion: any = await res.json().catch(() => ({}))
           const message = completion?.choices?.[0]?.message
           const parts: string[] = []
           const textOut: string = String(message?.content || '')
@@ -358,89 +360,104 @@ export async function POST(request: Request) {
       }
 
       // Text or multimodal analysis path using Chat Completions streaming (fallback when not in image-gen)
-      const model = requestedGatewayModel || process.env.AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4'
-      const gwMessages = buildGatewayMessages(messages, inputImages, inputPdfs, tavilyContextStr)
+      try {
+        const model = requestedGatewayModel || process.env.AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4'
+        const gwMessages = buildGatewayMessages(messages, inputImages, inputPdfs, tavilyContextStr)
 
-      const stream = await (gw as any).chat.completions.create({
-        model,
-        messages: gwMessages,
-        max_tokens: MAX_OUTPUT_TOKENS,
-        stream: true,
-        // Forward provider options if given
-        ...(providerOptions ? { providerOptions } : {}),
-      })
+        const resText = await fetch(`${baseURL}/chat/completions`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model,
+            messages: gwMessages,
+            max_tokens: MAX_OUTPUT_TOKENS,
+            stream: true,
+            ...(providerOptions ? { providerOptions } : {}),
+          }),
+        })
+        if (!resText.ok || !resText.body) {
+          const text = await resText.text().catch(() => '')
+          return new Response(text || 'A server error occurred.', {
+            status: 500,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+          })
+        }
 
-      const readable = new ReadableStream<Uint8Array>({
-        async start(controller) {
-          try {
-            for await (const chunk of stream as any) {
-              const content: unknown = chunk?.choices?.[0]?.delta?.content
-              if (typeof content === 'string' && content) {
-                safeEnqueue(controller, encoder, redactPotentialInstructionLeaks(content))
+        const readable = new ReadableStream<Uint8Array>({
+          async start(controller) {
+            const reader = resText.body!.getReader()
+            let buffer = ''
+            try {
+              while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+                buffer += decoder.decode(value, { stream: true })
+                let idx
+                while ((idx = buffer.indexOf('\n\n')) >= 0) {
+                  const rawEvent = buffer.slice(0, idx)
+                  buffer = buffer.slice(idx + 2)
+                  const lines = rawEvent.split('\n').filter((l) => l.startsWith('data:'))
+                  if (lines.length === 0) continue
+                  const payload = lines.map((l) => l.slice(5).trim()).join('')
+                  if (!payload || payload === '[DONE]') continue
+                  try {
+                    const json = JSON.parse(payload)
+                    const content: unknown = json?.choices?.[0]?.delta?.content
+                    if (typeof content === 'string' && content) {
+                      safeEnqueue(controller, encoder, redactPotentialInstructionLeaks(content))
+                    }
+                    const deltaImages: any[] | undefined = json?.choices?.[0]?.delta?.images
+                    if (Array.isArray(deltaImages)) {
+                      for (const img of deltaImages) {
+                        const url = img?.image_url?.url
+                        if (typeof url === 'string' && url.startsWith('data:image')) {
+                          safeEnqueue(controller, encoder, `\n<image:${url}>\n`)
+                        }
+                      }
+                    }
+                  } catch {}
+                }
               }
-              // Handle streaming images if ever present (rare outside image-gen): emit as final blocks
-              const deltaImages: any[] | undefined = chunk?.choices?.[0]?.delta?.images
-              if (Array.isArray(deltaImages)) {
-                for (const img of deltaImages) {
-                  const url = img?.image_url?.url
-                  if (typeof url === 'string' && url.startsWith('data:image')) {
-                    safeEnqueue(controller, encoder, `\n<image:${url}>\n`)
+            } catch (error) {
+              safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
+            } finally {
+              try {
+                if (Array.isArray(tavilySources) && tavilySources.length > 0) {
+                  safeEnqueue(controller, encoder, `\n\nSources (Tavily):\n`)
+                  for (const s of tavilySources) {
+                    const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
+                    if (s.url) safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
                   }
                 }
-              }
+              } catch {}
+              controller.close()
             }
-          } catch (error) {
-            safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
-          } finally {
-            try {
-              if (Array.isArray(tavilySources) && tavilySources.length > 0) {
-                safeEnqueue(controller, encoder, `\n\nSources (Tavily):\n`)
-                for (const s of tavilySources) {
-                  const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
-                  if (s.url) safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
-                }
-              }
-            } catch {}
-            controller.close()
-          }
-        },
-      })
+          },
+        })
 
-      return new Response(readable, {
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'no-cache',
-          'X-Accel-Buffering': 'no',
-        },
-      })
+        return new Response(readable, {
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+          },
+        })
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error'
+        return new Response(`Request failed: ${message}`, {
+          status: 500,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        })
+      }
     }
 
     if (provider === 'gateway') {
-      // Always handle via Gateway; model selection above ensures attachment-compatible models
+      // Always handle via Gateway
       return await handleGateway()
     }
 
-    // If OpenAI is requested but not configured, transparently fall back to the Gateway if available
-    if (!process.env.OPENAI_API_KEY && (process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN)) {
-      // Gateway cannot handle large inline attachments; provide clear guidance when any are present
-      if (hasInputPdfsEarly || hasInputImagesEarly) {
-        return new Response(
-          'Attachment analysis is not supported by the selected provider. Please switch to OpenAI GPT-5 or remove image/PDF attachments.',
-          { status: 400, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
-        )
-      }
-      return await handleGateway()
-    }
-
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'Missing OPENAI_API_KEY server env var' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-
-    const client = new OpenAI({ apiKey })
+    // Gateway only
+    return await handleGateway()
 
     const stripImageData = (text: string): string => {
       if (!text) return text
@@ -472,7 +489,7 @@ export async function POST(request: Request) {
       prompt = header + trimmedHistory + tail
     }
 
-    const selectedModel = 'gpt-5'
+    const selectedModel = 'anthropic/claude-sonnet-4'
     const useWebSearchEffective = true
 
     const buildWebSearchTool = (): any => {
@@ -507,19 +524,17 @@ export async function POST(request: Request) {
       if (webSearchAllowed) {
         visionTools.push(buildWebSearchTool())
       }
-      const pdfContentItems: any[] = await Promise.all(
-        (inputPdfs || []).map(async (p) => {
-          const file = await dataUrlToFile(p.dataUrl, p.filename || 'document.pdf')
-          try {
-            const uploaded = await client.files.create({ file, purpose: 'user_data' as any })
-            return { type: 'input_file', file_id: uploaded.id }
-          } catch (err) {
-            // Fallback for environments that don't accept 'user_data' yet
-            const uploadedFallback = await client.files.create({ file, purpose: 'assistants' as any })
-            return { type: 'input_file', file_id: uploadedFallback.id }
-          }
-        })
-      )
+      const pdfContentItems: any[] = (inputPdfs || []).map((p) => {
+        try {
+          const match = /^data:([^;]+);base64,(.+)$/.exec(p.dataUrl)
+          if (!match) return null
+          const mime = match[1]
+          const base64 = match[2]
+          return { type: 'input_file', file: { data: base64, media_type: mime || 'application/pdf', filename: p.filename || 'document.pdf' } }
+        } catch {
+          return null
+        }
+      }).filter(Boolean) as any[]
 
       const responseCreateParams: any = {
         model: selectedModel,
@@ -541,83 +556,8 @@ export async function POST(request: Request) {
         tool_choice: 'auto',
         include: webSearchAllowed ? (['web_search_call.results'] as any) : undefined,
       }
-      const stream = await client.responses.stream(responseCreateParams)
-      const readable = new ReadableStream<Uint8Array>({
-        async start(controller) {
-          try {
-            for await (const event of stream) {
-              const type = String((event as any)?.type || '')
-              if (type === 'response.output_text.delta') {
-                const delta = String((event as any).delta || '')
-                safeEnqueue(controller, encoder, redactPotentialInstructionLeaks(delta))
-                continue
-              }
-              if (ALLOW_REASONING_STREAM && type.startsWith('response.reasoning') && (event as any)?.delta) {
-                const thought = redactPotentialInstructionLeaks(String((event as any).delta))
-                safeEnqueue(controller, encoder, `\n<thinking:${thought}>`)
-                continue
-              }
-            }
-          } catch (error) {
-            console.error('Vision stream error', error)
-            safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.\n`)
-          } finally {
-            try {
-              const hasFinal = typeof (stream as any).final === 'function'
-              const finalResponse = hasFinal ? await (stream as any).final() : undefined
-              try {
-                const outputs: any[] = (finalResponse && (finalResponse as any).output) || []
-                const citations: { url?: string; title?: string }[] = []
-                const addCitation = (url?: string, title?: string) => {
-                  if (!url) return
-                  if (citations.some((c) => c.url === url)) return
-                  citations.push({ url, title })
-                }
-                let reasoningSummaryText: string | undefined
-                for (const out of outputs) {
-                  if (out?.type === 'message') {
-                    const content = Array.isArray(out.content) ? out.content : []
-                    for (const c of content) {
-                      if (c?.type === 'output_text' && Array.isArray(c.annotations)) {
-                        for (const ann of c.annotations) {
-                          if (ann?.type === 'url_citation') addCitation(ann.url, ann.title)
-                        }
-                      }
-                    }
-                  }
-                  if (out?.type === 'web_search_call') {
-                    const srcs = out?.action?.sources
-                    if (Array.isArray(srcs)) for (const s of srcs) addCitation(s?.url, s?.title)
-                  }
-                  if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
-                    for (const s of out.summary) {
-                      if (s?.type === 'summary_text' && typeof s.text === 'string' && s.text) {
-                        reasoningSummaryText = s.text
-                        break
-                      }
-                    }
-                  }
-                }
-                if (citations.length > 0) {
-                  safeEnqueue(controller, encoder, `\n\nSources:\n`)
-                  for (const s of citations) {
-                    const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
-                    safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
-                  }
-                }
-                if (reasoningSummaryText) {
-                  safeEnqueue(controller, encoder, `\n<summary_text:${reasoningSummaryText}>\n`)
-                }
-              } catch {}
-              const respId: unknown = (finalResponse as any)?.id
-              if (typeof respId === 'string' && respId) {
-                safeEnqueue(controller, encoder, `\n<response_id:${respId}>\n`)
-              }
-            } catch {}
-            controller.close()
-          }
-        },
-      })
+      // In gateway-only mode, attachments analysis is handled by the Chat Completions streaming path above.
+      const readable = new ReadableStream<Uint8Array>({ start(controller) { controller.close() } })
 
       return new Response(readable, {
         headers: {
@@ -640,62 +580,14 @@ export async function POST(request: Request) {
     if (wantsImage) {
       try {
         const encoder = new TextEncoder()
-        const toolOptions: any = {
-          type: 'image_generation',
-          model: 'gpt-image-1',
-          size: 'auto',
-          quality: 'high',
-          background: 'auto',
-          output_format: 'png',
-          partial_images: 3,
-          input_fidelity: 'high',
-          moderation: 'auto',
-        }
+        const toolOptions: any = { type: 'image_generation' }
 
         if (maskDataUrl) {
           const readable = new ReadableStream<Uint8Array>({
             async start(controller) {
               try {
-                const result = await (async () => {
-                  if (maskDataUrl) {
-                    const maskFile = maskDataUrl
-                      ? await dataUrlToFile(maskDataUrl, 'mask.png')
-                      : undefined
-
-                    const editParams: any = {
-                      model: 'gpt-image-1',
-                      image: inputImages?.[0]
-                        ? [await dataUrlToFile(inputImages[0], 'image_1.png')]
-                        : undefined,
-                      prompt: lastUserMessage,
-                      size: 'auto',
-                      quality: 'high',
-                      background: 'auto',
-                      input_fidelity: 'high',
-                      output_format: 'png',
-                    }
-                    if (maskFile) editParams.mask = maskFile
-
-                    return await client.images.edit(editParams)
-                  }
-                  const genParams: any = {
-                    model: 'gpt-image-1',
-                    prompt: lastUserMessage,
-                    size: 'auto',
-                    quality: 'high',
-                    background: 'auto',
-                    input_fidelity: 'high',
-                    output_format: 'png',
-                  }
-                  return await client.images.generate(genParams)
-                })()
-
-                const image_base64 = (result as any).data?.[0]?.b64_json
-                if (typeof image_base64 === 'string' && image_base64.length > 0) {
-                  safeEnqueue(controller, encoder, `\n<image:data:image/png;base64,${image_base64}>\n`)
-                } else {
-                  safeEnqueue(controller, encoder, `\n[error] No image returned from Image API\n`)
-                }
+                // Mask editing via Gateway image tool is not implemented in this path; fall back to text+image modal path
+                safeEnqueue(controller, encoder, `\n[error] Mask-based editing is not available in Gateway-only mode.\n`)
               } catch (err) {
                 const message = err instanceof Error ? err.message : 'Unknown error'
                 safeEnqueue(controller, encoder, `\n[error] ${message}\n`)
@@ -737,72 +629,7 @@ export async function POST(request: Request) {
           responseCreateParams.input = lastUserMessage
         }
 
-        const stream = await client.responses.stream(responseCreateParams)
-
-        const readable = new ReadableStream<Uint8Array>({
-          async start(controller) {
-            try {
-              for await (const event of stream as any) {
-                const type: string = String(event?.type || '')
-                if (type === 'response.image_generation_call.partial_image') {
-                  const b64 = (event as any).partial_image_b64 as string | undefined
-                  if (b64) safeEnqueue(controller, encoder, `\n<image_partial:data:image/png;base64,${b64}>\n`)
-                  continue
-                }
-                if (ALLOW_REASONING_STREAM && type.startsWith('response.reasoning') && (event as any)?.delta) {
-                  const thought = redactPotentialInstructionLeaks(String((event as any).delta))
-                  safeEnqueue(controller, encoder, `\n<thinking:${thought}>`)
-                  continue
-                }
-                if (type.endsWith('.error') || type === 'error') {
-                  safeEnqueue(controller, encoder, `\n[error] Image generation error. Please try again.\n`)
-                  continue
-                }
-              }
-            } catch (err) {
-              console.error('Image generation stream error', err)
-              safeEnqueue(controller, encoder, `\n[error] Image generation failed. Please try again.\n`)
-            } finally {
-              try {
-                const hasFinal = typeof (stream as any).final === 'function'
-                const finalResponse = hasFinal ? await (stream as any).final() : undefined
-                const outputs = (finalResponse && (finalResponse as any).output) || []
-                const imageCalls = Array.isArray(outputs)
-                  ? outputs.filter((o: any) => o && o.type === 'image_generation_call')
-                  : []
-                let reasoningSummaryText: string | undefined
-                for (const call of imageCalls) {
-                  const base64: unknown = (call && (call as any).result) as unknown
-                  if (typeof base64 === 'string' && base64.length > 0) {
-                    safeEnqueue(controller, encoder, `\n<image:data:image/png;base64,${base64}>\n`)
-                  }
-                  const revised: unknown = (call as any)?.revised_prompt
-                  if (typeof revised === 'string' && revised) {
-                    safeEnqueue(controller, encoder, `\n<revised_prompt:${revised}>\n`)
-                  }
-                }
-                for (const out of outputs) {
-                  if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
-                    for (const s of out.summary) {
-                      if (s?.type === 'summary_text' && typeof s.text === 'string' && s.text) {
-                        reasoningSummaryText = s.text
-                        break
-                      }
-                    }
-                  }
-                }
-                if (reasoningSummaryText) {
-                  safeEnqueue(controller, encoder, `\n<summary_text:${reasoningSummaryText}>\n`)
-                }
-                const respId: unknown = (finalResponse as any)?.id
-                if (typeof respId === 'string' && respId) {
-                  safeEnqueue(controller, encoder, `\n<response_id:${respId}>\n`)
-                }
-              } catch {}
-              controller.close()
-            }
-          },
-        })
+        const readable = new ReadableStream<Uint8Array>({ start(controller) { controller.close() } })
 
         return new Response(readable, {
           headers: {
@@ -826,128 +653,9 @@ export async function POST(request: Request) {
     }
     const includeList: any[] = []
     if (webSearchAllowed) includeList.push('web_search_call.results')
-    const stream = await client.responses.stream({
-      model: selectedModel,
-      reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
-      text: ({ verbosity: 'high', max_output_tokens: MAX_OUTPUT_TOKENS } as any),
-      instructions: INSTRUCTIONS_MARKDOWN,
-      input: prompt,
-      tools: toolList as any,
-      previous_response_id: previousResponseId ?? undefined,
-      tool_choice: 'auto',
-      include: includeList.length > 0 ? (includeList as any) : undefined,
-    } as any)
-
-    const encoder = new TextEncoder()
-    const readable = new ReadableStream<Uint8Array>({
-      async start(controller) {
-        try {
-          for await (const event of stream as any) {
-            const type = String((event as any)?.type || '')
-            if (type === 'response.output_text.delta') {
-              const delta = String((event as any).delta || '')
-              safeEnqueue(controller, encoder, redactPotentialInstructionLeaks(delta))
-              continue
-            }
-            if (ALLOW_REASONING_STREAM && type.startsWith('response.reasoning') && (event as any)?.delta) {
-              const thought = redactPotentialInstructionLeaks(String((event as any).delta))
-              safeEnqueue(controller, encoder, `\n<thinking:${thought}>`)
-              continue
-            }
-          }
-        } catch (error) {
-          console.error('Text stream error', error)
-          safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
-        } finally {
-          try {
-            const hasFinal = typeof (stream as any).final === 'function'
-            const finalResponse = hasFinal ? await (stream as any).final() : undefined
-            const outputs = (finalResponse && finalResponse.output) || []
-            const imageCalls = Array.isArray(outputs)
-              ? outputs.filter((o: any) => o && o.type === 'image_generation_call')
-              : []
-
-            for (const call of imageCalls) {
-              const base64: unknown = (call && call.result) as unknown
-              if (typeof base64 === 'string' && base64.length > 0) {
-                safeEnqueue(controller, encoder, `\n<image:data:image/png;base64,${base64}>\n`)
-              }
-            }
-            let reasoningSummaryText: string | undefined
-            try {
-              const outputsAny: any[] = (finalResponse && (finalResponse as any).output) || []
-              const citations: { url?: string; title?: string }[] = []
-              const addCitation = (url?: string, title?: string) => {
-                if (!url) return
-                if (citations.some((c) => c.url === url)) return
-                citations.push({ url, title })
-              }
-              for (const out of outputsAny) {
-                if (out?.type === 'message') {
-                  const content = Array.isArray(out.content) ? out.content : []
-                  for (const c of content) {
-                    if (c?.type === 'output_text' && Array.isArray(c.annotations)) {
-                      for (const ann of c.annotations) {
-                        if (ann?.type === 'url_citation') addCitation(ann.url, ann.title)
-                      }
-                    }
-                  }
-                }
-                if (out?.type === 'web_search_call') {
-                  const srcs = out?.action?.sources
-                  if (Array.isArray(srcs)) for (const s of srcs) addCitation(s?.url, s?.title)
-                }
-                if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
-                  for (const s of out.summary) {
-                    if (s?.type === 'summary_text' && typeof s.text === 'string' && s.text) {
-                      reasoningSummaryText = s.text
-                      break
-                    }
-                  }
-                }
-              }
-              if (citations.length > 0) {
-                safeEnqueue(controller, encoder, `\n\nSources:\n`)
-                for (const s of citations) {
-                  const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
-                  safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
-                }
-              }
-              if (reasoningSummaryText) {
-                safeEnqueue(controller, encoder, `\n<summary_text:${reasoningSummaryText}>\n`)
-              }
-            } catch {}
-            try {
-              if (Array.isArray(tavilySources) && tavilySources.length > 0) {
-                safeEnqueue(controller, encoder, `\n\nSources (Tavily):\n`)
-                for (const s of tavilySources) {
-                  const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
-                  if (s.url) safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
-                }
-              }
-            } catch {}
-            const respId: unknown = (finalResponse as any)?.id
-            if (typeof respId === 'string' && respId) {
-              safeEnqueue(controller, encoder, `\n<response_id:${respId}>\n`)
-            }
-            const status: unknown = (finalResponse as any)?.status
-            const incompleteReason: unknown = (finalResponse as any)?.incomplete_details?.reason
-            if (status === 'incomplete' && typeof incompleteReason === 'string' && incompleteReason) {
-              safeEnqueue(controller, encoder, `\n<incomplete:${incompleteReason}>\n`)
-            }
-          } catch {}
-          controller.close()
-        }
-      },
-    })
-
-    return new Response(readable, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        'X-Accel-Buffering': 'no',
-      },
-    })
+    // In gateway-only mode, plain text generation is handled by handleGateway above.
+    const readable = new ReadableStream<Uint8Array>({ start(controller) { controller.close() } })
+    return new Response(readable, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
   } catch (error) {
     console.error('Playground API error', error)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {

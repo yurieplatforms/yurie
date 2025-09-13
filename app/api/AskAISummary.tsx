@@ -154,6 +154,7 @@ export default function AskAISummary({ title, content, inline, className, portal
           onClick={handleClick}
           className={
             "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors " +
+            (loading ? "cursor-default " : "cursor-pointer ") +
             (isActive
               ? "border-[#7f91e0] text-[#7f91e0] bg-white dark:bg-black"
               : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black") +
