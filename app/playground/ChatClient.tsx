@@ -5,6 +5,7 @@ import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
 import { ArrowUp, Stop, Paperclip, X, CaretDown, Globe } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
+import Orb from './Orb'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -51,13 +52,18 @@ function PromptInput({ className, isLoading = false, maxHeight = 240, value, onV
 }
 
 function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ...props }: any) {
-  const { value, setValue, maxHeight, onSubmit } = usePromptInput()
+  const { value, setValue, maxHeight, onSubmit, isLoading } = usePromptInput()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   useEffect(() => {
     if (disableAutosize || !textareaRef.current) return
     textareaRef.current.style.height = 'auto'
     textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
   }, [value, disableAutosize])
+  useEffect(() => {
+    if (isLoading) {
+      try { textareaRef.current?.blur() } catch {}
+    }
+  }, [isLoading])
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -78,7 +84,8 @@ function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ..
         'overflow-y-auto',
         className
       )}
-      style={{ maxHeight: maxHeightStyle }}
+      style={{ maxHeight: maxHeightStyle, caretColor: isLoading ? 'transparent' as any : undefined }}
+      readOnly={Boolean(isLoading)}
       rows={1}
       
       {...props}
@@ -260,10 +267,8 @@ type ChatInputProps = {
   onModelChange: (value: string) => void
   useTavily: boolean
   onUseTavilyToggle: () => void
-  hasActiveImageAttachments: boolean
-  hasActivePdfAttachments: boolean
 }
-function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUpload, onFileRemove, stop, status, modelChoice, onModelChange, useTavily, onUseTavilyToggle, hasActiveImageAttachments, hasActivePdfAttachments }: ChatInputProps) {
+function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUpload, onFileRemove, stop, status, modelChoice, onModelChange, useTavily, onUseTavilyToggle }: ChatInputProps) {
   const isOnlyWhitespace = (text: string) => !/[^\s]/.test(text)
 
   const handleSend = useCallback(() => {
@@ -332,8 +337,10 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
           {/* Top: Text area */}
           <div className="relative px-2 pt-2 pb-0">
             {(status === 'streaming' || status === 'submitted') && (value.trim().length === 0) && (
-              <div className="pointer-events-none absolute left-5 top-5">
-                <span className="ai-text-shimmer text-base leading-[1.3] select-none">{useTavily ? 'Researching…' : (hasActivePdfAttachments ? 'Analyzing file…' : (hasActiveImageAttachments ? 'Analyzing image…' : 'One moment…'))}</span>
+              <div className="pointer-events-none absolute left-3 top-3">
+                <div style={{ width: 44, height: 44, position: 'relative' }} aria-hidden>
+                  <Orb rotateOnHover={false} forceHoverState={false} hue={25} hoverIntensity={2} />
+                </div>
               </div>
             )}
             <PromptInputTextarea
@@ -434,8 +441,6 @@ export default function ChatClient() {
   const pinnedToBottomRef = useRef<boolean>(true)
   const [modelChoice, setModelChoice] = useState<string>('gateway:anthropic/claude-sonnet-4')
   const [useTavily, setUseTavily] = useState<boolean>(false)
-  const [lastRequestHadImage, setLastRequestHadImage] = useState<boolean>(false)
-  const [lastRequestHadPdf, setLastRequestHadPdf] = useState<boolean>(false)
   const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(() => {
     try {
       const hours = new Date().getHours()
@@ -755,9 +760,7 @@ export default function ChatClient() {
             })
         )
       )
-      setLastRequestHadImage(imageFiles.length > 0)
       const pdfFiles = files.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
-      setLastRequestHadPdf(pdfFiles.length > 0)
       const inputPdfs: { filename: string; dataUrl: string }[] = await Promise.all(
         pdfFiles.map(
           (f) =>
@@ -872,8 +875,7 @@ export default function ChatClient() {
     } finally {
       setIsLoading(false)
       setStatus('ready')
-      setLastRequestHadImage(false)
-      setLastRequestHadPdf(false)
+      
       abortControllerRef.current = null
     }
   }
@@ -887,7 +889,7 @@ export default function ChatClient() {
   }, [])
 
   return (
-    <section ref={containerRef} className={cn('w-full flex flex-col px-3 sm:px-4', messages.length === 0 && 'justify-center min-h-[70vh]')}>
+    <section ref={containerRef} className={cn('w-full flex flex-col px-3 sm:px-4')}>
       <div
         ref={outputRef}
         className={cn('rounded pt-1 pb-3 overflow-y-auto text-base font-sans chat-scroll', messages.length === 0 && 'hidden')}
@@ -940,13 +942,23 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn(messages.length === 0 ? 'mt-0 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
+        className={cn(messages.length === 0 ? 'mt-6 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
         aria-busy={isLoading}
       >
         {messages.length === 0 ? (
-          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-3 sm:mt-4 mb-10 sm:mb-12">
-            {`What's on your mind ${timeOfDayWord}?`}
-          </div>
+          <>
+            <div style={{ width: '100%', height: '180px', position: 'relative', margin: '4px 0 8px 0' }}>
+              <Orb
+                hoverIntensity={2}
+                rotateOnHover={true}
+                hue={25}
+                forceHoverState={false}
+              />
+            </div>
+            <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-2 sm:mt-3 mb-8 sm:mb-10">
+              {`What's on your mind ${timeOfDayWord}?`}
+            </div>
+          </>
         ) : null}
         <ChatInput
           value={input}
@@ -962,8 +974,6 @@ export default function ChatClient() {
           onModelChange={setModelChoice}
           useTavily={useTavily}
           onUseTavilyToggle={() => setUseTavily((v) => !v)}
-          hasActiveImageAttachments={lastRequestHadImage}
-          hasActivePdfAttachments={lastRequestHadPdf}
         />
       </div>
     </section>
