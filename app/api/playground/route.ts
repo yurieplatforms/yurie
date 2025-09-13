@@ -44,7 +44,7 @@ const INSTRUCTIONS_MARKDOWN = [
   '',
   'Behavior',
   '- Prefer correctness and thoroughness. Default to comprehensive, well-structured answers with context, assumptions, examples, and caveats when helpful.',
-  '- Use available tools (web search, code interpreter, image generation) when they improve freshness, precision, or task completion. Cite sources when you use web search.',
+  '- Use available tools (web search, image generation) when they improve freshness, precision, or task completion. Cite sources when you use web search.',
   '- Web search policy: ALWAYS prioritize `yurie.ai` and `yurie.ai/blog` for information about Yurie. Try site-restricted queries first (e.g., "site:yurie.ai" or "site:yurie.ai/blog"), then broaden only if needed.',
   '- When the user asks about Yurie features, pricing, documentation, or blog topics, search and cite `yurie.ai` and `yurie.ai/blog` first. Prefer these sources in citation order when relevant.',
   '- Ask at most one clarifying question only if essential; otherwise make a reasonable assumption and state it.',
@@ -67,7 +67,6 @@ export async function POST(request: Request) {
       inputPdfs,
       maskDataUrl,
       previousResponseId,
-      reasoningEffort,
       forceImageGeneration,
       provider: requestedProvider,
       gatewayModel: requestedGatewayModel,
@@ -79,7 +78,6 @@ export async function POST(request: Request) {
       inputPdfs?: { filename: string; dataUrl: string }[]
       maskDataUrl?: string | null
       previousResponseId?: string | null
-      reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
       forceImageGeneration?: boolean
       provider?: 'gateway'
       gatewayModel?: string
@@ -141,7 +139,6 @@ export async function POST(request: Request) {
     // Touch otherwise-unused vars to satisfy TypeScript noUnusedLocals without changing behavior
     void requestedProvider
     void previousResponseId
-    void reasoningEffort
     void hasInputPdfsEarly
     void hasInputImagesEarly
 
@@ -282,7 +279,7 @@ export async function POST(request: Request) {
               } finally {
                 try {
                   if (Array.isArray(tavilySources) && tavilySources.length > 0) {
-                    safeEnqueue(controller, encoder, `\n\nSources (Tavily):\n`)
+                    safeEnqueue(controller, encoder, `\n\n`)
                     for (const s of tavilySources) {
                       const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
                       if (s.url) safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
@@ -429,7 +426,7 @@ export async function POST(request: Request) {
             } finally {
               try {
                 if (Array.isArray(tavilySources) && tavilySources.length > 0) {
-                  safeEnqueue(controller, encoder, `\n\nSources (Tavily):\n`)
+                  safeEnqueue(controller, encoder, `\n\n`)
                   for (const s of tavilySources) {
                     const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
                     if (s.url) safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
