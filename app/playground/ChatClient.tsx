@@ -942,7 +942,7 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn(messages.length === 0 ? 'mt-6 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
+        className={cn(messages.length === 0 ? 'mt-12 sm:mt-16 md:mt-20 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
         aria-busy={isLoading}
       >
         {messages.length === 0 ? (
