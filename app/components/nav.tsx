@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { IconFlare } from '@tabler/icons-react'
-import { IconArticle } from '@tabler/icons-react'
+import { IconMicroscope } from '@tabler/icons-react'
+import { IconFeather } from '@tabler/icons-react'
 
 const navItems = {
   '/': {
@@ -58,7 +58,7 @@ export function Navbar() {
                       </>
                     ) : path === '/research' ? (
                       <>
-                        <IconFlare
+                        <IconMicroscope
                           size={20}
                           stroke={1.75}
                           className="text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-neutral-100 transition-colors"
@@ -68,7 +68,7 @@ export function Navbar() {
                       </>
                     ) : path === '/blog' ? (
                       <>
-                        <IconArticle
+                        <IconFeather
                           size={20}
                           stroke={1.75}
                           className="text-neutral-600 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-neutral-100 transition-colors"

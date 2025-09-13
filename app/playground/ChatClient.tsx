@@ -41,8 +41,10 @@ function PromptInput({ className, isLoading = false, maxHeight = 240, value, onV
     <PromptInputContext.Provider
       value={{ isLoading, value: value ?? internalValue, setValue: onValueChange ?? handleChange, maxHeight, onSubmit }}
     >
-      <div className={cn('bg-white dark:bg-black rounded-3xl border border-neutral-200 dark:border-neutral-800 p-2 shadow-xs', isLoading && 'ai-border-glow', className)}>
-        {children}
+      <div className={cn('glass-input-wrap', isLoading && 'ai-border-glow', className)}>
+        <div className="glass-input-inner">
+          {children}
+        </div>
       </div>
     </PromptInputContext.Provider>
   )
@@ -72,7 +74,7 @@ function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ..
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={handleKeyDown}
       className={cn(
-        'text-neutral-900 dark:text-neutral-100 min-h-[44px] w-full resize-none border-none bg-transparent shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
+        'text-neutral-900 dark:text-neutral-100 min-h-[60px] w-full resize-none border-none bg-transparent shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
         'overflow-y-auto',
         className
       )}
@@ -343,11 +345,12 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
   return (
     <div className="relative flex w-full flex-col gap-4">
       <div className="relative order-2 pb-3 sm:pb-4 md:order-1">
-        <PromptInput className="relative z-10 w-full p-0 pt-1 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange} isLoading={status === 'streaming' || status === 'submitted'}>
+        <PromptInput className="relative z-10 w-full p-0 pt-0 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange} isLoading={status === 'streaming' || status === 'submitted'}>
           <FileList files={files} onFileRemove={onFileRemove} />
-          <div className="relative">
+          {/* Top: Text area */}
+          <div className="relative px-2 pt-2 pb-0">
             {(status === 'streaming' || status === 'submitted') && (value.trim().length === 0) && (
-              <div className="pointer-events-none absolute left-4 top-3">
+              <div className="pointer-events-none absolute left-5 top-5">
                 <span className="ai-text-shimmer text-base leading-[1.3] select-none">{useTavily ? 'Researching…' : (hasActivePdfAttachments ? 'Analyzing file…' : (hasActiveImageAttachments ? 'Analyzing image…' : 'One moment…'))}</span>
               </div>
             )}
@@ -355,17 +358,18 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
               placeholder={(status === 'streaming' || status === 'submitted') ? '' : 'Ask anything'}
-              className="min-h-[44px] pt-3 px-4 text-base leading-[1.3] sm:text-base md:text-base"
+              className="min-h-[60px] py-3 px-3 text-base leading-[1.3] sm:text-base md:text-base"
             />
           </div>
-          <PromptInputActions className="mt-3 w-full justify-between p-2">
-            <div className="flex flex-wrap gap-2">
+          {/* Bottom: Actions row */}
+          <div className="mt-2 w-full flex items-center justify-between px-2 pb-2">
+            <div className="flex items-center gap-1.5 pl-1">
               <ButtonFileUpload onFileUpload={onFileUpload} />
               <button
                 type="button"
                 onClick={onUseTavilyToggle}
                 className={cn(
-                  'size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black transition-colors',
+                  'size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black transition-colors cursor-pointer',
                   useTavily
                     ? 'ring-1 ring-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-neutral-50 dark:hover:bg-neutral-900'
                     : 'hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700'
@@ -405,9 +409,9 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                 </div>
               </div>
             </div>
-            <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
+            <div className="pr-1">
               <button
-                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700"
+                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 hover:border-neutral-300 dark:hover:border-neutral-700 cursor-pointer"
                 disabled={
                   status !== 'streaming' &&
                   status !== 'submitted' &&
@@ -423,8 +427,8 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                   <ArrowUp className="size-4" weight="bold" aria-hidden="true" />
                 )}
               </button>
-            </PromptInputAction>
-          </PromptInputActions>
+            </div>
+          </div>
         </PromptInput>
       </div>
     </div>

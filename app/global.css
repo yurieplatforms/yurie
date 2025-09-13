@@ -613,3 +613,18 @@ table {
 @media (prefers-reduced-motion: reduce) {
   .ai-text-shimmer { animation: none; }
 }
+
+/* Glass input wrapper styling for the Playground chat input */
+.glass-input-wrap {
+  @apply relative rounded-[18px] p-[2px];
+  background: linear-gradient(180deg, rgba(127,145,224,0.35) 0%, rgba(127,145,224,0.15) 40%, rgba(127,145,224,0.25) 100%);
+  box-shadow: 0 8px 24px rgba(127,145,224,0.25), 0 1px 0 rgba(127,145,224,0.35) inset;
+}
+.dark .glass-input-wrap {
+  background: linear-gradient(180deg, rgba(127,145,224,0.45) 0%, rgba(127,145,224,0.22) 40%, rgba(127,145,224,0.38) 100%);
+  box-shadow: 0 12px 28px rgba(127,145,224,0.35), 0 1px 0 rgba(127,145,224,0.55) inset;
+}
+
+.glass-input-inner {
+  @apply rounded-[16px] bg-white/90 dark:bg-black/80 backdrop-blur-md border border-neutral-200 dark:border-neutral-800;
+}

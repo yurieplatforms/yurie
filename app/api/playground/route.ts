@@ -234,7 +234,16 @@ export async function POST(request: Request) {
       const prefersAnalysis = !Boolean(forceImageGeneration) && (hasInputImages || hasInputPdfs) && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)
       if (prefersAnalysis) {
         try {
-          const model = requestedGatewayModel || process.env.AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4'
+          const requested = requestedGatewayModel || process.env.AI_GATEWAY_MODEL
+          const model = (() => {
+            // For attachments, prefer a model that supports chat.completions with image/file parts
+            if ((hasInputImages || hasInputPdfs)) {
+              if (!requested) return 'anthropic/claude-sonnet-4'
+              if (/^openai\//i.test(requested)) return 'anthropic/claude-sonnet-4'
+              return requested
+            }
+            return requested || 'anthropic/claude-sonnet-4'
+          })()
           const gwMessages = buildGatewayMessages(messages, inputImages, inputPdfs, tavilyContextStr)
           const stream = await (gw as any).chat.completions.create({
             model,
@@ -407,19 +416,8 @@ export async function POST(request: Request) {
     }
 
     if (provider === 'gateway') {
-      const hasAttachments = hasInputPdfsEarly || hasInputImagesEarly
-      if (hasAttachments) {
-        if (process.env.OPENAI_API_KEY) {
-          // Intentionally fall through to the OpenAI flow below
-        } else {
-          return new Response(
-            'Attachment analysis is not supported by the selected provider. Please switch to OpenAI GPT-5 or remove image/PDF attachments.',
-            { status: 400, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
-          )
-        }
-      } else {
-        return await handleGateway()
-      }
+      // Always handle via Gateway; model selection above ensures attachment-compatible models
+      return await handleGateway()
     }
 
     // If OpenAI is requested but not configured, transparently fall back to the Gateway if available
