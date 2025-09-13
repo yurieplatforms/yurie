@@ -180,8 +180,9 @@ export default function Orb({
   `
 
   useEffect(() => {
-    const el = ctnDom.current
-    if (!el) return
+    const maybeEl = ctnDom.current
+    if (!maybeEl) return
+    const el: HTMLDivElement = maybeEl
 
     const renderer = new Renderer({ alpha: true, premultipliedAlpha: false })
     const gl = renderer.gl
@@ -222,7 +223,6 @@ export default function Orb({
     const mesh = new Mesh(gl, { geometry, program })
 
     function resize() {
-      if (!el) return
       initSize()
       program.uniforms.iResolution.value.set(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height)
     }
