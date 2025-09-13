@@ -7,7 +7,6 @@ type ChatMessage = {
   content: string
 }
 
-const ALLOW_REASONING_STREAM = process.env.ALLOW_REASONING_STREAM !== '0'
 const MAX_OUTPUT_TOKENS = Number(process.env.PLAYGROUND_MAX_OUTPUT_TOKENS || 4096)
 
 // Simple streaming leak guard to prevent accidental disclosure of internal instructions
@@ -138,6 +137,13 @@ export async function POST(request: Request) {
     const provider = 'gateway'
     const hasInputPdfsEarly = Array.isArray(inputPdfs) && inputPdfs.length > 0
     const hasInputImagesEarly = Array.isArray(inputImages) && inputImages.length > 0
+
+    // Touch otherwise-unused vars to satisfy TypeScript noUnusedLocals without changing behavior
+    void requestedProvider
+    void previousResponseId
+    void reasoningEffort
+    void hasInputPdfsEarly
+    void hasInputImagesEarly
 
     // Utilities for AI Gateway (Chat Completions-compatible)
     const extractBase64FromDataUrl = (dataUrl: string): { mime: string; base64: string } => {
@@ -458,204 +464,6 @@ export async function POST(request: Request) {
 
     // Gateway only
     return await handleGateway()
-
-    const stripImageData = (text: string): string => {
-      if (!text) return text
-      const angleTag = /<image:[^>]+>/gi
-      const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
-      const bareDataUrl = /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/gi
-      return text
-        .replace(angleTag, '[image omitted]')
-        .replace(bracketDataUrl, '[image omitted]')
-        .replace(bareDataUrl, '[image omitted]')
-    }
-
-    
-
-    const headerPrefix = tavilyContextStr ? tavilyContextStr + '\n\n' : ''
-    const header = headerPrefix + 'Conversation history follows. Respond as Yurie.\n'
-    const messagesStr = messages
-      .map((m) => `${m.role === 'user' ? 'User' : 'Yurie'}: ${stripImageData(m.content)}`)
-      .join('\n')
-    const tail = '\nYurie:'
-
-    const MAX_PROMPT_CHARS = 100000
-    let prompt: string
-    if (header.length + messagesStr.length + tail.length <= MAX_PROMPT_CHARS) {
-      prompt = header + messagesStr + tail
-    } else {
-      const budget = MAX_PROMPT_CHARS - header.length - tail.length
-      const trimmedHistory = budget > 0 ? messagesStr.slice(messagesStr.length - budget) : ''
-      prompt = header + trimmedHistory + tail
-    }
-
-    const selectedModel = 'anthropic/claude-sonnet-4'
-    const useWebSearchEffective = true
-
-    const buildWebSearchTool = (): any => {
-      return { type: 'web_search' as const, search_context_size: 'high' as const }
-    }
-
-    const buildCodeInterpreterTool = (): any => {
-      return { type: 'code_interpreter' as const, container: { type: 'auto' as const } }
-    }
-
-    const selectedEffort: 'minimal' | 'low' | 'medium' | 'high' =
-      reasoningEffort === 'minimal' || reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
-        ? reasoningEffort
-        : 'high'
-
-    const lastUserMessage =
-      [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
-    const explicitImageVerb =
-      /\b(generate|create|make|draw|paint|illustrate|render|design|produce|show)\b[^\n]*\b(image|picture|photo|photograph|illustration|art|logo|icon|wallpaper)\b/i
-    const imageDescriptorTerms =
-      /\b(watercolor|illustration|pastel|photorealistic|cinematic|bokeh|portrait|vector|logo|icon|wallpaper|sticker|pixel art|line art|sketch|ink|charcoal|oil|acrylic|concept art|digital painting|3d|isometric|octane|unreal|anime|pixar|8k|hdr)\b/i
-    const analysisIntent =
-      /\b(describe|explain|analy[sz]e|caption|tell me about)\b[^\n]*\b(image|picture|photo|it|this)\b/i
-    const hasInputImages = Array.isArray(inputImages) && inputImages.length > 0
-    const hasInputPdfs = Array.isArray(inputPdfs) && inputPdfs.length > 0
-    const webSearchAllowed = useWebSearchEffective && !hasInputImages && !hasInputPdfs && !useTavilyEnabled
-    const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
-
-    if (!forceImageGeneration && (hasInputImages || hasInputPdfs) && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
-      const encoder = new TextEncoder()
-      const visionTools: any[] = [buildCodeInterpreterTool()]
-      if (webSearchAllowed) {
-        visionTools.push(buildWebSearchTool())
-      }
-      const pdfContentItems: any[] = (inputPdfs || []).map((p) => {
-        try {
-          const match = /^data:([^;]+);base64,(.+)$/.exec(p.dataUrl)
-          if (!match) return null
-          const mime = match[1]
-          const base64 = match[2]
-          return { type: 'input_file', file: { data: base64, media_type: mime || 'application/pdf', filename: p.filename || 'document.pdf' } }
-        } catch {
-          return null
-        }
-      }).filter(Boolean) as any[]
-
-      const responseCreateParams: any = {
-        model: selectedModel,
-        instructions: INSTRUCTIONS_MARKDOWN,
-        reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
-        text: ({ verbosity: 'high' } as any),
-        input: [
-          {
-            role: 'user',
-            content: [
-              { type: 'input_text', text: lastUserMessage || 'Analyze the attached files' },
-              ...((inputImages || []).map((url) => ({ type: 'input_image', image_url: url }))),
-              ...pdfContentItems,
-            ],
-          },
-        ],
-        tools: visionTools as any,
-        previous_response_id: previousResponseId ?? undefined,
-        tool_choice: 'auto',
-        include: webSearchAllowed ? (['web_search_call.results'] as any) : undefined,
-      }
-      // In gateway-only mode, attachments analysis is handled by the Chat Completions streaming path above.
-      const readable = new ReadableStream<Uint8Array>({ start(controller) { controller.close() } })
-
-      return new Response(readable, {
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'no-cache',
-          'X-Accel-Buffering': 'no',
-        },
-      })
-    }
-
-    const wantsImage =
-      Boolean(forceImageGeneration) ||
-      ((explicitImageVerb.test(lastUserMessage) || imageDescriptorTerms.test(lastUserMessage) || editIntent.test(lastUserMessage)) &&
-        !analysisIntent.test(lastUserMessage)) ||
-      hasInputImages ||
-      // PDF inputs should not trigger image generation path
-      false ||
-      Boolean(maskDataUrl)
-
-    if (wantsImage) {
-      try {
-        const encoder = new TextEncoder()
-        const toolOptions: any = { type: 'image_generation' }
-
-        if (maskDataUrl) {
-          const readable = new ReadableStream<Uint8Array>({
-            async start(controller) {
-              try {
-                // Mask editing via Gateway image tool is not implemented in this path; fall back to text+image modal path
-                safeEnqueue(controller, encoder, `\n[error] Mask-based editing is not available in Gateway-only mode.\n`)
-              } catch (err) {
-                const message = err instanceof Error ? err.message : 'Unknown error'
-                safeEnqueue(controller, encoder, `\n[error] ${message}\n`)
-              } finally {
-                controller.close()
-              }
-            },
-          })
-
-          return new Response(readable, {
-            headers: {
-              'Content-Type': 'text/plain; charset=utf-8',
-              'Cache-Control': 'no-cache',
-              'X-Accel-Buffering': 'no',
-            },
-          })
-        }
-
-        const responseCreateParams: any = {
-          model: selectedModel,
-          instructions: INSTRUCTIONS_MARKDOWN,
-          reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
-          text: ({ verbosity: 'high' } as any),
-          tools: [toolOptions as any],
-          previous_response_id: previousResponseId ?? undefined,
-        }
-        if (hasInputImages) {
-          const content = [
-            { type: 'input_text', text: lastUserMessage },
-            ...inputImages.map((url) => ({ type: 'input_image', image_url: url })),
-          ]
-          responseCreateParams.input = [
-            {
-              role: 'user',
-              content,
-            },
-          ]
-        } else {
-          responseCreateParams.input = lastUserMessage
-        }
-
-        const readable = new ReadableStream<Uint8Array>({ start(controller) { controller.close() } })
-
-        return new Response(readable, {
-          headers: {
-            'Content-Type': 'text/plain; charset=utf-8',
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-          },
-        })
-      } catch (err) {
-        console.error('Image generation error', err)
-        return new Response('There was an error generating the image. Please try again.', {
-          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-          status: 500,
-        })
-      }
-    }
-
-    const toolList: any[] = [{ type: 'image_generation' } as any, buildCodeInterpreterTool()]
-    if (webSearchAllowed) {
-      toolList.push(buildWebSearchTool())
-    }
-    const includeList: any[] = []
-    if (webSearchAllowed) includeList.push('web_search_call.results')
-    // In gateway-only mode, plain text generation is handled by handleGateway above.
-    const readable = new ReadableStream<Uint8Array>({ start(controller) { controller.close() } })
-    return new Response(readable, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
   } catch (error) {
     console.error('Playground API error', error)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
