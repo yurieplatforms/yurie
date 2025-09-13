@@ -86,14 +86,6 @@ function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ..
   )
 }
 
-function PromptInputActions({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div className={cn('flex items-center gap-2', className)} {...props}>
-      {children}
-    </div>
-  )
-}
-
 function MessageAttachmentList({ attachments, compact = false }: { attachments: AttachmentPreview[]; compact?: boolean }) {
   if (!attachments || attachments.length === 0) return null
   return (
@@ -119,14 +111,6 @@ function MessageAttachmentList({ attachments, compact = false }: { attachments: 
           </a>
         )
       ))}
-    </div>
-  )
-}
-
-function PromptInputAction({ tooltip, children, className }: { className?: string, tooltip: React.ReactNode, children: React.ReactNode } & React.ComponentProps<any>) {
-  return (
-    <div title={tooltip} className={className}>
-      {children}
     </div>
   )
 }
