@@ -224,17 +224,21 @@ export async function POST(request: Request) {
             }
             return requested || 'openai/gpt-5'
           })()
+          const finalModel = useTavilyEnabled ? (model.includes(':online') ? model : `${model}:online`) : model
           const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr)
           const res = await fetch(`${baseURL}/chat/completions`, {
             method: 'POST',
             headers,
             body: JSON.stringify({
-              model,
+              model: finalModel,
               messages: gwMessages,
               stream: true,
-              plugins: hasInputPdfs ? [
-                { id: 'file-parser', pdf: { engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text' } },
-              ] : undefined,
+              plugins: (() => {
+                const arr: any[] = []
+                if (hasInputPdfs) arr.push({ id: 'file-parser', pdf: { engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text' } })
+                if (useTavilyEnabled) arr.push({ id: 'web', max_results: 12 })
+                return arr.length > 0 ? arr : undefined
+              })(),
             }),
           })
           if (!res.ok || !res.body) {
@@ -362,7 +366,8 @@ export async function POST(request: Request) {
 
       // Text or multimodal analysis path using Chat Completions streaming (fallback when not in image-gen)
       try {
-        const model = requestedModel || process.env.OPENROUTER_MODEL || 'openai/gpt-5'
+        const modelBase = requestedModel || process.env.OPENROUTER_MODEL || 'openai/gpt-5'
+        const model = useTavilyEnabled ? (modelBase.includes(':online') ? modelBase : `${modelBase}:online`) : modelBase
         const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr)
 
         const resText = await fetch(`${baseURL}/chat/completions`, {
@@ -372,9 +377,12 @@ export async function POST(request: Request) {
             model,
             messages: gwMessages,
             stream: true,
-            plugins: hasInputPdfs ? [
-              { id: 'file-parser', pdf: { engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text' } },
-            ] : undefined,
+            plugins: (() => {
+              const arr: any[] = []
+              if (hasInputPdfs) arr.push({ id: 'file-parser', pdf: { engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text' } })
+              if (useTavilyEnabled) arr.push({ id: 'web', max_results: 12 })
+              return arr.length > 0 ? arr : undefined
+            })(),
           }),
         })
         if (!resText.ok || !resText.body) {
