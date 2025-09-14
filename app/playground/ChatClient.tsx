@@ -942,12 +942,17 @@ export default function ChatClient() {
       })
 
       if (!res.ok) {
-        let details = ''
         try {
-          details = await res.text()
-        } catch {}
-        const msg = details && details.trim().length > 0 ? details : `Request failed: ${res.status}`
-        throw new Error(msg)
+          const errJson: any = await res.json()
+          const code = typeof errJson?.error?.code === 'number' ? errJson.error.code : res.status
+          const message = errJson?.error?.message || `HTTP ${code}`
+          throw new Error(message)
+        } catch {
+          let details = ''
+          try { details = await res.text() } catch {}
+          const msg = details && details.trim().length > 0 ? details : `HTTP ${res.status}`
+          throw new Error(msg)
+        }
       }
       if (!res.body) {
         throw new Error('No response body received from server')

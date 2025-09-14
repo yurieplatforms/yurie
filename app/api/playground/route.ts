@@ -71,6 +71,8 @@ export async function POST(request: Request) {
       forceImageGeneration,
       model: requestedModel,
       useTavily,
+      reasoning,
+      includeReasoning,
     } = (await request.json()) as {
       messages: ChatMessage[]
       inputImages?: string[]
@@ -81,6 +83,8 @@ export async function POST(request: Request) {
       forceImageGeneration?: boolean
       model?: string
       useTavily?: boolean
+      reasoning?: any
+      includeReasoning?: boolean
     }
 
     if (!Array.isArray(messages)) {
@@ -139,15 +143,69 @@ export async function POST(request: Request) {
     void hasInputPdfsEarly
     void hasInputImagesEarly
     void hasInputAudiosEarly
+    void includeReasoning
+
+    // Reasoning configuration (env + request)
+    const resolvedReasoning: any | undefined = (() => {
+      let out: any | null = null
+      if (reasoning && typeof reasoning === 'object') {
+        out = { ...reasoning }
+      } else if (typeof includeReasoning === 'boolean') {
+        out = includeReasoning ? {} : { exclude: true }
+      }
+
+      const truthy = (v: unknown): boolean => /^(1|true|yes|on)$/i.test(String(v || ''))
+      const envEnabledStr = process.env.OPENROUTER_REASONING_ENABLED
+      const envExcludeStr = process.env.OPENROUTER_REASONING_EXCLUDE
+      const envEffortStr = (process.env.OPENROUTER_REASONING_EFFORT || '').toLowerCase()
+      const envMaxTokensNum = Number(process.env.OPENROUTER_REASONING_MAX_TOKENS)
+
+      const envEnabled = envEnabledStr === undefined ? undefined : truthy(envEnabledStr)
+      const envExclude = envExcludeStr === undefined ? undefined : truthy(envExcludeStr)
+      const envEffort = ['high', 'medium', 'low'].includes(envEffortStr) ? envEffortStr : undefined
+      const envMaxTokens = Number.isFinite(envMaxTokensNum) && envMaxTokensNum > 0 ? envMaxTokensNum : undefined
+
+      if (out == null && envEnabled === true) {
+        out = { enabled: true }
+      }
+
+      if (out) {
+        // Prefer explicit request config; only fill missing from env
+        const hasEffort = typeof out.effort === 'string'
+        const hasMax = typeof out.max_tokens === 'number'
+        if (!hasEffort && !hasMax) {
+          if (envMaxTokens !== undefined) {
+            out.max_tokens = envMaxTokens
+          } else if (envEffort) {
+            out.effort = envEffort
+          }
+        }
+        if (out.exclude === undefined && envExclude !== undefined) {
+          out.exclude = envExclude
+        }
+      }
+
+      return out || undefined
+    })()
 
     // Utilities for OpenRouter (Chat Completions-compatible)
 
     const buildOpenRouterMessages = (allMessages: ChatMessage[], imgs?: string[], pdfs?: { filename: string; dataUrl: string }[], extraSystem?: string, audios?: { format: string; base64: string }[]) => {
       const out: any[] = []
+      const cacheEnabled = /^(1|true|yes|on)$/i.test(String(process.env.OPENROUTER_CACHE_CONTROL_ENABLED || ''))
+      const cacheMinChars = Math.max(0, Number(process.env.OPENROUTER_CACHE_MIN_CHARS || 1500))
+      const maybeCacheTextPart = (text: string): any => {
+        if (!text) return { type: 'text', text }
+        if (cacheEnabled && text.length >= cacheMinChars) {
+          return { type: 'text', text, cache_control: { type: 'ephemeral' } }
+        }
+        return { type: 'text', text }
+      }
+
       // Preserve system instructions as a system message
-      out.push({ role: 'system', content: INSTRUCTIONS_MARKDOWN })
+      out.push({ role: 'system', content: [maybeCacheTextPart(INSTRUCTIONS_MARKDOWN)] })
       if (typeof extraSystem === 'string' && extraSystem.trim().length > 0) {
-        out.push({ role: 'system', content: extraSystem })
+        out.push({ role: 'system', content: [maybeCacheTextPart(extraSystem)] })
       }
 
       const lastUserMessage = [...allMessages].reverse().find((m) => m.role === 'user')?.content ?? ''
@@ -166,7 +224,7 @@ export async function POST(request: Request) {
       // Build last user message with attachments if present
       const content: any = []
       if (lastUserMessage && lastUserMessage.trim().length > 0) {
-        content.push({ type: 'text', text: lastUserMessage })
+        content.push(maybeCacheTextPart(lastUserMessage))
       }
       if (hasImgs) {
         for (const url of imgs!) {
@@ -251,6 +309,8 @@ export async function POST(request: Request) {
               model: finalModel,
               messages: gwMessages,
               stream: true,
+              ...(resolvedReasoning ? { reasoning: resolvedReasoning } : {}),
+              usage: { include: true },
               plugins: (() => {
                 const arr: any[] = []
                 if (hasInputPdfs) arr.push({ id: 'file-parser', pdf: { engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text' } })
@@ -259,9 +319,20 @@ export async function POST(request: Request) {
               })(),
             }),
           })
-          if (!res.ok || !res.body) {
-            const text = await res.text().catch(() => '')
-            return new Response(`Analysis failed: ${text || `HTTP ${res.status}`}`, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+          if (!res.ok) {
+            try {
+              const errJson: any = await res.json()
+              const status = typeof errJson?.error?.code === 'number' ? errJson.error.code : res.status
+              return new Response(JSON.stringify(errJson), { status, headers: { 'Content-Type': 'application/json' } })
+            } catch {
+              const text = await res.text().catch(() => '')
+              const payload = { error: { code: res.status, message: text || `HTTP ${res.status}` } }
+              return new Response(JSON.stringify(payload), { status: res.status, headers: { 'Content-Type': 'application/json' } })
+            }
+          }
+          if (!res.body) {
+            const payload = { error: { code: 502, message: 'No response body received from upstream' } }
+            return new Response(JSON.stringify(payload), { status: 502, headers: { 'Content-Type': 'application/json' } })
           }
           const readable = new ReadableStream<Uint8Array>({
             async start(controller) {
@@ -282,6 +353,12 @@ export async function POST(request: Request) {
                     if (!payload || payload === '[DONE]') continue
                     try {
                       const json = JSON.parse(payload)
+                      const errObj = (json as any)?.error
+                      if (errObj && (errObj.message || errObj.code)) {
+                        const code = errObj.code ? ` (code ${errObj.code})` : ''
+                        safeEnqueue(controller, encoder, `\n[error] ${errObj.message || 'Upstream error'}${code}\n`)
+                        continue
+                      }
                       const content: unknown = json?.choices?.[0]?.delta?.content
                       if (typeof content === 'string' && content) safeEnqueue(controller, encoder, redactPotentialInstructionLeaks(content))
                       const deltaImages: any[] | undefined = json?.choices?.[0]?.delta?.images
@@ -339,11 +416,25 @@ export async function POST(request: Request) {
           const res = await fetch(`${baseURL}/chat/completions`, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ model, messages: gwMessages, modalities: ['image', 'text'], stream: false }),
+            body: JSON.stringify({
+              model,
+              messages: gwMessages,
+              modalities: ['image', 'text'],
+              stream: false,
+              usage: { include: true },
+              ...(resolvedReasoning ? { reasoning: resolvedReasoning } : {}),
+            }),
           })
           if (!res.ok) {
-            const text = await res.text().catch(() => '')
-            return new Response(`Image generation failed: ${text || `HTTP ${res.status}`}`, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+            try {
+              const errJson: any = await res.json()
+              const status = typeof errJson?.error?.code === 'number' ? errJson.error.code : res.status
+              return new Response(JSON.stringify(errJson), { status, headers: { 'Content-Type': 'application/json' } })
+            } catch {
+              const text = await res.text().catch(() => '')
+              const payload = { error: { code: res.status, message: text || `HTTP ${res.status}` } }
+              return new Response(JSON.stringify(payload), { status: res.status, headers: { 'Content-Type': 'application/json' } })
+            }
           }
           const completion: any = await res.json().catch(() => ({}))
           const message = completion?.choices?.[0]?.message
@@ -395,6 +486,8 @@ export async function POST(request: Request) {
             model,
             messages: gwMessages,
             stream: true,
+            ...(resolvedReasoning ? { reasoning: resolvedReasoning } : {}),
+            usage: { include: true },
             plugins: (() => {
               const arr: any[] = []
               if (hasInputPdfs) arr.push({ id: 'file-parser', pdf: { engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text' } })
@@ -403,12 +496,20 @@ export async function POST(request: Request) {
             })(),
           }),
         })
-        if (!resText.ok || !resText.body) {
-          const text = await resText.text().catch(() => '')
-          return new Response(text || 'A server error occurred.', {
-            status: 500,
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-          })
+        if (!resText.ok) {
+          try {
+            const errJson: any = await resText.json()
+            const status = typeof errJson?.error?.code === 'number' ? errJson.error.code : resText.status
+            return new Response(JSON.stringify(errJson), { status, headers: { 'Content-Type': 'application/json' } })
+          } catch {
+            const text = await resText.text().catch(() => '')
+            const payload = { error: { code: resText.status, message: text || 'A server error occurred.' } }
+            return new Response(JSON.stringify(payload), { status: resText.status, headers: { 'Content-Type': 'application/json' } })
+          }
+        }
+        if (!resText.body) {
+          const payload = { error: { code: 502, message: 'No response body received from upstream' } }
+          return new Response(JSON.stringify(payload), { status: 502, headers: { 'Content-Type': 'application/json' } })
         }
 
         const readable = new ReadableStream<Uint8Array>({
@@ -430,6 +531,12 @@ export async function POST(request: Request) {
                   if (!payload || payload === '[DONE]') continue
                   try {
                     const json = JSON.parse(payload)
+                    const errObj = (json as any)?.error
+                    if (errObj && (errObj.message || errObj.code)) {
+                      const code = errObj.code ? ` (code ${errObj.code})` : ''
+                      safeEnqueue(controller, encoder, `\n[error] ${errObj.message || 'Upstream error'}${code}\n`)
+                      continue
+                    }
                     const content: unknown = json?.choices?.[0]?.delta?.content
                     if (typeof content === 'string' && content) {
                       safeEnqueue(controller, encoder, redactPotentialInstructionLeaks(content))

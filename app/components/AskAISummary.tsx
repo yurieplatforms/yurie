@@ -58,9 +58,19 @@ export default function AskAISummary({ title, content, inline, className, portal
         }),
         signal: ac.signal,
       })
-      if (!res.ok || !res.body) {
-        const text = await res.text().catch(() => '')
-        throw new Error(text || `Request failed: ${res.status}`)
+      if (!res.ok) {
+        try {
+          const errJson: any = await res.json()
+          const code = typeof errJson?.error?.code === 'number' ? errJson.error.code : res.status
+          const message = errJson?.error?.message || `HTTP ${code}`
+          throw new Error(message)
+        } catch {
+          const text = await res.text().catch(() => '')
+          throw new Error(text || `HTTP ${res.status}`)
+        }
+      }
+      if (!res.body) {
+        throw new Error('No response body received from server')
       }
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
