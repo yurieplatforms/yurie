@@ -54,8 +54,7 @@ export default function AskAISummary({ title, content, inline, className, portal
           messages: [
             { role: 'user', content: prompt },
           ],
-          provider: 'gateway',
-          gatewayModel: 'anthropic/claude-3.5-haiku',
+          model: 'openai/gpt-5',
         }),
         signal: ac.signal,
       })

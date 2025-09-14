@@ -317,10 +317,11 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
 
   const modelOptions = useMemo(
     () => [
-      { value: 'gateway:anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
-      { value: 'gateway:anthropic/claude-3.5-haiku', label: 'Claude Haiku 3.5' },
-      { value: 'gateway:anthropic/claude-opus-4.1', label: 'Claude Opus 4.1' },
-      { value: 'gateway:zai/glm-4.5', label: 'GLM 4.5' },
+      { value: 'openai/gpt-5', label: 'GPT-5' },
+      { value: 'anthropic/claude-3.5-haiku', label: 'Claude Haiku 3.5' },
+      { value: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
+      { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+      { value: 'google/gemini-2.5-flash-image-preview', label: 'Nano Banana' },
     ],
     []
   )
@@ -440,7 +441,7 @@ export default function ChatClient() {
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
-  const [modelChoice, setModelChoice] = useState<string>('gateway:anthropic/claude-sonnet-4')
+  const [modelChoice, setModelChoice] = useState<string>('openai/gpt-5')
   const [useTavily, setUseTavily] = useState<boolean>(false)
   const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(() => {
     try {
@@ -749,8 +750,9 @@ export default function ChatClient() {
         const indexForThisMessage = nextMessages.length - 1
         setSentAttachmentsByMessageIndex((prev) => ({ ...prev, [indexForThisMessage]: attachmentsForPreview }))
       }
+      // Collect user-attached images (as data URLs)
       const imageFiles = files.filter((f) => f.type.startsWith('image/'))
-      const inputImages: string[] = await Promise.all(
+      const inputImagesFromFiles: string[] = await Promise.all(
         imageFiles.map(
           (f) =>
             new Promise<string>((resolve, reject) => {
@@ -761,6 +763,26 @@ export default function ChatClient() {
             })
         )
       )
+      // If user intends to edit and has not attached a new image, include the last assistant image(s)
+      const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
+      const isEditing = editIntent.test(trimmed)
+      const previousAssistantImages: string[] = (() => {
+        if (!isEditing) return []
+        for (let i = messages.length - 1; i >= 0; i--) {
+          const m = messages[i]
+          if (m.role !== 'assistant') continue
+          const out: string[] = []
+          const re = /<image:([^>]+)>/g
+          let match: RegExpExecArray | null
+          while ((match = re.exec(m.content)) !== null) {
+            const url = match[1]
+            if (typeof url === 'string' && url.startsWith('data:image')) out.push(url)
+          }
+          if (out.length > 0) return out
+        }
+        return []
+      })()
+      const inputImages: string[] = Array.from(new Set([...(inputImagesFromFiles || []), ...(previousAssistantImages || [])]))
       const pdfFiles = files.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
       const inputPdfs: { filename: string; dataUrl: string }[] = await Promise.all(
         pdfFiles.map(
@@ -776,7 +798,7 @@ export default function ChatClient() {
       // Clear input files after capturing previews and data URLs
       setFiles([])
       const stripImageData = (text: string): string => {
-        const angleTag = /<image:[^>]+>/gi
+        const angleTag = /<(?:image|image_partial):[^>]+>/gi
         const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
         const bareDataUrl = /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/gi
         return text
@@ -787,13 +809,6 @@ export default function ChatClient() {
       const payloadMessages = nextMessages.map((m) => ({ ...m, content: stripImageData(m.content) }))
       const ac = new AbortController()
       abortControllerRef.current = ac
-      const [prov, model] = (() => {
-        const idx = modelChoice.indexOf(':')
-        if (idx === -1) return ['gateway', modelChoice] as const
-        const p = modelChoice.slice(0, idx)
-        const m = modelChoice.slice(idx + 1)
-        return [p, m] as const
-      })()
       const res = await fetch('/api/playground', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -802,8 +817,7 @@ export default function ChatClient() {
           inputImages,
           inputPdfs,
           previousResponseId: lastResponseId,
-          provider: 'gateway',
-          gatewayModel: prov === 'gateway' ? model : undefined,
+          model: modelChoice,
           useTavily,
         }),
         signal: ac.signal,

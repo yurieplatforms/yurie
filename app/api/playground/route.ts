@@ -1,4 +1,4 @@
-// Using fetch to AI Gateway
+// Using fetch to OpenRouter
 import { tavily } from '@tavily/core'
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -8,7 +8,6 @@ type ChatMessage = {
   content: string
 }
 
-const MAX_OUTPUT_TOKENS = Number(process.env.PLAYGROUND_MAX_OUTPUT_TOKENS || 4096)
 
 // Simple streaming leak guard to prevent accidental disclosure of internal instructions
 function redactPotentialInstructionLeaks(text: string): string {
@@ -69,9 +68,7 @@ export async function POST(request: Request) {
       maskDataUrl,
       previousResponseId,
       forceImageGeneration,
-      provider: requestedProvider,
-      gatewayModel: requestedGatewayModel,
-      providerOptions,
+      model: requestedModel,
       useTavily,
     } = (await request.json()) as {
       messages: ChatMessage[]
@@ -80,9 +77,7 @@ export async function POST(request: Request) {
       maskDataUrl?: string | null
       previousResponseId?: string | null
       forceImageGeneration?: boolean
-      provider?: 'gateway'
-      gatewayModel?: string
-      providerOptions?: any
+      model?: string
       useTavily?: boolean
     }
 
@@ -132,25 +127,18 @@ export async function POST(request: Request) {
       } catch {}
     }
 
-    // Provider: Gateway only
-    const provider = 'gateway'
     const hasInputPdfsEarly = Array.isArray(inputPdfs) && inputPdfs.length > 0
     const hasInputImagesEarly = Array.isArray(inputImages) && inputImages.length > 0
 
     // Touch otherwise-unused vars to satisfy TypeScript noUnusedLocals without changing behavior
-    void requestedProvider
+    void requestedModel
     void previousResponseId
     void hasInputPdfsEarly
     void hasInputImagesEarly
 
-    // Utilities for AI Gateway (Chat Completions-compatible)
-    const extractBase64FromDataUrl = (dataUrl: string): { mime: string; base64: string } => {
-      const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl)
-      if (!match) throw new Error('Invalid data URL')
-      return { mime: match[1], base64: match[2] }
-    }
+    // Utilities for OpenRouter (Chat Completions-compatible)
 
-    const buildGatewayMessages = (allMessages: ChatMessage[], imgs?: string[], pdfs?: { filename: string; dataUrl: string }[], extraSystem?: string) => {
+    const buildOpenRouterMessages = (allMessages: ChatMessage[], imgs?: string[], pdfs?: { filename: string; dataUrl: string }[], extraSystem?: string) => {
       const out: any[] = []
       // Preserve system instructions as a system message
       out.push({ role: 'system', content: INSTRUCTIONS_MARKDOWN })
@@ -182,8 +170,7 @@ export async function POST(request: Request) {
       }
       if (hasPdfs) {
         for (const p of pdfs!) {
-          const { mime, base64 } = extractBase64FromDataUrl(p.dataUrl)
-          content.push({ type: 'file', file: { data: base64, media_type: mime || 'application/pdf', filename: p.filename || 'document.pdf' } })
+          content.push({ type: 'file', file: { filename: p.filename || 'document.pdf', file_data: p.dataUrl } })
         }
       }
       if (content.length > 0) {
@@ -196,17 +183,20 @@ export async function POST(request: Request) {
       return out
     }
 
-    const handleGateway = async (): Promise<Response> => {
-      const apiKeyGw = process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN
-      if (!apiKeyGw) {
-        return new Response(JSON.stringify({ error: 'Missing AI_GATEWAY_API_KEY or VERCEL_OIDC_TOKEN server env var' }), {
+    const handleOpenRouter = async (): Promise<Response> => {
+      const apiKey = process.env.OPENROUTER_API_KEY
+      if (!apiKey) {
+        return new Response(JSON.stringify({ error: 'Missing OPENROUTER_API_KEY server env var' }), {
           status: 500,
           headers: { 'Content-Type': 'application/json' },
         })
       }
 
-      const baseURL = process.env.AI_GATEWAY_BASE_URL || 'https://ai-gateway.vercel.sh/v1'
-      const headers = { Authorization: `Bearer ${apiKeyGw}`, 'Content-Type': 'application/json' }
+      const baseURL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1'
+      const headers: Record<string, string> = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
+      const referer = process.env.OPENROUTER_HTTP_REFERER || process.env.NEXT_PUBLIC_SITE_URL
+      if (referer) headers['HTTP-Referer'] = referer
+      if (process.env.OPENROUTER_X_TITLE) headers['X-Title'] = process.env.OPENROUTER_X_TITLE
       const encoder = new TextEncoder()
       const decoder = new TextDecoder()
 
@@ -223,22 +213,29 @@ export async function POST(request: Request) {
       const prefersAnalysis = !Boolean(forceImageGeneration) && (hasInputImages || hasInputPdfs) && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)
       if (prefersAnalysis) {
         try {
-          const requested = requestedGatewayModel || process.env.AI_GATEWAY_MODEL
+          const requested = requestedModel || process.env.OPENROUTER_MODEL
           const model = (() => {
             // For attachments, prefer a model that supports chat.completions with image/file parts
             if ((hasInputImages || hasInputPdfs)) {
-              if (!requested) return 'anthropic/claude-sonnet-4'
+              if (!requested) return 'openai/gpt-5'
               // Allow only known providers for attachments; otherwise fallback
-              if (!/^anthropic\//i.test(requested) && !/^google\//i.test(requested)) return 'anthropic/claude-sonnet-4'
+              if (!/^anthropic\//i.test(requested) && !/^google\//i.test(requested) && !/^openai\//i.test(requested)) return 'openai/gpt-5'
               return requested
             }
-            return requested || 'anthropic/claude-sonnet-4'
+            return requested || 'openai/gpt-5'
           })()
-          const gwMessages = buildGatewayMessages(messages, inputImages, inputPdfs, tavilyContextStr)
+          const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr)
           const res = await fetch(`${baseURL}/chat/completions`, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ model, messages: gwMessages, max_tokens: MAX_OUTPUT_TOKENS, stream: true, ...(providerOptions ? { providerOptions } : {}) }),
+            body: JSON.stringify({
+              model,
+              messages: gwMessages,
+              stream: true,
+              plugins: hasInputPdfs ? [
+                { id: 'file-parser', pdf: { engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text' } },
+              ] : undefined,
+            }),
           })
           if (!res.ok || !res.body) {
             const text = await res.text().catch(() => '')
@@ -313,14 +310,14 @@ export async function POST(request: Request) {
         hasInputImages || Boolean(maskDataUrl)
 
       if (wantsImage) {
-        // Use image-capable chat model via modalities; keep it simple (non-streaming)
+        // Use image-capable chat model; keep it simple (non-streaming)
         try {
-          const model = 'google/gemini-2.5-flash-image-preview'
-          const gwMessages = buildGatewayMessages(messages, inputImages, [])
+          const model = process.env.OPENROUTER_IMAGE_MODEL || 'google/gemini-2.5-flash-image-preview'
+          const gwMessages = buildOpenRouterMessages(messages, inputImages, [])
           const res = await fetch(`${baseURL}/chat/completions`, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ model, messages: gwMessages, max_tokens: MAX_OUTPUT_TOKENS, modalities: ['text', 'image'], stream: false }),
+            body: JSON.stringify({ model, messages: gwMessages, modalities: ['image', 'text'], stream: false }),
           })
           if (!res.ok) {
             const text = await res.text().catch(() => '')
@@ -365,8 +362,8 @@ export async function POST(request: Request) {
 
       // Text or multimodal analysis path using Chat Completions streaming (fallback when not in image-gen)
       try {
-        const model = requestedGatewayModel || process.env.AI_GATEWAY_MODEL || 'anthropic/claude-sonnet-4'
-        const gwMessages = buildGatewayMessages(messages, inputImages, inputPdfs, tavilyContextStr)
+        const model = requestedModel || process.env.OPENROUTER_MODEL || 'openai/gpt-5'
+        const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr)
 
         const resText = await fetch(`${baseURL}/chat/completions`, {
           method: 'POST',
@@ -374,9 +371,10 @@ export async function POST(request: Request) {
           body: JSON.stringify({
             model,
             messages: gwMessages,
-            max_tokens: MAX_OUTPUT_TOKENS,
             stream: true,
-            ...(providerOptions ? { providerOptions } : {}),
+            plugins: hasInputPdfs ? [
+              { id: 'file-parser', pdf: { engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text' } },
+            ] : undefined,
           }),
         })
         if (!resText.ok || !resText.body) {
@@ -455,13 +453,8 @@ export async function POST(request: Request) {
       }
     }
 
-    if (provider === 'gateway') {
-      // Always handle via Gateway
-      return await handleGateway()
-    }
-
-    // Gateway only
-    return await handleGateway()
+    // OpenRouter only
+    return await handleOpenRouter()
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
