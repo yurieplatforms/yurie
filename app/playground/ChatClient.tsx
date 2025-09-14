@@ -317,11 +317,12 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
 
   const modelOptions = useMemo(
     () => [
+      { value: 'x-ai/grok-4', label: 'Grok 4' },
       { value: 'openai/gpt-5', label: 'GPT-5' },
-      { value: 'anthropic/claude-3.5-haiku', label: 'Claude Haiku 3.5' },
-      { value: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
+      { value: 'z-ai/glm-4.5', label: 'GLM 4.5' },
       { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-      { value: 'google/gemini-2.5-flash-image-preview', label: 'Nano Banana' },
+      { value: 'anthropic/claude-opus-4.1', label: 'Claude Opus 4.1' },
+      { value: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
     ],
     []
   )
