@@ -320,6 +320,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
       { value: 'gateway:anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
       { value: 'gateway:anthropic/claude-3.5-haiku', label: 'Claude Haiku 3.5' },
       { value: 'gateway:anthropic/claude-opus-4.1', label: 'Claude Opus 4.1' },
+      { value: 'gateway:zai/glm-4.5', label: 'GLM 4.5' },
     ],
     []
   )
