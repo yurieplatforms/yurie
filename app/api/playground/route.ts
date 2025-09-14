@@ -65,6 +65,7 @@ export async function POST(request: Request) {
       messages,
       inputImages,
       inputPdfs,
+      inputAudios,
       maskDataUrl,
       previousResponseId,
       forceImageGeneration,
@@ -74,6 +75,7 @@ export async function POST(request: Request) {
       messages: ChatMessage[]
       inputImages?: string[]
       inputPdfs?: { filename: string; dataUrl: string }[]
+      inputAudios?: { format: string; base64: string }[]
       maskDataUrl?: string | null
       previousResponseId?: string | null
       forceImageGeneration?: boolean
@@ -129,16 +131,18 @@ export async function POST(request: Request) {
 
     const hasInputPdfsEarly = Array.isArray(inputPdfs) && inputPdfs.length > 0
     const hasInputImagesEarly = Array.isArray(inputImages) && inputImages.length > 0
+    const hasInputAudiosEarly = Array.isArray(inputAudios) && inputAudios.length > 0
 
     // Touch otherwise-unused vars to satisfy TypeScript noUnusedLocals without changing behavior
     void requestedModel
     void previousResponseId
     void hasInputPdfsEarly
     void hasInputImagesEarly
+    void hasInputAudiosEarly
 
     // Utilities for OpenRouter (Chat Completions-compatible)
 
-    const buildOpenRouterMessages = (allMessages: ChatMessage[], imgs?: string[], pdfs?: { filename: string; dataUrl: string }[], extraSystem?: string) => {
+    const buildOpenRouterMessages = (allMessages: ChatMessage[], imgs?: string[], pdfs?: { filename: string; dataUrl: string }[], extraSystem?: string, audios?: { format: string; base64: string }[]) => {
       const out: any[] = []
       // Preserve system instructions as a system message
       out.push({ role: 'system', content: INSTRUCTIONS_MARKDOWN })
@@ -149,6 +153,7 @@ export async function POST(request: Request) {
       const lastUserMessage = [...allMessages].reverse().find((m) => m.role === 'user')?.content ?? ''
       const hasImgs = Array.isArray(imgs) && imgs.length > 0
       const hasPdfs = Array.isArray(pdfs) && pdfs.length > 0
+      const hasAudios = Array.isArray(audios) && audios.length > 0
 
       // Add prior conversation except the last user message (which may carry attachments)
       if (allMessages.length > 0) {
@@ -171,6 +176,13 @@ export async function POST(request: Request) {
       if (hasPdfs) {
         for (const p of pdfs!) {
           content.push({ type: 'file', file: { filename: p.filename || 'document.pdf', file_data: p.dataUrl } })
+        }
+      }
+      if (hasAudios) {
+        for (const a of audios!) {
+          const fmt = (a?.format || 'wav').toLowerCase()
+          const base64 = a?.base64 || ''
+          if (base64) content.push({ type: 'input_audio', input_audio: { data: base64, format: fmt } })
         }
       }
       if (content.length > 0) {
@@ -207,16 +219,22 @@ export async function POST(request: Request) {
       const analysisIntent = /\b(describe|explain|analy[sz]e|caption|tell me about)\b[^\n]*\b(image|picture|photo|it|this)\b/i
       const hasInputImages = Array.isArray(inputImages) && inputImages.length > 0
       const hasInputPdfs = Array.isArray(inputPdfs) && inputPdfs.length > 0
+      const hasInputAudios = Array.isArray(inputAudios) && inputAudios.length > 0
       const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
 
       // Prefer analysis path when attachments are present and the intent is analysis (matches docs)
-      const prefersAnalysis = !Boolean(forceImageGeneration) && (hasInputImages || hasInputPdfs) && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)
+      const prefersAnalysis = !Boolean(forceImageGeneration) && (hasInputImages || hasInputPdfs || hasInputAudios) && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)
       if (prefersAnalysis) {
         try {
           const requested = requestedModel || process.env.OPENROUTER_MODEL
           const model = (() => {
             // For attachments, prefer a model that supports chat.completions with image/file parts
-            if ((hasInputImages || hasInputPdfs)) {
+            if ((hasInputImages || hasInputPdfs || hasInputAudios)) {
+              // Prefer an audio-capable default if audio is present
+              if (hasInputAudios) {
+                if (requested && (/^google\//i.test(requested) || /^openai\//i.test(requested))) return requested
+                return 'google/gemini-2.5-pro'
+              }
               if (!requested) return 'openai/gpt-5'
               // Allow only known providers for attachments; otherwise fallback
               if (!/^anthropic\//i.test(requested) && !/^google\//i.test(requested) && !/^openai\//i.test(requested)) return 'openai/gpt-5'
@@ -225,7 +243,7 @@ export async function POST(request: Request) {
             return requested || 'openai/gpt-5'
           })()
           const finalModel = useTavilyEnabled ? (model.includes(':online') ? model : `${model}:online`) : model
-          const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr)
+          const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr, inputAudios)
           const res = await fetch(`${baseURL}/chat/completions`, {
             method: 'POST',
             headers,
@@ -368,7 +386,7 @@ export async function POST(request: Request) {
       try {
         const modelBase = requestedModel || process.env.OPENROUTER_MODEL || 'openai/gpt-5'
         const model = useTavilyEnabled ? (modelBase.includes(':online') ? modelBase : `${modelBase}:online`) : modelBase
-        const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr)
+        const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr, inputAudios)
 
         const resText = await fetch(`${baseURL}/chat/completions`, {
           method: 'POST',

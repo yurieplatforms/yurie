@@ -21,6 +21,7 @@ type AttachmentPreview = {
   mime: string
   objectUrl: string
   isImage: boolean
+  isAudio?: boolean
 }
 
 function cn(...inputs: ClassValue[]) {
@@ -105,6 +106,14 @@ function MessageAttachmentList({ attachments, compact = false }: { attachments: 
             alt={att.name}
             className="rounded border border-neutral-200 dark:border-neutral-800 max-h-56 object-cover"
           />
+        ) : att.isAudio ? (
+          <div key={att.id} className="bg-[var(--surface)] border border-[var(--border-color)] rounded-md p-2 inline-flex items-center gap-2 max-w-full">
+            <audio controls src={att.objectUrl} className="max-w-[260px]" />
+            <div className="flex flex-col">
+              <span className="font-medium text-xs truncate max-w-[200px]">{att.name}</span>
+              <span className="text-neutral-500 text-[10px]">{(att.size / 1024).toFixed(2)}kB</span>
+            </div>
+          </div>
         ) : (
           <a
             key={att.id}
@@ -225,7 +234,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         ref={inputRef}
         id={inputId}
         type="file"
-        accept="image/*,application/pdf"
+        accept="image/*,application/pdf,audio/*"
         multiple
         className="sr-only"
         onChange={e => {
@@ -270,6 +279,57 @@ type ChatInputProps = {
 }
 function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUpload, onFileRemove, stop, status, modelChoice, onModelChange, useTavily, onUseTavilyToggle }: ChatInputProps) {
   const isOnlyWhitespace = (text: string) => !/[^\s]/.test(text)
+  const [isDragging, setIsDragging] = useState(false)
+  const dragCounterRef = useRef(0)
+
+  const setDragging = useCallback((v: boolean) => {
+    setIsDragging(v)
+  }, [])
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    try {
+      const items = Array.from(e.dataTransfer?.items || [])
+      const hasFiles = items.some((it) => it.kind === 'file') || (e.dataTransfer?.types || []).includes('Files')
+      if (!hasFiles) return
+      dragCounterRef.current += 1
+      setDragging(true)
+    } catch {}
+  }, [setDragging])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    try {
+      const items = Array.from(e.dataTransfer?.items || [])
+      const hasFiles = items.some((it) => it.kind === 'file') || (e.dataTransfer?.types || []).includes('Files')
+      if (!hasFiles) return
+      e.preventDefault()
+      e.stopPropagation()
+      e.dataTransfer.dropEffect = 'copy'
+      setDragging(true)
+    } catch {}
+  }, [setDragging])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    try {
+      const items = Array.from(e.dataTransfer?.items || [])
+      const hasFiles = items.some((it) => it.kind === 'file') || (e.dataTransfer?.types || []).includes('Files')
+      if (!hasFiles) return
+      dragCounterRef.current = Math.max(0, dragCounterRef.current - 1)
+      if (dragCounterRef.current === 0) setDragging(false)
+    } catch {}
+  }, [setDragging])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    try {
+      e.preventDefault()
+      e.stopPropagation()
+      const fileList = Array.from(e.dataTransfer?.files || [])
+      if (fileList.length > 0) onFileUpload(fileList)
+    } finally {
+      dragCounterRef.current = 0
+      setDragging(false)
+      try { e.dataTransfer?.clearData() } catch {}
+    }
+  }, [onFileUpload, setDragging])
 
   const handleSend = useCallback(() => {
     if (isSubmitting) return
@@ -335,93 +395,108 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
   return (
     <div className="relative flex w-full flex-col gap-4">
       <div className="relative order-2 pb-3 sm:pb-4 md:order-1">
-        <PromptInput className="relative z-10 w-full p-0 pt-0 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange} isLoading={status === 'streaming' || status === 'submitted'}>
-          <FileList files={files} onFileRemove={onFileRemove} />
-          {/* Top: Text area */}
-          <div className="relative px-2 pt-2 pb-0">
-            {(status === 'streaming' || status === 'submitted') && (value.trim().length === 0) && (
-              <div className="pointer-events-none absolute left-3 top-3">
-                <div style={{ width: 44, height: 44, position: 'relative' }} aria-hidden>
-                  <Orb rotateOnHover={false} forceHoverState={true} hue={25} hoverIntensity={2} />
-                </div>
+        <div
+          className="relative"
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {isDragging ? (
+            <div className="pointer-events-none absolute inset-0 z-20">
+              <div className="absolute inset-1 rounded-2xl border-2 border-dashed border-[var(--color-accent)] bg-[var(--surface)]/70 flex items-center justify-center">
+                <div className="text-sm font-medium text-[var(--color-accent)]">Drop files to attach</div>
               </div>
-            )}
-            <PromptInputTextarea
-              onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
-              placeholder={(status === 'streaming' || status === 'submitted') ? '' : 'Ask anything'}
-              className="min-h-[60px] py-3 px-3 text-base leading-[1.3] sm:text-base md:text-base"
-            />
-          </div>
-          {/* Bottom: Actions row */}
-          <div className="mt-2 w-full flex items-center justify-between px-2 pb-2">
-            <div className="flex items-center gap-1.5 pl-1">
-              <ButtonFileUpload onFileUpload={onFileUpload} />
-              <button
-                type="button"
-                onClick={onUseTavilyToggle}
-                className={cn(
-                  'size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-[var(--border-color)] bg-[var(--surface)] transition-colors cursor-pointer',
-                  useTavily
-                    ? 'ring-1 ring-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--surface-hover)]'
-                    : 'hover:bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)]'
-                )}
-                aria-pressed={useTavily}
-                aria-label="Web search"
-                title="Web search"
-              >
-                <Globe className="size-5" weight="bold" aria-hidden="true" />
-              </button>
-              <div className="relative inline-flex items-center">
-                <label className="sr-only" htmlFor="model-select">Model</label>
-                <div className="relative group">
-                  <div
-                    aria-hidden="true"
-                    className={cn(
-                      'inline-flex items-center h-9 rounded-full border border-[var(--border-color)] bg-[var(--surface)] px-3 transition-colors',
-                      'group-hover:bg-[var(--surface-hover)] group-hover:border-[var(--border-color-hover)]'
-                    )}
-                  >
-                    <span className="text-xs text-neutral-900 dark:text-neutral-100">{selectedModelLabel}</span>
-                    <CaretDown className="ml-1.5 size-4 text-neutral-600 dark:text-neutral-300" weight="bold" aria-hidden="true" />
+            </div>
+          ) : null}
+          <PromptInput className="relative z-10 w-full p-0 pt-0 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange} isLoading={status === 'streaming' || status === 'submitted'}>
+            <FileList files={files} onFileRemove={onFileRemove} />
+            {/* Top: Text area */}
+            <div className="relative px-2 pt-2 pb-0">
+              {(status === 'streaming' || status === 'submitted') && (value.trim().length === 0) && (
+                <div className="pointer-events-none absolute left-3 top-3">
+                  <div style={{ width: 44, height: 44, position: 'relative' }} aria-hidden>
+                    <Orb rotateOnHover={false} forceHoverState={true} hue={25} hoverIntensity={2} />
                   </div>
-                  <select
-                    id="model-select"
-                    value={modelChoice}
-                    onChange={(e) => onModelChange(e.target.value)}
-                    className={cn(
-                      'absolute inset-0 h-9 w-full opacity-0 cursor-pointer text-[11px]',
-                      'focus:outline-none'
-                    )}
-                  >
-                    {modelOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                </div>
+              )}
+              <PromptInputTextarea
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+                placeholder={(status === 'streaming' || status === 'submitted') ? '' : 'Ask anything'}
+                className="min-h-[60px] py-3 px-3 text-base leading-[1.3] sm:text-base md:text-base"
+              />
+            </div>
+            {/* Bottom: Actions row */}
+            <div className="mt-2 w-full flex items-center justify-between px-2 pb-2">
+              <div className="flex items-center gap-1.5 pl-1">
+                <ButtonFileUpload onFileUpload={onFileUpload} />
+                <button
+                  type="button"
+                  onClick={onUseTavilyToggle}
+                  className={cn(
+                    'size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-[var(--border-color)] bg-[var(--surface)] transition-colors cursor-pointer',
+                    useTavily
+                      ? 'ring-1 ring-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--surface-hover)]'
+                      : 'hover:bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)]'
+                  )}
+                  aria-pressed={useTavily}
+                  aria-label="Web search"
+                  title="Web search"
+                >
+                  <Globe className="size-5" weight="bold" aria-hidden="true" />
+                </button>
+                <div className="relative inline-flex items-center">
+                  <label className="sr-only" htmlFor="model-select">Model</label>
+                  <div className="relative group">
+                    <div
+                      aria-hidden="true"
+                      className={cn(
+                        'inline-flex items-center h-9 rounded-full border border-[var(--border-color)] bg-[var(--surface)] px-3 transition-colors',
+                        'group-hover:bg-[var(--surface-hover)] group-hover:border-[var(--border-color-hover)]'
+                      )}
+                    >
+                      <span className="text-xs text-neutral-900 dark:text-neutral-100">{selectedModelLabel}</span>
+                      <CaretDown className="ml-1.5 size-4 text-neutral-600 dark:text-neutral-300" weight="bold" aria-hidden="true" />
+                    </div>
+                    <select
+                      id="model-select"
+                      value={modelChoice}
+                      onChange={(e) => onModelChange(e.target.value)}
+                      className={cn(
+                        'absolute inset-0 h-9 w-full opacity-0 cursor-pointer text-[11px]',
+                        'focus:outline-none'
+                      )}
+                    >
+                      {modelOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
+              <div className="pr-1">
+                <button
+                  className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-[var(--border-color)] bg-[var(--surface)] text-black dark:text-white hover:bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)] cursor-pointer"
+                  disabled={
+                    status !== 'streaming' &&
+                    status !== 'submitted' &&
+                    (isSubmitting || (isOnlyWhitespace(value) && files.length === 0))
+                  }
+                  type="button"
+                  onClick={handleSend}
+                  aria-label={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send message'}
+                >
+                  {status === 'streaming' || status === 'submitted' ? (
+                    <Stop className="size-4" weight="bold" aria-hidden="true" />
+                  ) : (
+                    <ArrowUp className="size-4" weight="bold" aria-hidden="true" />
+                  )}
+                </button>
+              </div>
             </div>
-            <div className="pr-1">
-              <button
-                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-[var(--border-color)] bg-[var(--surface)] text-black dark:text-white hover:bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)] cursor-pointer"
-                disabled={
-                  status !== 'streaming' &&
-                  status !== 'submitted' &&
-                  (isSubmitting || (isOnlyWhitespace(value) && files.length === 0))
-                }
-                type="button"
-                onClick={handleSend}
-                aria-label={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send message'}
-              >
-                {status === 'streaming' || status === 'submitted' ? (
-                  <Stop className="size-4" weight="bold" aria-hidden="true" />
-                ) : (
-                  <ArrowUp className="size-4" weight="bold" aria-hidden="true" />
-                )}
-              </button>
-            </div>
-          </div>
-        </PromptInput>
+          </PromptInput>
+        </div>
       </div>
     </div>
   )
@@ -738,6 +813,7 @@ export default function ChatClient() {
         const ext = (f.name.split('.').pop() || '').toLowerCase()
         const imageExts = ['png','jpg','jpeg','gif','webp','bmp','svg','heic','heif','tif','tiff','avif']
         const isImage = mime.startsWith('image/') || imageExts.includes(ext)
+        const isAudio = mime.startsWith('audio/')
         return {
           id: `${f.name}-${f.size}-${f.lastModified}-${Math.random().toString(36).slice(2)}`,
           name: f.name,
@@ -745,6 +821,7 @@ export default function ChatClient() {
           mime: f.type,
           objectUrl: url,
           isImage,
+          isAudio,
         }
       })
       if (attachmentsForPreview.length > 0) {
@@ -796,16 +873,55 @@ export default function ChatClient() {
             })
         )
       )
+      // Collect user-attached audio as base64 + normalized format (mp3|wav only)
+      const audioFilesAll = files.filter((f) => (f.type || '').toLowerCase().startsWith('audio/'))
+      const getAudioFormat = (f: File): 'mp3' | 'wav' | null => {
+        const mime = (f.type || '').toLowerCase()
+        const ext = (f.name.split('.').pop() || '').toLowerCase()
+        if (mime.includes('mpeg') || ext === 'mp3') return 'mp3'
+        if (mime.includes('wav') || mime.includes('wave') || ext === 'wav') return 'wav'
+        return null
+      }
+      const audioFiles = audioFilesAll.filter((f) => getAudioFormat(f) !== null)
+      const inputAudios: { format: 'mp3' | 'wav'; base64: string }[] = await Promise.all(
+        audioFiles.map(
+          (f) =>
+            new Promise<{ format: 'mp3' | 'wav'; base64: string }>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => {
+                try {
+                  const dataUrl = String(reader.result || '')
+                  const commaIdx = dataUrl.indexOf(',')
+                  const base64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl
+                  const format = getAudioFormat(f) as 'mp3' | 'wav'
+                  resolve({ format, base64 })
+                } catch (e) {
+                  reject(e)
+                }
+              }
+              reader.onerror = () => reject(reader.error)
+              reader.readAsDataURL(f)
+            })
+        )
+      )
       // Clear input files after capturing previews and data URLs
       setFiles([])
       const stripImageData = (text: string): string => {
         const angleTag = /<(?:image|image_partial):[^>]+>/gi
         const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
         const bareDataUrl = /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/gi
+        const audioBracket = /\[data:audio\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
+        const audioBare = /data:audio\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/gi
+        const pdfBracket = /\[data:application\/pdf;base64,[^\]]+\]/gi
+        const pdfBare = /data:application\/pdf;base64,[A-Za-z0-9+/=]+/gi
         return text
           .replace(angleTag, '[image omitted]')
           .replace(bracketDataUrl, '[image omitted]')
           .replace(bareDataUrl, '[image omitted]')
+          .replace(audioBracket, '[audio omitted]')
+          .replace(audioBare, '[audio omitted]')
+          .replace(pdfBracket, '[pdf omitted]')
+          .replace(pdfBare, '[pdf omitted]')
       }
       const payloadMessages = nextMessages.map((m) => ({ ...m, content: stripImageData(m.content) }))
       const ac = new AbortController()
@@ -817,6 +933,7 @@ export default function ChatClient() {
           messages: payloadMessages,
           inputImages,
           inputPdfs,
+          inputAudios,
           previousResponseId: lastResponseId,
           model: modelChoice,
           useTavily,
