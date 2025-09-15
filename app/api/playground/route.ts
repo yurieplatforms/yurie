@@ -393,7 +393,7 @@ export async function POST(request: Request) {
         hasInputImages || Boolean(maskDataUrl)
 
       if (wantsImage) {
-        // Use image-capable chat model; keep it simple (non-streaming)
+        // Use image-capable chat model with streaming (supports Gemini 2.5 Flash Image Preview)
         try {
           const model = process.env.OPENROUTER_IMAGE_MODEL || 'google/gemini-2.5-flash-image-preview'
           const gwMessages = buildOpenRouterMessages(messages, inputImages, [])
@@ -404,7 +404,7 @@ export async function POST(request: Request) {
               model,
               messages: gwMessages,
               modalities: ['image', 'text'],
-              stream: false,
+              stream: true,
               usage: { include: true },
               ...(resolvedReasoning ? { reasoning: resolvedReasoning } : {}),
             }),
@@ -420,27 +420,60 @@ export async function POST(request: Request) {
               return new Response(JSON.stringify(payload), { status: res.status, headers: { 'Content-Type': 'application/json' } })
             }
           }
-          const completion: any = await res.json().catch(() => ({}))
-          const message = completion?.choices?.[0]?.message
-          const parts: string[] = []
-          const textOut: string = String(message?.content || '')
-          if (textOut) parts.push(textOut)
-          const images = Array.isArray(message?.images) ? message.images : []
-          for (const img of images) {
-            const url = img?.image_url?.url
-            if (typeof url === 'string' && url.startsWith('data:image')) {
-              parts.push(`\n<image:${url}>\n`)
-            }
+          if (!res.body) {
+            const payload = { error: { code: 502, message: 'No response body received from upstream' } }
+            return new Response(JSON.stringify(payload), { status: 502, headers: { 'Content-Type': 'application/json' } })
           }
+
           const readable = new ReadableStream<Uint8Array>({
-            start(controller) {
+            async start(controller) {
+              const reader = res.body!.getReader()
+              let buffer = ''
               try {
-                safeEnqueue(controller, encoder, parts.join(''))
+                while (true) {
+                  const { done, value } = await reader.read()
+                  if (done) break
+                  buffer += decoder.decode(value, { stream: true })
+                  let idx
+                  while ((idx = buffer.indexOf('\n\n')) >= 0) {
+                    const rawEvent = buffer.slice(0, idx)
+                    buffer = buffer.slice(idx + 2)
+                    const lines = rawEvent.split('\n').filter((l) => l.startsWith('data:'))
+                    if (lines.length === 0) continue
+                    const payload = lines.map((l) => l.slice(5).trim()).join('')
+                    if (!payload || payload === '[DONE]') continue
+                    try {
+                      const json = JSON.parse(payload)
+                      const errObj = (json as any)?.error
+                      if (errObj && (errObj.message || errObj.code)) {
+                        const code = errObj.code ? ` (code ${errObj.code})` : ''
+                        safeEnqueue(controller, encoder, `\n[error] ${errObj.message || 'Upstream error'}${code}\n`)
+                        continue
+                      }
+                      const content: unknown = json?.choices?.[0]?.delta?.content
+                      if (typeof content === 'string' && content) {
+                        safeEnqueue(controller, encoder, content)
+                      }
+                      const deltaImages: any[] | undefined = json?.choices?.[0]?.delta?.images
+                      if (Array.isArray(deltaImages)) {
+                        for (const img of deltaImages) {
+                          const url = img?.image_url?.url
+                          if (typeof url === 'string' && url.startsWith('data:image')) {
+                            safeEnqueue(controller, encoder, `\n<image:${url}>\n`)
+                          }
+                        }
+                      }
+                    } catch {}
+                  }
+                }
+              } catch {
+                safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
               } finally {
                 controller.close()
               }
             },
           })
+
           return new Response(readable, {
             headers: {
               'Content-Type': 'text/plain; charset=utf-8',
