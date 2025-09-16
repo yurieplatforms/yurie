@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
-import { ArrowUp, Stop, Paperclip, X, CaretDown, Globe } from '@phosphor-icons/react'
+import { ArrowUp, Stop, Paperclip, X, CaretDown, Globe, Sparkle } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 import Orb from './Orb'
 import clsx, { type ClassValue } from 'clsx'
@@ -127,6 +127,52 @@ function MessageAttachmentList({ attachments, compact = false }: { attachments: 
           </a>
         )
       ))}
+    </div>
+  )
+}
+
+function ThinkingPanel({ content }: { content: string }) {
+  const [open, setOpen] = useState(false)
+  const maxHeight = open ? 'auto' : 0
+  return (
+    <div className="mb-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          'group inline-flex items-center gap-2 text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors'
+        )}
+        aria-expanded={open}
+      >
+        <span className="inline-flex size-6 items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--border-color)] text-[var(--color-accent)]">
+          <Sparkle className="size-4" weight="bold" />
+        </span>
+        <span>{open ? 'Hide thinking' : 'Show thinking'}</span>
+        <CaretDown
+          className={cn('size-4 transition-transform', open && 'rotate-180')}
+          weight="bold"
+          aria-hidden="true"
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {open ? (
+          <motion.div
+            key="think"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: maxHeight, opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: 'spring', duration: 0.25, bounce: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-0 ml-[12px] rounded-lg bg-[var(--color-background)] py-2 px-0">
+              <div
+                className="prose-message text-sm leading-relaxed border-l-[3px] border-neutral-300 dark:border-neutral-800 pl-3"
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   )
 }
@@ -412,17 +458,10 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
             <FileList files={files} onFileRemove={onFileRemove} />
             {/* Top: Text area */}
             <div className="relative px-2 pt-2 pb-0">
-              {(status === 'streaming' || status === 'submitted') && (value.trim().length === 0) && (
-                <div className="pointer-events-none absolute left-3 top-3">
-                  <div style={{ width: 44, height: 44, position: 'relative' }} aria-hidden>
-                    <Orb rotateOnHover={false} forceHoverState={true} hue={25} hoverIntensity={2} />
-                  </div>
-                </div>
-              )}
               <PromptInputTextarea
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
-                placeholder={(status === 'streaming' || status === 'submitted') ? '' : 'Ask anything'}
+                placeholder="Ask Yurie"
                 className="min-h-[60px] py-3 px-3 text-base leading-[1.3] sm:text-base md:text-base"
               />
             </div>
@@ -516,7 +555,7 @@ export default function ChatClient() {
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
-  const [modelChoice, setModelChoice] = useState<string>('openai/gpt-5')
+  const [modelChoice, setModelChoice] = useState<string>('google/gemini-2.5-pro')
   const [useTavily, setUseTavily] = useState<boolean>(false)
   const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(() => {
     try {
@@ -678,12 +717,13 @@ export default function ChatClient() {
   function renderMessageContent(role: 'user' | 'assistant', content: string) {
     const legacyBracketPattern = "\\[" + "data:image" + "\\/[a-zA-Z]+;base64,[^\\]]+" + "\\]"
     const pattern = new RegExp(
-      `<image_partial:([^>]+)>|<image:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|${legacyBracketPattern}`,
+      `<image_partial:([^>]+)>|<image:([^>]+)>|<reasoning_partial:([^>]+)>|<reasoning:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|${legacyBracketPattern}`,
       'g'
     )
     const parts: Array<
       { type: 'text'; value: string } |
       { type: 'image'; src: string; partial?: boolean } |
+      { type: 'reasoning'; value: string; partial?: boolean } |
       { type: 'meta'; key: 'revised_prompt' | 'response_id' | 'summary_text' | 'incomplete'; value: string }
     > = []
     let lastIndex = 0
@@ -695,10 +735,12 @@ export default function ChatClient() {
       const full = match[0]
       const partialPayload = match[1]
       const finalPayload = match[2]
-      const revisedPayload = match[3]
-      const responseIdPayload = match[4]
-      const summaryPayload = match[5]
-      const incompletePayload = match[6]
+      const reasoningPartialPayload = match[3]
+      const reasoningFinalPayload = match[4]
+      const revisedPayload = match[5]
+      const responseIdPayload = match[6]
+      const summaryPayload = match[7]
+      const incompletePayload = match[8]
       const src = partialPayload
         ? partialPayload
         : finalPayload
@@ -709,6 +751,12 @@ export default function ChatClient() {
       if (src) {
         const isPartial = Boolean(partialPayload)
         parts.push({ type: 'image', src, partial: isPartial })
+      }
+      if (typeof reasoningPartialPayload === 'string' && reasoningPartialPayload) {
+        parts.push({ type: 'reasoning', value: reasoningPartialPayload, partial: true })
+      }
+      if (typeof reasoningFinalPayload === 'string' && reasoningFinalPayload) {
+        parts.push({ type: 'reasoning', value: reasoningFinalPayload })
       }
       if (typeof revisedPayload === 'string' && revisedPayload) {
         parts.push({ type: 'meta', key: 'revised_prompt', value: revisedPayload })
@@ -736,8 +784,40 @@ export default function ChatClient() {
       return -1
     })()
     const hasFinalImage = parts.some((p) => (p as any).type === 'image' && !(p as any).partial)
+    const reasoningParts = parts.filter((p: any) => p.type === 'reasoning') as any[]
+    const hasFinalReasoning = reasoningParts.some((r) => !r.partial)
+    const latestReasoningPartialIndex = (() => {
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const p = parts[i] as any
+        if (p.type === 'reasoning' && p.partial) return i
+      }
+      return -1
+    })()
+    const decodeBase64Utf8 = (b64: string): string => {
+      try {
+        const bin = atob(b64)
+        const bytes = new Uint8Array(bin.length)
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+        return new TextDecoder().decode(bytes)
+      } catch {
+        return ''
+      }
+    }
+    const reasoningDecoded = (() => {
+      if (hasFinalReasoning) {
+        const finals = reasoningParts.filter((r) => !r.partial).map((r) => String(r.value))
+        return finals.map(decodeBase64Utf8).join('')
+      }
+      const partials = reasoningParts.filter((r) => r.partial).map((r) => String(r.value))
+      if (partials.length === 0) return ''
+      return partials.map(decodeBase64Utf8).join('')
+    })()
+    const reasoningHtml = reasoningDecoded ? sanitizeHtml(md.parse(reasoningDecoded) as string) : ''
     return (
       <>
+        {role === 'assistant' && reasoningHtml ? (
+          <ThinkingPanel content={reasoningHtml} />
+        ) : null}
         {parts.map((p, i) => {
           if (p.type === 'text') {
             const rawHtml = md.parse(p.value) as string
@@ -936,6 +1016,7 @@ export default function ChatClient() {
           previousResponseId: lastResponseId,
           model: modelChoice,
           useTavily,
+          includeReasoning: true,
         }),
         signal: ac.signal,
       })

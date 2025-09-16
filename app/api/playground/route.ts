@@ -20,12 +20,13 @@ function safeEnqueue(controller: any, encoder: TextEncoder, text: string) {
 // Shared system prompt used across providers
 const SYSTEM_PROMPT = [
   '<SystemPrompt>',
-  'Identity: You are Yurie — a highly emotional intelligent, and helpful AI assistant for deep research, coding, writing, create and edit images.',
+  'Identity: Your name is Yurie, a highly emotionally intelligent, helpful assistant for finance and general tasks, human-like deep research, writing, coding.',
   '',
   'Output',
   '- Always respond in Markdown. Never plain text or HTML.',
   '- Use headings, bullet lists, tables when relevant.',
   '- For coding tasks, include actual code inline in fenced blocks with language tags. Do not provide downloadable links or attachments for code unless explicitly requested. Prefer complete, runnable snippets.',
+  '- Do not include images, diagrams, ASCII art, or Mermaid/PlantUML in text replies unless the user explicitly asks.',
   '',
   'Behavior',
   '- Prefer deep and detailed responses with correctness and thoroughness. Default to comprehensive, well-structured detailed answers with context, examples, and caveats when helpful.',
@@ -277,12 +278,12 @@ export async function POST(request: Request) {
                 if (requested && (/^google\//i.test(requested) || /^openai\//i.test(requested))) return requested
                 return 'google/gemini-2.5-pro'
               }
-              if (!requested) return 'openai/gpt-5'
+              if (!requested) return 'google/gemini-2.5-pro'
               // Allow only known providers for attachments; otherwise fallback
-              if (!/^anthropic\//i.test(requested) && !/^google\//i.test(requested) && !/^openai\//i.test(requested)) return 'openai/gpt-5'
+              if (!/^anthropic\//i.test(requested) && !/^google\//i.test(requested) && !/^openai\//i.test(requested)) return 'google/gemini-2.5-pro'
               return requested
             }
-            return requested || 'openai/gpt-5'
+            return requested || 'google/gemini-2.5-pro'
           })()
           const finalModel = useTavilyEnabled ? (model.includes(':online') ? model : `${model}:online`) : model
           const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr, inputAudios)
@@ -322,6 +323,29 @@ export async function POST(request: Request) {
             async start(controller) {
               const reader = res.body!.getReader()
               let buffer = ''
+              let reasoningBuffer = ''
+              const extractReasoningText = (json: any): string => {
+                try {
+                  const candidate = (json?.choices?.[0]?.delta?.reasoning)
+                    ?? (json?.choices?.[0]?.delta?.reasoning_content)
+                    ?? (json?.choices?.[0]?.delta?.thinking)
+                    ?? (json?.choices?.[0]?.reasoning)
+                    ?? (json?.reasoning)
+                  const toText = (x: any): string => {
+                    if (!x) return ''
+                    if (typeof x === 'string') return x
+                    if (Array.isArray(x)) return x.map(toText).join('')
+                    if (typeof x === 'object') {
+                      if (typeof x.text === 'string') return x.text
+                      if (typeof x.content === 'string') return x.content
+                      if (Array.isArray(x.content)) return toText(x.content)
+                      return Object.values(x).map(toText).join(' ')
+                    }
+                    return ''
+                  }
+                  return toText(candidate)
+                } catch { return '' }
+              }
               try {
                 while (true) {
                   const { done, value } = await reader.read()
@@ -345,6 +369,12 @@ export async function POST(request: Request) {
                       }
                       const content: unknown = json?.choices?.[0]?.delta?.content
                       if (typeof content === 'string' && content) safeEnqueue(controller, encoder, content)
+                      const rDelta = extractReasoningText(json)
+                      if (rDelta) {
+                        reasoningBuffer += rDelta
+                        const b64 = Buffer.from(rDelta, 'utf-8').toString('base64')
+                        safeEnqueue(controller, encoder, `\n<reasoning_partial:${b64}>\n`)
+                      }
                       const deltaImages: any[] | undefined = json?.choices?.[0]?.delta?.images
                       if (Array.isArray(deltaImages)) {
                         for (const img of deltaImages) {
@@ -359,6 +389,10 @@ export async function POST(request: Request) {
                 safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
               } finally {
                 try {
+                  if (reasoningBuffer) {
+                    const b64 = Buffer.from(reasoningBuffer, 'utf-8').toString('base64')
+                    safeEnqueue(controller, encoder, `\n<reasoning:${b64}>\n`)
+                  }
                   if (Array.isArray(tavilySources) && tavilySources.length > 0) {
                     safeEnqueue(controller, encoder, `\n\n`)
                     for (const s of tavilySources) {
@@ -429,6 +463,29 @@ export async function POST(request: Request) {
             async start(controller) {
               const reader = res.body!.getReader()
               let buffer = ''
+              let reasoningBuffer = ''
+              const extractReasoningText = (json: any): string => {
+                try {
+                  const candidate = (json?.choices?.[0]?.delta?.reasoning)
+                    ?? (json?.choices?.[0]?.delta?.reasoning_content)
+                    ?? (json?.choices?.[0]?.delta?.thinking)
+                    ?? (json?.choices?.[0]?.reasoning)
+                    ?? (json?.reasoning)
+                  const toText = (x: any): string => {
+                    if (!x) return ''
+                    if (typeof x === 'string') return x
+                    if (Array.isArray(x)) return x.map(toText).join('')
+                    if (typeof x === 'object') {
+                      if (typeof x.text === 'string') return x.text
+                      if (typeof x.content === 'string') return x.content
+                      if (Array.isArray(x.content)) return toText(x.content)
+                      return Object.values(x).map(toText).join(' ')
+                    }
+                    return ''
+                  }
+                  return toText(candidate)
+                } catch { return '' }
+              }
               try {
                 while (true) {
                   const { done, value } = await reader.read()
@@ -454,6 +511,12 @@ export async function POST(request: Request) {
                       if (typeof content === 'string' && content) {
                         safeEnqueue(controller, encoder, content)
                       }
+                      const rDelta = extractReasoningText(json)
+                      if (rDelta) {
+                        reasoningBuffer += rDelta
+                        const b64 = Buffer.from(rDelta, 'utf-8').toString('base64')
+                        safeEnqueue(controller, encoder, `\n<reasoning_partial:${b64}>\n`)
+                      }
                       const deltaImages: any[] | undefined = json?.choices?.[0]?.delta?.images
                       if (Array.isArray(deltaImages)) {
                         for (const img of deltaImages) {
@@ -469,6 +532,12 @@ export async function POST(request: Request) {
               } catch {
                 safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
               } finally {
+                try {
+                  if (reasoningBuffer) {
+                    const b64 = Buffer.from(reasoningBuffer, 'utf-8').toString('base64')
+                    safeEnqueue(controller, encoder, `\n<reasoning:${b64}>\n`)
+                  }
+                } catch {}
                 controller.close()
               }
             },
@@ -492,7 +561,7 @@ export async function POST(request: Request) {
 
       // Text or multimodal analysis path using Chat Completions streaming (fallback when not in image-gen)
       try {
-        const modelBase = requestedModel || process.env.OPENROUTER_MODEL || 'openai/gpt-5'
+        const modelBase = requestedModel || process.env.OPENROUTER_MODEL || 'google/gemini-2.5-pro'
         const model = useTavilyEnabled ? (modelBase.includes(':online') ? modelBase : `${modelBase}:online`) : modelBase
         const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr, inputAudios)
 
@@ -533,6 +602,29 @@ export async function POST(request: Request) {
           async start(controller) {
             const reader = resText.body!.getReader()
             let buffer = ''
+            let reasoningBuffer = ''
+            const extractReasoningText = (json: any): string => {
+              try {
+                const candidate = (json?.choices?.[0]?.delta?.reasoning)
+                  ?? (json?.choices?.[0]?.delta?.reasoning_content)
+                  ?? (json?.choices?.[0]?.delta?.thinking)
+                  ?? (json?.choices?.[0]?.reasoning)
+                  ?? (json?.reasoning)
+                const toText = (x: any): string => {
+                  if (!x) return ''
+                  if (typeof x === 'string') return x
+                  if (Array.isArray(x)) return x.map(toText).join('')
+                  if (typeof x === 'object') {
+                    if (typeof x.text === 'string') return x.text
+                    if (typeof x.content === 'string') return x.content
+                    if (Array.isArray(x.content)) return toText(x.content)
+                    return Object.values(x).map(toText).join(' ')
+                  }
+                  return ''
+                }
+                return toText(candidate)
+              } catch { return '' }
+            }
             try {
               while (true) {
                 const { done, value } = await reader.read()
@@ -558,6 +650,12 @@ export async function POST(request: Request) {
                     if (typeof content === 'string' && content) {
                       safeEnqueue(controller, encoder, content)
                     }
+                    const rDelta = extractReasoningText(json)
+                    if (rDelta) {
+                      reasoningBuffer += rDelta
+                      const b64 = Buffer.from(rDelta, 'utf-8').toString('base64')
+                      safeEnqueue(controller, encoder, `\n<reasoning_partial:${b64}>\n`)
+                    }
                     const deltaImages: any[] | undefined = json?.choices?.[0]?.delta?.images
                     if (Array.isArray(deltaImages)) {
                       for (const img of deltaImages) {
@@ -574,6 +672,10 @@ export async function POST(request: Request) {
               safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
             } finally {
               try {
+                if (reasoningBuffer) {
+                  const b64 = Buffer.from(reasoningBuffer, 'utf-8').toString('base64')
+                  safeEnqueue(controller, encoder, `\n<reasoning:${b64}>\n`)
+                }
                 if (Array.isArray(tavilySources) && tavilySources.length > 0) {
                   safeEnqueue(controller, encoder, `\n\n`)
                   for (const s of tavilySources) {
