@@ -786,13 +786,6 @@ export default function ChatClient() {
     const hasFinalImage = parts.some((p) => (p as any).type === 'image' && !(p as any).partial)
     const reasoningParts = parts.filter((p: any) => p.type === 'reasoning') as any[]
     const hasFinalReasoning = reasoningParts.some((r) => !r.partial)
-    const latestReasoningPartialIndex = (() => {
-      for (let i = parts.length - 1; i >= 0; i--) {
-        const p = parts[i] as any
-        if (p.type === 'reasoning' && p.partial) return i
-      }
-      return -1
-    })()
     const decodeBase64Utf8 = (b64: string): string => {
       try {
         const bin = atob(b64)
