@@ -51,7 +51,7 @@ export function Navbar() {
                           alt="Yurie"
                           width={20}
                           height={20}
-                          className="w-5 h-5 sm:w-6 sm:h-6 transform transition-transform duration-200 ease-out origin-center group-hover:scale-110"
+                          className="w-5 h-5 sm:w-6 sm:h-6 transform transition-transform duration-200 ease-out origin-center group-hover:scale-110 select-none"
                           draggable={false}
                         />
                         <span>{name}</span>
