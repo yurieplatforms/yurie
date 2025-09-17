@@ -136,7 +136,7 @@ export async function POST(request: Request) {
       if (reasoning && typeof reasoning === 'object') {
         out = { ...reasoning }
       } else if (typeof includeReasoning === 'boolean') {
-        out = includeReasoning ? {} : { exclude: true }
+        out = includeReasoning ? { effort: 'high' } : { exclude: true }
       }
 
       const truthy = (v: unknown): boolean => /^(1|true|yes|on)$/i.test(String(v || ''))

@@ -55,6 +55,7 @@ export default function AskAISummary({ title, content, inline, className, portal
             { role: 'user', content: prompt },
           ],
           model: 'anthropic/claude-3.5-haiku',
+          reasoning: { effort: 'high' },
         }),
         signal: ac.signal,
       })

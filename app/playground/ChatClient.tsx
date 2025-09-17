@@ -53,18 +53,13 @@ function PromptInput({ className, isLoading = false, maxHeight = 240, value, onV
 }
 
 function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ...props }: any) {
-  const { value, setValue, maxHeight, onSubmit, isLoading } = usePromptInput()
+  const { value, setValue, maxHeight, onSubmit } = usePromptInput()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   useEffect(() => {
     if (disableAutosize || !textareaRef.current) return
     textareaRef.current.style.height = 'auto'
     textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
   }, [value, disableAutosize])
-  useEffect(() => {
-    if (isLoading) {
-      try { textareaRef.current?.blur() } catch {}
-    }
-  }, [isLoading])
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -85,8 +80,7 @@ function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ..
         'overflow-y-auto',
         className
       )}
-      style={{ maxHeight: maxHeightStyle, caretColor: isLoading ? 'transparent' as any : undefined }}
-      readOnly={Boolean(isLoading)}
+      style={{ maxHeight: maxHeightStyle }}
       rows={1}
       
       {...props}
@@ -378,21 +372,19 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
   }, [onFileUpload, setDragging])
 
   const handleSend = useCallback(() => {
-    if (isSubmitting) return
     if (status === 'streaming' || status === 'submitted') {
       stop()
       return
     }
+    if (isSubmitting) return
     onSend()
   }, [isSubmitting, onSend, status, stop])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (isSubmitting) {
-      e.preventDefault()
-      return
-    }
     if (e.key === 'Enter' && (status === 'streaming' || status === 'submitted')) {
       e.preventDefault()
+      // While streaming, Enter acts as Stop; typing remains allowed otherwise
+      stop()
       return
     }
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -400,7 +392,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
       e.preventDefault()
       onSend()
     }
-  }, [files.length, isSubmitting, onSend, status, value])
+  }, [files.length, onSend, status, stop, value])
 
   const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items
@@ -1009,7 +1001,7 @@ export default function ChatClient() {
           previousResponseId: lastResponseId,
           model: modelChoice,
           useTavily,
-          includeReasoning: true,
+          reasoning: { effort: 'high' },
         }),
         signal: ac.signal,
       })
@@ -1077,12 +1069,25 @@ export default function ChatClient() {
         })
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: `There was an error: ${message}` },
-      ])
-      setStatus('error')
+      const isAbort = (() => {
+        try {
+          if (err && typeof err === 'object') {
+            const anyErr: any = err
+            if (anyErr.name === 'AbortError') return true
+          }
+          if (err instanceof DOMException && err.name === 'AbortError') return true
+          if (err instanceof Error && /abort/i.test(err.message)) return true
+        } catch {}
+        return false
+      })()
+      if (!isAbort) {
+        const message = err instanceof Error ? err.message : 'Unknown error'
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: `There was an error: ${message}` },
+        ])
+        setStatus('error')
+      }
     } finally {
       setIsLoading(false)
       setStatus('ready')
