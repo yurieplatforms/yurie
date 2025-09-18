@@ -125,7 +125,7 @@ function MessageAttachmentList({ attachments, compact = false }: { attachments: 
   )
 }
 
-function ThinkingPanel({ content }: { content: string }) {
+function ThinkingPanel({ content, generating = false }: { content: string; generating?: boolean }) {
   const [open, setOpen] = useState(false)
   const maxHeight = open ? 'auto' : 0
   return (
@@ -137,11 +137,12 @@ function ThinkingPanel({ content }: { content: string }) {
           'group inline-flex items-center gap-2 text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors'
         )}
         aria-expanded={open}
+        aria-busy={generating}
       >
         <span className="inline-flex size-6 items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--border-color)] text-[var(--color-accent)]">
           <Sparkle className="size-4" weight="bold" />
         </span>
-        <span>{open ? 'Hide thinking' : 'Show thinking'}</span>
+        <span className={generating ? 'ai-text-shimmer' : undefined}>{open ? 'Hide thinking' : 'Show thinking'}</span>
         <CaretDown
           className={cn('size-4 transition-transform', open && 'rotate-180')}
           weight="bold"
@@ -801,7 +802,7 @@ export default function ChatClient() {
     return (
       <>
         {role === 'assistant' && reasoningHtml ? (
-          <ThinkingPanel content={reasoningHtml} />
+          <ThinkingPanel content={reasoningHtml} generating={status === 'submitted' || status === 'streaming'} />
         ) : null}
         {parts.map((p, i) => {
           if (p.type === 'text') {
