@@ -1,4 +1,5 @@
-import { BlogPosts } from 'app/components/posts'
+import { PostList } from 'app/components/posts'
+import { getBlogPosts } from 'app/blog/utils'
 
 export const metadata = {
   title: 'Blog',
@@ -6,10 +7,11 @@ export const metadata = {
 }
 
 export default function Page() {
+  let posts = getBlogPosts()
   return (
     <section>
       <h1 className="font-semibold text-2xl mb-8 tracking-tighter px-3 sm:px-4">Blog</h1>
-      <BlogPosts />
+      <PostList basePath="/blog" posts={posts} />
     </section>
   )
 }
