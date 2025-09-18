@@ -5,7 +5,6 @@ import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
 import { ArrowUp, Stop, Paperclip, X, CaretDown, Globe, Sparkle } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
-import Orb from './Orb'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -1106,7 +1105,7 @@ export default function ChatClient() {
   }, [])
 
   return (
-    <section ref={containerRef} className={cn('w-full flex flex-col px-3 sm:px-4')}>
+    <section ref={containerRef} className={cn('w-full flex flex-col px-3 sm:px-4', messages.length === 0 && 'min-h-[70vh] justify-center')}>
       <div
         ref={outputRef}
         className={cn('rounded pt-1 pb-3 overflow-y-auto text-base font-sans chat-scroll', messages.length === 0 && 'hidden')}
@@ -1159,20 +1158,12 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn(messages.length === 0 ? 'mt-12 sm:mt-16 md:mt-20 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
+        className={cn(messages.length === 0 ? 'mt-0 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
         aria-busy={isLoading}
       >
         {messages.length === 0 ? (
           <>
-            <div style={{ width: '100%', height: '180px', position: 'relative', margin: '4px 0 8px 0' }}>
-              <Orb
-                hoverIntensity={2}
-                rotateOnHover={true}
-                hue={25}
-                forceHoverState={false}
-              />
-            </div>
-            <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-2 sm:mt-3 mb-8 sm:mb-10">
+            <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-0 mb-8 sm:mb-10">
               {`What's on your mind ${timeOfDayWord}?`}
             </div>
           </>
