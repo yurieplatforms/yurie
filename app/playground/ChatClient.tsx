@@ -420,6 +420,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
       { value: 'z-ai/glm-4.5', label: 'GLM 4.5' },
       { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
       { value: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
+      { value: 'openrouter/sonoma-sky-alpha', label: 'Sonoma Sky Alpha' },
     ],
     []
   )
