@@ -10,14 +10,14 @@ export default function Footer() {
 
   return (
     <footer className="mb-16 px-3 sm:px-4">
-      <p className="mt-8 flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
+      <p className="mt-8 flex items-center gap-1 text-neutral-600 dark:text-neutral-300">
         <span>© {new Date().getFullYear()}</span>
         <img
           src="/favicon.ico"
           alt="Yurie"
-          width={16}
-          height={16}
-          className="h-4 w-4"
+          width={20}
+          height={20}
+          className="h-5 w-5 sm:h-6 sm:w-6"
           draggable={false}
         />
         <span>Yurie Platforms. All rights reserved.</span>
