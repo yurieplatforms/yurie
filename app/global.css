@@ -52,6 +52,9 @@
   --border-color: #d4d7df;
   --border-color-hover: #c3c7d2;
   --text-primary: #0b0b0e;
+  /* Ask AI button border: lighter in light mode to reduce visibility */
+  --ai-border-color: #e4e6ed;
+  --ai-border-color-hover: #dde1ea;
   /* Chat bubble tokens */
   --bubble-assistant-bg: var(--surface);
   --bubble-user-bg: var(--surface-hover);
@@ -67,6 +70,9 @@
     --border-color: #1a1a1d;
     --border-color-hover: #26262a;
     --text-primary: #f5f5f6;
+    /* Ask AI button border: dark gray in dark mode */
+    --ai-border-color: #2a2a2e;
+    --ai-border-color-hover: #34343a;
     /* Chat bubble tokens */
     --bubble-assistant-bg: var(--surface);
     --bubble-user-bg: var(--surface-hover);

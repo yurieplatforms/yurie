@@ -182,10 +182,10 @@ export default function AskAISummary({
               onClick={handleClick}
               className={
                 'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-[var(--text-primary)] transition-colors dark:bg-[#0C0C0C] dark:active:bg-[#0C0C0C] ' +
-                (loading ? 'cursor-default' : 'cursor-pointer') +
+                (loading ? 'cursor-default ' : 'cursor-pointer ') +
                 (isActive
-                  ? 'border-[var(--color-accent)] bg-[#F0F0F3] text-[var(--color-accent)] ring-1 ring-[var(--color-accent)]'
-                  : 'border-[var(--border-color)] bg-[#F0F0F3] hover:border-[var(--border-color-hover)]') +
+                  ? ' border-[var(--color-accent)] bg-[#F0F0F3] text-[var(--color-accent)] ring-1 ring-[var(--color-accent)]'
+                  : ' border-[var(--ai-border-color)] bg-[#F0F0F3] hover:border-[var(--ai-border-color-hover)]') +
                 ' ai-hover-glow focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none active:border-[var(--color-accent)] active:bg-[var(--color-accent)]/10 active:text-[var(--color-accent)]' +
                 (loading ? ' ai-border-glow' : '')
               }
