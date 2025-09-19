@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { marked } from 'marked'
@@ -12,11 +12,17 @@ type Props = {
   portalTargetId?: string
 }
 
-export default function AskAISummary({ title, content, inline, className, portalTargetId }: Props) {
+export default function AskAISummary({
+  title,
+  content,
+  inline,
+  className,
+  portalTargetId,
+}: Props) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [summary, setSummary] = useState<string>("")
+  const [summary, setSummary] = useState<string>('')
   const abortRef = useRef<AbortController | null>(null)
 
   const renderedHtml = useMemo(() => {
@@ -51,9 +57,7 @@ export default function AskAISummary({ title, content, inline, className, portal
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [
-            { role: 'user', content: prompt },
-          ],
+          messages: [{ role: 'user', content: prompt }],
           model: 'anthropic/claude-3.5-haiku',
           reasoning: { effort: 'high' },
         }),
@@ -62,7 +66,10 @@ export default function AskAISummary({ title, content, inline, className, portal
       if (!res.ok) {
         try {
           const errJson: any = await res.json()
-          const code = typeof errJson?.error?.code === 'number' ? errJson.error.code : res.status
+          const code =
+            typeof errJson?.error?.code === 'number'
+              ? errJson.error.code
+              : res.status
           const message = errJson?.error?.message || `HTTP ${code}`
           throw new Error(message)
         } catch {
@@ -79,7 +86,10 @@ export default function AskAISummary({ title, content, inline, className, portal
         if (!raw) return raw
         let txt = raw
         // Remove internal tags: thinking, meta, images, revised prompts
-        txt = txt.replace(/<(?:thinking|response_id|summary_text|incomplete|revised_prompt|image|image_partial):[^>]*>/gi, '')
+        txt = txt.replace(
+          /<(?:thinking|response_id|summary_text|incomplete|revised_prompt|image|image_partial):[^>]*>/gi,
+          ''
+        )
         // Remove legacy inline data URLs like [data:image...]
         txt = txt.replace(/\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/g, '')
         // Strip Sources block if present
@@ -137,54 +147,66 @@ export default function AskAISummary({ title, content, inline, className, portal
 
   useEffect(() => {
     return () => {
-      try { abortRef.current?.abort() } catch {}
+      try {
+        abortRef.current?.abort()
+      } catch {}
     }
   }, [])
 
-  const panel = open && (error || summary) ? (
-    <div className="mt-1 rounded-2xl border p-4 text-[13px] leading-snug font-semibold prose prose-neutral dark:prose-invert prose-p:my-0.5 prose-ul:my-0.5 prose-ol:my-0.5 prose-li:my-0.5 prose-ul:pl-3 prose-ol:pl-3 prose-headings:mt-1 prose-headings:mb-0.5 prose-headings:text-inherit bg-[#F0F0F3] dark:bg-[#0C0C0C] text-[var(--text-primary)] border-[var(--border-color)]">
-      {error ? (
-        <div className="text-red-600 dark:text-red-400">{error}</div>
-      ) : (
-        <div dangerouslySetInnerHTML={{ __html: renderedHtml }} />
-      )}
-    </div>
-  ) : null
+  const panel =
+    open && (error || summary) ? (
+      <div className="prose prose-neutral dark:prose-invert prose-p:my-0.5 prose-ul:my-0.5 prose-ol:my-0.5 prose-li:my-0.5 prose-ul:pl-3 prose-ol:pl-3 prose-headings:mt-1 prose-headings:mb-0.5 prose-headings:text-inherit mt-1 rounded-2xl border border-[var(--border-color)] bg-[#F0F0F3] p-4 text-[13px] leading-snug font-semibold text-[var(--text-primary)] dark:bg-[#0C0C0C]">
+        {error ? (
+          <div className="text-red-600 dark:text-red-400">{error}</div>
+        ) : (
+          <div dangerouslySetInnerHTML={{ __html: renderedHtml }} />
+        )}
+      </div>
+    ) : null
 
-  const portalTarget = typeof window !== 'undefined' && portalTargetId
-    ? document.getElementById(portalTargetId)
-    : null
+  const portalTarget =
+    typeof window !== 'undefined' && portalTargetId
+      ? document.getElementById(portalTargetId)
+      : null
 
   return (
     <>
-      <div className={(inline ? '' : 'mt-4') + (className ? ` ${className}` : '')}>
-        {(() => { const isActive = loading || open; return (
-        <button
-          type="button"
-          onClick={handleClick}
-          className={
-            "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors text-[var(--text-primary)] dark:bg-[#0C0C0C] dark:active:bg-[#0C0C0C] " +
-            (loading ? "cursor-default " : "cursor-pointer ") +
-            (isActive
-              ? "ring-1 ring-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent)] bg-[#F0F0F3]"
-              : "border-[var(--border-color)] bg-[#F0F0F3] hover:border-[var(--border-color-hover)]") +
-            " active:border-[var(--color-accent)] active:text-[var(--color-accent)] active:bg-[var(--color-accent)]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] ai-hover-glow" +
-            (loading ? " ai-border-glow" : "")
-          }
-          aria-busy={loading}
-          aria-pressed={isActive}
-          disabled={loading}
-        >
-          <img src="/favicon.ico" alt="" className="h-4 w-4" aria-hidden="true" />
-          <span className={loading ? 'ai-text-shimmer' : undefined}>{loading ? 'Generating summary…' : 'Ask AI'}</span>
-        </button>
-        ) })()}
+      <div
+        className={(inline ? '' : 'mt-4') + (className ? ` ${className}` : '')}
+      >
+        {(() => {
+          const isActive = loading || open
+          return (
+            <button
+              type="button"
+              onClick={handleClick}
+              className={
+                'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-[var(--text-primary)] transition-colors dark:bg-[#0C0C0C] dark:active:bg-[#0C0C0C] ' +
+                (loading ? 'cursor-default' : 'cursor-pointer') +
+                (isActive
+                  ? 'border-[var(--color-accent)] bg-[#F0F0F3] text-[var(--color-accent)] ring-1 ring-[var(--color-accent)]'
+                  : 'border-[var(--border-color)] bg-[#F0F0F3] hover:border-[var(--border-color-hover)]') +
+                ' ai-hover-glow focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none active:border-[var(--color-accent)] active:bg-[var(--color-accent)]/10 active:text-[var(--color-accent)]' +
+                (loading ? ' ai-border-glow' : '')
+              }
+              aria-busy={loading}
+              aria-pressed={isActive}
+              disabled={loading}
+            >
+              <img
+                src="/favicon.ico"
+                alt=""
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+              <span className={loading ? 'ai-text-shimmer' : undefined}>
+                {loading ? 'Generating summary…' : 'Ask AI'}
+              </span>
+            </button>
+          )
+        })()}
       </div>
       {portalTarget ? createPortal(panel, portalTarget) : panel}
     </>
   )
 }
-
-
-
-

@@ -1,9 +1,26 @@
-"use client"
+'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useId,
+  createContext,
+  useContext,
+} from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
-import { ArrowUp, Stop, Paperclip, X, CaretDown, Globe, Sparkle } from '@phosphor-icons/react'
+import {
+  ArrowUp,
+  Stop,
+  Paperclip,
+  X,
+  CaretDown,
+  Globe,
+  Sparkle,
+} from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -32,7 +49,15 @@ function usePromptInput() {
   return useContext(PromptInputContext)
 }
 
-function PromptInput({ className, isLoading = false, maxHeight = 240, value, onValueChange, onSubmit, children }: any) {
+function PromptInput({
+  className,
+  isLoading = false,
+  maxHeight = 240,
+  value,
+  onValueChange,
+  onSubmit,
+  children,
+}: any) {
   const [internalValue, setInternalValue] = useState(value || '')
   const handleChange = (newValue: string) => {
     setInternalValue(newValue)
@@ -40,18 +65,33 @@ function PromptInput({ className, isLoading = false, maxHeight = 240, value, onV
   }
   return (
     <PromptInputContext.Provider
-      value={{ isLoading, value: value ?? internalValue, setValue: onValueChange ?? handleChange, maxHeight, onSubmit }}
+      value={{
+        isLoading,
+        value: value ?? internalValue,
+        setValue: onValueChange ?? handleChange,
+        maxHeight,
+        onSubmit,
+      }}
     >
-      <div className={cn('glass-input-wrap', isLoading && 'ai-border-glow', className)}>
-        <div className="glass-input-inner">
-          {children}
-        </div>
+      <div
+        className={cn(
+          'glass-input-wrap',
+          isLoading && 'ai-border-glow',
+          className
+        )}
+      >
+        <div className="glass-input-inner">{children}</div>
       </div>
     </PromptInputContext.Provider>
   )
 }
 
-function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ...props }: any) {
+function PromptInputTextarea({
+  className,
+  onKeyDown,
+  disableAutosize = false,
+  ...props
+}: any) {
   const { value, setValue, maxHeight, onSubmit } = usePromptInput()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   useEffect(() => {
@@ -66,7 +106,8 @@ function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ..
     }
     onKeyDown?.(e)
   }
-  const maxHeightStyle = typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight
+  const maxHeightStyle =
+    typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight
   return (
     <textarea
       ref={textareaRef}
@@ -75,36 +116,53 @@ function PromptInputTextarea({ className, onKeyDown, disableAutosize = false, ..
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={handleKeyDown}
       className={cn(
-        'text-neutral-900 dark:text-neutral-100 min-h-[60px] w-full resize-none border-none bg-transparent shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
+        'min-h-[60px] w-full resize-none border-none bg-transparent text-neutral-900 shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 dark:text-neutral-100',
         'overflow-y-auto',
         className
       )}
       style={{ maxHeight: maxHeightStyle }}
       rows={1}
-      
       {...props}
     />
   )
 }
 
-function MessageAttachmentList({ attachments, compact = false }: { attachments: AttachmentPreview[]; compact?: boolean }) {
+function MessageAttachmentList({
+  attachments,
+  compact = false,
+}: {
+  attachments: AttachmentPreview[]
+  compact?: boolean
+}) {
   if (!attachments || attachments.length === 0) return null
   return (
-    <div className={cn(compact ? 'm-0' : 'mt-2 mb-3', 'flex flex-row flex-wrap gap-2')}>
-      {attachments.map((att) => (
+    <div
+      className={cn(
+        compact ? 'm-0' : 'mt-2 mb-3',
+        'flex flex-row flex-wrap gap-2'
+      )}
+    >
+      {attachments.map((att) =>
         att.isImage ? (
           <img
             key={att.id}
             src={att.objectUrl}
             alt={att.name}
-            className="rounded border border-neutral-200 dark:border-neutral-800 max-h-56 object-cover"
+            className="max-h-56 rounded border border-neutral-200 object-cover dark:border-neutral-800"
           />
         ) : att.isAudio ? (
-          <div key={att.id} className="bg-[var(--surface)] border border-[var(--border-color)] rounded-md p-2 inline-flex items-center gap-2 max-w-full">
+          <div
+            key={att.id}
+            className="inline-flex max-w-full items-center gap-2 rounded-md border border-[var(--border-color)] bg-[var(--surface)] p-2"
+          >
             <audio controls src={att.objectUrl} className="max-w-[260px]" />
             <div className="flex flex-col">
-              <span className="font-medium text-xs truncate max-w-[200px]">{att.name}</span>
-              <span className="text-neutral-500 text-[10px]">{(att.size / 1024).toFixed(2)}kB</span>
+              <span className="max-w-[200px] truncate text-xs font-medium">
+                {att.name}
+              </span>
+              <span className="text-[10px] text-neutral-500">
+                {(att.size / 1024).toFixed(2)}kB
+              </span>
             </div>
           </div>
         ) : (
@@ -113,18 +171,26 @@ function MessageAttachmentList({ attachments, compact = false }: { attachments: 
             href={att.objectUrl}
             target="_blank"
             rel="noreferrer"
-            className="bg-[var(--surface)] hover:bg-[var(--surface-hover)] border border-[var(--border-color)] rounded-md px-3 py-2 text-xs inline-flex items-center gap-2"
+            className="inline-flex items-center gap-2 rounded-md border border-[var(--border-color)] bg-[var(--surface)] px-3 py-2 text-xs hover:bg-[var(--surface-hover)]"
           >
             <span className="font-medium">{att.name}</span>
-            <span className="text-neutral-500 ml-2">{(att.size / 1024).toFixed(2)}kB</span>
+            <span className="ml-2 text-neutral-500">
+              {(att.size / 1024).toFixed(2)}kB
+            </span>
           </a>
         )
-      ))}
+      )}
     </div>
   )
 }
 
-function ThinkingPanel({ content, generating = false }: { content: string; generating?: boolean }) {
+function ThinkingPanel({
+  content,
+  generating = false,
+}: {
+  content: string
+  generating?: boolean
+}) {
   const [open, setOpen] = useState(false)
   const maxHeight = open ? 'auto' : 0
   return (
@@ -133,15 +199,17 @@ function ThinkingPanel({ content, generating = false }: { content: string; gener
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'group inline-flex items-center gap-2 text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors'
+          'group inline-flex items-center gap-2 text-xs font-medium text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100'
         )}
         aria-expanded={open}
         aria-busy={generating}
       >
-        <span className="inline-flex size-6 items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--border-color)] text-[var(--color-accent)]">
+        <span className="inline-flex size-6 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] text-[var(--color-accent)]">
           <Sparkle className="size-4" weight="bold" />
         </span>
-        <span className={generating ? 'ai-text-shimmer' : undefined}>{open ? 'Hide thinking' : 'Show thinking'}</span>
+        <span className={generating ? 'ai-text-shimmer' : undefined}>
+          {open ? 'Hide thinking' : 'Show thinking'}
+        </span>
         <CaretDown
           className={cn('size-4 transition-transform', open && 'rotate-180')}
           weight="bold"
@@ -158,9 +226,9 @@ function ThinkingPanel({ content, generating = false }: { content: string; gener
             transition={{ type: 'spring', duration: 0.25, bounce: 0 }}
             className="overflow-hidden"
           >
-            <div className="mt-0 ml-[12px] rounded-lg bg-[var(--color-background)] py-2 px-0">
+            <div className="mt-0 ml-[12px] rounded-lg bg-[var(--color-background)] px-0 py-2">
               <div
-                className="prose-message text-sm leading-relaxed border-l-[3px] border-neutral-300 dark:border-neutral-800 pl-3"
+                className="prose-message border-l-[3px] border-neutral-300 pl-3 text-sm leading-relaxed dark:border-neutral-800"
                 dangerouslySetInnerHTML={{ __html: content }}
               />
             </div>
@@ -171,14 +239,33 @@ function ThinkingPanel({ content, generating = false }: { content: string; gener
   )
 }
 
-function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => void }) {
+function FileItem({
+  file,
+  onRemove,
+}: {
+  file: File
+  onRemove: (file: File) => void
+}) {
   const [isRemoving, setIsRemoving] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const isLikelyImage = useMemo(() => {
     const mime = (file.type || '').toLowerCase()
     if (mime.startsWith('image/')) return true
     const ext = (file.name.split('.').pop() || '').toLowerCase()
-    const imageExts = ['png','jpg','jpeg','gif','webp','bmp','svg','heic','heif','tif','tiff','avif']
+    const imageExts = [
+      'png',
+      'jpg',
+      'jpeg',
+      'gif',
+      'webp',
+      'bmp',
+      'svg',
+      'heic',
+      'heif',
+      'tif',
+      'tiff',
+      'avif',
+    ]
     return imageExts.includes(ext)
   }, [file])
   const hasTriedDataUrlRef = useRef(false)
@@ -203,24 +290,33 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
   }
   return (
     <div className="relative mr-2 mb-0 flex items-center">
-      <div className="bg-[var(--surface)] hover:bg-[var(--surface-hover)] border-[var(--border-color)] flex w-full items-center gap-3 rounded-2xl border p-2 pr-3 transition-colors">
+      <div className="flex w-full items-center gap-3 rounded-2xl border border-[var(--border-color)] bg-[var(--surface)] p-2 pr-3 transition-colors hover:bg-[var(--surface-hover)]">
         {isLikelyImage ? (
-          <div className="bg-neutral-200 dark:bg-neutral-700 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-neutral-200 dark:bg-neutral-700">
             {previewUrl ? (
-              <img src={previewUrl} alt={file.name} className="h-full w-full object-cover" loading="eager" decoding="async" onError={loadDataUrlFallback} />
+              <img
+                src={previewUrl}
+                alt={file.name}
+                className="h-full w-full object-cover"
+                loading="eager"
+                decoding="async"
+                onError={loadDataUrlFallback}
+              />
             ) : null}
           </div>
         ) : null}
         <div className="flex flex-col overflow-hidden">
           <span className="truncate text-xs font-medium">{file.name}</span>
-          <span className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)}kB</span>
+          <span className="text-xs text-gray-500">
+            {(file.size / 1024).toFixed(2)}kB
+          </span>
         </div>
       </div>
       {!isRemoving ? (
         <button
           type="button"
           onClick={handleRemove}
-          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-[var(--border-color)] bg-[var(--surface)] text-black dark:text-white hover:bg-[var(--surface-hover)] shadow-none transition-colors"
+          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-[var(--border-color)] bg-[var(--surface)] text-black shadow-none transition-colors hover:bg-[var(--surface-hover)] dark:text-white"
           aria-label="Remove file"
         >
           <X className="size-3" weight="bold" />
@@ -230,7 +326,13 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
   )
 }
 
-function FileList({ files, onFileRemove }: { files: File[]; onFileRemove: (file: File) => void }) {
+function FileList({
+  files,
+  onFileRemove,
+}: {
+  files: File[]
+  onFileRemove: (file: File) => void
+}) {
   const TRANSITION = { type: 'spring', duration: 0.2, bounce: 0 } as const
   return (
     <AnimatePresence initial={false}>
@@ -254,7 +356,11 @@ function FileList({ files, onFileRemove }: { files: File[]; onFileRemove: (file:
                   transition={TRANSITION}
                   className="relative shrink-0 overflow-hidden pt-2"
                 >
-                  <FileItem key={`${file.name}-${file.size}-${file.lastModified}`} file={file} onRemove={onFileRemove} />
+                  <FileItem
+                    key={`${file.name}-${file.size}-${file.lastModified}`}
+                    file={file}
+                    onRemove={onFileRemove}
+                  />
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -265,7 +371,11 @@ function FileList({ files, onFileRemove }: { files: File[]; onFileRemove: (file:
   )
 }
 
-function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => void }) {
+function ButtonFileUpload({
+  onFileUpload,
+}: {
+  onFileUpload: (files: File[]) => void
+}) {
   const inputRef = useRef<HTMLInputElement>(null)
   const inputId = useId()
   return (
@@ -277,7 +387,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         accept="image/*,application/pdf,audio/*"
         multiple
         className="sr-only"
-        onChange={e => {
+        onChange={(e) => {
           const files = Array.from(e.target.files ?? [])
           onFileUpload(files)
           if (inputRef.current) inputRef.current.value = ''
@@ -287,7 +397,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         htmlFor={inputId}
         role="button"
         tabIndex={0}
-        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-[var(--border-color)] bg-[var(--surface)] cursor-pointer hover:bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)] transition-colors"
+        className="inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] p-0 leading-none transition-colors hover:border-[var(--border-color-hover)] hover:bg-[var(--surface-hover)]"
         aria-label="Add files"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -317,7 +427,21 @@ type ChatInputProps = {
   useTavily: boolean
   onUseTavilyToggle: () => void
 }
-function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUpload, onFileRemove, stop, status, modelChoice, onModelChange, useTavily, onUseTavilyToggle }: ChatInputProps) {
+function ChatInput({
+  value,
+  onValueChange,
+  onSend,
+  isSubmitting,
+  files,
+  onFileUpload,
+  onFileRemove,
+  stop,
+  status,
+  modelChoice,
+  onModelChange,
+  useTavily,
+  onUseTavilyToggle,
+}: ChatInputProps) {
   const isOnlyWhitespace = (text: string) => !/[^\s]/.test(text)
   const [isDragging, setIsDragging] = useState(false)
   const dragCounterRef = useRef(0)
@@ -326,50 +450,70 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
     setIsDragging(v)
   }, [])
 
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    try {
-      const items = Array.from(e.dataTransfer?.items || [])
-      const hasFiles = items.some((it) => it.kind === 'file') || (e.dataTransfer?.types || []).includes('Files')
-      if (!hasFiles) return
-      dragCounterRef.current += 1
-      setDragging(true)
-    } catch {}
-  }, [setDragging])
+  const handleDragEnter = useCallback(
+    (e: React.DragEvent) => {
+      try {
+        const items = Array.from(e.dataTransfer?.items || [])
+        const hasFiles =
+          items.some((it) => it.kind === 'file') ||
+          (e.dataTransfer?.types || []).includes('Files')
+        if (!hasFiles) return
+        dragCounterRef.current += 1
+        setDragging(true)
+      } catch {}
+    },
+    [setDragging]
+  )
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    try {
-      const items = Array.from(e.dataTransfer?.items || [])
-      const hasFiles = items.some((it) => it.kind === 'file') || (e.dataTransfer?.types || []).includes('Files')
-      if (!hasFiles) return
-      e.preventDefault()
-      e.stopPropagation()
-      e.dataTransfer.dropEffect = 'copy'
-      setDragging(true)
-    } catch {}
-  }, [setDragging])
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      try {
+        const items = Array.from(e.dataTransfer?.items || [])
+        const hasFiles =
+          items.some((it) => it.kind === 'file') ||
+          (e.dataTransfer?.types || []).includes('Files')
+        if (!hasFiles) return
+        e.preventDefault()
+        e.stopPropagation()
+        e.dataTransfer.dropEffect = 'copy'
+        setDragging(true)
+      } catch {}
+    },
+    [setDragging]
+  )
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    try {
-      const items = Array.from(e.dataTransfer?.items || [])
-      const hasFiles = items.some((it) => it.kind === 'file') || (e.dataTransfer?.types || []).includes('Files')
-      if (!hasFiles) return
-      dragCounterRef.current = Math.max(0, dragCounterRef.current - 1)
-      if (dragCounterRef.current === 0) setDragging(false)
-    } catch {}
-  }, [setDragging])
+  const handleDragLeave = useCallback(
+    (e: React.DragEvent) => {
+      try {
+        const items = Array.from(e.dataTransfer?.items || [])
+        const hasFiles =
+          items.some((it) => it.kind === 'file') ||
+          (e.dataTransfer?.types || []).includes('Files')
+        if (!hasFiles) return
+        dragCounterRef.current = Math.max(0, dragCounterRef.current - 1)
+        if (dragCounterRef.current === 0) setDragging(false)
+      } catch {}
+    },
+    [setDragging]
+  )
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    try {
-      e.preventDefault()
-      e.stopPropagation()
-      const fileList = Array.from(e.dataTransfer?.files || [])
-      if (fileList.length > 0) onFileUpload(fileList)
-    } finally {
-      dragCounterRef.current = 0
-      setDragging(false)
-      try { e.dataTransfer?.clearData() } catch {}
-    }
-  }, [onFileUpload, setDragging])
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      try {
+        e.preventDefault()
+        e.stopPropagation()
+        const fileList = Array.from(e.dataTransfer?.files || [])
+        if (fileList.length > 0) onFileUpload(fileList)
+      } finally {
+        dragCounterRef.current = 0
+        setDragging(false)
+        try {
+          e.dataTransfer?.clearData()
+        } catch {}
+      }
+    },
+    [onFileUpload, setDragging]
+  )
 
   const handleSend = useCallback(() => {
     if (status === 'streaming' || status === 'submitted') {
@@ -380,38 +524,53 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
     onSend()
   }, [isSubmitting, onSend, status, stop])
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (status === 'streaming' || status === 'submitted')) {
-      e.preventDefault()
-      // While streaming, Enter acts as Stop; typing remains allowed otherwise
-      stop()
-      return
-    }
-    if (e.key === 'Enter' && !e.shiftKey) {
-      if (isOnlyWhitespace(value) && files.length === 0) return
-      e.preventDefault()
-      onSend()
-    }
-  }, [files.length, onSend, status, stop, value])
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (
+        e.key === 'Enter' &&
+        (status === 'streaming' || status === 'submitted')
+      ) {
+        e.preventDefault()
+        // While streaming, Enter acts as Stop; typing remains allowed otherwise
+        stop()
+        return
+      }
+      if (e.key === 'Enter' && !e.shiftKey) {
+        if (isOnlyWhitespace(value) && files.length === 0) return
+        e.preventDefault()
+        onSend()
+      }
+    },
+    [files.length, onSend, status, stop, value]
+  )
 
-  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items
-    if (!items) return
-    const hasImageContent = Array.from(items).some((item) => item.type.startsWith('image/'))
-    if (hasImageContent) {
-      const imageFiles: File[] = []
-      for (const item of Array.from(items)) {
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile()
-          if (file) {
-            const newFile = new File([file], `pasted-image-${Date.now()}.${file.type.split('/')[1]}`, { type: file.type })
-            imageFiles.push(newFile)
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      const hasImageContent = Array.from(items).some((item) =>
+        item.type.startsWith('image/')
+      )
+      if (hasImageContent) {
+        const imageFiles: File[] = []
+        for (const item of Array.from(items)) {
+          if (item.type.startsWith('image/')) {
+            const file = item.getAsFile()
+            if (file) {
+              const newFile = new File(
+                [file],
+                `pasted-image-${Date.now()}.${file.type.split('/')[1]}`,
+                { type: file.type }
+              )
+              imageFiles.push(newFile)
+            }
           }
         }
+        if (imageFiles.length > 0) onFileUpload(imageFiles)
       }
-      if (imageFiles.length > 0) onFileUpload(imageFiles)
-    }
-  }, [onFileUpload])
+    },
+    [onFileUpload]
+  )
 
   const modelOptions = useMemo(
     () => [
@@ -442,12 +601,20 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
         >
           {isDragging ? (
             <div className="pointer-events-none absolute inset-0 z-20">
-              <div className="absolute inset-1 rounded-2xl border-2 border-dashed border-[var(--color-accent)] bg-[var(--surface)]/70 flex items-center justify-center">
-                <div className="text-sm font-medium text-[var(--color-accent)]">Drop files to attach</div>
+              <div className="absolute inset-1 flex items-center justify-center rounded-2xl border-2 border-dashed border-[var(--color-accent)] bg-[var(--surface)]/70">
+                <div className="text-sm font-medium text-[var(--color-accent)]">
+                  Drop files to attach
+                </div>
               </div>
             </div>
           ) : null}
-          <PromptInput className="relative z-10 w-full p-0 pt-0 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange} isLoading={status === 'streaming' || status === 'submitted'}>
+          <PromptInput
+            className="relative z-10 w-full p-0 pt-0 shadow-xs"
+            maxHeight={200}
+            value={value}
+            onValueChange={onValueChange}
+            isLoading={status === 'streaming' || status === 'submitted'}
+          >
             <FileList files={files} onFileRemove={onFileRemove} />
             {/* Top: Text area */}
             <div className="relative px-2 pt-2 pb-0">
@@ -455,21 +622,21 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 placeholder="Ask Yurie"
-                className="min-h-[60px] py-3 px-3 text-base leading-[1.3] sm:text-base md:text-base"
+                className="min-h-[60px] px-3 py-3 text-base leading-[1.3] sm:text-base md:text-base"
               />
             </div>
             {/* Bottom: Actions row */}
-            <div className="mt-2 w-full flex items-center justify-between px-2 pb-2">
+            <div className="mt-2 flex w-full items-center justify-between px-2 pb-2">
               <div className="flex items-center gap-1.5 pl-1">
                 <ButtonFileUpload onFileUpload={onFileUpload} />
                 <button
                   type="button"
                   onClick={onUseTavilyToggle}
                   className={cn(
-                    'size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-[var(--border-color)] bg-[var(--surface)] transition-colors cursor-pointer',
+                    'inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] p-0 leading-none transition-colors',
                     useTavily
-                      ? 'ring-1 ring-[var(--color-accent)] border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--surface-hover)]'
-                      : 'hover:bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)]'
+                      ? 'border-[var(--color-accent)] text-[var(--color-accent)] ring-1 ring-[var(--color-accent)] hover:bg-[var(--surface-hover)]'
+                      : 'hover:border-[var(--border-color-hover)] hover:bg-[var(--surface-hover)]'
                   )}
                   aria-pressed={useTavily}
                   aria-label="Web search"
@@ -478,29 +645,39 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
                   <Globe className="size-5" weight="bold" aria-hidden="true" />
                 </button>
                 <div className="relative inline-flex items-center">
-                  <label className="sr-only" htmlFor="model-select">Model</label>
-                  <div className="relative group">
+                  <label className="sr-only" htmlFor="model-select">
+                    Model
+                  </label>
+                  <div className="group relative">
                     <div
                       aria-hidden="true"
                       className={cn(
-                        'inline-flex items-center h-9 rounded-full border border-[var(--border-color)] bg-[var(--surface)] px-3 transition-colors',
-                        'group-hover:bg-[var(--surface-hover)] group-hover:border-[var(--border-color-hover)]'
+                        'inline-flex h-9 items-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] px-3 transition-colors',
+                        'group-hover:border-[var(--border-color-hover)] group-hover:bg-[var(--surface-hover)]'
                       )}
                     >
-                      <span className="text-xs text-neutral-900 dark:text-neutral-100">{selectedModelLabel}</span>
-                      <CaretDown className="ml-1.5 size-4 text-neutral-600 dark:text-neutral-300" weight="bold" aria-hidden="true" />
+                      <span className="text-xs text-neutral-900 dark:text-neutral-100">
+                        {selectedModelLabel}
+                      </span>
+                      <CaretDown
+                        className="ml-1.5 size-4 text-neutral-600 dark:text-neutral-300"
+                        weight="bold"
+                        aria-hidden="true"
+                      />
                     </div>
                     <select
                       id="model-select"
                       value={modelChoice}
                       onChange={(e) => onModelChange(e.target.value)}
                       className={cn(
-                        'absolute inset-0 h-9 w-full opacity-0 cursor-pointer text-[11px]',
+                        'absolute inset-0 h-9 w-full cursor-pointer text-[11px] opacity-0',
                         'focus:outline-none'
                       )}
                     >
                       {modelOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -508,20 +685,29 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
               </div>
               <div className="pr-1">
                 <button
-                  className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-[var(--border-color)] bg-[var(--surface)] text-black dark:text-white hover:bg-[var(--surface-hover)] hover:border-[var(--border-color-hover)] cursor-pointer"
+                  className="inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] p-0 leading-none text-black transition-all duration-300 ease-out hover:border-[var(--border-color-hover)] hover:bg-[var(--surface-hover)] dark:text-white"
                   disabled={
                     status !== 'streaming' &&
                     status !== 'submitted' &&
-                    (isSubmitting || (isOnlyWhitespace(value) && files.length === 0))
+                    (isSubmitting ||
+                      (isOnlyWhitespace(value) && files.length === 0))
                   }
                   type="button"
                   onClick={handleSend}
-                  aria-label={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send message'}
+                  aria-label={
+                    status === 'streaming' || status === 'submitted'
+                      ? 'Stop'
+                      : 'Send message'
+                  }
                 >
                   {status === 'streaming' || status === 'submitted' ? (
                     <Stop className="size-4" weight="bold" aria-hidden="true" />
                   ) : (
-                    <ArrowUp className="size-4" weight="bold" aria-hidden="true" />
+                    <ArrowUp
+                      className="size-4"
+                      weight="bold"
+                      aria-hidden="true"
+                    />
                   )}
                 </button>
               </div>
@@ -543,22 +729,29 @@ export default function ChatClient() {
   const [outputHeight, setOutputHeight] = useState<number>(0)
   const [files, setFiles] = useState<File[]>([])
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
-  const [status, setStatus] = useState<'submitted' | 'streaming' | 'ready' | 'error'>('ready')
+  const [status, setStatus] = useState<
+    'submitted' | 'streaming' | 'ready' | 'error'
+  >('ready')
   const abortControllerRef = useRef<AbortController | null>(null)
-  const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
+  const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] =
+    useState<Record<number, AttachmentPreview[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
-  const [modelChoice, setModelChoice] = useState<string>('google/gemini-2.5-pro')
+  const [modelChoice, setModelChoice] = useState<string>(
+    'google/gemini-2.5-pro'
+  )
   const [useTavily, setUseTavily] = useState<boolean>(false)
-  const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(() => {
-    try {
-      const hours = new Date().getHours()
-      const isNight = hours < 6 || hours >= 18
-      return isNight ? 'tonight' : 'today'
-    } catch {
-      return 'today'
+  const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(
+    () => {
+      try {
+        const hours = new Date().getHours()
+        const isNight = hours < 6 || hours >= 18
+        return isNight ? 'tonight' : 'today'
+      } catch {
+        return 'today'
+      }
     }
-  })
+  )
 
   useEffect(() => {
     const compute = () => {
@@ -633,13 +826,20 @@ export default function ChatClient() {
   useEffect(() => {
     const recompute = () => {
       try {
-        const viewportHeight = (window.visualViewport?.height ?? window.innerHeight)
-        const containerTop = containerRef.current?.getBoundingClientRect().top ?? 0
+        const viewportHeight =
+          window.visualViewport?.height ?? window.innerHeight
+        const containerTop =
+          containerRef.current?.getBoundingClientRect().top ?? 0
         const inputEl = inputWrapperRef.current
         const inputBox = inputEl?.getBoundingClientRect()
         const inputHeight = inputBox?.height ?? 0
-        const mt = inputEl ? parseFloat(getComputedStyle(inputEl).marginTop || '0') : 0
-        const available = Math.max(0, viewportHeight - containerTop - inputHeight - mt)
+        const mt = inputEl
+          ? parseFloat(getComputedStyle(inputEl).marginTop || '0')
+          : 0
+        const available = Math.max(
+          0,
+          viewportHeight - containerTop - inputHeight - mt
+        )
         setOutputHeight(Math.floor(available))
       } catch {}
     }
@@ -662,7 +862,8 @@ export default function ChatClient() {
     const updatePinned = () => {
       try {
         const threshold = 16
-        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+        const distanceFromBottom =
+          el.scrollHeight - el.scrollTop - el.clientHeight
         pinnedToBottomRef.current = distanceFromBottom <= threshold
       } catch {}
     }
@@ -695,35 +896,71 @@ export default function ChatClient() {
 
   function sanitizeHtml(html: string): string {
     if (!html) return html
-    const blockedContentTags = ['script', 'style', 'title', 'iframe', 'object', 'embed', 'noscript']
-    const contentTagPattern = new RegExp(`<\\s*(${blockedContentTags.join('|')})\\b[\\s\\S]*?<\\/\\s*\\1\\s*>`, 'gi')
+    const blockedContentTags = [
+      'script',
+      'style',
+      'title',
+      'iframe',
+      'object',
+      'embed',
+      'noscript',
+    ]
+    const contentTagPattern = new RegExp(
+      `<\\s*(${blockedContentTags.join('|')})\\b[\\s\\S]*?<\\/\\s*\\1\\s*>`,
+      'gi'
+    )
     html = html.replace(contentTagPattern, '')
-    const blockedVoidTags = ['link', 'meta', 'base', 'form', 'input', 'select', 'option', 'textarea', 'frame', 'frameset']
-    const voidTagPattern = new RegExp(`<\\s*(${blockedVoidTags.join('|')})\\b[^>]*>`, 'gi')
+    const blockedVoidTags = [
+      'link',
+      'meta',
+      'base',
+      'form',
+      'input',
+      'select',
+      'option',
+      'textarea',
+      'frame',
+      'frameset',
+    ]
+    const voidTagPattern = new RegExp(
+      `<\\s*(${blockedVoidTags.join('|')})\\b[^>]*>`,
+      'gi'
+    )
     html = html.replace(voidTagPattern, '')
     html = html.replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    html = html.replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"')
+    html = html.replace(
+      /(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi,
+      '$1="#"'
+    )
 
     return html
   }
 
   function renderMessageContent(role: 'user' | 'assistant', content: string) {
-    const legacyBracketPattern = "\\[" + "data:image" + "\\/[a-zA-Z]+;base64,[^\\]]+" + "\\]"
+    const legacyBracketPattern =
+      '\\[' + 'data:image' + '\\/[a-zA-Z]+;base64,[^\\]]+' + '\\]'
     const pattern = new RegExp(
       `<image_partial:([^>]+)>|<image:([^>]+)>|<reasoning_partial:([^>]+)>|<reasoning:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|${legacyBracketPattern}`,
       'g'
     )
     const parts: Array<
-      { type: 'text'; value: string } |
-      { type: 'image'; src: string; partial?: boolean } |
-      { type: 'reasoning'; value: string; partial?: boolean } |
-      { type: 'meta'; key: 'revised_prompt' | 'response_id' | 'summary_text' | 'incomplete'; value: string }
+      | { type: 'text'; value: string }
+      | { type: 'image'; src: string; partial?: boolean }
+      | { type: 'reasoning'; value: string; partial?: boolean }
+      | {
+          type: 'meta'
+          key: 'revised_prompt' | 'response_id' | 'summary_text' | 'incomplete'
+          value: string
+        }
     > = []
     let lastIndex = 0
     let match: RegExpExecArray | null
     while ((match = pattern.exec(content)) !== null) {
       if (match.index > lastIndex) {
-        parts.push({ type: 'text', value: content.slice(lastIndex, match.index) })
+        parts.push({
+          type: 'text',
+          value: content.slice(lastIndex, match.index),
+        })
       }
       const full = match[0]
       const partialPayload = match[1]
@@ -745,23 +982,42 @@ export default function ChatClient() {
         const isPartial = Boolean(partialPayload)
         parts.push({ type: 'image', src, partial: isPartial })
       }
-      if (typeof reasoningPartialPayload === 'string' && reasoningPartialPayload) {
-        parts.push({ type: 'reasoning', value: reasoningPartialPayload, partial: true })
+      if (
+        typeof reasoningPartialPayload === 'string' &&
+        reasoningPartialPayload
+      ) {
+        parts.push({
+          type: 'reasoning',
+          value: reasoningPartialPayload,
+          partial: true,
+        })
       }
       if (typeof reasoningFinalPayload === 'string' && reasoningFinalPayload) {
         parts.push({ type: 'reasoning', value: reasoningFinalPayload })
       }
       if (typeof revisedPayload === 'string' && revisedPayload) {
-        parts.push({ type: 'meta', key: 'revised_prompt', value: revisedPayload })
+        parts.push({
+          type: 'meta',
+          key: 'revised_prompt',
+          value: revisedPayload,
+        })
       }
       if (typeof responseIdPayload === 'string' && responseIdPayload) {
-        parts.push({ type: 'meta', key: 'response_id', value: responseIdPayload })
+        parts.push({
+          type: 'meta',
+          key: 'response_id',
+          value: responseIdPayload,
+        })
       }
       if (typeof summaryPayload === 'string' && summaryPayload) {
         parts.push({ type: 'meta', key: 'summary_text', value: summaryPayload })
       }
       if (typeof incompletePayload === 'string' && incompletePayload) {
-        parts.push({ type: 'meta', key: 'incomplete', value: incompletePayload })
+        parts.push({
+          type: 'meta',
+          key: 'incomplete',
+          value: incompletePayload,
+        })
       }
       lastIndex = match.index + full.length
     }
@@ -776,8 +1032,12 @@ export default function ChatClient() {
       }
       return -1
     })()
-    const hasFinalImage = parts.some((p) => (p as any).type === 'image' && !(p as any).partial)
-    const reasoningParts = parts.filter((p: any) => p.type === 'reasoning') as any[]
+    const hasFinalImage = parts.some(
+      (p) => (p as any).type === 'image' && !(p as any).partial
+    )
+    const reasoningParts = parts.filter(
+      (p: any) => p.type === 'reasoning'
+    ) as any[]
     const hasFinalReasoning = reasoningParts.some((r) => !r.partial)
     const decodeBase64Utf8 = (b64: string): string => {
       try {
@@ -791,18 +1051,27 @@ export default function ChatClient() {
     }
     const reasoningDecoded = (() => {
       if (hasFinalReasoning) {
-        const finals = reasoningParts.filter((r) => !r.partial).map((r) => String(r.value))
+        const finals = reasoningParts
+          .filter((r) => !r.partial)
+          .map((r) => String(r.value))
         return finals.map(decodeBase64Utf8).join('')
       }
-      const partials = reasoningParts.filter((r) => r.partial).map((r) => String(r.value))
+      const partials = reasoningParts
+        .filter((r) => r.partial)
+        .map((r) => String(r.value))
       if (partials.length === 0) return ''
       return partials.map(decodeBase64Utf8).join('')
     })()
-    const reasoningHtml = reasoningDecoded ? sanitizeHtml(md.parse(reasoningDecoded) as string) : ''
+    const reasoningHtml = reasoningDecoded
+      ? sanitizeHtml(md.parse(reasoningDecoded) as string)
+      : ''
     return (
       <>
         {role === 'assistant' && reasoningHtml ? (
-          <ThinkingPanel content={reasoningHtml} generating={status === 'submitted' || status === 'streaming'} />
+          <ThinkingPanel
+            content={reasoningHtml}
+            generating={status === 'submitted' || status === 'streaming'}
+          />
         ) : null}
         {parts.map((p, i) => {
           if (p.type === 'text') {
@@ -810,7 +1079,11 @@ export default function ChatClient() {
             return (
               <div
                 key={i}
-                className={cn(role === 'assistant' ? 'prose-message' : 'prose prose-neutral dark:prose-invert')}
+                className={cn(
+                  role === 'assistant'
+                    ? 'prose-message'
+                    : 'prose prose-neutral dark:prose-invert'
+                )}
                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawHtml) }}
               />
             )
@@ -827,7 +1100,7 @@ export default function ChatClient() {
                 src={p.src}
                 alt="Generated image"
                 className={cn(
-                  'mt-2 rounded border border-neutral-200 dark:border-neutral-800 max-w-full',
+                  'mt-2 max-w-full rounded border border-neutral-200 dark:border-neutral-800',
                   role === 'assistant' ? 'mb-1' : 'mb-3'
                 )}
               />
@@ -847,7 +1120,7 @@ export default function ChatClient() {
                     ? 'Summary'
                     : 'Status'
             return (
-              <div key={`meta-${i}`} className="text-xs text-neutral-500 mt-1">
+              <div key={`meta-${i}`} className="mt-1 text-xs text-neutral-500">
                 <span className="font-medium">{label}:</span> {meta.value}
               </div>
             )
@@ -876,7 +1149,20 @@ export default function ChatClient() {
         createdObjectUrlsRef.current.push(url)
         const mime = (f.type || '').toLowerCase()
         const ext = (f.name.split('.').pop() || '').toLowerCase()
-        const imageExts = ['png','jpg','jpeg','gif','webp','bmp','svg','heic','heif','tif','tiff','avif']
+        const imageExts = [
+          'png',
+          'jpg',
+          'jpeg',
+          'gif',
+          'webp',
+          'bmp',
+          'svg',
+          'heic',
+          'heif',
+          'tif',
+          'tiff',
+          'avif',
+        ]
         const isImage = mime.startsWith('image/') || imageExts.includes(ext)
         const isAudio = mime.startsWith('audio/')
         return {
@@ -891,7 +1177,10 @@ export default function ChatClient() {
       })
       if (attachmentsForPreview.length > 0) {
         const indexForThisMessage = nextMessages.length - 1
-        setSentAttachmentsByMessageIndex((prev) => ({ ...prev, [indexForThisMessage]: attachmentsForPreview }))
+        setSentAttachmentsByMessageIndex((prev) => ({
+          ...prev,
+          [indexForThisMessage]: attachmentsForPreview,
+        }))
       }
       // Collect user-attached images (as data URLs)
       const imageFiles = files.filter((f) => f.type.startsWith('image/'))
@@ -907,7 +1196,8 @@ export default function ChatClient() {
         )
       )
       // If user intends to edit and has not attached a new image, include the last assistant image(s)
-      const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
+      const editIntent =
+        /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
       const isEditing = editIntent.test(trimmed)
       const previousAssistantImages: string[] = (() => {
         if (!isEditing) return []
@@ -919,62 +1209,86 @@ export default function ChatClient() {
           let match: RegExpExecArray | null
           while ((match = re.exec(m.content)) !== null) {
             const url = match[1]
-            if (typeof url === 'string' && url.startsWith('data:image')) out.push(url)
+            if (typeof url === 'string' && url.startsWith('data:image'))
+              out.push(url)
           }
           if (out.length > 0) return out
         }
         return []
       })()
-      const inputImages: string[] = Array.from(new Set([...(inputImagesFromFiles || []), ...(previousAssistantImages || [])]))
-      const pdfFiles = files.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
-      const inputPdfs: { filename: string; dataUrl: string }[] = await Promise.all(
-        pdfFiles.map(
-          (f) =>
-            new Promise<{ filename: string; dataUrl: string }>((resolve, reject) => {
-              const reader = new FileReader()
-              reader.onload = () => resolve({ filename: f.name, dataUrl: String(reader.result) })
-              reader.onerror = () => reject(reader.error)
-              reader.readAsDataURL(f)
-            })
-        )
+      const inputImages: string[] = Array.from(
+        new Set([
+          ...(inputImagesFromFiles || []),
+          ...(previousAssistantImages || []),
+        ])
       )
+      const pdfFiles = files.filter(
+        (f) =>
+          f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+      )
+      const inputPdfs: { filename: string; dataUrl: string }[] =
+        await Promise.all(
+          pdfFiles.map(
+            (f) =>
+              new Promise<{ filename: string; dataUrl: string }>(
+                (resolve, reject) => {
+                  const reader = new FileReader()
+                  reader.onload = () =>
+                    resolve({
+                      filename: f.name,
+                      dataUrl: String(reader.result),
+                    })
+                  reader.onerror = () => reject(reader.error)
+                  reader.readAsDataURL(f)
+                }
+              )
+          )
+        )
       // Collect user-attached audio as base64 + normalized format (mp3|wav only)
-      const audioFilesAll = files.filter((f) => (f.type || '').toLowerCase().startsWith('audio/'))
+      const audioFilesAll = files.filter((f) =>
+        (f.type || '').toLowerCase().startsWith('audio/')
+      )
       const getAudioFormat = (f: File): 'mp3' | 'wav' | null => {
         const mime = (f.type || '').toLowerCase()
         const ext = (f.name.split('.').pop() || '').toLowerCase()
         if (mime.includes('mpeg') || ext === 'mp3') return 'mp3'
-        if (mime.includes('wav') || mime.includes('wave') || ext === 'wav') return 'wav'
+        if (mime.includes('wav') || mime.includes('wave') || ext === 'wav')
+          return 'wav'
         return null
       }
       const audioFiles = audioFilesAll.filter((f) => getAudioFormat(f) !== null)
-      const inputAudios: { format: 'mp3' | 'wav'; base64: string }[] = await Promise.all(
-        audioFiles.map(
-          (f) =>
-            new Promise<{ format: 'mp3' | 'wav'; base64: string }>((resolve, reject) => {
-              const reader = new FileReader()
-              reader.onload = () => {
-                try {
-                  const dataUrl = String(reader.result || '')
-                  const commaIdx = dataUrl.indexOf(',')
-                  const base64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl
-                  const format = getAudioFormat(f) as 'mp3' | 'wav'
-                  resolve({ format, base64 })
-                } catch (e) {
-                  reject(e)
+      const inputAudios: { format: 'mp3' | 'wav'; base64: string }[] =
+        await Promise.all(
+          audioFiles.map(
+            (f) =>
+              new Promise<{ format: 'mp3' | 'wav'; base64: string }>(
+                (resolve, reject) => {
+                  const reader = new FileReader()
+                  reader.onload = () => {
+                    try {
+                      const dataUrl = String(reader.result || '')
+                      const commaIdx = dataUrl.indexOf(',')
+                      const base64 =
+                        commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl
+                      const format = getAudioFormat(f) as 'mp3' | 'wav'
+                      resolve({ format, base64 })
+                    } catch (e) {
+                      reject(e)
+                    }
+                  }
+                  reader.onerror = () => reject(reader.error)
+                  reader.readAsDataURL(f)
                 }
-              }
-              reader.onerror = () => reject(reader.error)
-              reader.readAsDataURL(f)
-            })
+              )
+          )
         )
-      )
       // Clear input files after capturing previews and data URLs
       setFiles([])
       const stripImageData = (text: string): string => {
         const angleTag = /<(?:image|image_partial):[^>]+>/gi
         const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
-        const bareDataUrl = /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/gi
+        const bareDataUrl =
+          /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/gi
         const audioBracket = /\[data:audio\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
         const audioBare = /data:audio\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/gi
         const pdfBracket = /\[data:application\/pdf;base64,[^\]]+\]/gi
@@ -988,7 +1302,10 @@ export default function ChatClient() {
           .replace(pdfBracket, '[pdf omitted]')
           .replace(pdfBare, '[pdf omitted]')
       }
-      const payloadMessages = nextMessages.map((m) => ({ ...m, content: stripImageData(m.content) }))
+      const payloadMessages = nextMessages.map((m) => ({
+        ...m,
+        content: stripImageData(m.content),
+      }))
       const ac = new AbortController()
       abortControllerRef.current = ac
       const res = await fetch('/api/playground', {
@@ -1010,13 +1327,21 @@ export default function ChatClient() {
       if (!res.ok) {
         try {
           const errJson: any = await res.json()
-          const code = typeof errJson?.error?.code === 'number' ? errJson.error.code : res.status
+          const code =
+            typeof errJson?.error?.code === 'number'
+              ? errJson.error.code
+              : res.status
           const message = errJson?.error?.message || `HTTP ${code}`
           throw new Error(message)
         } catch {
           let details = ''
-          try { details = await res.text() } catch {}
-          const msg = details && details.trim().length > 0 ? details : `HTTP ${res.status}`
+          try {
+            details = await res.text()
+          } catch {}
+          const msg =
+            details && details.trim().length > 0
+              ? details
+              : `HTTP ${res.status}`
           throw new Error(msg)
         }
       }
@@ -1076,7 +1401,8 @@ export default function ChatClient() {
             const anyErr: any = err
             if (anyErr.name === 'AbortError') return true
           }
-          if (err instanceof DOMException && err.name === 'AbortError') return true
+          if (err instanceof DOMException && err.name === 'AbortError')
+            return true
           if (err instanceof Error && /abort/i.test(err.message)) return true
         } catch {}
         return false
@@ -1092,7 +1418,7 @@ export default function ChatClient() {
     } finally {
       setIsLoading(false)
       setStatus('ready')
-      
+
       abortControllerRef.current = null
     }
   }
@@ -1106,65 +1432,100 @@ export default function ChatClient() {
   }, [])
 
   return (
-    <section ref={containerRef} className={cn('w-full flex flex-col px-3 sm:px-4', messages.length === 0 && 'min-h-[70vh] justify-center')}>
+    <section
+      ref={containerRef}
+      className={cn(
+        'flex w-full flex-col px-3 sm:px-4',
+        messages.length === 0 && 'min-h-[70vh] justify-center'
+      )}
+    >
       <div
         ref={outputRef}
-        className={cn('rounded pt-1 pb-3 overflow-y-auto text-base font-sans chat-scroll', messages.length === 0 && 'hidden')}
+        className={cn(
+          'chat-scroll overflow-y-auto rounded pt-1 pb-3 font-sans text-base',
+          messages.length === 0 && 'hidden'
+        )}
         style={{ height: outputHeight ? `${outputHeight}px` : undefined }}
       >
-        {messages.length === 0 ? null : (
-          messages.map((m, i) => {
-            const isFirst = i === 0
-            const speakerChanged = !isFirst && messages[i - 1].role !== m.role
-            const topMarginClass = isFirst ? 'mt-1' : speakerChanged ? 'mt-2' : 'mt-0.5'
-            return (
-              <div key={i} className={`${topMarginClass} mb-0`}>
-                <div className={cn('chat-row', m.role === 'user' ? 'user' : 'assistant')}>
-                  {m.role === 'user' ? (
-                    (() => {
-                      const attachments = sentAttachmentsByMessageIndex[i] || []
-                      const hasText = (m.content || '').trim().length > 0
-                      const hasAttachments = attachments.length > 0
-                      const attachmentsOnly = !hasText && hasAttachments
-                      if (attachmentsOnly) {
+        {messages.length === 0
+          ? null
+          : messages.map((m, i) => {
+              const isFirst = i === 0
+              const speakerChanged = !isFirst && messages[i - 1].role !== m.role
+              const topMarginClass = isFirst
+                ? 'mt-1'
+                : speakerChanged
+                  ? 'mt-2'
+                  : 'mt-0.5'
+              return (
+                <div key={i} className={`${topMarginClass} mb-0`}>
+                  <div
+                    className={cn(
+                      'chat-row',
+                      m.role === 'user' ? 'user' : 'assistant'
+                    )}
+                  >
+                    {m.role === 'user' ? (
+                      (() => {
+                        const attachments =
+                          sentAttachmentsByMessageIndex[i] || []
+                        const hasText = (m.content || '').trim().length > 0
+                        const hasAttachments = attachments.length > 0
+                        const attachmentsOnly = !hasText && hasAttachments
+                        if (attachmentsOnly) {
+                          return (
+                            <div
+                              className={cn(
+                                'chat-bubble',
+                                'user',
+                                'compact',
+                                'inline-flex'
+                              )}
+                            >
+                              <MessageAttachmentList
+                                attachments={attachments}
+                                compact
+                              />
+                            </div>
+                          )
+                        }
                         return (
-                          <div className={cn('chat-bubble', 'user', 'compact', 'inline-flex')}>
-                            <MessageAttachmentList attachments={attachments} compact />
+                          <div className={cn('chat-bubble', 'user', 'min-w-0')}>
+                            <div className="w-full min-w-0">
+                              {renderMessageContent(m.role, m.content)}
+                              {hasAttachments ? (
+                                <MessageAttachmentList
+                                  attachments={attachments}
+                                />
+                              ) : null}
+                            </div>
                           </div>
                         )
-                      }
-                      return (
-                        <div className={cn('chat-bubble', 'user', 'min-w-0')}>
-                          <div className="min-w-0 w-full">
-                            {renderMessageContent(m.role, m.content)}
-                            {hasAttachments ? (
-                              <MessageAttachmentList attachments={attachments} />
-                            ) : null}
-                          </div>
+                      })()
+                    ) : (
+                      <div className={cn('w-full min-w-0')}>
+                        <div className="w-full min-w-0">
+                          {renderMessageContent(m.role, m.content)}
                         </div>
-                      )
-                    })()
-                  ) : (
-                    <div className={cn('min-w-0 w-full')}>
-                      <div className="min-w-0 w-full">
-                        {renderMessageContent(m.role, m.content)}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            )
-          })
-        )}
+              )
+            })}
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn(messages.length === 0 ? 'mt-0 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
+        className={cn(
+          messages.length === 0
+            ? 'mt-0 mb-0'
+            : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0'
+        )}
         aria-busy={isLoading}
       >
         {messages.length === 0 ? (
           <>
-            <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-0 mb-8 sm:mb-10">
+            <div className="mt-0 mb-8 text-center text-2xl font-medium text-neutral-600 sm:mb-10 sm:text-3xl dark:text-neutral-300">
               {`What's on your mind ${timeOfDayWord}?`}
             </div>
           </>
@@ -1175,8 +1536,12 @@ export default function ChatClient() {
           onSend={handleSend}
           isSubmitting={isLoading}
           files={files}
-          onFileUpload={(newFiles) => setFiles((prev) => [...prev, ...newFiles])}
-          onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
+          onFileUpload={(newFiles) =>
+            setFiles((prev) => [...prev, ...newFiles])
+          }
+          onFileRemove={(file) =>
+            setFiles((prev) => prev.filter((f) => f !== file))
+          }
           stop={stop}
           status={status}
           modelChoice={modelChoice}

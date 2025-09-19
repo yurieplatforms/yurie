@@ -11,13 +11,13 @@ image: '/PPLX-Thumbnail7.jpg'
 
 Former OpenAI chief technology officer **Mira Murati**’s new artificial intelligence company, **Thinking Machines Lab**, has released its first research blog post—marking the startup’s public debut with concrete technical work after securing **$2 billion in seed funding** earlier this year.
 
-The research, authored by Thinking Machines Lab scientist **Horace He** and published on the company’s new *Connectionism* blog, addresses a pervasive issue in modern AI systems: the inability of large language models to produce consistent responses when asked identical questions.
+The research, authored by Thinking Machines Lab scientist **Horace He** and published on the company’s new _Connectionism_ blog, addresses a pervasive issue in modern AI systems: the inability of large language models to produce consistent responses when asked identical questions.
 
 ## Identifying the root of AI inconsistency
 
-The post, titled *Defeating Nondeterminism in LLM Inference*, challenges the belief that AI randomness stems mainly from concurrent GPU processing. Instead, He argues the true culprit is **how floating-point operations are ordered differently across varying batch sizes** during inference.
+The post, titled _Defeating Nondeterminism in LLM Inference_, challenges the belief that AI randomness stems mainly from concurrent GPU processing. Instead, He argues the true culprit is **how floating-point operations are ordered differently across varying batch sizes** during inference.
 
-In experiments with **Qwen’s 235B parameter model**, He generated 1,000 completions with identical temperature settings and found **80 unique responses**, with divergence starting at token 103. Most completions gave *“Queens, New York”* as Richard Feynman’s birthplace, while eight said *“New York City.”*
+In experiments with **Qwen’s 235B parameter model**, He generated 1,000 completions with identical temperature settings and found **80 unique responses**, with divergence starting at token 103. Most completions gave _“Queens, New York”_ as Richard Feynman’s birthplace, while eight said _“New York City.”_
 
 ## Proposed solutions for enterprise AI
 
@@ -33,4 +33,4 @@ The team is stacked with ex-OpenAI talent: **John Schulman** (co-creator of Chat
 
 Murati, who briefly served as OpenAI’s interim CEO during the November 2023 leadership crisis before departing in September 2024, has positioned the lab as building **multimodal AI “that works with how you naturally interact with the world.”** A first product—featuring a significant open-source component—is expected in the coming months.
 
-> *“We believe that science is better when shared,”* the company states on its website, committing to regular publication of technical blog posts, papers, and code. This open posture stands in contrast to OpenAI’s increasingly closed approach as it has scaled commercially.
+> _“We believe that science is better when shared,”_ the company states on its website, committing to regular publication of technical blog posts, papers, and code. This open posture stands in contrast to OpenAI’s increasingly closed approach as it has scaled commercially.

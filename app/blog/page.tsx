@@ -7,10 +7,12 @@ export const metadata = {
 }
 
 export default function Page() {
-  let posts = getBlogPosts()
+  const posts = getBlogPosts()
   return (
     <section>
-      <h1 className="font-semibold text-2xl mb-8 tracking-tighter px-3 sm:px-4">Blog</h1>
+      <h1 className="mb-8 px-3 text-2xl font-semibold tracking-tighter sm:px-4">
+        Blog
+      </h1>
       <PostList basePath="/blog" posts={posts} />
     </section>
   )

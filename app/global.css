@@ -1,10 +1,14 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New";
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New';
   /* Light mode background */
-  --color-background: #E7E7EB;
+  --color-background: #e7e7eb;
   --color-foreground: oklch(0.141 0.005 285.823);
   --color-card: oklch(1 0 0);
   --color-card-foreground: oklch(0.141 0.005 285.823);
@@ -31,7 +35,7 @@
   color: #fefefe;
 }
 
-:root {
+ :root {
   accent-color: #7f91e0;
   --sh-class: #2d5e9d;
   --sh-identifier: #354150;
@@ -44,10 +48,10 @@
   --sh-entity: #e25a1c;
   /* Surface tokens tuned for PURPLE WATER background */
   --surface: #ffffff;
-  --surface-hover: #F1F2F6;
-  --border-color: #D4D7DF;
-  --border-color-hover: #C3C7D2;
-  --text-primary: #0B0B0E;
+  --surface-hover: #f1f2f6;
+  --border-color: #d4d7df;
+  --border-color-hover: #c3c7d2;
+  --text-primary: #0b0b0e;
   /* Chat bubble tokens */
   --bubble-assistant-bg: var(--surface);
   --bubble-user-bg: var(--surface-hover);
@@ -56,13 +60,13 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Dark mode background */
-    --color-background: #0A0A0A;
+    --color-background: #0a0a0a;
     /* Surface tokens tuned for RICH BLACK background */
-    --surface: #0E0E10;
+    --surface: #0e0e10;
     --surface-hover: #141416;
-    --border-color: #1A1A1D;
-    --border-color-hover: #26262A;
-    --text-primary: #F5F5F6;
+    --border-color: #1a1a1d;
+    --border-color-hover: #26262a;
+    --text-primary: #f5f5f6;
     /* Chat bubble tokens */
     --bubble-assistant-bg: var(--surface);
     --bubble-user-bg: var(--surface-hover);
@@ -86,13 +90,12 @@ html {
 }
 
 /* Scrollbar color variables */
-:root {
+ :root {
   --scrollbar-thumb: #fafafa; /* tailwind neutral-50 */
 }
 .dark {
   --scrollbar-thumb: #171717; /* tailwind neutral-900 */
 }
-
 
 /* Removed deprecated thinking-scroll styles */
 
@@ -102,7 +105,9 @@ html {
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
   }
-  .dark .chat-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
+  .dark .chat-scroll {
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  }
 
   .chat-scroll::-webkit-scrollbar {
     width: 1px;
@@ -121,56 +126,75 @@ html {
 }
 /* Ensure dark mode uses dark thumb on chat container even if variables aren't picked up */
 @media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
-  .chat-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
-  .chat-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
+  .chat-scroll {
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  }
+  .chat-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.22) !important;
+  }
 }
 @media (hover: hover) and (pointer: fine) {
-  html.dark .chat-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
-  html.dark .chat-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
+  html.dark .chat-scroll {
+    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  }
+  html.dark .chat-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.22) !important;
+  }
 }
 
 /* Removed deprecated thinking-scroll dark overrides */
 
 /* Page-level scrollbar: thinner and lighter for outer page only */
 @media (hover: hover) and (pointer: fine) {
-  html, body {
+  html,
+  body {
     scrollbar-width: thin; /* Firefox */
-    scrollbar-color: rgba(0, 0, 0, 0.10) transparent;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
   }
-  html::-webkit-scrollbar, body::-webkit-scrollbar {
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
     width: 1px;
     height: 1px;
   }
-  html::-webkit-scrollbar-track, body::-webkit-scrollbar-track {
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track {
     background: transparent;
   }
-  html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.10);
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
     border-radius: 8px;
   }
-  html:hover::-webkit-scrollbar-thumb, body:hover::-webkit-scrollbar-thumb {
+  html:hover::-webkit-scrollbar-thumb,
+  body:hover::-webkit-scrollbar-thumb {
     background-color: rgba(0, 0, 0, 0.18);
   }
 }
 @media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
-  html, body {
+  html,
+  body {
     scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
   }
-  html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.16) !important;
   }
-  html:hover::-webkit-scrollbar-thumb, body:hover::-webkit-scrollbar-thumb {
+  html:hover::-webkit-scrollbar-thumb,
+  body:hover::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.22) !important;
   }
 }
 @media (hover: hover) and (pointer: fine) {
-  html.dark, html.dark body {
+  html.dark,
+  html.dark body {
     scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
   }
-  html.dark::-webkit-scrollbar-thumb, html.dark body::-webkit-scrollbar-thumb {
+  html.dark::-webkit-scrollbar-thumb,
+  html.dark body::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.16) !important;
   }
-  html.dark:hover::-webkit-scrollbar-thumb, html.dark body:hover::-webkit-scrollbar-thumb {
+  html.dark:hover::-webkit-scrollbar-thumb,
+  html.dark body:hover::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.22) !important;
   }
 }
@@ -183,24 +207,32 @@ html {
 }
 
 /* Global link color uses the accent token */
-a { color: var(--color-accent); }
-a:visited { color: var(--color-accent); }
-a:hover { opacity: 0.9; }
+a {
+  color: var(--color-accent);
+}
+a:visited {
+  color: var(--color-accent);
+}
+a:hover {
+  opacity: 0.9;
+}
 
 /* Keep navigation text color unchanged */
-#nav a { color: inherit; }
+#nav a {
+  color: inherit;
+}
 
 .prose a {
   color: var(--color-accent);
-  @apply underline transition-all decoration-neutral-200 dark:decoration-neutral-800 underline-offset-2 decoration-[0.1em];
+  @apply underline decoration-neutral-200 decoration-[0.1em] underline-offset-2 transition-all dark:decoration-neutral-800;
 }
 
 .prose pre {
-  @apply bg-neutral-50 dark:bg-neutral-900 rounded-lg overflow-x-auto border border-neutral-200 dark:border-neutral-900 py-2 px-3 text-sm;
+  @apply overflow-x-auto rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm dark:border-neutral-900 dark:bg-neutral-900;
 }
 
 .prose code {
-  @apply px-1 py-0.5 rounded-lg;
+  @apply rounded-lg px-1 py-0.5;
 }
 
 .prose pre code {
@@ -228,23 +260,23 @@ a:hover { opacity: 0.9; }
 }
 
 .prose blockquote {
-  @apply border-l-4 border-neutral-100 dark:border-neutral-800 pl-3 my-4 text-neutral-700 dark:text-neutral-300;
+  @apply my-4 border-l-4 border-neutral-100 pl-3 text-neutral-700 dark:border-neutral-800 dark:text-neutral-300;
 }
 
 .prose h1 {
-  @apply text-4xl font-medium tracking-tight mt-6 mb-2;
+  @apply mt-6 mb-2 text-4xl font-medium tracking-tight;
 }
 
 .prose h2 {
-  @apply text-xl font-medium tracking-tight mt-6 mb-2;
+  @apply mt-6 mb-2 text-xl font-medium tracking-tight;
 }
 
 .prose h3 {
-  @apply text-xl font-medium tracking-tight mt-6 mb-2;
+  @apply mt-6 mb-2 text-xl font-medium tracking-tight;
 }
 
 .prose h4 {
-  @apply text-lg font-medium tracking-tight mt-6 mb-2;
+  @apply mt-6 mb-2 text-lg font-medium tracking-tight;
 }
 
 .prose strong {
@@ -300,16 +332,16 @@ a:hover { opacity: 0.9; }
 }
 
 .prose-message h1 {
-  @apply text-4xl font-medium tracking-tight mt-6 mb-2;
+  @apply mt-6 mb-2 text-4xl font-medium tracking-tight;
 }
 .prose-message h2 {
-  @apply text-xl font-medium tracking-tight mt-6 mb-2;
+  @apply mt-6 mb-2 text-xl font-medium tracking-tight;
 }
 .prose-message h3 {
-  @apply text-xl font-medium tracking-tight mt-6 mb-2;
+  @apply mt-6 mb-2 text-xl font-medium tracking-tight;
 }
 .prose-message h4 {
-  @apply text-lg font-medium tracking-tight mt-6 mb-2;
+  @apply mt-6 mb-2 text-lg font-medium tracking-tight;
 }
 
 .prose-message strong {
@@ -332,11 +364,11 @@ a:hover { opacity: 0.9; }
 
 .prose-message a {
   color: var(--color-accent);
-  @apply underline transition-all decoration-neutral-200 dark:decoration-neutral-800 underline-offset-2 decoration-[0.1em];
+  @apply underline decoration-neutral-200 decoration-[0.1em] underline-offset-2 transition-all dark:decoration-neutral-800;
 }
 
 .prose-message blockquote {
-  @apply border-l-4 border-neutral-100 dark:border-neutral-800 pl-3 my-2 text-neutral-700 dark:text-neutral-300;
+  @apply my-2 border-l-4 border-neutral-100 pl-3 text-neutral-700 dark:border-neutral-800 dark:text-neutral-300;
 }
 
 .prose-message hr {
@@ -362,7 +394,7 @@ a:hover { opacity: 0.9; }
 
 .prose table th,
 .prose table td {
-  @apply px-3 py-2 text-left border-r;
+  @apply border-r px-3 py-2 text-left;
   border-right-color: var(--border-color);
 }
 
@@ -376,11 +408,56 @@ a:hover { opacity: 0.9; }
   background-color: var(--surface-hover);
 }
 
+/* Consistent grid behavior, numeric alignment, and clipped rounded corners */
+.prose table,
+.prose-message table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  overflow-y: hidden;
+}
+
+/* Header separators and row dividers for readability */
+.prose table thead th,
+.prose-message table thead th {
+  border-bottom: 1px solid var(--border-color);
+}
+.prose table tbody tr + tr td,
+.prose-message table tbody tr + tr td {
+  border-top: 1px solid var(--border-color);
+}
+
+/* Preserve rounded corners on the outermost cells */
+.prose table thead th:first-child,
+.prose-message table thead th:first-child {
+  border-top-left-radius: 0.5rem;
+}
+.prose table thead th:last-child,
+.prose-message table thead th:last-child {
+  border-top-right-radius: 0.5rem;
+}
+.prose table tbody tr:last-child td:first-child,
+.prose-message table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 0.5rem;
+}
+.prose table tbody tr:last-child td:last-child,
+.prose-message table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 0.5rem;
+}
+
+/* Optional caption styling */
+.prose table caption,
+.prose-message table caption {
+  @apply text-sm text-neutral-500;
+  caption-side: bottom;
+  padding-top: 0.5rem;
+}
+
 /* Match page-level scrollbar styling for blog tables */
 @media (hover: hover) and (pointer: fine) {
   .prose table {
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.10) transparent;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
   }
   .prose table::-webkit-scrollbar {
     height: 1px;
@@ -389,7 +466,7 @@ a:hover { opacity: 0.9; }
     background: transparent;
   }
   .prose table::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.10);
+    background-color: rgba(0, 0, 0, 0.1);
     border-radius: 8px;
   }
   .prose table:hover::-webkit-scrollbar-thumb {
@@ -397,14 +474,26 @@ a:hover { opacity: 0.9; }
   }
 }
 @media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
-  .prose table { scrollbar-color: rgba(255, 255, 255, 0.16) transparent; }
-  .prose table::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.16) !important; }
-  .prose table:hover::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
+  .prose table {
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  }
+  .prose table::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.16) !important;
+  }
+  .prose table:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.22) !important;
+  }
 }
 @media (hover: hover) and (pointer: fine) {
-  html.dark .prose table { scrollbar-color: rgba(255, 255, 255, 0.16) transparent; }
-  html.dark .prose table::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.16) !important; }
-  html.dark .prose table:hover::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
+  html.dark .prose table {
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  }
+  html.dark .prose table::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.16) !important;
+  }
+  html.dark .prose table:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.22) !important;
+  }
 }
 
 /* Removed deprecated prose-thinking styles */
@@ -417,33 +506,36 @@ a:hover { opacity: 0.9; }
 }
 
 .chat-code {
-  @apply border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden mb-2;
+  @apply mb-2 overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800;
 }
 .chat-code-header {
-  @apply flex items-center justify-between px-3 py-1.5 text-xs bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800;
+  @apply flex items-center justify-between border-b border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs dark:border-neutral-800 dark:bg-neutral-900;
 }
 .chat-code-lang {
-  @apply uppercase tracking-wide text-neutral-500 dark:text-neutral-400 select-none;
+  @apply tracking-wide text-neutral-500 uppercase select-none dark:text-neutral-400;
 }
 .chat-copy {
-  @apply rounded px-2 py-0.5 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 bg-white dark:bg-black;
+  @apply rounded border border-neutral-300 bg-white px-2 py-0.5 text-neutral-700 dark:border-neutral-700 dark:bg-black dark:text-neutral-300;
   background-color: var(--surface);
   border-color: var(--border-color);
 }
 .chat-code pre {
-  @apply bg-transparent m-0 p-3 text-sm;
+  @apply m-0 bg-transparent p-3 text-sm;
 }
-
 
 /* Chat bubble containers */
 .chat-row {
-  @apply w-full flex items-end gap-1;
+  @apply flex w-full items-end gap-1;
 }
-.chat-row.assistant { @apply justify-start; }
-.chat-row.user { @apply justify-end; }
+.chat-row.assistant {
+  @apply justify-start;
+}
+.chat-row.user {
+  @apply justify-end;
+}
 
 .chat-bubble {
-  @apply max-w-[80%] break-words rounded-3xl px-3 py-0.5 text-base leading-6 shadow-xs border bg-white text-neutral-900 dark:bg-black dark:text-white border-neutral-200 dark:border-neutral-800;
+  @apply max-w-[80%] rounded-3xl border border-neutral-200 bg-white px-3 py-0.5 text-base leading-6 break-words text-neutral-900 shadow-xs dark:border-neutral-800 dark:bg-black dark:text-white;
   background-color: var(--bubble-assistant-bg);
   border-color: var(--border-color);
   color: var(--text-primary);
@@ -454,7 +546,7 @@ a:hover { opacity: 0.9; }
   text-wrap: pretty;
 }
 .chat-bubble.compact {
-  @apply p-0 bg-transparent border-0 shadow-none rounded-2xl;
+  @apply rounded-2xl border-0 bg-transparent p-0 shadow-none;
 }
 .chat-bubble.assistant {
   @apply bg-white text-neutral-900 dark:bg-black dark:text-white;
@@ -466,16 +558,28 @@ a:hover { opacity: 0.9; }
 }
 
 /* Ensure markdown inside bubbles fits and inherits */
-.chat-bubble .prose { @apply m-0 w-full py-1 px-1; }
+.chat-bubble .prose {
+  @apply m-0 w-full px-1 py-1;
+}
 /* Darker horizontal rule inside chat bubbles for better contrast */
-.chat-bubble .prose hr { @apply my-3 border-neutral-300 dark:border-neutral-700; }
+.chat-bubble .prose hr {
+  @apply my-3 border-neutral-300 dark:border-neutral-700;
+}
 /* Keep internal blog spacing intact but trim outer edges inside chat bubbles */
-.chat-bubble .prose > :first-child { margin-top: 0.25rem !important; }
-.chat-bubble .prose > :last-child { margin-bottom: 0.25rem !important; }
+.chat-bubble .prose > :first-child {
+  margin-top: 0.25rem !important;
+}
+.chat-bubble .prose > :last-child {
+  margin-bottom: 0.25rem !important;
+}
 
 /* Tighter code blocks inside bubbles */
-.chat-bubble .chat-code { @apply mb-1; }
-.chat-bubble .chat-code pre { @apply p-2 text-sm; }
+.chat-bubble .chat-code {
+  @apply mb-1;
+}
+.chat-bubble .chat-code pre {
+  @apply p-2 text-sm;
+}
 
 .prose-message pre::-webkit-scrollbar {
   display: initial;
@@ -490,14 +594,25 @@ a:hover { opacity: 0.9; }
   @apply font-normal;
 }
 
-
 /* Remove outlines/borders for assistant (AI) messages */
-.chat-row.assistant > div img { border: 0 !important; outline: 0 !important; }
+.chat-row.assistant > div img {
+  border: 0 !important;
+  outline: 0 !important;
+}
 /* Removed deprecated thinking panel overrides */
-.chat-row.assistant > div .chat-code { border: 0 !important; }
-.chat-row.assistant > div .chat-code-header { border-bottom: 0 !important; }
-.chat-row.assistant > div .chat-copy { border: 0 !important; }
-.chat-row.assistant > div .prose pre { border: 0 !important; outline: 0 !important; }
+.chat-row.assistant > div .chat-code {
+  border: 0 !important;
+}
+.chat-row.assistant > div .chat-code-header {
+  border-bottom: 0 !important;
+}
+.chat-row.assistant > div .chat-copy {
+  border: 0 !important;
+}
+.chat-row.assistant > div .prose pre {
+  border: 0 !important;
+  outline: 0 !important;
+}
 
 /* Always show code block scrollbars; do not hide globally */
 
@@ -509,7 +624,6 @@ input[type='email'] {
   -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
 }
-
 
 table {
   display: block;
@@ -523,21 +637,27 @@ table {
   max-width: 100%;
   overflow-x: auto;
   white-space: nowrap;
-  border: 1px solid theme(colors.neutral.200);
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
 }
 
-.dark .prose-message table {
-  border-color: theme(colors.neutral.800);
-}
-
 .prose-message table thead th {
-  @apply bg-neutral-50 dark:bg-neutral-900 font-medium;
+  @apply font-medium;
+  background-color: var(--surface-hover);
 }
 
 .prose-message table th,
 .prose-message table td {
-  @apply px-3 py-2 text-left border-r border-neutral-200 dark:border-neutral-800;
+  @apply border-r px-2.5 py-1.5 text-left;
+  border-right-color: var(--border-color);
+}
+
+/* Improve cell content alignment */
+.prose table th,
+.prose table td,
+.prose-message table th,
+.prose-message table td {
+  vertical-align: top;
 }
 
 .prose-message table th:last-child,
@@ -546,7 +666,50 @@ table {
 }
 
 .prose-message table tbody tr:nth-child(odd) td {
-  @apply bg-neutral-50 dark:bg-neutral-900/30;
+  background-color: var(--surface-hover);
+}
+
+/* Match page-level scrollbar styling for AI tables as well */
+@media (hover: hover) and (pointer: fine) {
+  .prose-message table {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+  }
+  .prose-message table::-webkit-scrollbar {
+    height: 1px;
+  }
+  .prose-message table::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .prose-message table::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+  }
+  .prose-message table:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.18);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
+  .prose-message table {
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  }
+  .prose-message table::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.16) !important;
+  }
+  .prose-message table:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.22) !important;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  html.dark .prose-message table {
+    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  }
+  html.dark .prose-message table::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.16) !important;
+  }
+  html.dark .prose-message table:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.22) !important;
+  }
 }
 
 .title {
@@ -555,11 +718,16 @@ table {
 
 /* Glowing border effect for Ask AI while generating */
 @keyframes aiBorderGlow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(127, 145, 224, 0.40), 0 0 0 1px rgba(127, 145, 224, 0.95) inset;
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(127, 145, 224, 0.4),
+      0 0 0 1px rgba(127, 145, 224, 0.95) inset;
   }
   50% {
-    box-shadow: 0 0 18px 6px rgba(127, 145, 224, 0.55), 0 0 0 1px rgba(127, 145, 224, 1) inset;
+    box-shadow:
+      0 0 18px 6px rgba(127, 145, 224, 0.55),
+      0 0 0 1px rgba(127, 145, 224, 1) inset;
   }
 }
 
@@ -571,18 +739,23 @@ table {
 /* Hover glow for Ask AI button */
 @media (hover: hover) and (pointer: fine) {
   .ai-hover-glow {
-    transition-property: color, background-color, border-color, box-shadow, transform;
+    transition-property:
+      color, background-color, border-color, box-shadow, transform;
     transition-duration: 200ms;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
   .ai-hover-glow:hover {
-    box-shadow: 0 0 0 1px rgba(127, 145, 224, 0.9) inset, 0 0 18px 6px rgba(127, 145, 224, 0.35);
+    box-shadow:
+      0 0 0 1px rgba(127, 145, 224, 0.9) inset,
+      0 0 18px 6px rgba(127, 145, 224, 0.35);
     border-color: #7f91e0;
     color: var(--color-accent);
     transform: translateZ(0);
   }
   .dark .ai-hover-glow:hover {
-    box-shadow: 0 0 0 1px rgba(127, 145, 224, 1) inset, 0 0 22px 8px rgba(127, 145, 224, 0.4);
+    box-shadow:
+      0 0 0 1px rgba(127, 145, 224, 1) inset,
+      0 0 22px 8px rgba(127, 145, 224, 0.4);
   }
 }
 
@@ -611,20 +784,36 @@ table {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ai-text-shimmer { animation: none; }
+  .ai-text-shimmer {
+    animation: none;
+  }
 }
 
 /* Glass input wrapper styling for the Playground chat input */
 .glass-input-wrap {
   @apply relative rounded-[18px] p-[2px];
-  background: linear-gradient(180deg, rgba(127,145,224,0.35) 0%, rgba(127,145,224,0.15) 40%, rgba(127,145,224,0.25) 100%);
-  box-shadow: 0 8px 24px rgba(127,145,224,0.25), 0 1px 0 rgba(127,145,224,0.35) inset;
+  background: linear-gradient(
+    180deg,
+    rgba(127, 145, 224, 0.35) 0%,
+    rgba(127, 145, 224, 0.15) 40%,
+    rgba(127, 145, 224, 0.25) 100%
+  );
+  box-shadow:
+    0 8px 24px rgba(127, 145, 224, 0.25),
+    0 1px 0 rgba(127, 145, 224, 0.35) inset;
 }
 .dark .glass-input-wrap {
-  background: linear-gradient(180deg, rgba(127,145,224,0.45) 0%, rgba(127,145,224,0.22) 40%, rgba(127,145,224,0.38) 100%);
-  box-shadow: 0 12px 28px rgba(127,145,224,0.35), 0 1px 0 rgba(127,145,224,0.55) inset;
+  background: linear-gradient(
+    180deg,
+    rgba(127, 145, 224, 0.45) 0%,
+    rgba(127, 145, 224, 0.22) 40%,
+    rgba(127, 145, 224, 0.38) 100%
+  );
+  box-shadow:
+    0 12px 28px rgba(127, 145, 224, 0.35),
+    0 1px 0 rgba(127, 145, 224, 0.55) inset;
 }
 
 .glass-input-inner {
-  @apply rounded-[16px] bg-white/90 dark:bg-black/80 backdrop-blur-md border border-neutral-200 dark:border-neutral-800;
+  @apply rounded-[16px] border border-neutral-200 bg-white/90 backdrop-blur-md dark:border-neutral-800 dark:bg-black/80;
 }

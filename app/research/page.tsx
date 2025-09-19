@@ -7,16 +7,16 @@ export const metadata = {
 }
 
 export default function Page() {
-  let posts = getResearchPosts()
+  const posts = getResearchPosts()
 
   return (
     <section>
-      <h1 className="font-semibold text-2xl mb-8 tracking-tighter px-3 sm:px-4">Research</h1>
+      <h1 className="mb-8 px-3 text-2xl font-semibold tracking-tighter sm:px-4">
+        Research
+      </h1>
       <div className="my-8">
         <PostList basePath="/research" posts={posts} />
       </div>
     </section>
   )
 }
-
-

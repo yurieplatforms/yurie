@@ -8,8 +8,6 @@ type ChatMessage = {
   content: string
 }
 
-
-
 // Enqueue helper to avoid throwing when the stream controller has already closed
 function safeEnqueue(controller: any, encoder: TextEncoder, text: string) {
   try {
@@ -85,18 +83,29 @@ export async function POST(request: Request) {
     }
 
     if (!Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: 'Invalid body: messages[] required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return new Response(
+        JSON.stringify({ error: 'Invalid body: messages[] required' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     // Optional Tavily context
-    const lastUserMessageUniversal = [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
+    const lastUserMessageUniversal =
+      [...messages]
+        .reverse()
+        .find((m) => m.role === 'user')
+        ?.content?.trim() ?? ''
     const useTavilyEnabled = Boolean(useTavily)
     let tavilyContextStr = ''
     let tavilySources: { url?: string; title?: string }[] = []
-    if (useTavilyEnabled && process.env.TAVILY_API_KEY && lastUserMessageUniversal) {
+    if (
+      useTavilyEnabled &&
+      process.env.TAVILY_API_KEY &&
+      lastUserMessageUniversal
+    ) {
       try {
         const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY as string })
         const tvlyRes: any = await tvly.search(lastUserMessageUniversal, {
@@ -107,32 +116,53 @@ export async function POST(request: Request) {
           include_raw_content: true,
           topic: 'general',
         } as any)
-        const resultsArray: any[] = Array.isArray(tvlyRes?.results) ? tvlyRes.results : []
+        const resultsArray: any[] = Array.isArray(tvlyRes?.results)
+          ? tvlyRes.results
+          : []
         const topResults = resultsArray.slice(0, 10)
         const contentLines: string[] = []
-        if (typeof tvlyRes?.answer === 'string' && tvlyRes.answer.trim().length > 0) {
+        if (
+          typeof tvlyRes?.answer === 'string' &&
+          tvlyRes.answer.trim().length > 0
+        ) {
           contentLines.push(`Answer: ${tvlyRes.answer}`)
         }
         for (const r of topResults) {
-          const title: string = typeof r?.title === 'string' && r.title ? r.title : (r?.url || 'Source')
-          const raw: string = typeof r?.raw_content === 'string' && r.raw_content
-            ? r.raw_content
-            : (typeof r?.content === 'string' ? r.content : '')
+          const title: string =
+            typeof r?.title === 'string' && r.title
+              ? r.title
+              : r?.url || 'Source'
+          const raw: string =
+            typeof r?.raw_content === 'string' && r.raw_content
+              ? r.raw_content
+              : typeof r?.content === 'string'
+                ? r.content
+                : ''
           const snippetRaw = raw
-          const snippet = snippetRaw.length > 280 ? `${snippetRaw.slice(0, 280)}…` : snippetRaw
+          const snippet =
+            snippetRaw.length > 280
+              ? `${snippetRaw.slice(0, 280)}…`
+              : snippetRaw
           const url: string = r?.url || ''
-          contentLines.push(`- ${title}: ${snippet}${url ? `\n  Source: ${url}` : ''}`)
+          contentLines.push(
+            `- ${title}: ${snippet}${url ? `\n  Source: ${url}` : ''}`
+          )
         }
         if (contentLines.length > 0) {
           tavilyContextStr = `Web context (from Tavily):\n${contentLines.join('\n')}`
         }
-        tavilySources = topResults.map((r: any) => ({ url: r?.url, title: r?.title }))
+        tavilySources = topResults.map((r: any) => ({
+          url: r?.url,
+          title: r?.title,
+        }))
       } catch {}
     }
 
     const hasInputPdfsEarly = Array.isArray(inputPdfs) && inputPdfs.length > 0
-    const hasInputImagesEarly = Array.isArray(inputImages) && inputImages.length > 0
-    const hasInputAudiosEarly = Array.isArray(inputAudios) && inputAudios.length > 0
+    const hasInputImagesEarly =
+      Array.isArray(inputImages) && inputImages.length > 0
+    const hasInputAudiosEarly =
+      Array.isArray(inputAudios) && inputAudios.length > 0
 
     // Touch otherwise-unused vars to satisfy TypeScript noUnusedLocals without changing behavior
     void requestedModel
@@ -151,16 +181,28 @@ export async function POST(request: Request) {
         out = includeReasoning ? { effort: 'high' } : { exclude: true }
       }
 
-      const truthy = (v: unknown): boolean => /^(1|true|yes|on)$/i.test(String(v || ''))
+      const truthy = (v: unknown): boolean =>
+        /^(1|true|yes|on)$/i.test(String(v || ''))
       const envEnabledStr = process.env.OPENROUTER_REASONING_ENABLED
       const envExcludeStr = process.env.OPENROUTER_REASONING_EXCLUDE
-      const envEffortStr = (process.env.OPENROUTER_REASONING_EFFORT || '').toLowerCase()
-      const envMaxTokensNum = Number(process.env.OPENROUTER_REASONING_MAX_TOKENS)
+      const envEffortStr = (
+        process.env.OPENROUTER_REASONING_EFFORT || ''
+      ).toLowerCase()
+      const envMaxTokensNum = Number(
+        process.env.OPENROUTER_REASONING_MAX_TOKENS
+      )
 
-      const envEnabled = envEnabledStr === undefined ? undefined : truthy(envEnabledStr)
-      const envExclude = envExcludeStr === undefined ? undefined : truthy(envExcludeStr)
-      const envEffort = ['high', 'medium', 'low'].includes(envEffortStr) ? envEffortStr : undefined
-      const envMaxTokens = Number.isFinite(envMaxTokensNum) && envMaxTokensNum > 0 ? envMaxTokensNum : undefined
+      const envEnabled =
+        envEnabledStr === undefined ? undefined : truthy(envEnabledStr)
+      const envExclude =
+        envExcludeStr === undefined ? undefined : truthy(envExcludeStr)
+      const envEffort = ['high', 'medium', 'low'].includes(envEffortStr)
+        ? envEffortStr
+        : undefined
+      const envMaxTokens =
+        Number.isFinite(envMaxTokensNum) && envMaxTokensNum > 0
+          ? envMaxTokensNum
+          : undefined
 
       if (out == null && envEnabled === true) {
         out = { enabled: true }
@@ -187,10 +229,21 @@ export async function POST(request: Request) {
 
     // Utilities for OpenRouter (Chat Completions-compatible)
 
-    const buildOpenRouterMessages = (allMessages: ChatMessage[], imgs?: string[], pdfs?: { filename: string; dataUrl: string }[], extraSystem?: string, audios?: { format: string; base64: string }[]) => {
+    const buildOpenRouterMessages = (
+      allMessages: ChatMessage[],
+      imgs?: string[],
+      pdfs?: { filename: string; dataUrl: string }[],
+      extraSystem?: string,
+      audios?: { format: string; base64: string }[]
+    ) => {
       const out: any[] = []
-      const cacheEnabled = /^(1|true|yes|on)$/i.test(String(process.env.OPENROUTER_CACHE_CONTROL_ENABLED || ''))
-      const cacheMinChars = Math.max(0, Number(process.env.OPENROUTER_CACHE_MIN_CHARS || 1500))
+      const cacheEnabled = /^(1|true|yes|on)$/i.test(
+        String(process.env.OPENROUTER_CACHE_CONTROL_ENABLED || '')
+      )
+      const cacheMinChars = Math.max(
+        0,
+        Number(process.env.OPENROUTER_CACHE_MIN_CHARS || 1500)
+      )
       const maybeCacheTextPart = (text: string): any => {
         if (!text) return { type: 'text', text }
         if (cacheEnabled && text.length >= cacheMinChars) {
@@ -205,7 +258,8 @@ export async function POST(request: Request) {
         out.push({ role: 'system', content: [maybeCacheTextPart(extraSystem)] })
       }
 
-      const lastUserMessage = [...allMessages].reverse().find((m) => m.role === 'user')?.content ?? ''
+      const lastUserMessage =
+        [...allMessages].reverse().find((m) => m.role === 'user')?.content ?? ''
       const hasImgs = Array.isArray(imgs) && imgs.length > 0
       const hasPdfs = Array.isArray(pdfs) && pdfs.length > 0
       const hasAudios = Array.isArray(audios) && audios.length > 0
@@ -225,19 +279,32 @@ export async function POST(request: Request) {
       }
       if (hasImgs) {
         for (const url of imgs!) {
-          content.push({ type: 'image_url', image_url: { url, detail: 'auto' } })
+          content.push({
+            type: 'image_url',
+            image_url: { url, detail: 'auto' },
+          })
         }
       }
       if (hasPdfs) {
         for (const p of pdfs!) {
-          content.push({ type: 'file', file: { filename: p.filename || 'document.pdf', file_data: p.dataUrl } })
+          content.push({
+            type: 'file',
+            file: {
+              filename: p.filename || 'document.pdf',
+              file_data: p.dataUrl,
+            },
+          })
         }
       }
       if (hasAudios) {
         for (const a of audios!) {
           const fmt = (a?.format || 'wav').toLowerCase()
           const base64 = a?.base64 || ''
-          if (base64) content.push({ type: 'input_audio', input_audio: { data: base64, format: fmt } })
+          if (base64)
+            content.push({
+              type: 'input_audio',
+              input_audio: { data: base64, format: fmt },
+            })
         }
       }
       if (content.length > 0) {
@@ -253,52 +320,97 @@ export async function POST(request: Request) {
     const handleOpenRouter = async (): Promise<Response> => {
       const apiKey = process.env.OPENROUTER_API_KEY
       if (!apiKey) {
-        return new Response(JSON.stringify({ error: 'Missing OPENROUTER_API_KEY server env var' }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' },
-        })
+        return new Response(
+          JSON.stringify({
+            error: 'Missing OPENROUTER_API_KEY server env var',
+          }),
+          {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
       }
 
-      const baseURL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1'
-      const headers: Record<string, string> = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }
-      const referer = process.env.OPENROUTER_HTTP_REFERER || process.env.NEXT_PUBLIC_SITE_URL
+      const baseURL =
+        process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1'
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      }
+      const referer =
+        process.env.OPENROUTER_HTTP_REFERER || process.env.NEXT_PUBLIC_SITE_URL
       if (referer) headers['HTTP-Referer'] = referer
-      if (process.env.OPENROUTER_X_TITLE) headers['X-Title'] = process.env.OPENROUTER_X_TITLE
+      if (process.env.OPENROUTER_X_TITLE)
+        headers['X-Title'] = process.env.OPENROUTER_X_TITLE
       const encoder = new TextEncoder()
       const decoder = new TextDecoder()
 
       // Heuristics similar to common Responses paths
-      const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
-      const explicitImageVerb = /\b(generate|create|make|draw|paint|illustrate|render|design|produce|show)\b[^\n]*\b(image|picture|photo|photograph|illustration|art|logo|icon|wallpaper)\b/i
-      const imageDescriptorTerms = /\b(watercolor|illustration|pastel|photorealistic|cinematic|bokeh|portrait|vector|logo|icon|wallpaper|sticker|pixel art|line art|sketch|ink|charcoal|oil|acrylic|concept art|digital painting|3d|isometric|octane|unreal|anime|pixar|8k|hdr)\b/i
-      const analysisIntent = /\b(describe|explain|analy[sz]e|caption|tell me about)\b[^\n]*\b(image|picture|photo|it|this)\b/i
-      const hasInputImages = Array.isArray(inputImages) && inputImages.length > 0
+      const lastUserMessage =
+        [...messages]
+          .reverse()
+          .find((m) => m.role === 'user')
+          ?.content?.trim() ?? ''
+      const explicitImageVerb =
+        /\b(generate|create|make|draw|paint|illustrate|render|design|produce|show)\b[^\n]*\b(image|picture|photo|photograph|illustration|art|logo|icon|wallpaper)\b/i
+      const imageDescriptorTerms =
+        /\b(watercolor|illustration|pastel|photorealistic|cinematic|bokeh|portrait|vector|logo|icon|wallpaper|sticker|pixel art|line art|sketch|ink|charcoal|oil|acrylic|concept art|digital painting|3d|isometric|octane|unreal|anime|pixar|8k|hdr)\b/i
+      const analysisIntent =
+        /\b(describe|explain|analy[sz]e|caption|tell me about)\b[^\n]*\b(image|picture|photo|it|this)\b/i
+      const hasInputImages =
+        Array.isArray(inputImages) && inputImages.length > 0
       const hasInputPdfs = Array.isArray(inputPdfs) && inputPdfs.length > 0
-      const hasInputAudios = Array.isArray(inputAudios) && inputAudios.length > 0
-      const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
+      const hasInputAudios =
+        Array.isArray(inputAudios) && inputAudios.length > 0
+      const editIntent =
+        /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
 
       // Prefer analysis path when attachments are present and the intent is analysis (matches docs)
-      const prefersAnalysis = !Boolean(forceImageGeneration) && (hasInputImages || hasInputPdfs || hasInputAudios) && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)
+      const prefersAnalysis =
+        !Boolean(forceImageGeneration) &&
+        (hasInputImages || hasInputPdfs || hasInputAudios) &&
+        (!explicitImageVerb.test(lastUserMessage) ||
+          analysisIntent.test(lastUserMessage)) &&
+        !editIntent.test(lastUserMessage)
       if (prefersAnalysis) {
         try {
           const requested = requestedModel || process.env.OPENROUTER_MODEL
           const model = (() => {
             // For attachments, prefer a model that supports chat.completions with image/file parts
-            if ((hasInputImages || hasInputPdfs || hasInputAudios)) {
+            if (hasInputImages || hasInputPdfs || hasInputAudios) {
               // Prefer an audio-capable default if audio is present
               if (hasInputAudios) {
-                if (requested && (/^google\//i.test(requested) || /^openai\//i.test(requested))) return requested
+                if (
+                  requested &&
+                  (/^google\//i.test(requested) || /^openai\//i.test(requested))
+                )
+                  return requested
                 return 'google/gemini-2.5-pro'
               }
               if (!requested) return 'google/gemini-2.5-pro'
               // Allow only known providers for attachments; otherwise fallback
-              if (!/^anthropic\//i.test(requested) && !/^google\//i.test(requested) && !/^openai\//i.test(requested)) return 'google/gemini-2.5-pro'
+              if (
+                !/^anthropic\//i.test(requested) &&
+                !/^google\//i.test(requested) &&
+                !/^openai\//i.test(requested)
+              )
+                return 'google/gemini-2.5-pro'
               return requested
             }
             return requested || 'google/gemini-2.5-pro'
           })()
-          const finalModel = useTavilyEnabled ? (model.includes(':online') ? model : `${model}:online`) : model
-          const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr, inputAudios)
+          const finalModel = useTavilyEnabled
+            ? model.includes(':online')
+              ? model
+              : `${model}:online`
+            : model
+          const gwMessages = buildOpenRouterMessages(
+            messages,
+            inputImages,
+            inputPdfs,
+            tavilyContextStr,
+            inputAudios
+          )
           const res = await fetch(`${baseURL}/chat/completions`, {
             method: 'POST',
             headers,
@@ -310,7 +422,13 @@ export async function POST(request: Request) {
               usage: { include: true },
               plugins: (() => {
                 const arr: any[] = []
-                if (hasInputPdfs) arr.push({ id: 'file-parser', pdf: { engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text' } })
+                if (hasInputPdfs)
+                  arr.push({
+                    id: 'file-parser',
+                    pdf: {
+                      engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text',
+                    },
+                  })
                 if (useTavilyEnabled) arr.push({ id: 'web', max_results: 15 })
                 return arr.length > 0 ? arr : undefined
               })(),
@@ -319,17 +437,39 @@ export async function POST(request: Request) {
           if (!res.ok) {
             try {
               const errJson: any = await res.json()
-              const status = typeof errJson?.error?.code === 'number' ? errJson.error.code : res.status
-              return new Response(JSON.stringify(errJson), { status, headers: { 'Content-Type': 'application/json' } })
+              const status =
+                typeof errJson?.error?.code === 'number'
+                  ? errJson.error.code
+                  : res.status
+              return new Response(JSON.stringify(errJson), {
+                status,
+                headers: { 'Content-Type': 'application/json' },
+              })
             } catch {
               const text = await res.text().catch(() => '')
-              const payload = { error: { code: res.status, message: text || `HTTP ${res.status}` } }
-              return new Response(JSON.stringify(payload), { status: res.status, headers: { 'Content-Type': 'application/json' } })
+              const payload = {
+                error: {
+                  code: res.status,
+                  message: text || `HTTP ${res.status}`,
+                },
+              }
+              return new Response(JSON.stringify(payload), {
+                status: res.status,
+                headers: { 'Content-Type': 'application/json' },
+              })
             }
           }
           if (!res.body) {
-            const payload = { error: { code: 502, message: 'No response body received from upstream' } }
-            return new Response(JSON.stringify(payload), { status: 502, headers: { 'Content-Type': 'application/json' } })
+            const payload = {
+              error: {
+                code: 502,
+                message: 'No response body received from upstream',
+              },
+            }
+            return new Response(JSON.stringify(payload), {
+              status: 502,
+              headers: { 'Content-Type': 'application/json' },
+            })
           }
           const readable = new ReadableStream<Uint8Array>({
             async start(controller) {
@@ -338,11 +478,12 @@ export async function POST(request: Request) {
               let reasoningBuffer = ''
               const extractReasoningText = (json: any): string => {
                 try {
-                  const candidate = (json?.choices?.[0]?.delta?.reasoning)
-                    ?? (json?.choices?.[0]?.delta?.reasoning_content)
-                    ?? (json?.choices?.[0]?.delta?.thinking)
-                    ?? (json?.choices?.[0]?.reasoning)
-                    ?? (json?.reasoning)
+                  const candidate =
+                    json?.choices?.[0]?.delta?.reasoning ??
+                    json?.choices?.[0]?.delta?.reasoning_content ??
+                    json?.choices?.[0]?.delta?.thinking ??
+                    json?.choices?.[0]?.reasoning ??
+                    json?.reasoning
                   const toText = (x: any): string => {
                     if (!x) return ''
                     if (typeof x === 'string') return x
@@ -356,7 +497,9 @@ export async function POST(request: Request) {
                     return ''
                   }
                   return toText(candidate)
-                } catch { return '' }
+                } catch {
+                  return ''
+                }
               }
               try {
                 while (true) {
@@ -367,7 +510,9 @@ export async function POST(request: Request) {
                   while ((idx = buffer.indexOf('\n\n')) >= 0) {
                     const rawEvent = buffer.slice(0, idx)
                     buffer = buffer.slice(idx + 2)
-                    const lines = rawEvent.split('\n').filter((l) => l.startsWith('data:'))
+                    const lines = rawEvent
+                      .split('\n')
+                      .filter((l) => l.startsWith('data:'))
                     if (lines.length === 0) continue
                     const payload = lines.map((l) => l.slice(5).trim()).join('')
                     if (!payload || payload === '[DONE]') continue
@@ -376,40 +521,78 @@ export async function POST(request: Request) {
                       const errObj = (json as any)?.error
                       if (errObj && (errObj.message || errObj.code)) {
                         const code = errObj.code ? ` (code ${errObj.code})` : ''
-                        safeEnqueue(controller, encoder, `\n[error] ${errObj.message || 'Upstream error'}${code}\n`)
+                        safeEnqueue(
+                          controller,
+                          encoder,
+                          `\n[error] ${errObj.message || 'Upstream error'}${code}\n`
+                        )
                         continue
                       }
-                      const content: unknown = json?.choices?.[0]?.delta?.content
-                      if (typeof content === 'string' && content) safeEnqueue(controller, encoder, content)
+                      const content: unknown =
+                        json?.choices?.[0]?.delta?.content
+                      if (typeof content === 'string' && content)
+                        safeEnqueue(controller, encoder, content)
                       const rDelta = extractReasoningText(json)
                       if (rDelta) {
                         reasoningBuffer += rDelta
-                        const b64 = Buffer.from(rDelta, 'utf-8').toString('base64')
-                        safeEnqueue(controller, encoder, `\n<reasoning_partial:${b64}>\n`)
+                        const b64 = Buffer.from(rDelta, 'utf-8').toString(
+                          'base64'
+                        )
+                        safeEnqueue(
+                          controller,
+                          encoder,
+                          `\n<reasoning_partial:${b64}>\n`
+                        )
                       }
-                      const deltaImages: any[] | undefined = json?.choices?.[0]?.delta?.images
+                      const deltaImages: any[] | undefined =
+                        json?.choices?.[0]?.delta?.images
                       if (Array.isArray(deltaImages)) {
                         for (const img of deltaImages) {
                           const url = img?.image_url?.url
-                          if (typeof url === 'string' && url.startsWith('data:image')) safeEnqueue(controller, encoder, `\n<image:${url}>\n`)
+                          if (
+                            typeof url === 'string' &&
+                            url.startsWith('data:image')
+                          )
+                            safeEnqueue(
+                              controller,
+                              encoder,
+                              `\n<image:${url}>\n`
+                            )
                         }
                       }
                     } catch {}
                   }
                 }
               } catch {
-                safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
+                safeEnqueue(
+                  controller,
+                  encoder,
+                  `\n[error] A server error occurred. Please try again.`
+                )
               } finally {
                 try {
                   if (reasoningBuffer) {
-                    const b64 = Buffer.from(reasoningBuffer, 'utf-8').toString('base64')
+                    const b64 = Buffer.from(reasoningBuffer, 'utf-8').toString(
+                      'base64'
+                    )
                     safeEnqueue(controller, encoder, `\n<reasoning:${b64}>\n`)
                   }
-                  if (Array.isArray(tavilySources) && tavilySources.length > 0) {
+                  if (
+                    Array.isArray(tavilySources) &&
+                    tavilySources.length > 0
+                  ) {
                     safeEnqueue(controller, encoder, `\n\n`)
                     for (const s of tavilySources) {
-                      const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
-                      if (s.url) safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
+                      const title =
+                        s.title && String(s.title).trim().length > 0
+                          ? s.title
+                          : s.url
+                      if (s.url)
+                        safeEnqueue(
+                          controller,
+                          encoder,
+                          `- [${title}](${s.url})\n`
+                        )
                     }
                   }
                 } catch {}
@@ -427,21 +610,28 @@ export async function POST(request: Request) {
           })
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Unknown error'
-          return new Response(`Analysis failed: ${message}` , {
+          return new Response(`Analysis failed: ${message}`, {
             status: 500,
             headers: { 'Content-Type': 'text/plain; charset=utf-8' },
           })
         }
       }
 
-      const wantsImage = Boolean(forceImageGeneration) ||
-        ((explicitImageVerb.test(lastUserMessage) || imageDescriptorTerms.test(lastUserMessage) || editIntent.test(lastUserMessage)) && !analysisIntent.test(lastUserMessage)) ||
-        hasInputImages || Boolean(maskDataUrl)
+      const wantsImage =
+        Boolean(forceImageGeneration) ||
+        ((explicitImageVerb.test(lastUserMessage) ||
+          imageDescriptorTerms.test(lastUserMessage) ||
+          editIntent.test(lastUserMessage)) &&
+          !analysisIntent.test(lastUserMessage)) ||
+        hasInputImages ||
+        Boolean(maskDataUrl)
 
       if (wantsImage) {
         // Use image-capable chat model with streaming (supports Gemini 2.5 Flash Image Preview)
         try {
-          const model = process.env.OPENROUTER_IMAGE_MODEL || 'google/gemini-2.5-flash-image-preview'
+          const model =
+            process.env.OPENROUTER_IMAGE_MODEL ||
+            'google/gemini-2.5-flash-image-preview'
           const gwMessages = buildOpenRouterMessages(messages, inputImages, [])
           const res = await fetch(`${baseURL}/chat/completions`, {
             method: 'POST',
@@ -458,17 +648,39 @@ export async function POST(request: Request) {
           if (!res.ok) {
             try {
               const errJson: any = await res.json()
-              const status = typeof errJson?.error?.code === 'number' ? errJson.error.code : res.status
-              return new Response(JSON.stringify(errJson), { status, headers: { 'Content-Type': 'application/json' } })
+              const status =
+                typeof errJson?.error?.code === 'number'
+                  ? errJson.error.code
+                  : res.status
+              return new Response(JSON.stringify(errJson), {
+                status,
+                headers: { 'Content-Type': 'application/json' },
+              })
             } catch {
               const text = await res.text().catch(() => '')
-              const payload = { error: { code: res.status, message: text || `HTTP ${res.status}` } }
-              return new Response(JSON.stringify(payload), { status: res.status, headers: { 'Content-Type': 'application/json' } })
+              const payload = {
+                error: {
+                  code: res.status,
+                  message: text || `HTTP ${res.status}`,
+                },
+              }
+              return new Response(JSON.stringify(payload), {
+                status: res.status,
+                headers: { 'Content-Type': 'application/json' },
+              })
             }
           }
           if (!res.body) {
-            const payload = { error: { code: 502, message: 'No response body received from upstream' } }
-            return new Response(JSON.stringify(payload), { status: 502, headers: { 'Content-Type': 'application/json' } })
+            const payload = {
+              error: {
+                code: 502,
+                message: 'No response body received from upstream',
+              },
+            }
+            return new Response(JSON.stringify(payload), {
+              status: 502,
+              headers: { 'Content-Type': 'application/json' },
+            })
           }
 
           const readable = new ReadableStream<Uint8Array>({
@@ -478,11 +690,12 @@ export async function POST(request: Request) {
               let reasoningBuffer = ''
               const extractReasoningText = (json: any): string => {
                 try {
-                  const candidate = (json?.choices?.[0]?.delta?.reasoning)
-                    ?? (json?.choices?.[0]?.delta?.reasoning_content)
-                    ?? (json?.choices?.[0]?.delta?.thinking)
-                    ?? (json?.choices?.[0]?.reasoning)
-                    ?? (json?.reasoning)
+                  const candidate =
+                    json?.choices?.[0]?.delta?.reasoning ??
+                    json?.choices?.[0]?.delta?.reasoning_content ??
+                    json?.choices?.[0]?.delta?.thinking ??
+                    json?.choices?.[0]?.reasoning ??
+                    json?.reasoning
                   const toText = (x: any): string => {
                     if (!x) return ''
                     if (typeof x === 'string') return x
@@ -496,7 +709,9 @@ export async function POST(request: Request) {
                     return ''
                   }
                   return toText(candidate)
-                } catch { return '' }
+                } catch {
+                  return ''
+                }
               }
               try {
                 while (true) {
@@ -507,7 +722,9 @@ export async function POST(request: Request) {
                   while ((idx = buffer.indexOf('\n\n')) >= 0) {
                     const rawEvent = buffer.slice(0, idx)
                     buffer = buffer.slice(idx + 2)
-                    const lines = rawEvent.split('\n').filter((l) => l.startsWith('data:'))
+                    const lines = rawEvent
+                      .split('\n')
+                      .filter((l) => l.startsWith('data:'))
                     if (lines.length === 0) continue
                     const payload = lines.map((l) => l.slice(5).trim()).join('')
                     if (!payload || payload === '[DONE]') continue
@@ -516,25 +733,44 @@ export async function POST(request: Request) {
                       const errObj = (json as any)?.error
                       if (errObj && (errObj.message || errObj.code)) {
                         const code = errObj.code ? ` (code ${errObj.code})` : ''
-                        safeEnqueue(controller, encoder, `\n[error] ${errObj.message || 'Upstream error'}${code}\n`)
+                        safeEnqueue(
+                          controller,
+                          encoder,
+                          `\n[error] ${errObj.message || 'Upstream error'}${code}\n`
+                        )
                         continue
                       }
-                      const content: unknown = json?.choices?.[0]?.delta?.content
+                      const content: unknown =
+                        json?.choices?.[0]?.delta?.content
                       if (typeof content === 'string' && content) {
                         safeEnqueue(controller, encoder, content)
                       }
                       const rDelta = extractReasoningText(json)
                       if (rDelta) {
                         reasoningBuffer += rDelta
-                        const b64 = Buffer.from(rDelta, 'utf-8').toString('base64')
-                        safeEnqueue(controller, encoder, `\n<reasoning_partial:${b64}>\n`)
+                        const b64 = Buffer.from(rDelta, 'utf-8').toString(
+                          'base64'
+                        )
+                        safeEnqueue(
+                          controller,
+                          encoder,
+                          `\n<reasoning_partial:${b64}>\n`
+                        )
                       }
-                      const deltaImages: any[] | undefined = json?.choices?.[0]?.delta?.images
+                      const deltaImages: any[] | undefined =
+                        json?.choices?.[0]?.delta?.images
                       if (Array.isArray(deltaImages)) {
                         for (const img of deltaImages) {
                           const url = img?.image_url?.url
-                          if (typeof url === 'string' && url.startsWith('data:image')) {
-                            safeEnqueue(controller, encoder, `\n<image:${url}>\n`)
+                          if (
+                            typeof url === 'string' &&
+                            url.startsWith('data:image')
+                          ) {
+                            safeEnqueue(
+                              controller,
+                              encoder,
+                              `\n<image:${url}>\n`
+                            )
                           }
                         }
                       }
@@ -542,11 +778,17 @@ export async function POST(request: Request) {
                   }
                 }
               } catch {
-                safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
+                safeEnqueue(
+                  controller,
+                  encoder,
+                  `\n[error] A server error occurred. Please try again.`
+                )
               } finally {
                 try {
                   if (reasoningBuffer) {
-                    const b64 = Buffer.from(reasoningBuffer, 'utf-8').toString('base64')
+                    const b64 = Buffer.from(reasoningBuffer, 'utf-8').toString(
+                      'base64'
+                    )
                     safeEnqueue(controller, encoder, `\n<reasoning:${b64}>\n`)
                   }
                 } catch {}
@@ -573,9 +815,22 @@ export async function POST(request: Request) {
 
       // Text or multimodal analysis path using Chat Completions streaming (fallback when not in image-gen)
       try {
-        const modelBase = requestedModel || process.env.OPENROUTER_MODEL || 'google/gemini-2.5-pro'
-        const model = useTavilyEnabled ? (modelBase.includes(':online') ? modelBase : `${modelBase}:online`) : modelBase
-        const gwMessages = buildOpenRouterMessages(messages, inputImages, inputPdfs, tavilyContextStr, inputAudios)
+        const modelBase =
+          requestedModel ||
+          process.env.OPENROUTER_MODEL ||
+          'google/gemini-2.5-pro'
+        const model = useTavilyEnabled
+          ? modelBase.includes(':online')
+            ? modelBase
+            : `${modelBase}:online`
+          : modelBase
+        const gwMessages = buildOpenRouterMessages(
+          messages,
+          inputImages,
+          inputPdfs,
+          tavilyContextStr,
+          inputAudios
+        )
 
         const resText = await fetch(`${baseURL}/chat/completions`, {
           method: 'POST',
@@ -588,7 +843,13 @@ export async function POST(request: Request) {
             usage: { include: true },
             plugins: (() => {
               const arr: any[] = []
-              if (hasInputPdfs) arr.push({ id: 'file-parser', pdf: { engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text' } })
+              if (hasInputPdfs)
+                arr.push({
+                  id: 'file-parser',
+                  pdf: {
+                    engine: process.env.OPENROUTER_PDF_ENGINE || 'pdf-text',
+                  },
+                })
               if (useTavilyEnabled) arr.push({ id: 'web', max_results: 12 })
               return arr.length > 0 ? arr : undefined
             })(),
@@ -597,17 +858,39 @@ export async function POST(request: Request) {
         if (!resText.ok) {
           try {
             const errJson: any = await resText.json()
-            const status = typeof errJson?.error?.code === 'number' ? errJson.error.code : resText.status
-            return new Response(JSON.stringify(errJson), { status, headers: { 'Content-Type': 'application/json' } })
+            const status =
+              typeof errJson?.error?.code === 'number'
+                ? errJson.error.code
+                : resText.status
+            return new Response(JSON.stringify(errJson), {
+              status,
+              headers: { 'Content-Type': 'application/json' },
+            })
           } catch {
             const text = await resText.text().catch(() => '')
-            const payload = { error: { code: resText.status, message: text || 'A server error occurred.' } }
-            return new Response(JSON.stringify(payload), { status: resText.status, headers: { 'Content-Type': 'application/json' } })
+            const payload = {
+              error: {
+                code: resText.status,
+                message: text || 'A server error occurred.',
+              },
+            }
+            return new Response(JSON.stringify(payload), {
+              status: resText.status,
+              headers: { 'Content-Type': 'application/json' },
+            })
           }
         }
         if (!resText.body) {
-          const payload = { error: { code: 502, message: 'No response body received from upstream' } }
-          return new Response(JSON.stringify(payload), { status: 502, headers: { 'Content-Type': 'application/json' } })
+          const payload = {
+            error: {
+              code: 502,
+              message: 'No response body received from upstream',
+            },
+          }
+          return new Response(JSON.stringify(payload), {
+            status: 502,
+            headers: { 'Content-Type': 'application/json' },
+          })
         }
 
         const readable = new ReadableStream<Uint8Array>({
@@ -617,11 +900,12 @@ export async function POST(request: Request) {
             let reasoningBuffer = ''
             const extractReasoningText = (json: any): string => {
               try {
-                const candidate = (json?.choices?.[0]?.delta?.reasoning)
-                  ?? (json?.choices?.[0]?.delta?.reasoning_content)
-                  ?? (json?.choices?.[0]?.delta?.thinking)
-                  ?? (json?.choices?.[0]?.reasoning)
-                  ?? (json?.reasoning)
+                const candidate =
+                  json?.choices?.[0]?.delta?.reasoning ??
+                  json?.choices?.[0]?.delta?.reasoning_content ??
+                  json?.choices?.[0]?.delta?.thinking ??
+                  json?.choices?.[0]?.reasoning ??
+                  json?.reasoning
                 const toText = (x: any): string => {
                   if (!x) return ''
                   if (typeof x === 'string') return x
@@ -635,7 +919,9 @@ export async function POST(request: Request) {
                   return ''
                 }
                 return toText(candidate)
-              } catch { return '' }
+              } catch {
+                return ''
+              }
             }
             try {
               while (true) {
@@ -646,7 +932,9 @@ export async function POST(request: Request) {
                 while ((idx = buffer.indexOf('\n\n')) >= 0) {
                   const rawEvent = buffer.slice(0, idx)
                   buffer = buffer.slice(idx + 2)
-                  const lines = rawEvent.split('\n').filter((l) => l.startsWith('data:'))
+                  const lines = rawEvent
+                    .split('\n')
+                    .filter((l) => l.startsWith('data:'))
                   if (lines.length === 0) continue
                   const payload = lines.map((l) => l.slice(5).trim()).join('')
                   if (!payload || payload === '[DONE]') continue
@@ -655,7 +943,11 @@ export async function POST(request: Request) {
                     const errObj = (json as any)?.error
                     if (errObj && (errObj.message || errObj.code)) {
                       const code = errObj.code ? ` (code ${errObj.code})` : ''
-                      safeEnqueue(controller, encoder, `\n[error] ${errObj.message || 'Upstream error'}${code}\n`)
+                      safeEnqueue(
+                        controller,
+                        encoder,
+                        `\n[error] ${errObj.message || 'Upstream error'}${code}\n`
+                      )
                       continue
                     }
                     const content: unknown = json?.choices?.[0]?.delta?.content
@@ -665,14 +957,24 @@ export async function POST(request: Request) {
                     const rDelta = extractReasoningText(json)
                     if (rDelta) {
                       reasoningBuffer += rDelta
-                      const b64 = Buffer.from(rDelta, 'utf-8').toString('base64')
-                      safeEnqueue(controller, encoder, `\n<reasoning_partial:${b64}>\n`)
+                      const b64 = Buffer.from(rDelta, 'utf-8').toString(
+                        'base64'
+                      )
+                      safeEnqueue(
+                        controller,
+                        encoder,
+                        `\n<reasoning_partial:${b64}>\n`
+                      )
                     }
-                    const deltaImages: any[] | undefined = json?.choices?.[0]?.delta?.images
+                    const deltaImages: any[] | undefined =
+                      json?.choices?.[0]?.delta?.images
                     if (Array.isArray(deltaImages)) {
                       for (const img of deltaImages) {
                         const url = img?.image_url?.url
-                        if (typeof url === 'string' && url.startsWith('data:image')) {
+                        if (
+                          typeof url === 'string' &&
+                          url.startsWith('data:image')
+                        ) {
                           safeEnqueue(controller, encoder, `\n<image:${url}>\n`)
                         }
                       }
@@ -681,18 +983,32 @@ export async function POST(request: Request) {
                 }
               }
             } catch (error) {
-              safeEnqueue(controller, encoder, `\n[error] A server error occurred. Please try again.`)
+              safeEnqueue(
+                controller,
+                encoder,
+                `\n[error] A server error occurred. Please try again.`
+              )
             } finally {
               try {
                 if (reasoningBuffer) {
-                  const b64 = Buffer.from(reasoningBuffer, 'utf-8').toString('base64')
+                  const b64 = Buffer.from(reasoningBuffer, 'utf-8').toString(
+                    'base64'
+                  )
                   safeEnqueue(controller, encoder, `\n<reasoning:${b64}>\n`)
                 }
                 if (Array.isArray(tavilySources) && tavilySources.length > 0) {
                   safeEnqueue(controller, encoder, `\n\n`)
                   for (const s of tavilySources) {
-                    const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
-                    if (s.url) safeEnqueue(controller, encoder, `- [${title}](${s.url})\n`)
+                    const title =
+                      s.title && String(s.title).trim().length > 0
+                        ? s.title
+                        : s.url
+                    if (s.url)
+                      safeEnqueue(
+                        controller,
+                        encoder,
+                        `- [${title}](${s.url})\n`
+                      )
                   }
                 }
               } catch {}

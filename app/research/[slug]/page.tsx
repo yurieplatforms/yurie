@@ -5,29 +5,33 @@ import AskAISummary from 'app/components/AskAI'
 import { baseUrl } from 'app/sitemap'
 
 export async function generateStaticParams() {
-  let posts = getResearchPosts()
+  const posts = getResearchPosts()
 
   return posts.map((post) => ({
     slug: post.slug,
   }))
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
   const { slug } = await params
-  let post = getResearchPosts().find((post) => post.slug === slug)
+  const post = getResearchPosts().find((post) => post.slug === slug)
   if (!post) {
     return
   }
 
   const safePost = post!
 
-  let {
+  const {
     title,
     publishedAt: publishedTime,
     summary: description,
     image,
   } = safePost.metadata
-  let ogImage = image
+  const ogImage = image
     ? image
     : `${baseUrl}/og?title=${encodeURIComponent(title)}`
 
@@ -55,9 +59,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
-export default async function Research({ params }: { params: Promise<{ slug: string }> }) {
+export default async function Research({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
   const { slug } = await params
-  let post = getResearchPosts().find((post) => post.slug === slug)
+  const post = getResearchPosts().find((post) => post.slug === slug)
 
   if (!post) {
     notFound()
@@ -89,23 +97,28 @@ export default async function Research({ params }: { params: Promise<{ slug: str
           }),
         }}
       />
-      <h1 className="title font-semibold text-2xl tracking-tighter">
+      <h1 className="title text-2xl font-semibold tracking-tighter">
         {safePost.metadata.title}
       </h1>
-      <div className="flex justify-between items-center mt-2 mb-8 text-sm">
+      <div className="mt-2 mb-8 flex items-center justify-between text-sm">
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
           {formatDate(safePost.metadata.publishedAt)}
         </p>
-        <AskAISummary title={safePost.metadata.title} content={safePost.content} inline portalTargetId="ai-summary-slot" />
+        <AskAISummary
+          title={safePost.metadata.title}
+          content={safePost.content}
+          inline
+          portalTargetId="ai-summary-slot"
+        />
       </div>
       <article className="prose prose-neutral dark:prose-invert">
         <div id="ai-summary-slot" />
         <div
-          dangerouslySetInnerHTML={{ __html: marked.parse(safePost.content) as string }}
+          dangerouslySetInnerHTML={{
+            __html: marked.parse(safePost.content) as string,
+          }}
         />
       </article>
     </section>
   )
 }
-
-
