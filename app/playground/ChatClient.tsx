@@ -10,7 +10,6 @@ import {
   createContext,
   useContext,
 } from 'react'
-import { Fragment } from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
 import {
