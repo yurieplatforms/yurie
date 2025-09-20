@@ -1,10 +1,10 @@
 {
   "private": true,
   "scripts": {
-    "dev": "concurrently -k -n WEB,API -c auto \"npx next dev\" \"uvicorn server.main:app --reload --port 8765\"",
+    "dev": "concurrently -k -n WEB,API -c auto \"npx next dev\" \"uvicorn app.api.main:app --reload --port 8765\"",
     "build": "next build",
     "start": "next start",
-    "api": "uvicorn server.main:app --host 0.0.0.0 --port 8765",
+    "api": "uvicorn app.api.main:app --host 0.0.0.0 --port 8765",
     "lint": "eslint --ignore-pattern '.next/**' .",
     "lint:fix": "eslint --ignore-pattern '.next/**' --fix .",
     "format": "prettier --write ."
