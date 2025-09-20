@@ -43,6 +43,16 @@ async function proxyPython(rawBody: string): Promise<Response | null> {
   }
 }
 
+function shouldUsePythonProxy(): boolean {
+  const baseURL = process.env.PY_API_URL || process.env.NEXT_PUBLIC_PY_API_URL || ''
+  if (!baseURL) return false
+  const onVercel = !!process.env.VERCEL
+  const force = process.env.PY_PROXY_FORCE === '1'
+  // By default, do NOT use Python proxy on Vercel unless explicitly forced
+  if (onVercel && !force) return false
+  return true
+}
+
 const SYSTEM_PROMPT = `
 <SystemPrompt>
 
@@ -264,11 +274,12 @@ function streamFromXAI(payload: ChatRequestPayload): Response {
 export async function POST(request: Request) {
   try {
     const raw = await request.text()
-    // If a Python URL is configured (e.g., local dev), try it first
-    const py = await proxyPython(raw)
-    if (py) return py
+    if (shouldUsePythonProxy()) {
+      const py = await proxyPython(raw)
+      if (py) return py
+      // fall through to direct streaming if proxy fails
+    }
 
-    // Otherwise, stream directly from xAI using Node fetch
     let payload: ChatRequestPayload
     try {
       payload = JSON.parse(raw)
@@ -285,5 +296,23 @@ export async function POST(request: Request) {
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     )
   }
+}
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  })
+}
+
+export async function GET() {
+  return new Response(
+    JSON.stringify({ status: 'ok', message: 'Use POST to /api/xai' }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } }
+  )
 }
 
