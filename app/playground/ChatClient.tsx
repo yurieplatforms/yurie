@@ -996,7 +996,7 @@ export default function ChatClient() {
   useEffect(() => {
     const el = outputRef.current
     if (!el) return
-    const updatePinned: EventListener = () => {
+    const computePinned = () => {
       try {
         const threshold = 16
         const distanceFromBottom =
@@ -1004,7 +1004,8 @@ export default function ChatClient() {
         pinnedToBottomRef.current = distanceFromBottom <= threshold
       } catch {}
     }
-    updatePinned()
+    const updatePinned: EventListener = () => computePinned()
+    computePinned()
     el.addEventListener('scroll', updatePinned, { passive: true } as AddEventListenerOptions)
     return () => {
       el.removeEventListener('scroll', updatePinned)
