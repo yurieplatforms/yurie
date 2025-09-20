@@ -1,24 +1,25 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently -k -n WEB,API -c auto \"npx next dev\" \"uvicorn server.main:app --reload --port 8765\"",
     "build": "next build",
     "start": "next start",
+    "api": "uvicorn server.main:app --host 0.0.0.0 --port 8765",
     "lint": "eslint --ignore-pattern '.next/**' .",
     "lint:fix": "eslint --ignore-pattern '.next/**' --fix .",
     "format": "prettier --write ."
   },
   "dependencies": {
+    "concurrently": "^9.1.2",
     "@phosphor-icons/react": "^2.1.10",
     "@tabler/icons-react": "^3.35.0",
-    "@tavily/core": "^0.5.12",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "clsx": "^2.1.1",
     "geist": "1.5.1",
     "marked": "^16.3.0",
     "motion": "^12.23.15",
-    "next": "15.5.3",
+    "next": "15.0.4",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "sugar-high": "^0.9.3",

@@ -2,8 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { IconReportAnalytics } from '@tabler/icons-react'
-import { IconNews } from '@tabler/icons-react'
 
 const navItems = {
   '/': {
@@ -61,28 +59,8 @@ export function Navbar() {
                         />
                         <span>{name}</span>
                       </>
-                    ) : path === '/research' ? (
-                      <>
-                        <IconReportAnalytics
-                          size={20}
-                          stroke={1.75}
-                          className="text-neutral-600 transition-colors group-hover:text-neutral-900 dark:text-neutral-300 dark:group-hover:text-neutral-100"
-                          aria-hidden
-                        />
-                        <span>{name}</span>
-                      </>
-                    ) : path === '/blog' ? (
-                      <>
-                        <IconNews
-                          size={20}
-                          stroke={1.75}
-                          className="text-neutral-600 transition-colors group-hover:text-neutral-900 dark:text-neutral-300 dark:group-hover:text-neutral-100"
-                          aria-hidden
-                        />
-                        <span>{name}</span>
-                      </>
                     ) : (
-                      name
+                      <span>{name}</span>
                     )}
                   </span>
                 </Link>

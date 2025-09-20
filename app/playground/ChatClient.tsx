@@ -184,6 +184,117 @@ function MessageAttachmentList({
   )
 }
 
+type SourceDisplayParts = {
+  href: string
+  hostname: string
+  domain: string
+  path: string
+  faviconUrl: string
+}
+
+function safeParseUrl(rawUrl: string): URL | null {
+  try {
+    if (rawUrl.startsWith('//')) return new URL('https:' + rawUrl)
+    return new URL(rawUrl)
+  } catch {
+    return null
+  }
+}
+
+function toDisplayParts(rawUrl: string): SourceDisplayParts {
+  const parsed = safeParseUrl(rawUrl)
+  const hostname = parsed?.hostname || ''
+  const domain = hostname.replace(/^www\./i, '') || rawUrl
+  const pathname = (parsed?.pathname || '/').replace(/\/$/, '') || '/'
+  const search = parsed?.search || ''
+  const path = `${pathname}${search}`
+  const faviconUrl = hostname
+    ? `https://icons.duckduckgo.com/ip3/${hostname}.ico`
+    : ''
+  return {
+    href: parsed ? parsed.href : rawUrl,
+    hostname,
+    domain,
+    path,
+    faviconUrl,
+  }
+}
+
+function dedupeUrls(urls: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const u of urls) {
+    const parsed = safeParseUrl(u)
+    const key = parsed ? `${parsed.hostname}${parsed.pathname}${parsed.search}` : u
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(u)
+  }
+  return out
+}
+
+function SourcesList({ urls }: { urls: string[] }) {
+  const [expanded, setExpanded] = useState(false)
+  const MAX_VISIBLE = 6
+  const deduped = useMemo(() => dedupeUrls(urls), [urls])
+  const shown = expanded ? deduped : deduped.slice(0, MAX_VISIBLE)
+  return (
+    <div className="mt-3 rounded-xl border border-[var(--border-color)] bg-[var(--surface)] p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">
+          Sources
+        </div>
+        <div className="text-[11px] text-neutral-500">{deduped.length}</div>
+      </div>
+      <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+        {shown.map((u) => {
+          const p = toDisplayParts(u)
+          return (
+            <li key={u} className="min-w-0">
+              <a
+                href={p.href}
+                target="_blank"
+                rel="noreferrer"
+                title={p.href}
+                className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-[var(--surface-hover)]"
+              >
+                {p.faviconUrl ? (
+                  <img
+                    src={p.faviconUrl}
+                    alt=""
+                    className="size-[14px] rounded-sm"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span className="inline-block size-[14px] rounded-sm bg-neutral-300 dark:bg-neutral-700" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-xs font-medium text-neutral-900 group-hover:underline dark:text-neutral-100">
+                    {p.domain}
+                  </div>
+                  <div className="truncate text-[11px] text-neutral-500">
+                    {p.path}
+                  </div>
+                </div>
+              </a>
+            </li>
+          )
+        })}
+      </ul>
+      {deduped.length > MAX_VISIBLE ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 text-[11px] font-medium text-[var(--color-accent)] hover:underline"
+        >
+          {expanded ? 'Show less' : `Show all ${deduped.length}`}
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
 function ThinkingPanel({
   content,
   generating = false,
@@ -424,8 +535,8 @@ type ChatInputProps = {
   status?: 'submitted' | 'streaming' | 'ready' | 'error'
   modelChoice: string
   onModelChange: (value: string) => void
-  useTavily: boolean
-  onUseTavilyToggle: () => void
+  useWebSearch: boolean
+  onUseWebSearchToggle: () => void
 }
 function ChatInput({
   value,
@@ -439,8 +550,8 @@ function ChatInput({
   status,
   modelChoice,
   onModelChange,
-  useTavily,
-  onUseTavilyToggle,
+  useWebSearch,
+  onUseWebSearchToggle,
 }: ChatInputProps) {
   const isOnlyWhitespace = (text: string) => !/[^\s]/.test(text)
   const [isDragging, setIsDragging] = useState(false)
@@ -574,12 +685,10 @@ function ChatInput({
 
   const modelOptions = useMemo(
     () => [
-      { value: 'x-ai/grok-4', label: 'Grok 4' },
-      { value: 'openai/gpt-5', label: 'GPT-5' },
-      { value: 'z-ai/glm-4.5', label: 'GLM 4.5' },
-      { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-      { value: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
-      { value: 'openrouter/sonoma-sky-alpha', label: 'Sonoma Sky Alpha' },
+      { value: 'x-ai/grok-4-0709', label: 'Grok 4 (0709)' },
+      { value: 'x-ai/grok-4-fast-reasoning', label: 'Grok 4 Fast Reasoning' },
+      { value: 'x-ai/grok-3-mini', label: 'Grok 3 Mini (reasoning)' },
+      { value: 'x-ai/grok-3-mini-fast', label: 'Grok 3 Mini Fast (reasoning)' },
     ],
     []
   )
@@ -631,14 +740,14 @@ function ChatInput({
                 <ButtonFileUpload onFileUpload={onFileUpload} />
                 <button
                   type="button"
-                  onClick={onUseTavilyToggle}
+                  onClick={onUseWebSearchToggle}
                   className={cn(
                     'inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] p-0 leading-none transition-colors',
-                    useTavily
+                    useWebSearch
                       ? 'border-[var(--color-accent)] text-[var(--color-accent)] ring-1 ring-[var(--color-accent)] hover:bg-[var(--surface-hover)]'
                       : 'hover:border-[var(--border-color-hover)] hover:bg-[var(--surface-hover)]'
                   )}
-                  aria-pressed={useTavily}
+                  aria-pressed={useWebSearch}
                   aria-label="Web search"
                   title="Web search"
                 >
@@ -738,9 +847,9 @@ export default function ChatClient() {
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
   const [modelChoice, setModelChoice] = useState<string>(
-    'google/gemini-2.5-pro'
+    'x-ai/grok-4-0709'
   )
-  const [useTavily, setUseTavily] = useState<boolean>(false)
+  const [useWebSearch, setUseWebSearch] = useState<boolean>(false)
   const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(
     () => {
       try {
@@ -940,7 +1049,7 @@ export default function ChatClient() {
     const legacyBracketPattern =
       '\\[' + 'data:image' + '\\/[a-zA-Z]+;base64,[^\\]]+' + '\\]'
     const pattern = new RegExp(
-      `<image_partial:([^>]+)>|<image:([^>]+)>|<reasoning_partial:([^>]+)>|<reasoning:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|${legacyBracketPattern}`,
+      `<image_partial:([^>]+)>|<image:([^>]+)>|<reasoning_partial:([^>]+)>|<reasoning:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|<citations:([^>]+)>|${legacyBracketPattern}`,
       'g'
     )
     const parts: Array<
@@ -952,6 +1061,7 @@ export default function ChatClient() {
           key: 'revised_prompt' | 'response_id' | 'summary_text' | 'incomplete'
           value: string
         }
+      | { type: 'citations'; urls: string[] }
     > = []
     let lastIndex = 0
     let match: RegExpExecArray | null
@@ -978,6 +1088,7 @@ export default function ChatClient() {
           : full.startsWith('[')
             ? full.slice(1, -1)
             : ''
+      const citationsPayload = match[9]
       if (src) {
         const isPartial = Boolean(partialPayload)
         parts.push({ type: 'image', src, partial: isPartial })
@@ -1018,6 +1129,17 @@ export default function ChatClient() {
           key: 'incomplete',
           value: incompletePayload,
         })
+      }
+      if (typeof citationsPayload === 'string' && citationsPayload) {
+        try {
+          const parsed = JSON.parse(citationsPayload)
+          if (Array.isArray(parsed)) {
+            const urls = parsed
+              .map((u) => (typeof u === 'string' ? u : String(u)))
+              .filter((u) => u && /^(https?:)?\/\//i.test(u))
+            if (urls.length > 0) parts.push({ type: 'citations', urls })
+          }
+        } catch {}
       }
       lastIndex = match.index + full.length
     }
@@ -1111,12 +1233,14 @@ export default function ChatClient() {
         {parts.map((p, i) => {
           if ((p as any).type === 'meta') {
             const meta = p as any
+            // Skip rendering Response ID
+            if (meta.key === 'response_id') {
+              return null
+            }
             const label =
               meta.key === 'revised_prompt'
                 ? 'Revised prompt'
-                : meta.key === 'response_id'
-                  ? 'Response ID'
-                  : meta.key === 'summary_text'
+                : meta.key === 'summary_text'
                     ? 'Summary'
                     : 'Status'
             return (
@@ -1127,6 +1251,21 @@ export default function ChatClient() {
           }
           return null
         })}
+        {(() => {
+          const latestCitations = (() => {
+            for (let i = parts.length - 1; i >= 0; i--) {
+              const p: any = parts[i]
+              if (p && p.type === 'citations' && Array.isArray(p.urls)) {
+                return p.urls as string[]
+              }
+            }
+            return [] as string[]
+          })()
+          if (role === 'assistant' && latestCitations.length > 0) {
+            return <SourcesList urls={latestCitations} />
+          }
+          return null
+        })()}
       </>
     )
   }
@@ -1308,19 +1447,29 @@ export default function ChatClient() {
       }))
       const ac = new AbortController()
       abortControllerRef.current = ac
-      const res = await fetch('/api/playground', {
+      // Only include reasoning for models that support reasoning_effort (grok-3-mini, grok-3-mini-fast)
+      const supportsReasoningEffort = /grok-3-mini(\b|\-|_)/i.test(modelChoice) || /grok-3-mini-fast/i.test(modelChoice)
+      const body: any = {
+        messages: payloadMessages,
+        inputImages,
+        inputPdfs,
+        inputAudios,
+        previousResponseId: lastResponseId,
+        model: modelChoice,
+      }
+      if (supportsReasoningEffort) {
+        body.reasoning = { effort: 'high' as const }
+      }
+      // xAI Live Search: wire Globe toggle
+      try {
+        body.search_parameters = useWebSearch
+          ? { mode: 'on', return_citations: true }
+          : { mode: 'off' }
+      } catch {}
+      const res = await fetch('/api/xai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: payloadMessages,
-          inputImages,
-          inputPdfs,
-          inputAudios,
-          previousResponseId: lastResponseId,
-          model: modelChoice,
-          useTavily,
-          reasoning: { effort: 'high' },
-        }),
+        body: JSON.stringify(body),
         signal: ac.signal,
       })
 
@@ -1546,8 +1695,8 @@ export default function ChatClient() {
           status={status}
           modelChoice={modelChoice}
           onModelChange={setModelChoice}
-          useTavily={useTavily}
-          onUseTavilyToggle={() => setUseTavily((v) => !v)}
+          useWebSearch={useWebSearch}
+          onUseWebSearchToggle={() => setUseWebSearch((v) => !v)}
         />
       </div>
     </section>

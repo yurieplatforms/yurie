@@ -53,13 +53,13 @@ export default function AskAISummary({
     const ac = new AbortController()
     abortRef.current = ac
     try {
-      const res = await fetch('/api/playground', {
+      const res = await fetch('/api/xai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [{ role: 'user', content: prompt }],
-          model: 'anthropic/claude-3.5-haiku',
-          reasoning: { effort: 'high' },
+          model: 'x-ai/grok-4-0709',
+          // grok-4 does not support reasoning_effort; omit reasoning param
         }),
         signal: ac.signal,
       })
