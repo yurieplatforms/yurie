@@ -26,6 +26,8 @@ import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import Image from 'next/image'
 
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024 // 20 MiB
+
 type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
@@ -38,7 +40,6 @@ type AttachmentPreview = {
   mime: string
   objectUrl: string
   isImage: boolean
-  isAudio?: boolean
 }
 
 function cn(...inputs: ClassValue[]) {
@@ -176,21 +177,6 @@ function MessageAttachmentList({
             alt={att.name}
             className="max-h-56 rounded border border-neutral-200 object-cover dark:border-neutral-800"
           />
-        ) : att.isAudio ? (
-          <div
-            key={att.id}
-            className="inline-flex max-w-full items-center gap-2 rounded-md border border-[var(--border-color)] bg-[var(--surface)] p-2"
-          >
-            <audio controls src={att.objectUrl} className="max-w-[260px]" />
-            <div className="flex flex-col">
-              <span className="max-w-[200px] truncate text-xs font-medium">
-                {att.name}
-              </span>
-              <span className="text-[10px] text-neutral-500">
-                {(att.size / 1024).toFixed(2)}kB
-              </span>
-            </div>
-          </div>
         ) : (
           <a
             key={att.id}
@@ -522,11 +508,17 @@ function ButtonFileUpload({
         ref={inputRef}
         id={inputId}
         type="file"
-        accept="image/*,application/pdf,audio/*"
+        accept="image/jpeg,image/png"
         multiple
         className="sr-only"
         onChange={(e) => {
-          const files = Array.from(e.target.files ?? [])
+          const files = Array.from(e.target.files ?? []).filter((f) => {
+            const mime = (f.type || '').toLowerCase()
+            const isJpeg = mime === 'image/jpeg' || mime === 'image/jpg'
+            const isPng = mime === 'image/png'
+            const withinLimit = f.size <= MAX_IMAGE_BYTES
+            return (isJpeg || isPng) && withinLimit
+          })
           onFileUpload(files)
           if (inputRef.current) inputRef.current.value = ''
         }}
@@ -640,7 +632,13 @@ function ChatInput({
       try {
         e.preventDefault()
         e.stopPropagation()
-        const fileList = Array.from(e.dataTransfer?.files || [])
+        const fileList = Array.from(e.dataTransfer?.files || []).filter((f) => {
+          const mime = (f.type || '').toLowerCase()
+          const isJpeg = mime === 'image/jpeg' || mime === 'image/jpg'
+          const isPng = mime === 'image/png'
+          const withinLimit = f.size <= MAX_IMAGE_BYTES
+          return (isJpeg || isPng) && withinLimit
+        })
         if (fileList.length > 0) onFileUpload(fileList)
       } finally {
         dragCounterRef.current = 0
@@ -687,14 +685,15 @@ function ChatInput({
       const items = e.clipboardData?.items
       if (!items) return
       const hasImageContent = Array.from(items).some((item) =>
-        item.type.startsWith('image/')
+        item.type === 'image/png' || item.type === 'image/jpeg' || item.type === 'image/jpg'
       )
       if (hasImageContent) {
         const imageFiles: File[] = []
         for (const item of Array.from(items)) {
-          if (item.type.startsWith('image/')) {
+          if (item.type === 'image/png' || item.type === 'image/jpeg' || item.type === 'image/jpg') {
             const file = item.getAsFile()
             if (file) {
+              if (file.size > MAX_IMAGE_BYTES) continue
               const newFile = new File(
                 [file],
                 `pasted-image-${Date.now()}.${file.type.split('/')[1]}`,
@@ -712,10 +711,10 @@ function ChatInput({
 
   const modelOptions = useMemo(
     () => [
-      { value: 'x-ai/grok-4-0709', label: 'Grok 4 (0709)' },
-      { value: 'x-ai/grok-4-fast-reasoning', label: 'Grok 4 Fast Reasoning' },
-      { value: 'x-ai/grok-3-mini', label: 'Grok 3 Mini (reasoning)' },
-      { value: 'x-ai/grok-3-mini-fast', label: 'Grok 3 Mini Fast (reasoning)' },
+      { value: 'x-ai/grok-4-0709', label: 'Grok 4' },
+      { value: 'x-ai/grok-4-fast-reasoning', label: 'Grok 4 Fast' },
+      { value: 'x-ai/grok-3-mini', label: 'Grok 3 Mini' },
+      { value: 'x-ai/grok-3-mini-fast', label: 'Grok 3 Mini Fast' },
     ],
     []
   )
@@ -739,7 +738,7 @@ function ChatInput({
             <div className="pointer-events-none absolute inset-0 z-20">
               <div className="absolute inset-1 flex items-center justify-center rounded-2xl border-2 border-dashed border-[var(--color-accent)] bg-[var(--surface)]/70">
                 <div className="text-sm font-medium text-[var(--color-accent)]">
-                  Drop files to attach
+                  Drop images to attach
                 </div>
               </div>
             </div>
@@ -1335,7 +1334,6 @@ export default function ChatClient() {
           'avif',
         ]
         const isImage = mime.startsWith('image/') || imageExts.includes(ext)
-        const isAudio = mime.startsWith('audio/')
         return {
           id: `${f.name}-${f.size}-${f.lastModified}-${Math.random().toString(36).slice(2)}`,
           name: f.name,
@@ -1343,7 +1341,6 @@ export default function ChatClient() {
           mime: f.type,
           objectUrl: url,
           isImage,
-          isAudio,
         }
       })
       if (attachmentsForPreview.length > 0) {
@@ -1366,93 +1363,30 @@ export default function ChatClient() {
             })
         )
       )
-      // If user intends to edit and has not attached a new image, include the last assistant image(s)
-      const editIntent =
-        /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
-      const isEditing = editIntent.test(trimmed)
-      const previousAssistantImages: string[] = (() => {
-        if (!isEditing) return []
-        for (let i = messages.length - 1; i >= 0; i--) {
-          const m = messages[i]
-          if (m.role !== 'assistant') continue
-          const out: string[] = []
-          const re = /<image:([^>]+)>/g
-          let match: RegExpExecArray | null
-          while ((match = re.exec(m.content)) !== null) {
-            const url = match[1]
-            if (typeof url === 'string' && url.startsWith('data:image'))
-              out.push(url)
-          }
-          if (out.length > 0) return out
+      // Extract http(s) image URLs from the prompt text (jpg/jpeg/png only)
+      const extractHttpImageUrls = (text: string): string[] => {
+        try {
+          const urlRegex = /https?:\/\/[\w\-._~:?#\[\]@!$&'()*+,;=%/]+/gi
+          const candidates = (text.match(urlRegex) || [])
+          const filtered = candidates.filter((u) => /\.(?:jpg|jpeg|png)(?:$|[?#])/i.test(u))
+          // Basic validation that they are valid URLs
+          const valid = filtered.filter((u) => {
+            try {
+              const p = new URL(u)
+              return p.protocol === 'http:' || p.protocol === 'https:'
+            } catch {
+              return false
+            }
+          })
+          return Array.from(new Set(valid))
+        } catch {
+          return []
         }
-        return []
-      })()
-      const inputImages: string[] = Array.from(
-        new Set([
-          ...(inputImagesFromFiles || []),
-          ...(previousAssistantImages || []),
-        ])
-      )
-      const pdfFiles = files.filter(
-        (f) =>
-          f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
-      )
-      const inputPdfs: { filename: string; dataUrl: string }[] =
-        await Promise.all(
-          pdfFiles.map(
-            (f) =>
-              new Promise<{ filename: string; dataUrl: string }>(
-                (resolve, reject) => {
-                  const reader = new FileReader()
-                  reader.onload = () =>
-                    resolve({
-                      filename: f.name,
-                      dataUrl: String(reader.result),
-                    })
-                  reader.onerror = () => reject(reader.error)
-                  reader.readAsDataURL(f)
-                }
-              )
-          )
-        )
-      // Collect user-attached audio as base64 + normalized format (mp3|wav only)
-      const audioFilesAll = files.filter((f) =>
-        (f.type || '').toLowerCase().startsWith('audio/')
-      )
-      const getAudioFormat = (f: File): 'mp3' | 'wav' | null => {
-        const mime = (f.type || '').toLowerCase()
-        const ext = (f.name.split('.').pop() || '').toLowerCase()
-        if (mime.includes('mpeg') || ext === 'mp3') return 'mp3'
-        if (mime.includes('wav') || mime.includes('wave') || ext === 'wav')
-          return 'wav'
-        return null
       }
-      const audioFiles = audioFilesAll.filter((f) => getAudioFormat(f) !== null)
-      const inputAudios: { format: 'mp3' | 'wav'; base64: string }[] =
-        await Promise.all(
-          audioFiles.map(
-            (f) =>
-              new Promise<{ format: 'mp3' | 'wav'; base64: string }>(
-                (resolve, reject) => {
-                  const reader = new FileReader()
-                  reader.onload = () => {
-                    try {
-                      const dataUrl = String(reader.result || '')
-                      const commaIdx = dataUrl.indexOf(',')
-                      const base64 =
-                        commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl
-                      const format = getAudioFormat(f) as 'mp3' | 'wav'
-                      resolve({ format, base64 })
-                    } catch (e) {
-                      reject(e)
-                    }
-                  }
-                  reader.onerror = () => reject(reader.error)
-                  reader.readAsDataURL(f)
-                }
-              )
-          )
-        )
+      const httpImageUrls = extractHttpImageUrls(trimmed)
+      const inputImages: string[] = Array.from(
+        new Set([...(inputImagesFromFiles || []), ...(httpImageUrls || [])])
+      )
       // Clear input files after capturing previews and data URLs
       setFiles([])
       const stripImageData = (text: string): string => {
@@ -1484,8 +1418,6 @@ export default function ChatClient() {
       type ChatRequestPayload = {
         messages: ChatMessage[]
         inputImages?: string[]
-        inputPdfs?: { filename: string; dataUrl: string }[]
-        inputAudios?: { format: 'mp3' | 'wav'; base64: string }[]
         previousResponseId?: string | null
         model?: string
         reasoning?: { effort: 'high' }
@@ -1494,8 +1426,6 @@ export default function ChatClient() {
       const body: ChatRequestPayload = {
         messages: payloadMessages,
         inputImages,
-        inputPdfs,
-        inputAudios,
         previousResponseId: lastResponseId,
         model: modelChoice,
       }

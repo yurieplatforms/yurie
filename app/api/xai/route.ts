@@ -2,55 +2,13 @@ export const runtime = 'nodejs'
 export const maxDuration = 300
 
 type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string }
-type PdfInput = { filename: string; dataUrl: string }
-type AudioInput = { format: 'mp3' | 'wav'; base64: string }
 type ChatRequestPayload = {
   messages: ChatMessage[]
   inputImages?: string[]
-  inputPdfs?: PdfInput[]
-  inputAudios?: AudioInput[]
   previousResponseId?: string | null
   model?: string
   reasoning?: { effort?: 'low' | 'medium' | 'high' } | Record<string, unknown>
   search_parameters?: { mode?: 'on' | 'off'; return_citations?: boolean } | Record<string, unknown>
-}
-
-async function proxyPython(rawBody: string): Promise<Response | null> {
-  const baseURL = process.env.PY_API_URL || process.env.NEXT_PUBLIC_PY_API_URL || ''
-  if (!baseURL) return null
-  try {
-    const res = await fetch(`${baseURL.replace(/\/$/, '')}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: rawBody,
-    })
-    if (!res.ok || !res.body) {
-      const text = await res.text().catch(() => '')
-      return new Response(
-        JSON.stringify({ error: { code: res.status, message: text || `HTTP ${res.status}` } }),
-        { status: res.status, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
-    return new Response(res.body, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        'X-Accel-Buffering': 'no',
-      },
-    })
-  } catch {
-    return null
-  }
-}
-
-function shouldUsePythonProxy(): boolean {
-  const baseURL = process.env.PY_API_URL || process.env.NEXT_PUBLIC_PY_API_URL || ''
-  if (!baseURL) return false
-  const onVercel = !!process.env.VERCEL
-  const force = process.env.PY_PROXY_FORCE === '1'
-  // By default, do NOT use Python proxy on Vercel unless explicitly forced
-  if (onVercel && !force) return false
-  return true
 }
 
 const SYSTEM_PROMPT = `
@@ -122,7 +80,10 @@ function buildMessages(payload: ChatRequestPayload) {
   }
   if (Array.isArray(payload.inputImages)) {
     for (const url of payload.inputImages) {
-      if (typeof url === 'string' && url.startsWith('data:image')) {
+      if (typeof url !== 'string') continue
+      const isDataUrl = url.startsWith('data:image')
+      const isHttp = /^https?:\/\//i.test(url)
+      if (isDataUrl || isHttp) {
         parts.push({ type: 'image_url', image_url: { url, detail: 'auto' } })
       }
     }
@@ -274,12 +235,6 @@ function streamFromXAI(payload: ChatRequestPayload): Response {
 export async function POST(request: Request) {
   try {
     const raw = await request.text()
-    if (shouldUsePythonProxy()) {
-      const py = await proxyPython(raw)
-      if (py) return py
-      // fall through to direct streaming if proxy fails
-    }
-
     let payload: ChatRequestPayload
     try {
       payload = JSON.parse(raw)
