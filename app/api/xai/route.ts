@@ -25,7 +25,7 @@ async function proxyPython(rawBody: string): Promise<Response | null> {
         'X-Accel-Buffering': 'no',
       },
     })
-  } catch (e) {
+  } catch {
     return null
   }
 }
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       JSON.stringify({ error: { code: 500, message: 'Python xAI backend not reachable. Set PY_API_URL or NEXT_PUBLIC_PY_API_URL.' } }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch {
     return new Response(
       JSON.stringify({ error: { code: 500, message: 'Internal server error' } }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { formatDate } from 'app/lib/posts'
 
 export type PostListItem = {
@@ -36,10 +37,11 @@ export function PostList({ basePath, posts, limit }: ListProps) {
         >
           <div className="flex w-full items-center gap-3 sm:gap-4">
             {post.metadata.image ? (
-              <img
+              <Image
                 src={post.metadata.image}
                 alt={post.metadata.title}
-                loading="lazy"
+                width={64}
+                height={64}
                 className="h-16 w-16 flex-shrink-0 rounded-md bg-neutral-100 object-cover dark:bg-neutral-800"
               />
             ) : null}
@@ -59,10 +61,8 @@ export function PostList({ basePath, posts, limit }: ListProps) {
 }
 
 // Back-compat wrapper for Blog listing
-export function BlogPosts({ limit }: { limit?: number }) {
-  // Import locally to avoid circular deps if utils import PostList in future
-  const { getBlogPosts } =
-    require('app/blog/utils') as typeof import('app/blog/utils')
-  const allBlogs = getBlogPosts()
+export async function BlogPosts({ limit }: { limit?: number }) {
+  const { getBlogPosts } = await import('app/blog/utils')
+  const allBlogs = getBlogPosts() as PostListItem[]
   return <PostList basePath="/blog" posts={allBlogs} limit={limit} />
 }

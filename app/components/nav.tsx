@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 const navItems = {
@@ -49,7 +50,7 @@ export function Navbar() {
                   <span className="-mx-3 -my-1.5 inline-flex items-center gap-2 rounded-xl px-3 py-1.5 transition-colors group-hover:bg-[var(--surface-hover)]">
                     {path === '/' ? (
                       <>
-                        <img
+                        <Image
                           src="/favicon.ico"
                           alt="Yurie"
                           width={20}

@@ -1,5 +1,6 @@
 'use client'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 
 export default function Footer() {
   const pathname = usePathname()
@@ -12,7 +13,7 @@ export default function Footer() {
     <footer className="mb-16 px-3 sm:px-4">
       <p className="mt-8 flex items-center gap-1 text-neutral-600 dark:text-neutral-300">
         <span>© {new Date().getFullYear()}</span>
-        <img
+        <Image
           src="/favicon.ico"
           alt="Yurie"
           width={20}

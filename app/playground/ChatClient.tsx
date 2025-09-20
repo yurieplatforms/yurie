@@ -10,6 +10,7 @@ import {
   createContext,
   useContext,
 } from 'react'
+import { Fragment } from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
 import {
@@ -24,6 +25,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import Image from 'next/image'
 
 type ChatMessage = {
   role: 'user' | 'assistant'
@@ -44,11 +46,27 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-const PromptInputContext = createContext<any>(null)
-function usePromptInput() {
-  return useContext(PromptInputContext)
+type PromptInputContextValue = {
+  isLoading: boolean
+  value: string
+  setValue: (newValue: string) => void
+  maxHeight: number | string
+  onSubmit?: () => void
+}
+const PromptInputContext = createContext<PromptInputContextValue | null>(null)
+function usePromptInput(): PromptInputContextValue {
+  return useContext(PromptInputContext)!
 }
 
+type PromptInputProps = {
+  className?: string
+  isLoading?: boolean
+  maxHeight?: number | string
+  value?: string
+  onValueChange?: (value: string) => void
+  onSubmit?: () => void
+  children?: React.ReactNode
+}
 function PromptInput({
   className,
   isLoading = false,
@@ -57,7 +75,7 @@ function PromptInput({
   onValueChange,
   onSubmit,
   children,
-}: any) {
+}: PromptInputProps) {
   const [internalValue, setInternalValue] = useState(value || '')
   const handleChange = (newValue: string) => {
     setInternalValue(newValue)
@@ -86,12 +104,20 @@ function PromptInput({
   )
 }
 
+type PromptInputTextareaProps = Omit<
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  'onKeyDown'
+> & {
+  className?: string
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
+  disableAutosize?: boolean
+}
 function PromptInputTextarea({
   className,
   onKeyDown,
   disableAutosize = false,
   ...props
-}: any) {
+}: PromptInputTextareaProps) {
   const { value, setValue, maxHeight, onSubmit } = usePromptInput()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   useEffect(() => {
@@ -144,6 +170,7 @@ function MessageAttachmentList({
     >
       {attachments.map((att) =>
         att.isImage ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img
             key={att.id}
             src={att.objectUrl}
@@ -259,12 +286,12 @@ function SourcesList({ urls }: { urls: string[] }) {
                 className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-[var(--surface-hover)]"
               >
                 {p.faviconUrl ? (
-                  <img
+                  <Image
                     src={p.faviconUrl}
                     alt=""
+                    width={14}
+                    height={14}
                     className="size-[14px] rounded-sm"
-                    loading="lazy"
-                    decoding="async"
                   />
                 ) : (
                   <span className="inline-block size-[14px] rounded-sm bg-neutral-300 dark:bg-neutral-700" />
@@ -405,6 +432,7 @@ function FileItem({
         {isLikelyImage ? (
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-neutral-200 dark:bg-neutral-700">
             {previewUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={previewUrl}
                 alt={file.name}
@@ -875,9 +903,10 @@ export default function ChatClient() {
   }, [])
 
   useEffect(() => {
+    const urlsAtMount = createdObjectUrlsRef.current
     return () => {
       try {
-        for (const url of createdObjectUrlsRef.current) URL.revokeObjectURL(url)
+        for (const url of urlsAtMount) URL.revokeObjectURL(url)
       } catch {}
     }
   }, [])
@@ -968,7 +997,7 @@ export default function ChatClient() {
   useEffect(() => {
     const el = outputRef.current
     if (!el) return
-    const updatePinned = () => {
+    const updatePinned: EventListener = () => {
       try {
         const threshold = 16
         const distanceFromBottom =
@@ -977,9 +1006,9 @@ export default function ChatClient() {
       } catch {}
     }
     updatePinned()
-    el.addEventListener('scroll', updatePinned, { passive: true })
+    el.addEventListener('scroll', updatePinned, { passive: true } as AddEventListenerOptions)
     return () => {
-      el.removeEventListener('scroll', updatePinned as any)
+      el.removeEventListener('scroll', updatePinned)
     }
   }, [])
 
@@ -1052,7 +1081,7 @@ export default function ChatClient() {
       `<image_partial:([^>]+)>|<image:([^>]+)>|<reasoning_partial:([^>]+)>|<reasoning:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|<citations:([^>]+)>|${legacyBracketPattern}`,
       'g'
     )
-    const parts: Array<
+    type Part =
       | { type: 'text'; value: string }
       | { type: 'image'; src: string; partial?: boolean }
       | { type: 'reasoning'; value: string; partial?: boolean }
@@ -1062,7 +1091,7 @@ export default function ChatClient() {
           value: string
         }
       | { type: 'citations'; urls: string[] }
-    > = []
+    const parts: Part[] = []
     let lastIndex = 0
     let match: RegExpExecArray | null
     while ((match = pattern.exec(content)) !== null) {
@@ -1150,16 +1179,16 @@ export default function ChatClient() {
     const latestPartialIndex = (() => {
       for (let i = parts.length - 1; i >= 0; i--) {
         const p = parts[i]
-        if ((p as any).type === 'image' && (p as any).partial) return i
+        if (p.type === 'image' && p.partial) return i
       }
       return -1
     })()
     const hasFinalImage = parts.some(
-      (p) => (p as any).type === 'image' && !(p as any).partial
+      (p) => p.type === 'image' && !p.partial
     )
     const reasoningParts = parts.filter(
-      (p: any) => p.type === 'reasoning'
-    ) as any[]
+      (p): p is Extract<Part, { type: 'reasoning' }> => p.type === 'reasoning'
+    )
     const hasFinalReasoning = reasoningParts.some((r) => !r.partial)
     const decodeBase64Utf8 = (b64: string): string => {
       try {
@@ -1217,22 +1246,25 @@ export default function ChatClient() {
               return null
             }
             return (
-              <img
-                key={i}
-                src={p.src}
-                alt="Generated image"
-                className={cn(
-                  'mt-2 max-w-full rounded border border-neutral-200 dark:border-neutral-800',
-                  role === 'assistant' ? 'mb-1' : 'mb-3'
-                )}
-              />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  key={i}
+                  src={p.src}
+                  alt="Generated image"
+                  className={cn(
+                    'mt-2 max-w-full rounded border border-neutral-200 dark:border-neutral-800',
+                    role === 'assistant' ? 'mb-1' : 'mb-3'
+                  )}
+                />
+              </>
             )
           }
           return null
         })}
         {parts.map((p, i) => {
-          if ((p as any).type === 'meta') {
-            const meta = p as any
+          if (p.type === 'meta') {
+            const meta = p
             // Skip rendering Response ID
             if (meta.key === 'response_id') {
               return null
@@ -1254,9 +1286,9 @@ export default function ChatClient() {
         {(() => {
           const latestCitations = (() => {
             for (let i = parts.length - 1; i >= 0; i--) {
-              const p: any = parts[i]
-              if (p && p.type === 'citations' && Array.isArray(p.urls)) {
-                return p.urls as string[]
+              const p = parts[i]
+              if (p.type === 'citations' && Array.isArray(p.urls)) {
+                return p.urls
               }
             }
             return [] as string[]
@@ -1449,7 +1481,17 @@ export default function ChatClient() {
       abortControllerRef.current = ac
       // Only include reasoning for models that support reasoning_effort (grok-3-mini, grok-3-mini-fast)
       const supportsReasoningEffort = /grok-3-mini(\b|\-|_)/i.test(modelChoice) || /grok-3-mini-fast/i.test(modelChoice)
-      const body: any = {
+      type ChatRequestPayload = {
+        messages: ChatMessage[]
+        inputImages?: string[]
+        inputPdfs?: { filename: string; dataUrl: string }[]
+        inputAudios?: { format: 'mp3' | 'wav'; base64: string }[]
+        previousResponseId?: string | null
+        model?: string
+        reasoning?: { effort: 'high' }
+        search_parameters?: { mode: 'on' | 'off'; return_citations?: boolean }
+      }
+      const body: ChatRequestPayload = {
         messages: payloadMessages,
         inputImages,
         inputPdfs,
@@ -1458,7 +1500,7 @@ export default function ChatClient() {
         model: modelChoice,
       }
       if (supportsReasoningEffort) {
-        body.reasoning = { effort: 'high' as const }
+        body.reasoning = { effort: 'high' }
       }
       // xAI Live Search: wire Globe toggle
       try {
@@ -1475,7 +1517,8 @@ export default function ChatClient() {
 
       if (!res.ok) {
         try {
-          const errJson: any = await res.json()
+          type ErrorJSON = { error?: { code?: number; message?: string } }
+          const errJson = (await res.json()) as ErrorJSON
           const code =
             typeof errJson?.error?.code === 'number'
               ? errJson.error.code
@@ -1547,8 +1590,8 @@ export default function ChatClient() {
       const isAbort = (() => {
         try {
           if (err && typeof err === 'object') {
-            const anyErr: any = err
-            if (anyErr.name === 'AbortError') return true
+            const withName = err as { name?: string }
+            if (withName.name === 'AbortError') return true
           }
           if (err instanceof DOMException && err.name === 'AbortError')
             return true
