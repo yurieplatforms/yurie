@@ -26,6 +26,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import Image from 'next/image'
+import { Response } from '@/app/components/ai-elements/response'
 
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024 // 20 MiB
 
@@ -868,7 +869,6 @@ export default function ChatClient() {
   const outputRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputWrapperRef = useRef<HTMLDivElement>(null)
-  const [outputHeight, setOutputHeight] = useState<number>(0)
   const [files, setFiles] = useState<File[]>([])
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
   const [status, setStatus] = useState<
@@ -946,7 +946,7 @@ export default function ChatClient() {
   useEffect(() => {
     const root = outputRef.current
     if (!root) return
-    const handle = (e: Event) => {
+    const handle = async (e: Event) => {
       const target = e.target as HTMLElement | null
       const btn = target?.closest('.chat-copy') as HTMLButtonElement | null
       if (!btn) return
@@ -954,7 +954,7 @@ export default function ChatClient() {
       const codeEl = wrapper?.querySelector('pre code') as HTMLElement | null
       const text = codeEl?.textContent || ''
       try {
-        navigator.clipboard.writeText(text)
+        await navigator.clipboard.writeText(text)
         const previous = btn.textContent
         btn.textContent = 'Copied'
         setTimeout(() => {
@@ -966,37 +966,7 @@ export default function ChatClient() {
     return () => root.removeEventListener('click', handle)
   }, [])
 
-  useEffect(() => {
-    const recompute = () => {
-      try {
-        const viewportHeight =
-          window.visualViewport?.height ?? window.innerHeight
-        const containerTop =
-          containerRef.current?.getBoundingClientRect().top ?? 0
-        const inputEl = inputWrapperRef.current
-        const inputBox = inputEl?.getBoundingClientRect()
-        const inputHeight = inputBox?.height ?? 0
-        const mt = inputEl
-          ? parseFloat(getComputedStyle(inputEl).marginTop || '0')
-          : 0
-        const available = Math.max(
-          0,
-          viewportHeight - containerTop - inputHeight - mt
-        )
-        setOutputHeight(Math.floor(available))
-      } catch {}
-    }
-    recompute()
-    const ro = inputWrapperRef.current ? new ResizeObserver(recompute) : null
-    if (ro && inputWrapperRef.current) ro.observe(inputWrapperRef.current)
-    window.addEventListener('resize', recompute)
-    window.visualViewport?.addEventListener('resize', recompute)
-    return () => {
-      if (ro) ro.disconnect()
-      window.removeEventListener('resize', recompute)
-      window.visualViewport?.removeEventListener('resize', recompute)
-    }
-  }, [])
+  // CSS-driven layout (flex) handles heights; no JS recompute needed
 
   // Maintain pinned-to-bottom state and toggle auto-hide scrollbar visibility
   useEffect(() => {
@@ -1019,13 +989,14 @@ export default function ChatClient() {
   }, [])
 
   // If the output area resizes and user is pinned, keep them pinned
+  // Keep pinned when layout changes (CSS-only sizing)
   useEffect(() => {
     if (pinnedToBottomRef.current) {
       queueMicrotask(() => {
         outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight })
       })
     }
-  }, [outputHeight])
+  })
 
   // When a new message is appended and user is pinned, keep pinned
   useEffect(() => {
@@ -1232,15 +1203,23 @@ export default function ChatClient() {
         ) : null}
         {parts.map((p, i) => {
           if (p.type === 'text') {
+            if (role === 'assistant') {
+              return (
+                <Response
+                  key={i}
+                  parseIncompleteMarkdown
+                  allowedImagePrefixes={["*"]}
+                  allowedLinkPrefixes={["*"]}
+                >
+                  {p.value}
+                </Response>
+              )
+            }
             const rawHtml = md.parse(p.value) as string
             return (
               <div
                 key={i}
-                className={cn(
-                  role === 'assistant'
-                    ? 'prose-message'
-                    : 'prose prose-neutral dark:prose-invert'
-                )}
+                className={cn('prose prose-neutral dark:prose-invert')}
                 dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawHtml) }}
               />
             )
@@ -1560,21 +1539,72 @@ export default function ChatClient() {
     setStatus('ready')
   }, [])
 
+  useEffect(() => {
+    const el = outputRef.current
+    if (!el) return
+    try {
+      el.scrollTo({ top: el.scrollHeight })
+      pinnedToBottomRef.current = true
+    } catch {}
+  }, [])
+
+  const isEmpty = messages.length === 0
+  const [outputBottomPad, setOutputBottomPad] = useState<number>(96)
+
+  useEffect(() => {
+    if (isEmpty) return
+    const compute = () => {
+      try {
+        const wrap = inputWrapperRef.current
+        if (!wrap) return
+        const height = Math.ceil(wrap.getBoundingClientRect().height)
+        // Add generous breathing room so expanded blocks (e.g., Sources list) are fully visible
+        setOutputBottomPad(Math.max(112, height + 32))
+      } catch {}
+    }
+    compute()
+    // Recompute on resize and briefly after layout changes
+    window.addEventListener('resize', compute, { passive: true } as AddEventListenerOptions)
+    const id = window.setInterval(compute, 300)
+    const timeout = window.setTimeout(() => window.clearInterval(id), 1800)
+    // Also observe the input wrapper in case its height changes without window resize
+    let ro: ResizeObserver | null = null
+    try {
+      const RO = (window as any).ResizeObserver
+      if (typeof RO === 'function') {
+        const observer = new RO(() => compute())
+        ro = observer
+        if (inputWrapperRef.current) observer.observe(inputWrapperRef.current)
+      }
+    } catch {}
+    return () => {
+      window.removeEventListener('resize', compute)
+      window.clearInterval(id)
+      window.clearTimeout(timeout)
+      try {
+        const target = inputWrapperRef.current
+        if (ro && target) {
+          ro.unobserve(target)
+        }
+      } catch {}
+    }
+  }, [isEmpty, messages.length])
+
   return (
     <section
       ref={containerRef}
       className={cn(
-        'flex w-full flex-col px-3 sm:px-4',
-        messages.length === 0 && 'min-h-[70vh] justify-center'
+        'flex w-full flex-col px-3 sm:px-4 min-h-[70vh]',
+        isEmpty && 'justify-center'
       )}
     >
       <div
         ref={outputRef}
         className={cn(
-          'chat-scroll overflow-y-auto rounded pt-1 pb-3 font-sans text-base',
+          'chat-scroll overflow-y-auto rounded pt-1 font-sans text-base flex-1 min-h-0 pb-[calc(env(safe-area-inset-bottom)+96px)] sm:pb-24',
           messages.length === 0 && 'hidden'
         )}
-        style={{ height: outputHeight ? `${outputHeight}px` : undefined }}
+        style={isEmpty ? undefined : { paddingBottom: outputBottomPad }}
       >
         {messages.length === 0
           ? null
@@ -1646,13 +1676,25 @@ export default function ChatClient() {
       <div
         ref={inputWrapperRef}
         className={cn(
-          messages.length === 0
-            ? 'mt-0 mb-0'
-            : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0'
+          isEmpty
+            ? 'relative z-20'
+            : 'relative fixed left-0 right-0 bottom-[calc(env(safe-area-inset-bottom)+8px)] sm:bottom-3 z-20 mx-auto max-w-3xl px-3 sm:px-4'
         )}
         aria-busy={isLoading}
       >
-        {messages.length === 0 ? (
+        {!isEmpty ? (
+          <div
+            aria-hidden
+            className="pointer-events-none fixed left-0 right-0 bottom-0 z-10 h-[calc(env(safe-area-inset-bottom)+24px)] bg-[var(--color-background)]"
+          />
+        ) : null}
+        {!isEmpty ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 -top-4 bottom-0 rounded-2xl bg-[var(--color-background)]"
+          />
+        ) : null}
+        {isEmpty ? (
           <>
             <div className="mt-0 mb-8 text-center text-2xl font-medium text-neutral-600 sm:mb-10 sm:text-3xl dark:text-neutral-300">
               {`What's on your mind ${timeOfDayWord}?`}
