@@ -1550,6 +1550,8 @@ export default function ChatClient() {
 
   const isEmpty = messages.length === 0
   const [outputBottomPad, setOutputBottomPad] = useState<number>(96)
+  // Height of the fixed input wrapper (without the iOS safe-area). Used to size the bottom scrim
+  const [inputOverlayHeight, setInputOverlayHeight] = useState<number>(120)
 
   useEffect(() => {
     if (isEmpty) return
@@ -1560,6 +1562,14 @@ export default function ChatClient() {
         const height = Math.ceil(wrap.getBoundingClientRect().height)
         // Add generous breathing room so expanded blocks (e.g., Sources list) are fully visible
         setOutputBottomPad(Math.max(112, height + 32))
+        setInputOverlayHeight(height)
+        try {
+          // Expose as CSS var for any pure-CSS uses
+          document.documentElement.style.setProperty(
+            '--input-wrapper-height',
+            `${height}px`
+          )
+        } catch {}
       } catch {}
     }
     compute()
@@ -1685,7 +1695,10 @@ export default function ChatClient() {
         {!isEmpty ? (
           <div
             aria-hidden
-            className="pointer-events-none fixed left-0 right-0 bottom-0 z-10 h-[calc(env(safe-area-inset-bottom)+24px)] bg-[var(--color-background)]"
+            className="pointer-events-none fixed left-0 right-0 bottom-0 z-10 bg-[var(--color-background)]"
+            style={{
+              height: `calc(var(--input-wrapper-height, ${inputOverlayHeight}px) + env(safe-area-inset-bottom) + 12px)`,
+            }}
           />
         ) : null}
         {!isEmpty ? (
