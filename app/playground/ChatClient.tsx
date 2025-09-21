@@ -306,7 +306,7 @@ function SourcesList({ urls }: { urls: string[] }) {
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="mx-2 mb-2 mt-0 inline-flex items-center justify-center rounded-md px-2 py-1 text-[11px] font-medium text-neutral-700 underline-offset-2 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
+          className="mx-2 mb-2 mt-0 inline-flex items-center justify-center rounded-md px-2 py-1 text-[11px] font-medium text-neutral-700 underline-offset-2 transition-colors hover:cursor-pointer hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
         >
           {expanded ? 'Show less' : `Show all ${deduped.length}`}
         </button>
