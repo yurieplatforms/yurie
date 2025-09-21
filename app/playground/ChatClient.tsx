@@ -713,8 +713,6 @@ function ChatInput({
     () => [
       { value: 'x-ai/grok-4-0709', label: 'Grok 4' },
       { value: 'x-ai/grok-4-fast-reasoning', label: 'Grok 4 Fast' },
-      { value: 'x-ai/grok-3-mini', label: 'Grok 3 Mini' },
-      { value: 'x-ai/grok-3-mini-fast', label: 'Grok 3 Mini Fast' },
     ],
     []
   )
