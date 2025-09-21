@@ -60,9 +60,3 @@ export function PostList({ basePath, posts, limit }: ListProps) {
   )
 }
 
-// Back-compat wrapper for Blog listing
-export async function BlogPosts({ limit }: { limit?: number }) {
-  const { getBlogPosts } = await import('app/blog/utils')
-  const allBlogs = getBlogPosts() as PostListItem[]
-  return <PostList basePath="/blog" posts={allBlogs} limit={limit} />
-}
