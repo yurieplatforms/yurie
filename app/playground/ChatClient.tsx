@@ -15,7 +15,7 @@ import { highlight } from 'sugar-high'
 import {
   ArrowUp,
   Stop,
-  Paperclip,
+  ImageSquare,
   X,
   CaretDown,
   Globe,
@@ -536,7 +536,7 @@ function ButtonFileUpload({
         role="button"
         tabIndex={0}
         className="inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] p-0 leading-none transition-colors hover:border-[var(--border-color-hover)] hover:bg-[var(--surface-hover)]"
-        aria-label="Add files"
+        aria-label="Add images"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
@@ -544,7 +544,7 @@ function ButtonFileUpload({
           }
         }}
       >
-        <Paperclip className="size-4" weight="bold" aria-hidden="true" />
+        <ImageSquare className="size-4" weight="bold" aria-hidden="true" />
       </label>
     </>
   )
@@ -774,16 +774,17 @@ function ChatInput({
                   type="button"
                   onClick={onUseWebSearchToggle}
                   className={cn(
-                    'inline-flex size-9 cursor-pointer items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] p-0 leading-none transition-colors',
+                    'inline-flex h-9 cursor-pointer items-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] px-3 leading-none transition-colors gap-1.5',
                     useWebSearch
                       ? 'border-[var(--color-accent)] text-[var(--color-accent)] ring-1 ring-[var(--color-accent)] hover:bg-[var(--surface-hover)]'
-                      : 'hover:border-[var(--border-color-hover)] hover:bg-[var(--surface-hover)]'
+                      : 'text-neutral-900 dark:text-neutral-100 hover:border-[var(--border-color-hover)] hover:bg-[var(--surface-hover)]'
                   )}
                   aria-pressed={useWebSearch}
                   aria-label="Web search"
                   title="Web search"
                 >
                   <Globe className="size-5" weight="bold" aria-hidden="true" />
+                  <span className="text-xs font-medium">Search</span>
                 </button>
                 <div className="relative inline-flex items-center">
                   <label className="sr-only" htmlFor="model-select">
