@@ -1550,6 +1550,8 @@ export default function ChatClient() {
 
   const isEmpty = messages.length === 0
   const [outputBottomPad, setOutputBottomPad] = useState<number>(96)
+  // Height of the fixed input wrapper and its top position to anchor the bottom scrim
+  const [inputOverlayHeight, setInputOverlayHeight] = useState<number>(120)
   // Track the top position of the input to anchor the bottom scrim
   // Top coordinate (in px) of the input wrapper relative to the viewport; used to anchor the scrim from prompt top → bottom
   const [inputOverlayTop, setInputOverlayTop] = useState<number>(0)
@@ -1565,6 +1567,7 @@ export default function ChatClient() {
         const top = Math.max(0, Math.floor(rect.top))
         // Add generous breathing room so expanded blocks (e.g., Sources list) are fully visible
         setOutputBottomPad(Math.max(112, height + 32))
+        setInputOverlayHeight(height)
         setInputOverlayTop(top)
         try {
           // Expose as CSS var for any pure-CSS uses
@@ -1706,7 +1709,7 @@ export default function ChatClient() {
             aria-hidden
             className="pointer-events-none fixed left-0 right-0 bottom-0 z-10 bg-[var(--color-background)]"
             style={{
-              top: inputOverlayTop,
+              top: Math.max(0, inputOverlayTop + inputOverlayHeight),
             }}
           />
         ) : null}
