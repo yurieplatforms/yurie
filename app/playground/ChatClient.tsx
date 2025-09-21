@@ -871,7 +871,7 @@ export default function ChatClient() {
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
   const [modelChoice, setModelChoice] = useState<string>(
-    'x-ai/grok-4-0709'
+    'x-ai/grok-4-fast-reasoning'
   )
   const [useWebSearch, setUseWebSearch] = useState<boolean>(false)
   const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(
