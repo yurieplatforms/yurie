@@ -59,8 +59,7 @@ export default function AskAISummary({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [{ role: 'user', content: prompt }],
-          model: 'x-ai/grok-4-0709',
-          // grok-4 does not support reasoning_effort; omit reasoning param
+          model: 'x-ai/grok-4-fast-reasoning',
         }),
         signal: ac.signal,
       })
