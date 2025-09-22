@@ -53,7 +53,7 @@ export function ChatInput({
     <div className="relative flex w-full flex-col gap-4">
       <div className="relative order-2 pb-3 sm:pb-4 md:order-1">
         <div className="glass-input-wrap">
-          <div className="glass-input-inner focus-within:ring-2 focus-within:ring-[var(--color-accent)]/40">
+          <div className="glass-input-inner">
             <PromptInput
               className="relative z-10 w-full p-0 pt-0 shadow-none !bg-transparent !border-0"
               onSubmit={handleSubmit}
