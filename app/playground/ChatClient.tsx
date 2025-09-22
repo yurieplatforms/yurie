@@ -346,8 +346,8 @@ export default function ChatClient() {
         const rect = wrap.getBoundingClientRect()
         const height = Math.ceil(rect.height)
         const top = Math.max(0, Math.floor(rect.top))
-        // Add extra breathing room so expanded blocks (e.g., Sources list) are fully visible
-        setOutputBottomPad(Math.max(128, height + 72))
+        // Keep modest breathing room so expanded UI is visible without excessive gap
+        setOutputBottomPad(Math.max(96, height + 24))
         setInputOverlayTop(top)
         try {
           // Expose as CSS var for any pure-CSS uses
@@ -497,7 +497,7 @@ export default function ChatClient() {
             aria-hidden
             className="pointer-events-none fixed left-0 right-0 bottom-0 z-10 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/98 to-transparent"
             style={{
-              top: Math.max(0, inputOverlayTop - 64),
+              top: Math.max(0, inputOverlayTop - 24),
             }}
           />
         ) : null}
