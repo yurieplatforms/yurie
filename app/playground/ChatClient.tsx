@@ -483,7 +483,7 @@ export default function ChatClient() {
         className={cn(
           isEmpty
             ? 'relative z-20'
-            : 'relative fixed left-0 right-0 bottom-[calc(env(safe-area-inset-bottom)+8px)] sm:bottom-3 z-20 mx-auto max-w-3xl px-3 sm:px-4'
+            : 'relative fixed left-0 right-0 bottom-[calc(env(safe-area-inset-bottom))] sm:bottom-0 z-20 mx-auto max-w-3xl px-3 sm:px-4'
         )}
         aria-busy={isLoading}
       >
