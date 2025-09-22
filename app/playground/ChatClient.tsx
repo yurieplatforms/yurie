@@ -488,7 +488,7 @@ export default function ChatClient() {
         className={cn(
           isEmpty
             ? 'relative z-20'
-            : 'relative fixed left-0 right-0 bottom-[calc(env(safe-area-inset-bottom))] sm:bottom-0 z-20 mx-auto max-w-3xl px-3 sm:px-4 transform-gpu will-change-transform'
+            : 'relative fixed left-0 right-0 bottom-[calc(env(safe-area-inset-bottom)-6px)] sm:bottom-0 z-20 mx-auto max-w-3xl px-3 sm:px-4 transform-gpu will-change-transform'
         )}
         aria-busy={isLoading}
       >
@@ -497,7 +497,7 @@ export default function ChatClient() {
             aria-hidden
             className="pointer-events-none fixed left-0 right-0 bottom-0 z-10 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/98 to-transparent"
             style={{
-              top: Math.max(0, inputOverlayTop - 24),
+              top: Math.max(0, inputOverlayTop - 40),
             }}
           />
         ) : null}
