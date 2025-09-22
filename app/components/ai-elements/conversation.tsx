@@ -9,7 +9,7 @@ function cn(...parts: Array<ClassName | false | null>): string {
 }
 
 type StickToBottomContextValue = {
-  containerRef: React.RefObject<HTMLDivElement>
+  containerRef: React.MutableRefObject<HTMLDivElement | null>
   isAtBottom: boolean
   scrollToBottom: () => void
 }

@@ -18,11 +18,12 @@ const navItems = {
 
 export function Navbar() {
   const pathname = usePathname()
-  const isPlayground = pathname === '/'
+  const safePathname = pathname ?? '/'
+  const isPlayground = safePathname === '/'
   const handlePlaygroundClick: React.MouseEventHandler<HTMLAnchorElement> = (
     e
   ) => {
-    if (pathname === '/') {
+    if (safePathname === '/') {
       e.preventDefault()
       window.location.assign('/')
     }
@@ -39,7 +40,7 @@ export function Navbar() {
           <div className="flex flex-row space-x-8 pr-6 sm:space-x-10 sm:pr-10 lg:space-x-12 xl:space-x-16">
             {Object.entries(navItems).map(([path, { name }]) => {
               const isActive =
-                path === '/' ? pathname === '/' : pathname.startsWith(path)
+                path === '/' ? safePathname === '/' : safePathname.startsWith(path)
               return (
                 <Link
                   key={path}
