@@ -411,7 +411,7 @@ export default function ChatClient() {
       <div
         ref={outputRef}
         className={cn(
-          'chat-scroll overflow-y-auto rounded pt-1 font-sans text-base flex-1 min-h-0 pb-[calc(env(safe-area-inset-bottom)+96px)] sm:pb-24',
+          'chat-scroll overflow-y-auto overscroll-contain rounded pt-1 font-sans text-base flex-1 min-h-0 pb-[calc(env(safe-area-inset-bottom)+96px)] sm:pb-24',
           messages.length === 0 && 'hidden'
         )}
         style={isEmpty ? undefined : { paddingBottom: outputBottomPad }}
@@ -497,7 +497,7 @@ export default function ChatClient() {
             aria-hidden
             className="pointer-events-none fixed left-0 right-0 bottom-0 z-10 bg-[var(--color-background)]"
             style={{
-              top: Math.max(0, inputOverlayTop - 12),
+              top: Math.max(0, inputOverlayTop - 32),
             }}
           />
         ) : null}
