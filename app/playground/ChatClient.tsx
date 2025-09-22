@@ -346,8 +346,8 @@ export default function ChatClient() {
         const rect = wrap.getBoundingClientRect()
         const height = Math.ceil(rect.height)
         const top = Math.max(0, Math.floor(rect.top))
-        // Add generous breathing room so expanded blocks (e.g., Sources list) are fully visible
-        setOutputBottomPad(Math.max(112, height + 32))
+        // Add extra breathing room so expanded blocks (e.g., Sources list) are fully visible
+        setOutputBottomPad(Math.max(128, height + 72))
         setInputOverlayTop(top)
         try {
           // Expose as CSS var for any pure-CSS uses
@@ -411,7 +411,7 @@ export default function ChatClient() {
       <div
         ref={outputRef}
         className={cn(
-          'chat-scroll overflow-y-auto overscroll-contain rounded pt-1 font-sans text-base flex-1 min-h-0 pb-[calc(env(safe-area-inset-bottom)+96px)] sm:pb-24',
+          'chat-scroll overflow-y-auto overscroll-contain touch-pan-y rounded pt-1 font-sans text-base flex-1 min-h-0 pb-[calc(env(safe-area-inset-bottom)+96px)] sm:pb-24',
           messages.length === 0 && 'hidden'
         )}
         style={isEmpty ? undefined : { paddingBottom: outputBottomPad }}
@@ -495,9 +495,9 @@ export default function ChatClient() {
         {!isEmpty ? (
           <div
             aria-hidden
-            className="pointer-events-none fixed left-0 right-0 bottom-0 z-10 bg-[var(--color-background)]"
+            className="pointer-events-none fixed left-0 right-0 bottom-0 z-10 bg-gradient-to-t from-[var(--color-background)] via-[var(--color-background)]/98 to-transparent"
             style={{
-              top: Math.max(0, inputOverlayTop - 32),
+              top: Math.max(0, inputOverlayTop - 64),
             }}
           />
         ) : null}
