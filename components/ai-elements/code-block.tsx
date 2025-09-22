@@ -2,20 +2,19 @@
 
 import * as React from 'react'
 import { Check, CopySimple } from '@phosphor-icons/react'
+import { highlight } from 'sugar-high'
 
 const CodeBlockContext = React.createContext<string | null>(null)
 
 type CodeBlockProps = React.HTMLAttributes<HTMLDivElement> & {
   code: string
   language?: string
-  showLineNumbers?: boolean
   children?: React.ReactNode
 }
 
 export function CodeBlock({
   code,
   language,
-  showLineNumbers,
   className,
   children,
   ...props
@@ -33,14 +32,13 @@ export function CodeBlock({
     return undefined
   }, [code])
 
-  const numbered = React.useMemo(() => {
-    if (!showLineNumbers) return code
-    const lines = code.replace(/\n$/,'').split('\n')
-    const numWidth = String(lines.length).length
-    return lines
-      .map((ln, i) => `${String(i + 1).padStart(numWidth, ' ')}  ${ln}`)
-      .join('\n')
-  }, [code, showLineNumbers])
+  const highlightedCode = React.useMemo(() => {
+    try {
+      return highlight(code)
+    } catch {
+      return code
+    }
+  }, [code])
 
   return (
     <CodeBlockContext.Provider value={code}>
@@ -68,7 +66,7 @@ export function CodeBlock({
                 onClick={handleCopyInternal}
                 title={copied ? 'Copied' : 'Copy to clipboard'}
                 aria-label={copied ? 'Copied' : 'Copy to clipboard'}
-                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-color)] bg-[var(--surface)] px-2.5 text-[11px] font-medium text-neutral-700 transition-colors hover:border-[var(--border-color-hover)] hover:bg-[var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40 dark:text-neutral-200"
+                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[var(--border-color)] bg-[var(--surface)] px-2.5 text-[11px] font-medium text-neutral-700 transition-colors hover:border-[var(--border-color-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40 dark:text-neutral-200 cursor-pointer"
               >
                 {copied ? (
                   <>
@@ -87,7 +85,10 @@ export function CodeBlock({
         </div>
         <div className="bg-gradient-to-br from-[#f8f9fa] to-[#f1f3f4] dark:from-[#0d1117] dark:to-[#161b22]">
           <pre ref={preRef} className="m-0 overflow-x-auto p-3 font-mono text-[13px] leading-relaxed bg-transparent">
-          <code className={language ? `language-${language}` : undefined}>{numbered}</code>
+          <code 
+            className={language ? `language-${language}` : undefined}
+            dangerouslySetInnerHTML={{ __html: highlightedCode }}
+          />
           </pre>
         </div>
       </div>
@@ -133,7 +134,7 @@ export function CodeBlockCopyButton({
       type="button"
       onClick={handleCopy}
       className={
-        'inline-flex items-center rounded-md border border-[var(--border-color)] bg-[var(--surface)] px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-[var(--surface-hover)] dark:text-neutral-200' +
+        'inline-flex items-center rounded-md border border-[var(--border-color)] bg-[var(--surface)] px-2 py-1 text-[11px] font-medium text-neutral-700 hover:border-[var(--border-color-hover)] dark:text-neutral-200 cursor-pointer' +
         (className ? ` ${className}` : '')
       }
       {...props}

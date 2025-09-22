@@ -1,4 +1,4 @@
-import { PostList } from 'app/components/posts'
+import { PostList } from '@/components/posts'
 import { getBlogPosts } from 'app/blog/utils'
 
 export const metadata = {
