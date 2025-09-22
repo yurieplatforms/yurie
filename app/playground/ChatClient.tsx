@@ -322,6 +322,13 @@ export default function ChatClient() {
     setStatus('ready')
   }, [])
 
+  const handleNewChat = useCallback(() => {
+    setMessages([])
+    setFiles([])
+    setIsLoading(false)
+    setStatus('ready')
+  }, [])
+
   useEffect(() => {
     const el = outputRef.current
     if (!el) return
@@ -516,6 +523,7 @@ export default function ChatClient() {
         ) : null}
         <ChatInput
           onSubmitWithMessage={handleSubmitWithMessage}
+          onNewChat={handleNewChat}
           isSubmitting={isLoading}
           files={files}
           onFileUpload={(newFiles) =>

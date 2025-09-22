@@ -50,6 +50,7 @@ export type SourceDisplayParts = {
 export type ChatInputProps = {
   onSend?: () => void
   onSubmitWithMessage?: (text: string, files: File[]) => void
+  onNewChat?: () => void
   isSubmitting?: boolean
   files: File[]
   onFileUpload: (files: File[]) => void

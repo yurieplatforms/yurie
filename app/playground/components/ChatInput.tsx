@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef } from 'react'
-import { Globe, ImageIcon, ArrowUp, Square, Loader2 } from 'lucide-react'
+import { Globe, ImageIcon, ArrowUp, Square, Loader2, Plus } from 'lucide-react'
 import { MAX_IMAGE_BYTES } from '../utils'
 import { ChatInputProps } from '../types'
 import {
@@ -17,6 +17,7 @@ import { FileList } from './FileComponents'
 export function ChatInput({
   onSend,
   onSubmitWithMessage,
+  onNewChat,
   isSubmitting,
   files,
   onFileUpload,
@@ -119,37 +120,50 @@ export function ChatInput({
                   </button>
                   {/* Model selector removed; forced to grok-4-fast-reasoning */}
                 </PromptInputTools>
-                {status === 'streaming' ? (
-                  <button
-                    type="button"
-                    onClick={handleStop}
-                    className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm text-foreground/80 hover:text-foreground cursor-pointer"
-                    aria-label="Stop"
-                    title="Stop"
-                  >
-                    <Square className="size-4" />
-                  </button>
-                ) : status === 'submitted' ? (
-                  <button
-                    type="button"
-                    className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm text-foreground/80 opacity-80"
-                    aria-label="Sending"
-                    title="Sending"
-                    disabled
-                  >
-                    <Loader2 className="size-4 animate-spin" />
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm text-foreground/80 hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
-                    aria-label="Send"
-                    title="Send"
-                  >
-                    <ArrowUp className="size-4" />
-                  </button>
-                )}
+                <div className="flex items-center gap-1">
+                  {onNewChat && (
+                    <button
+                      type="button"
+                      onClick={onNewChat}
+                      className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm text-foreground/80 hover:text-foreground cursor-pointer"
+                      aria-label="New Chat"
+                      title="New Chat"
+                    >
+                      <Plus className="size-4" />
+                    </button>
+                  )}
+                  {status === 'streaming' ? (
+                    <button
+                      type="button"
+                      onClick={handleStop}
+                      className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm text-foreground/80 hover:text-foreground cursor-pointer"
+                      aria-label="Stop"
+                      title="Stop"
+                    >
+                      <Square className="size-4" />
+                    </button>
+                  ) : status === 'submitted' ? (
+                    <button
+                      type="button"
+                      className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm text-foreground/80 opacity-80"
+                      aria-label="Sending"
+                      title="Sending"
+                      disabled
+                    >
+                      <Loader2 className="size-4 animate-spin" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm text-foreground/80 hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
+                      aria-label="Send"
+                      title="Send"
+                    >
+                      <ArrowUp className="size-4" />
+                    </button>
+                  )}
+                </div>
               </PromptInputToolbar>
             </PromptInput>
           </div>
