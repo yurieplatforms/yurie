@@ -441,7 +441,7 @@ export default function ChatClient() {
     <section
       ref={containerRef}
       className={cn(
-        'flex w-full flex-col px-3 sm:px-4 min-h-[70vh]',
+        'flex w-full flex-col px-3 sm:px-4 min-h-[80vh]',
         isEmpty && 'justify-center'
       )}
     >
