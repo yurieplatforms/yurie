@@ -54,6 +54,8 @@ export default function ChatClient() {
     }
   }, [])
 
+  
+
   useEffect(() => {
     const root = outputRef.current
     if (!root) return
@@ -113,6 +115,16 @@ export default function ChatClient() {
         outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight })
       })
     }
+  }, [messages.length])
+
+  // Broadcast chat state to other components (e.g., navbar)
+  useEffect(() => {
+    try {
+      const hasMessages = messages.length > 0
+      window.dispatchEvent(
+        new CustomEvent('yurie:chat-state', { detail: { hasMessages } })
+      )
+    } catch {}
   }, [messages.length])
 
   const handleSubmitWithMessage = useCallback(async (text: string, messageFiles: File[]) => {
@@ -328,6 +340,24 @@ export default function ChatClient() {
     setIsLoading(false)
     setStatus('ready')
   }, [])
+
+  // Listen for global new chat event dispatched from the navbar
+  useEffect(() => {
+    const handler = () => {
+      handleNewChat()
+      try {
+        containerRef.current?.scrollTo({ top: 0 })
+      } catch {}
+    }
+    try {
+      window.addEventListener('yurie:new-chat', handler as EventListener)
+    } catch {}
+    return () => {
+      try {
+        window.removeEventListener('yurie:new-chat', handler as EventListener)
+      } catch {}
+    }
+  }, [handleNewChat])
 
   useEffect(() => {
     const el = outputRef.current

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef } from 'react'
-import { Globe, ImageIcon, ArrowUp, Square, Loader2, Plus } from 'lucide-react'
+import { Globe, ImageIcon, ArrowUp, Square, Loader2 } from 'lucide-react'
 import { MAX_IMAGE_BYTES } from '../utils'
 import { ChatInputProps } from '../types'
 import {
@@ -17,7 +17,6 @@ import { FileList } from './FileComponents'
 export function ChatInput({
   onSend,
   onSubmitWithMessage,
-  onNewChat,
   isSubmitting,
   files,
   onFileUpload,
@@ -121,17 +120,6 @@ export function ChatInput({
                   {/* Model selector removed; forced to grok-4-fast-reasoning */}
                 </PromptInputTools>
                 <div className="flex items-center gap-1">
-                  {onNewChat && (
-                    <button
-                      type="button"
-                      onClick={onNewChat}
-                      className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm text-foreground/80 hover:text-foreground cursor-pointer"
-                      aria-label="New Chat"
-                      title="New Chat"
-                    >
-                      <Plus className="size-4" />
-                    </button>
-                  )}
                   {status === 'streaming' ? (
                     <button
                       type="button"

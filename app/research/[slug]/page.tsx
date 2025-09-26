@@ -97,7 +97,7 @@ export default async function Research({
           }),
         }}
       />
-      <h1 className="title text-2xl font-semibold tracking-tighter">
+      <h1 className="title mt-12 text-2xl font-semibold tracking-tighter">
         {safePost.metadata.title}
       </h1>
       <div className="mt-2 mb-8 flex items-center justify-between text-sm">

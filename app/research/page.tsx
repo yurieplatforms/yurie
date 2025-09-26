@@ -11,7 +11,7 @@ export default function Page() {
 
   return (
     <section>
-      <h1 className="mb-8 px-3 text-2xl font-semibold tracking-tighter sm:px-4">
+      <h1 className="mt-12 mb-8 px-3 text-2xl font-semibold tracking-tighter sm:px-4">
         Research
       </h1>
       <div className="my-8">

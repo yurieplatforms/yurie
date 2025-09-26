@@ -118,8 +118,11 @@ html {
   min-width: 360px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  scrollbar-gutter: stable;
-  overflow-y: auto;
+  /* Reserve scrollbar space to avoid layout shifts when overlays/menus open */
+  scrollbar-gutter: stable both-edges;
+  overflow-y: scroll;
+  /* Prevent scroll anchoring from adjusting scroll position on dynamic overlays */
+  overflow-anchor: none;
 }
 
 /* Scrollbar color variables */
@@ -253,6 +256,11 @@ a:hover {
 /* Keep navigation text color unchanged */
 #nav a {
   color: inherit;
+}
+
+/* Prevent scroll anchoring from nudging the page when nav/popovers open */
+#nav {
+  overflow-anchor: none;
 }
 
 .prose a {
