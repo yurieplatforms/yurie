@@ -51,7 +51,7 @@ function DropdownMenuContent({
       data-slot="dropdown-menu-content"
       sideOffset={sideOffset}
       collisionPadding={8}
-      onOpenAutoFocus={(e) => e.preventDefault()}
+      onCloseAutoFocus={(e) => e.preventDefault()}
       onPointerDownOutside={(e) => {
         const target = e.target as HTMLElement | null
         if (target && target.closest('[data-slot="dropdown-menu-trigger"]')) {
