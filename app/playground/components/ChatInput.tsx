@@ -1,11 +1,10 @@
 'use client'
 
-import { useCallback, useRef } from 'react'
-import { Globe, ImageIcon, ArrowUp, Square, Loader2 } from 'lucide-react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { Globe, ImageIcon, ArrowUp, Square, Loader2, ChevronDown } from 'lucide-react'
 import { MAX_IMAGE_BYTES } from '../utils'
 import { ChatInputProps } from '../types'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { getSelectedModelLabel, modelOptions } from '../utils'
+import { modelOptions } from '../utils'
 import {
   PromptInput,
   PromptInputBody,
@@ -31,6 +30,24 @@ export function ChatInput({
   onModelChange,
 }: ChatInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const modelSizerRef = useRef<HTMLSpanElement>(null)
+  const [modelSelectorWidth, setModelSelectorWidth] = useState<number | null>(null)
+
+  useLayoutEffect(() => {
+    const computeWidth = () => {
+      try {
+        const sizer = modelSizerRef.current
+        if (!sizer) return
+        const contentWidth = Math.ceil(sizer.offsetWidth)
+        // left padding 12px (pl-3) + right padding for chevron 28px (pr-7) + borders 2px
+        const total = contentWidth + 12 + 28 + 2
+        setModelSelectorWidth(total)
+      } catch {}
+    }
+    computeWidth()
+    window.addEventListener('resize', computeWidth)
+    return () => window.removeEventListener('resize', computeWidth)
+  }, [modelChoice])
 
   const handleSubmit = useCallback(async (message: PromptInputMessage) => {
     const hasText = Boolean(message.text?.trim())
@@ -121,25 +138,35 @@ export function ChatInput({
                     <Globe className="size-5" />
                     <span className="text-xs font-medium">Search</span>
                   </button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild disabled={isSubmitting} aria-label="Model selector">
-                      <button
-                        type="button"
-                        className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors backdrop-blur-sm border-[var(--border-color)] bg-[var(--surface)]/90 text-foreground/80 hover:text-foreground cursor-pointer disabled:cursor-not-allowed outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0`}
-                      >
-                        <span className="text-xs font-medium">{getSelectedModelLabel(modelChoice)}</span>
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" inPortal>
-                      <DropdownMenuRadioGroup value={modelChoice} onValueChange={onModelChange}>
-                        {modelOptions.map((opt) => (
-                          <DropdownMenuRadioItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </DropdownMenuRadioItem>
-                        ))}
-                      </DropdownMenuRadioGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div
+                    className="relative inline-flex items-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm"
+                    style={modelSelectorWidth ? { width: `${modelSelectorWidth}px` } : undefined}
+                  >
+                    <label htmlFor="model-select" className="sr-only">Model</label>
+                    <select
+                      id="model-select"
+                      value={modelChoice}
+                      onChange={(e) => onModelChange(e.target.value)}
+                      disabled={isSubmitting}
+                      aria-label="Model selector"
+                      className={`h-9 inline-block w-full appearance-none bg-transparent pl-3 pr-7 text-xs font-medium text-foreground/80 hover:text-foreground focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 whitespace-nowrap cursor-pointer disabled:cursor-not-allowed`}
+                    >
+                      {modelOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-2 size-4 text-foreground/60" />
+                    {/* Hidden content sizer to measure text width */}
+                    <span
+                      ref={modelSizerRef}
+                      aria-hidden="true"
+                      className="absolute left-0 top-0 invisible whitespace-nowrap text-xs font-medium"
+                    >
+                      {(modelOptions.find((o) => o.value === modelChoice)?.label) || modelChoice}
+                    </span>
+                  </div>
                 </PromptInputTools>
                 <div className="flex items-center gap-1">
                   {status === 'streaming' ? (

@@ -125,6 +125,12 @@ html {
   overflow-anchor: none;
 }
 
+/* Isolate layout for the fixed chat input wrapper to avoid jumps
+   when popovers/menus open and measure changes occur */
+.chat-input-wrapper-contain {
+  contain: layout paint;
+}
+
 /* Scrollbar color variables */
  :root {
   --scrollbar-thumb: #fafafa; /* tailwind neutral-50 */

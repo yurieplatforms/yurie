@@ -372,6 +372,9 @@ export default function ChatClient() {
   // Track the top position of the input to anchor the bottom scrim
   // Top coordinate (in px) of the input wrapper relative to the viewport; used to anchor the scrim from prompt top → bottom
   const [inputOverlayTop, setInputOverlayTop] = useState<number>(0)
+  // Keep last measured values to avoid tiny oscillations causing layout shifts
+  const inputWrapperHeightRef = useRef<number>(0)
+  const inputWrapperTopRef = useRef<number>(0)
 
   useEffect(() => {
     if (isEmpty) return
@@ -382,9 +385,21 @@ export default function ChatClient() {
         const rect = wrap.getBoundingClientRect()
         const height = Math.ceil(rect.height)
         const top = Math.max(0, Math.floor(rect.top))
-        // Keep modest breathing room so expanded UI is visible without excessive gap
-        setOutputBottomPad(Math.max(96, height + 24))
-        setInputOverlayTop(top)
+        const prevHeight = inputWrapperHeightRef.current
+        const prevTop = inputWrapperTopRef.current
+        // Only update when changes are meaningful to prevent micro reflows
+        const heightChanged = Math.abs(height - prevHeight) >= 6
+        const topChanged = Math.abs(top - prevTop) >= 2
+
+        if (heightChanged) {
+          // Keep modest breathing room so expanded UI is visible without excessive gap
+          setOutputBottomPad(Math.max(96, height + 24))
+          inputWrapperHeightRef.current = height
+        }
+        if (topChanged) {
+          setInputOverlayTop(top)
+          inputWrapperTopRef.current = top
+        }
         try {
           // Expose as CSS var for any pure-CSS uses
           document.documentElement.style.setProperty(
@@ -450,7 +465,11 @@ export default function ChatClient() {
           'chat-scroll overflow-y-auto overscroll-contain touch-pan-y rounded pt-1 font-sans text-base flex-1 min-h-0 pb-[calc(env(safe-area-inset-bottom)+96px)] sm:pb-24',
           messages.length === 0 && 'hidden'
         )}
-        style={isEmpty ? undefined : { paddingBottom: outputBottomPad }}
+        style={
+          isEmpty
+            ? undefined
+            : { paddingBottom: outputBottomPad, overflowAnchor: 'none' as any }
+        }
       >
         {messages.length === 0
           ? null
@@ -524,9 +543,10 @@ export default function ChatClient() {
         className={cn(
           isEmpty
             ? 'relative z-20'
-            : 'relative fixed left-0 right-0 bottom-[calc(env(safe-area-inset-bottom))] sm:bottom-0 z-20 mx-auto max-w-3xl px-3 sm:px-4 transform-gpu will-change-transform'
+            : 'relative fixed left-0 right-0 bottom-[calc(env(safe-area-inset-bottom))] sm:bottom-0 z-20 mx-auto max-w-3xl px-3 sm:px-4 chat-input-wrapper-contain'
         )}
         aria-busy={isLoading}
+        style={{ overflowAnchor: 'none' as any }}
       >
         {!isEmpty ? (
           <div
