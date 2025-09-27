@@ -309,6 +309,8 @@ export default function ChatClient() {
       abortControllerRef.current = ac
       // Only include reasoning for models that support reasoning_effort (grok-3-mini, grok-3-mini-fast)
       const supportsReasoningEffort = /grok-3-mini(\b|\-|_)/i.test(modelChoice) || /grok-3-mini-fast/i.test(modelChoice)
+      // Also enable reasoning for OpenRouter models (unified reasoning parameter per OpenRouter docs)
+      const isOpenRouterModel = /^openrouter\//i.test(modelChoice)
 
       const body: ChatRequestPayload = {
         messages: payloadMessages,
@@ -318,7 +320,7 @@ export default function ChatClient() {
         previousResponseId: lastResponseId,
         model: modelChoice,
       }
-      if (supportsReasoningEffort) {
+      if (supportsReasoningEffort || isOpenRouterModel) {
         body.reasoning = { effort: 'high' }
       }
       // xAI Live Search: wire Globe toggle

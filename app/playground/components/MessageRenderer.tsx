@@ -6,7 +6,58 @@ import { highlight } from 'sugar-high'
 import { Response } from '@/components/ai-elements/response'
 import { cn, sanitizeHtml, decodeBase64Utf8 } from '../utils'
 import { MessagePart } from '../types'
-import { ThinkingPanel, SourcesList } from './MessageComponents'
+import { SourcesList } from './MessageComponents'
+import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning'
+
+function mergeWithOverlap(chunks: string[], maxOverlap: number = 120): string {
+  if (!Array.isArray(chunks) || chunks.length === 0) return ''
+  let merged = ''
+  for (const nextRaw of chunks) {
+    const next = String(nextRaw || '')
+    if (!merged) {
+      merged = next
+      continue
+    }
+    const maxK = Math.min(maxOverlap, merged.length, next.length)
+    let overlap = 0
+    for (let k = maxK; k > 0; k--) {
+      if (merged.slice(-k) === next.slice(0, k)) {
+        overlap = k
+        break
+      }
+    }
+    merged += next.slice(overlap)
+  }
+  return merged
+}
+
+function normalizeReasoningText(input: string): string {
+  try {
+    let s = String(input || '')
+    // Collapse duplicate lines that repeat consecutively
+    s = s
+      .split(/\r?\n/)
+      .reduce<string[]>((acc, line) => {
+        const trimmed = line.trim()
+        const prev = acc.length > 0 ? acc[acc.length - 1] : ''
+        if (trimmed && prev.trim() === trimmed) return acc
+        acc.push(line)
+        return acc
+      }, [])
+      .join('\n')
+    // Collapse immediate duplicate words (case-insensitive)
+    s = s.replace(/\b(\w+)(?:\s+\1\b){1,}/gi, '$1')
+    // Compress repeated punctuation like "..!!" -> ".!"
+    s = s.replace(/([.,!?;:])\1{1,}/g, '$1')
+    // Normalize excessive spaces
+    s = s.replace(/[ \t]{2,}/g, ' ')
+    // Remove accidental double list markers like "- - "
+    s = s.replace(/(^|\n)\s*-\s*-\s+/g, '$1- ')
+    return s
+  } catch {
+    return input
+  }
+}
 
 export function useMarkdownRenderer() {
   return useMemo(() => {
@@ -155,13 +206,15 @@ export function renderMessageContent(
       const finals = reasoningParts
         .filter((r) => !r.partial)
         .map((r) => String(r.value))
-      return finals.map(decodeBase64Utf8).join('')
+      const decoded = finals.map(decodeBase64Utf8)
+      return normalizeReasoningText(mergeWithOverlap(decoded))
     }
     const partials = reasoningParts
       .filter((r) => r.partial)
       .map((r) => String(r.value))
     if (partials.length === 0) return ''
-    return partials.map(decodeBase64Utf8).join('')
+    const decoded = partials.map(decodeBase64Utf8)
+    return normalizeReasoningText(mergeWithOverlap(decoded))
   })()
   const reasoningHtml = reasoningDecoded
     ? sanitizeHtml(md.parse(reasoningDecoded) as string)
@@ -169,10 +222,12 @@ export function renderMessageContent(
   return (
     <>
       {role === 'assistant' && reasoningHtml ? (
-        <ThinkingPanel
-          content={reasoningHtml}
-          generating={status === 'submitted' || status === 'streaming'}
-        />
+        <Reasoning className="w-full" isStreaming={status === 'submitted' || status === 'streaming'}>
+          <ReasoningTrigger />
+          <ReasoningContent>
+            <div dangerouslySetInnerHTML={{ __html: reasoningHtml }} />
+          </ReasoningContent>
+        </Reasoning>
       ) : null}
       {parts.map((p, i) => {
         if (p.type === 'text') {

@@ -280,6 +280,14 @@ function streamFromXAI(payload: ChatRequestPayload): Response {
                     controller.enqueue(encoder.encode(`<reasoning_partial:${b64}>`))
                   } catch {}
                 }
+                // Emit final reasoning if present on the message (xAI reasoning models)
+                try {
+                  const finalRc: unknown = ch?.message?.reasoning_content
+                  if (typeof finalRc === 'string' && finalRc) {
+                    const b64 = Buffer.from(finalRc, 'utf8').toString('base64')
+                    controller.enqueue(encoder.encode(`<reasoning:${b64}>`))
+                  }
+                } catch {}
               }
             } catch {}
             try {
@@ -330,12 +338,20 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
 
   let model = normalizeOpenRouterModelTag(payload.model)
   const messages = buildMessages(payload)
+  const reasoning = payload.reasoning
 
   const requestBody: Record<string, any> = {
     model,
     messages,
     stream: true,
   }
+
+  // Forward unified OpenRouter reasoning config if provided
+  try {
+    if (reasoning && typeof reasoning === 'object') {
+      requestBody.reasoning = reasoning
+    }
+  } catch {}
 
   // If using an OpenRouter model that supports image generation (e.g., Gemini 2.5 Flash Image Preview),
   // request both image and text modalities per OpenRouter docs.
@@ -427,6 +443,33 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
                 if (typeof content === 'string' && content) {
                   controller.enqueue(encoder.encode(content))
                 }
+                // Stream reasoning deltas if present (normalized via OpenRouter)
+                try {
+                  const rdCheck: any[] = Array.isArray((delta as any)?.reasoning_details)
+                    ? (delta as any).reasoning_details
+                    : []
+                  const hasDetails = rdCheck.length > 0
+                  const reasonDelta: unknown = (delta as any)?.reasoning
+                  if (!hasDetails && typeof reasonDelta === 'string' && reasonDelta) {
+                    const b64 = Buffer.from(reasonDelta, 'utf8').toString('base64')
+                    controller.enqueue(encoder.encode(`<reasoning_partial:${b64}>`))
+                  }
+                } catch {}
+                try {
+                  const rd: any[] = Array.isArray((delta as any)?.reasoning_details)
+                    ? (delta as any).reasoning_details
+                    : []
+                  for (const d of rd) {
+                    const t = d?.type
+                    if (t === 'reasoning.text') {
+                      const text: unknown = d?.text
+                      if (typeof text === 'string' && text) {
+                        const b64 = Buffer.from(text, 'utf8').toString('base64')
+                        controller.enqueue(encoder.encode(`<reasoning_partial:${b64}>`))
+                      }
+                    }
+                  }
+                } catch {}
                 // Stream image deltas from OpenRouter as inline tags the client can render
                 const deltaImages: any[] = Array.isArray(delta?.images) ? delta.images : []
                 for (const im of deltaImages) {
@@ -447,6 +490,29 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
                     }
                   } catch {}
                 }
+                // Emit final reasoning if present on the message
+                try {
+                  const finalReasoning: unknown = ch?.message?.reasoning
+                  const rdFinal: any[] = Array.isArray(ch?.message?.reasoning_details)
+                    ? ch.message.reasoning_details
+                    : []
+                  if (rdFinal.length > 0) {
+                    const parts: string[] = []
+                    for (const d of rdFinal) {
+                      if (d?.type === 'reasoning.text' && typeof d?.text === 'string') {
+                        parts.push(d.text)
+                      }
+                    }
+                    const joined = parts.join('\n')
+                    if (joined) {
+                      const b64 = Buffer.from(joined, 'utf8').toString('base64')
+                      controller.enqueue(encoder.encode(`<reasoning:${b64}>`))
+                    }
+                  } else if (typeof finalReasoning === 'string' && finalReasoning) {
+                    const b64 = Buffer.from(finalReasoning, 'utf8').toString('base64')
+                    controller.enqueue(encoder.encode(`<reasoning:${b64}>`))
+                  }
+                } catch {}
               }
             } catch {}
           }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { Globe, ImageIcon, ArrowUp, Square, Loader2, ChevronDown, Paperclip } from 'lucide-react'
+import { Globe, ImageIcon, ArrowUp, Square, Loader2, Paperclip } from 'lucide-react'
 import { MAX_IMAGE_BYTES, MAX_PDF_BYTES, MAX_AUDIO_BYTES } from '../utils'
 import { ChatInputProps } from '../types'
 import { modelOptions } from '../utils'
@@ -33,6 +33,13 @@ export function ChatInput({
   const attachInputRef = useRef<HTMLInputElement>(null)
   const modelSizerRef = useRef<HTMLSpanElement>(null)
   const [modelSelectorWidth, setModelSelectorWidth] = useState<number | null>(null)
+  const allowAudio = (() => {
+    try {
+      return /^openrouter\/google\/gemini-2\.5-pro$/i.test(modelChoice)
+    } catch {
+      return false
+    }
+  })()
 
   useLayoutEffect(() => {
     const computeWidth = () => {
@@ -94,15 +101,15 @@ export function ChatInput({
                   <input
                     ref={attachInputRef}
                     type="file"
-                    accept="application/pdf,audio/wav,audio/x-wav,audio/mpeg,audio/mp3"
+                    accept={allowAudio ? 'application/pdf,audio/wav,audio/x-wav,audio/mpeg,audio/mp3' : 'application/pdf'}
                     multiple
                     onChange={(e) => {
                       const selected = Array.from(e.target.files ?? [])
                       const filtered = selected.filter((f) => {
                         const mime = (f.type || '').toLowerCase()
                         const isPdf = mime === 'application/pdf'
-                        const isWav = mime === 'audio/wav' || mime === 'audio/x-wav'
-                        const isMp3 = mime === 'audio/mpeg' || mime === 'audio/mp3'
+                        const isWav = allowAudio && (mime === 'audio/wav' || mime === 'audio/x-wav')
+                        const isMp3 = allowAudio && (mime === 'audio/mpeg' || mime === 'audio/mp3')
                         if (isPdf) return f.size <= MAX_PDF_BYTES
                         if (isWav || isMp3) return f.size <= MAX_AUDIO_BYTES
                         return false
@@ -193,7 +200,7 @@ export function ChatInput({
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="pointer-events-none absolute right-2 size-4 text-foreground/60" />
+                    <svg viewBox="0 0 24 24" className="pointer-events-none absolute right-2 size-4 text-foreground/60" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
                     {/* Hidden content sizer to measure text width */}
                     <span
                       ref={modelSizerRef}

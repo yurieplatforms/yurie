@@ -82,7 +82,7 @@ export function Navbar() {
                   }
                 }}
               >
-                <span className="inline-flex items-center gap-1 rounded-xl px-0 py-1.5 transition-colors">
+                <span className="group inline-flex items-center gap-1 rounded-xl px-0 py-1.5 transition-colors">
                   <Image
                     src="/favicon.ico"
                     alt="Yurie"
@@ -92,7 +92,7 @@ export function Navbar() {
                     draggable={false}
                   />
                   <span className="leading-none">Yurie</span>
-                  <ChevronDownIcon className="h-4 w-4" />
+                  <svg viewBox="0 0 24 24" className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
                 </span>
               </button>
               {menuOpen ? (
