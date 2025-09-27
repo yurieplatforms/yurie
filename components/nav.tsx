@@ -4,7 +4,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDownIcon } from 'lucide-react'
 
 export function Navbar() {
   const pathname = usePathname()
