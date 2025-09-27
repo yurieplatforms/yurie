@@ -424,7 +424,7 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       let firstIdSent = false
-      let lastCitations: string[] | null = null
+      let lastCitations: string[] = []
       let buffer = ''
       const collectAnnotations = (anns: any[]) => {
         try {
@@ -432,9 +432,8 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
             try {
               if (a && a.type === 'url_citation') {
                 const u = a?.url_citation?.url
-                if (typeof u === 'string' && u) {
-                  if (!lastCitations) lastCitations = [] as string[]
-                  if (!lastCitations.includes(u)) lastCitations.push(u)
+                if (typeof u === 'string' && u && !lastCitations.includes(u)) {
+                  lastCitations.push(u)
                 }
               }
             } catch {}
@@ -597,7 +596,7 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
         } catch {}
       } finally {
         try {
-          if (Array.isArray(lastCitations) && lastCitations.length > 0) {
+          if (lastCitations.length > 0) {
             controller.enqueue(encoder.encode(`<citations:${JSON.stringify(lastCitations)}>`))
           }
         } catch {}
