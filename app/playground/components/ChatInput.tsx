@@ -50,6 +50,16 @@ export function ChatInput({
       return true
     }
   })()
+  const allowFiles = (() => {
+    try {
+      const m = String(modelChoice || '').toLowerCase()
+      if (m === 'x-ai/grok-4-0709') return false
+      if (m === 'x-ai/grok-4-fast-reasoning') return false
+      return true
+    } catch {
+      return true
+    }
+  })()
 
   useLayoutEffect(() => {
     const computeWidth = () => {
@@ -108,38 +118,42 @@ export function ChatInput({
               <PromptInputToolbar className="px-2 pb-2 pt-1">
                 <PromptInputTools>
                   {/* Hidden attachments input (PDFs and audio) */}
-                  <input
-                    ref={attachInputRef}
-                    type="file"
-                    accept={allowAudio ? 'application/pdf,audio/wav,audio/x-wav,audio/mpeg,audio/mp3' : 'application/pdf'}
-                    multiple
-                    onChange={(e) => {
-                      const selected = Array.from(e.target.files ?? [])
-                      const filtered = selected.filter((f) => {
-                        const mime = (f.type || '').toLowerCase()
-                        const isPdf = mime === 'application/pdf'
-                        const isWav = allowAudio && (mime === 'audio/wav' || mime === 'audio/x-wav')
-                        const isMp3 = allowAudio && (mime === 'audio/mpeg' || mime === 'audio/mp3')
-                        if (isPdf) return f.size <= MAX_PDF_BYTES
-                        if (isWav || isMp3) return f.size <= MAX_AUDIO_BYTES
-                        return false
-                      })
-                      if (filtered.length > 0) onFileUpload(filtered)
-                      if (e.target) e.target.value = ''
-                    }}
-                    className="sr-only"
-                    aria-label="Add files"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => attachInputRef.current?.click()}
-                    aria-label="Add files"
-                    title="Add files"
-                    className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm p-0 text-foreground/80 transition-colors hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
-                    disabled={isSubmitting}
-                  >
-                    <Paperclip className="size-4" />
-                  </button>
+                  {allowFiles ? (
+                    <>
+                      <input
+                        ref={attachInputRef}
+                        type="file"
+                        accept={allowAudio ? 'application/pdf,audio/wav,audio/x-wav,audio/mpeg,audio/mp3' : 'application/pdf'}
+                        multiple
+                        onChange={(e) => {
+                          const selected = Array.from(e.target.files ?? [])
+                          const filtered = selected.filter((f) => {
+                            const mime = (f.type || '').toLowerCase()
+                            const isPdf = mime === 'application/pdf'
+                            const isWav = allowAudio && (mime === 'audio/wav' || mime === 'audio/x-wav')
+                            const isMp3 = allowAudio && (mime === 'audio/mpeg' || mime === 'audio/mp3')
+                            if (isPdf) return f.size <= MAX_PDF_BYTES
+                            if (isWav || isMp3) return f.size <= MAX_AUDIO_BYTES
+                            return false
+                          })
+                          if (filtered.length > 0) onFileUpload(filtered)
+                          if (e.target) e.target.value = ''
+                        }}
+                        className="sr-only"
+                        aria-label="Add files"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => attachInputRef.current?.click()}
+                        aria-label="Add files"
+                        title="Add files"
+                        className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm p-0 text-foreground/80 transition-colors hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
+                        disabled={isSubmitting}
+                      >
+                        <Paperclip className="size-4" />
+                      </button>
+                    </>
+                  ) : null}
                   {/* Image input and button (disabled for Qwen models that don't support images) */}
                   {allowImages ? (
                     <>
