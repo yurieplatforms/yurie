@@ -60,6 +60,20 @@ function resolveModel(incoming?: string | null): string {
   return val
 }
 
+function isOpenRouterSelectedModel(model?: string | null): boolean {
+  try {
+    return typeof model === 'string' && model.toLowerCase().startsWith('openrouter/')
+  } catch {
+    return false
+  }
+}
+
+function normalizeOpenRouterModelTag(model?: string | null): string {
+  if (!model) return ''
+  const s = String(model)
+  return s.toLowerCase().startsWith('openrouter/') ? s.slice('openrouter/'.length) : s
+}
+
 function buildMessages(payload: ChatRequestPayload) {
   const out: Array<{ role: string; content: any }> = []
   out.push({ role: 'system', content: [{ type: 'text', text: SYSTEM_PROMPT }] })
@@ -228,6 +242,126 @@ function streamFromXAI(payload: ChatRequestPayload): Response {
   })
 }
 
+function streamFromOpenRouter(payload: ChatRequestPayload): Response {
+  const apiKey = process.env.OPENROUTER_API_KEY
+  if (!apiKey) {
+    return new Response(
+      JSON.stringify({ error: { code: 500, message: 'Missing OPENROUTER_API_KEY' } }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
+  let model = normalizeOpenRouterModelTag(payload.model)
+  const messages = buildMessages(payload)
+
+  const requestBody: Record<string, any> = {
+    model,
+    messages,
+    stream: true,
+  }
+
+  // Enable OpenRouter Web Search by appending :online when the UI toggle is ON
+  try {
+    const mode = (payload.search_parameters as any)?.mode
+    const shouldUseWeb = typeof mode === 'string' && mode.toLowerCase() === 'on'
+    if (shouldUseWeb && !/:\s*online$/i.test(model)) {
+      model = `${model}:online`
+      requestBody.model = model
+    }
+  } catch {}
+
+  const encoder = new TextEncoder()
+  const decoder = new TextDecoder()
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let firstIdSent = false
+      let buffer = ''
+      try {
+        const headers: Record<string, string> = {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        }
+        try {
+          const ref = process.env.OPENROUTER_HTTP_REFERER
+          const title = process.env.OPENROUTER_X_TITLE
+          if (ref) headers['HTTP-Referer'] = ref
+          if (title) headers['X-Title'] = title
+        } catch {}
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(requestBody),
+        })
+        if (!res.ok || !res.body) {
+          const text = await res.text().catch(() => '')
+          controller.enqueue(
+            encoder.encode(text || `HTTP ${res.status}`)
+          )
+          controller.close()
+          return
+        }
+        const reader = res.body.getReader()
+        while (true) {
+          const { value, done } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          let idx: number
+          while ((idx = buffer.indexOf('\n')) !== -1) {
+            const line = buffer.slice(0, idx)
+            buffer = buffer.slice(idx + 1)
+            const trimmed = line.trim()
+            if (!trimmed || !trimmed.startsWith('data:')) continue
+            const data = trimmed.slice(5).trim()
+            if (!data || data === '[DONE]') continue
+            let obj: any
+            try {
+              obj = JSON.parse(data)
+            } catch {
+              continue
+            }
+            try {
+              if (!firstIdSent && typeof obj?.id === 'string' && obj.id) {
+                firstIdSent = true
+                controller.enqueue(encoder.encode(`<response_id:${obj.id}>`))
+              }
+            } catch {}
+            try {
+              const choices = Array.isArray(obj?.choices) ? obj.choices : []
+              for (const ch of choices) {
+                const delta = ch?.delta
+                const content: unknown = delta?.content
+                if (typeof content === 'string' && content) {
+                  controller.enqueue(encoder.encode(content))
+                }
+              }
+            } catch {}
+          }
+        }
+        const rest = decoder.decode()
+        if (rest) {
+          buffer += rest
+        }
+      } catch (e) {
+        try {
+          const msg = e instanceof Error ? e.message : 'Upstream error'
+          controller.enqueue(encoder.encode(msg))
+        } catch {}
+      } finally {
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      'X-Accel-Buffering': 'no',
+    },
+  })
+}
+
 export async function POST(request: Request) {
   try {
     const raw = await request.text()
@@ -239,6 +373,9 @@ export async function POST(request: Request) {
         JSON.stringify({ error: { code: 400, message: 'Invalid JSON body' } }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       )
+    }
+    if (isOpenRouterSelectedModel(payload.model)) {
+      return streamFromOpenRouter(payload)
     }
     return streamFromXAI(payload)
   } catch {

@@ -4,6 +4,8 @@ import { useCallback, useRef } from 'react'
 import { Globe, ImageIcon, ArrowUp, Square, Loader2 } from 'lucide-react'
 import { MAX_IMAGE_BYTES } from '../utils'
 import { ChatInputProps } from '../types'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { getSelectedModelLabel, modelOptions } from '../utils'
 import {
   PromptInput,
   PromptInputBody,
@@ -25,6 +27,8 @@ export function ChatInput({
   status,
   useWebSearch,
   onUseWebSearchToggle,
+  modelChoice,
+  onModelChange,
 }: ChatInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -117,7 +121,25 @@ export function ChatInput({
                     <Globe className="size-5" />
                     <span className="text-xs font-medium">Search</span>
                   </button>
-                  {/* Model selector removed; forced to grok-4-fast-reasoning */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild disabled={isSubmitting} aria-label="Model selector">
+                      <button
+                        type="button"
+                        className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors backdrop-blur-sm border-[var(--border-color)] bg-[var(--surface)]/90 text-foreground/80 hover:text-foreground cursor-pointer disabled:cursor-not-allowed outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0`}
+                      >
+                        <span className="text-xs font-medium">{getSelectedModelLabel(modelChoice)}</span>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" inPortal>
+                      <DropdownMenuRadioGroup value={modelChoice} onValueChange={onModelChange}>
+                        {modelOptions.map((opt) => (
+                          <DropdownMenuRadioItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </PromptInputTools>
                 <div className="flex items-center gap-1">
                   {status === 'streaming' ? (

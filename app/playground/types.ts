@@ -59,6 +59,8 @@ export type ChatInputProps = {
   status?: 'submitted' | 'streaming' | 'ready' | 'error'
   useWebSearch: boolean
   onUseWebSearchToggle: () => void
+  modelChoice: string
+  onModelChange: (value: string) => void
 }
 
 export type ChatRequestPayload = {

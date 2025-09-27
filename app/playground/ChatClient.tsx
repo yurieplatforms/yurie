@@ -28,8 +28,7 @@ export default function ChatClient() {
     useState<Record<number, AttachmentPreview[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
-  // Model is fixed to grok-4-fast-reasoning per requirements
-  const modelChoice = 'x-ai/grok-4-fast-reasoning'
+  const [modelChoice, setModelChoice] = useState<string>('x-ai/grok-4-fast-reasoning')
   const [useWebSearch, setUseWebSearch] = useState<boolean>(false)
   const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(
     getTimeOfDayWord
@@ -566,6 +565,8 @@ export default function ChatClient() {
           status={status}
           useWebSearch={useWebSearch}
           onUseWebSearchToggle={() => setUseWebSearch((v) => !v)}
+          modelChoice={modelChoice}
+          onModelChange={setModelChoice}
         />
       </div>
     </section>

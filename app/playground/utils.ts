@@ -158,6 +158,10 @@ export function getTimeOfDayWord(): 'today' | 'tonight' {
 export const modelOptions = [
   { value: 'x-ai/grok-4-0709', label: 'Grok 4' },
   { value: 'x-ai/grok-4-fast-reasoning', label: 'Grok 4 Fast' },
+  // OpenRouter models
+  { value: 'openrouter/qwen/qwen3-max', label: 'Qwen3-Max' },
+  { value: 'openrouter/openai/gpt-5-codex', label: 'GPT-5 Codex' },
+  { value: 'openrouter/anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
 ]
 
 export function getSelectedModelLabel(modelChoice: string): string {
