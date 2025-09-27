@@ -424,7 +424,23 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       let firstIdSent = false
+      let lastCitations: string[] | null = null
       let buffer = ''
+      const collectAnnotations = (anns: any[]) => {
+        try {
+          for (const a of anns) {
+            try {
+              if (a && a.type === 'url_citation') {
+                const u = a?.url_citation?.url
+                if (typeof u === 'string' && u) {
+                  if (!lastCitations) lastCitations = []
+                  if (!lastCitations.includes(u)) lastCitations.push(u)
+                }
+              }
+            } catch {}
+          }
+        } catch {}
+      }
       try {
         const headers: Record<string, string> = {
           'Authorization': `Bearer ${apiKey}`,
@@ -580,6 +596,11 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
           controller.enqueue(encoder.encode(msg))
         } catch {}
       } finally {
+        try {
+          if (lastCitations && lastCitations.length > 0) {
+            controller.enqueue(encoder.encode(`<citations:${JSON.stringify(lastCitations)}>`))
+          }
+        } catch {}
         controller.close()
       }
     },
