@@ -433,7 +433,7 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
               if (a && a.type === 'url_citation') {
                 const u = a?.url_citation?.url
                 if (typeof u === 'string' && u) {
-                  if (!lastCitations) lastCitations = []
+                  if (!lastCitations) lastCitations = [] as string[]
                   if (!lastCitations.includes(u)) lastCitations.push(u)
                 }
               }
@@ -597,7 +597,7 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
         } catch {}
       } finally {
         try {
-          if (lastCitations && lastCitations.length > 0) {
+          if (Array.isArray(lastCitations) && lastCitations.length > 0) {
             controller.enqueue(encoder.encode(`<citations:${JSON.stringify(lastCitations)}>`))
           }
         } catch {}
