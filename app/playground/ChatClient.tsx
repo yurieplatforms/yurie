@@ -442,8 +442,19 @@ export default function ChatClient() {
   }, [])
 
   const handleNewChat = useCallback(() => {
+    // Clear chat transcript and any pending attachments
     setMessages([])
     setFiles([])
+    setSentAttachmentsByMessageIndex({})
+    setLastResponseId(null)
+    // Revoke any created object URLs for message attachment previews
+    try {
+      const urls = createdObjectUrlsRef.current
+      if (Array.isArray(urls) && urls.length > 0) {
+        for (const u of urls) URL.revokeObjectURL(u)
+      }
+    } catch {}
+    createdObjectUrlsRef.current = []
     setIsLoading(false)
     setStatus('ready')
   }, [])
