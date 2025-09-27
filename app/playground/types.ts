@@ -66,6 +66,8 @@ export type ChatInputProps = {
 export type ChatRequestPayload = {
   messages: ChatMessage[]
   inputImages?: string[]
+  inputPdfs?: string[]
+  inputAudio?: Array<string | { data: string; format: string }>
   previousResponseId?: string | null
   model?: string
   reasoning?: { effort: 'high' }

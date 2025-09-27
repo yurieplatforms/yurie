@@ -21,16 +21,36 @@ export function MessageAttachmentList({
         'flex flex-row flex-wrap gap-2'
       )}
     >
-      {attachments.map((att) =>
-        att.isImage ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            key={att.id}
-            src={att.objectUrl}
-            alt={att.name}
-            className="max-h-56 rounded border border-neutral-200 object-cover dark:border-neutral-800"
-          />
-        ) : (
+      {attachments.map((att) => {
+        if (att.isImage) {
+          return (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              key={att.id}
+              src={att.objectUrl}
+              alt={att.name}
+              className="max-h-56 rounded border border-neutral-200 object-cover dark:border-neutral-800"
+            />
+          )
+        }
+        const isAudio = (att.mime || '').toLowerCase().startsWith('audio/')
+        if (isAudio) {
+          return (
+            <div
+              key={att.id}
+              className="inline-flex items-center gap-2 rounded-md border border-[var(--border-color)] bg-[var(--surface)] px-3 py-2 text-xs"
+            >
+              <audio controls src={att.objectUrl} className="h-8">
+                Your browser does not support the audio element.
+              </audio>
+              <span className="font-medium truncate max-w-[160px]" title={att.name}>{att.name}</span>
+              <span className="ml-2 text-neutral-500">
+                {(att.size / 1024).toFixed(2)}kB
+              </span>
+            </div>
+          )
+        }
+        return (
           <a
             key={att.id}
             href={att.objectUrl}
@@ -38,13 +58,13 @@ export function MessageAttachmentList({
             rel="noreferrer"
             className="inline-flex items-center gap-2 rounded-md border border-[var(--border-color)] bg-[var(--surface)] px-3 py-2 text-xs hover:border-[var(--border-color-hover)]"
           >
-            <span className="font-medium">{att.name}</span>
+            <span className="font-medium truncate max-w-[200px]" title={att.name}>{att.name}</span>
             <span className="ml-2 text-neutral-500">
               {(att.size / 1024).toFixed(2)}kB
             </span>
           </a>
         )
-      )}
+      })}
     </div>
   )
 }
@@ -199,7 +219,7 @@ export function ButtonFileUpload({
         ref={inputRef}
         id={inputId}
         type="file"
-        accept="image/jpeg,image/png"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         multiple
         className="sr-only"
         onChange={(e) => {
@@ -207,8 +227,10 @@ export function ButtonFileUpload({
             const mime = (f.type || '').toLowerCase()
             const isJpeg = mime === 'image/jpeg' || mime === 'image/jpg'
             const isPng = mime === 'image/png'
+            const isWebp = mime === 'image/webp'
+            const isGif = mime === 'image/gif'
             const withinLimit = f.size <= MAX_IMAGE_BYTES
-            return (isJpeg || isPng) && withinLimit
+            return (isJpeg || isPng || isWebp || isGif) && withinLimit
           })
           onFileUpload(files)
           if (inputRef.current) inputRef.current.value = ''

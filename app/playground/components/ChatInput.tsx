@@ -1,8 +1,8 @@
 'use client'
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { Globe, ImageIcon, ArrowUp, Square, Loader2, ChevronDown } from 'lucide-react'
-import { MAX_IMAGE_BYTES } from '../utils'
+import { Globe, ImageIcon, ArrowUp, Square, Loader2, ChevronDown, Paperclip } from 'lucide-react'
+import { MAX_IMAGE_BYTES, MAX_PDF_BYTES, MAX_AUDIO_BYTES } from '../utils'
 import { ChatInputProps } from '../types'
 import { modelOptions } from '../utils'
 import {
@@ -30,6 +30,7 @@ export function ChatInput({
   onModelChange,
 }: ChatInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const attachInputRef = useRef<HTMLInputElement>(null)
   const modelSizerRef = useRef<HTMLSpanElement>(null)
   const [modelSelectorWidth, setModelSelectorWidth] = useState<number | null>(null)
 
@@ -89,11 +90,44 @@ export function ChatInput({
               </PromptInputBody>
               <PromptInputToolbar className="px-2 pb-2 pt-1">
                 <PromptInputTools>
+                  {/* Hidden attachments input (PDFs and audio) */}
+                  <input
+                    ref={attachInputRef}
+                    type="file"
+                    accept="application/pdf,audio/wav,audio/x-wav,audio/mpeg,audio/mp3"
+                    multiple
+                    onChange={(e) => {
+                      const selected = Array.from(e.target.files ?? [])
+                      const filtered = selected.filter((f) => {
+                        const mime = (f.type || '').toLowerCase()
+                        const isPdf = mime === 'application/pdf'
+                        const isWav = mime === 'audio/wav' || mime === 'audio/x-wav'
+                        const isMp3 = mime === 'audio/mpeg' || mime === 'audio/mp3'
+                        if (isPdf) return f.size <= MAX_PDF_BYTES
+                        if (isWav || isMp3) return f.size <= MAX_AUDIO_BYTES
+                        return false
+                      })
+                      if (filtered.length > 0) onFileUpload(filtered)
+                      if (e.target) e.target.value = ''
+                    }}
+                    className="sr-only"
+                    aria-label="Add files"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => attachInputRef.current?.click()}
+                    aria-label="Add files"
+                    title="Add files"
+                    className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm p-0 text-foreground/80 transition-colors hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
+                    disabled={isSubmitting}
+                  >
+                    <Paperclip className="size-4" />
+                  </button>
                   {/* Hidden native image input */}
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
                     multiple
                     onChange={(e) => {
                       const selected = Array.from(e.target.files ?? [])
@@ -101,8 +135,10 @@ export function ChatInput({
                         const mime = (f.type || '').toLowerCase()
                         const isJpeg = mime === 'image/jpeg' || mime === 'image/jpg'
                         const isPng = mime === 'image/png'
+                        const isWebp = mime === 'image/webp'
+                        const isGif = mime === 'image/gif'
                         const withinLimit = f.size <= MAX_IMAGE_BYTES
-                        return (isJpeg || isPng) && withinLimit
+                        return (isJpeg || isPng || isWebp || isGif) && withinLimit
                       })
                       if (filtered.length > 0) onFileUpload(filtered)
                       if (e.target) e.target.value = ''

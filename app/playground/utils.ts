@@ -4,6 +4,8 @@ import { twMerge } from 'tailwind-merge'
 import { SourceDisplayParts } from './types'
 
 export const MAX_IMAGE_BYTES = 20 * 1024 * 1024 // 20 MiB
+export const MAX_PDF_BYTES = 32 * 1024 * 1024 // 32 MiB
+export const MAX_AUDIO_BYTES = 20 * 1024 * 1024 // 20 MiB
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -125,8 +127,27 @@ export function extractHttpImageUrls(text: string): string[] {
   try {
     const urlRegex = /https?:\/\/[\w\-._~:?#\[\]@!$&'()*+,;=%/]+/gi
     const candidates = (text.match(urlRegex) || [])
-    const filtered = candidates.filter((u) => /\.(?:jpg|jpeg|png)(?:$|[?#])/i.test(u))
+  const filtered = candidates.filter((u) => /\.(?:jpg|jpeg|png|webp|gif)(?:$|[?#])/i.test(u))
     // Basic validation that they are valid URLs
+    const valid = filtered.filter((u) => {
+      try {
+        const p = new URL(u)
+        return p.protocol === 'http:' || p.protocol === 'https:'
+      } catch {
+        return false
+      }
+    })
+    return Array.from(new Set(valid))
+  } catch {
+    return []
+  }
+}
+
+export function extractHttpPdfUrls(text: string): string[] {
+  try {
+    const urlRegex = /https?:\/\/[\w\-._~:?#\[\]@!$&'()*+,;=%/]+/gi
+    const candidates = (text.match(urlRegex) || [])
+    const filtered = candidates.filter((u) => /\.pdf(?:$|[?#])/i.test(u))
     const valid = filtered.filter((u) => {
       try {
         const p = new URL(u)
@@ -159,6 +180,7 @@ export const modelOptions = [
   { value: 'x-ai/grok-4-0709', label: 'Grok 4' },
   { value: 'x-ai/grok-4-fast-reasoning', label: 'Grok 4 Fast' },
   // OpenRouter models
+  { value: 'openrouter/google/gemini-2.5-flash-image-preview', label: 'Nano Banano' },
   { value: 'openrouter/qwen/qwen3-max', label: 'Qwen3-Max' },
   { value: 'openrouter/openai/gpt-5-codex', label: 'GPT-5 Codex' },
   { value: 'openrouter/anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },

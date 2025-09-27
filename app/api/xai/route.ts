@@ -5,6 +5,11 @@ type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string }
 type ChatRequestPayload = {
   messages: ChatMessage[]
   inputImages?: string[]
+  inputPdfs?: string[]
+  // For audio, accept either data URLs (data:audio/<fmt>;base64,...) or objects with { data, format }
+  inputAudio?: Array<string | { data: string; format: string }>
+  // Optional OpenRouter plugins passthrough (e.g., file-parser for PDFs)
+  plugins?: unknown
   previousResponseId?: string | null
   model?: string
   reasoning?: { effort?: 'low' | 'medium' | 'high' } | Record<string, unknown>
@@ -95,6 +100,78 @@ function buildMessages(payload: ChatRequestPayload) {
       const isHttp = /^https?:\/\//i.test(url)
       if (isDataUrl || isHttp) {
         parts.push({ type: 'image_url', image_url: { url, detail: 'auto' } })
+      }
+    }
+  }
+  // OpenRouter supports PDFs (file) and audio (input_audio) in content parts
+  // Only include these when targeting OpenRouter to avoid incompatibilities with xAI API.
+  if (isOpenRouterSelectedModel(payload.model)) {
+    if (Array.isArray(payload.inputPdfs)) {
+      for (const url of payload.inputPdfs) {
+        if (typeof url !== 'string') continue
+        const isPdfDataUrl = /^data:application\/pdf;base64,/i.test(url)
+        const isHttp = /^https?:\/\//i.test(url)
+        if (isPdfDataUrl || isHttp) {
+          let filename = 'document.pdf'
+          try {
+            if (isHttp) {
+              const parsed = new URL(url)
+              const base = parsed.pathname.split('/').filter(Boolean).pop() || ''
+              if (/\.pdf$/i.test(base)) filename = base
+            }
+          } catch {}
+          parts.push({ type: 'file', file: { filename, file_data: url } })
+        }
+      }
+    }
+    // Normalize audio into { data, format }
+    const normalizeAudio = (v: any): { data: string; format: string } | null => {
+      try {
+        if (!v) return null
+        if (typeof v === 'object' && typeof v.data === 'string' && typeof v.format === 'string') {
+          const data = v.data.trim()
+          const format = v.format.trim()
+          if (data && format) return { data, format }
+          return null
+        }
+        if (typeof v === 'string') {
+          const s = v.trim()
+          // Accept data URLs: data:audio/<fmt>;base64,<b64>
+          const m = /^data:audio\/([a-zA-Z0-9+.-]+);base64,([A-Za-z0-9+/=]+)$/i.exec(s)
+          if (m && m[1] && m[2]) {
+            const mimeSub = m[1].toLowerCase()
+            // Map common mime subtypes to formats expected by providers
+            const mimeToFmt: Record<string, string> = {
+              'mpeg': 'mp3',
+              'mp3': 'mp3',
+              'wav': 'wav',
+              'x-wav': 'wav',
+              'webm': 'webm',
+              'ogg': 'ogg',
+              'x-m4a': 'm4a',
+              'aac': 'aac',
+              'mp4': 'mp4',
+              '3gpp': '3gpp',
+              '3gpp2': '3gpp2',
+            }
+            const format = mimeToFmt[mimeSub] || mimeSub
+            return { data: m[2], format }
+          }
+          // Also accept raw base64 with prefix "<fmt>:<data>"
+          const colon = /^([a-z0-9+.-]+):([A-Za-z0-9+/=]+)$/i.exec(s)
+          if (colon) {
+            return { format: colon[1].toLowerCase(), data: colon[2] }
+          }
+        }
+      } catch {}
+      return null
+    }
+    if (Array.isArray(payload.inputAudio)) {
+      for (const a of payload.inputAudio) {
+        const norm = normalizeAudio(a)
+        if (norm && norm.data && norm.format) {
+          parts.push({ type: 'input_audio', input_audio: { data: norm.data, format: norm.format } })
+        }
       }
     }
   }
@@ -260,6 +337,22 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
     stream: true,
   }
 
+  // If using an OpenRouter model that supports image generation (e.g., Gemini 2.5 Flash Image Preview),
+  // request both image and text modalities per OpenRouter docs.
+  try {
+    const lowerModel = String(model || '').toLowerCase()
+    if (lowerModel.includes('gemini-2.5-flash-image-preview')) {
+      requestBody.modalities = ['image', 'text']
+    }
+  } catch {}
+
+  // Pass-through plugins (e.g., file-parser for PDFs)
+  try {
+    if (payload.plugins && typeof payload.plugins === 'object') {
+      requestBody.plugins = payload.plugins
+    }
+  } catch {}
+
   // Enable OpenRouter Web Search by appending :online when the UI toggle is ON
   try {
     const mode = (payload.search_parameters as any)?.mode
@@ -333,6 +426,26 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
                 const content: unknown = delta?.content
                 if (typeof content === 'string' && content) {
                   controller.enqueue(encoder.encode(content))
+                }
+                // Stream image deltas from OpenRouter as inline tags the client can render
+                const deltaImages: any[] = Array.isArray(delta?.images) ? delta.images : []
+                for (const im of deltaImages) {
+                  try {
+                    const url = im?.image_url?.url
+                    if (typeof url === 'string' && url) {
+                      controller.enqueue(encoder.encode(`<image_partial:${url}>`))
+                    }
+                  } catch {}
+                }
+                // If the provider returns final images on the message (non-delta), emit final image tags
+                const msgImages: any[] = Array.isArray(ch?.message?.images) ? ch.message.images : []
+                for (const im of msgImages) {
+                  try {
+                    const url = im?.image_url?.url
+                    if (typeof url === 'string' && url) {
+                      controller.enqueue(encoder.encode(`<image:${url}>`))
+                    }
+                  } catch {}
                 }
               }
             } catch {}

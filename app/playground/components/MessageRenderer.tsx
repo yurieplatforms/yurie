@@ -204,18 +204,16 @@ export function renderMessageContent(
             return null
           }
           return (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                key={i}
-                src={p.src}
-                alt="Generated image"
-                className={cn(
-                  'mt-2 max-w-full rounded border border-neutral-200 dark:border-neutral-800',
-                  role === 'assistant' ? 'mb-1' : 'mb-3'
-                )}
-              />
-            </>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={`img-${i}`}
+              src={p.src}
+              alt="Generated image"
+              className={cn(
+                'mt-2 max-w-full rounded border border-neutral-200 dark:border-neutral-800',
+                role === 'assistant' ? 'mb-1' : 'mb-3'
+              )}
+            />
           )
         }
         return null

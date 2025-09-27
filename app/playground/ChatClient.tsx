@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { cn, getTimeOfDayWord, stripImageData, extractHttpImageUrls } from './utils'
+import { cn, getTimeOfDayWord, stripImageData, extractHttpImageUrls, extractHttpPdfUrls } from './utils'
 import { ChatMessage, AttachmentPreview, ChatRequestPayload, ErrorJSON } from './types'
 import { ChatInput } from './components/ChatInput'
 import { MessageAttachmentList } from './components/FileComponents'
@@ -187,11 +187,117 @@ export default function ChatClient() {
             })
         )
       )
+      // Collect PDFs (as data URLs)
+      const pdfFiles = messageFiles.filter((f) => (f.type || '').toLowerCase() === 'application/pdf')
+      const inputPdfsFromFiles: string[] = await Promise.all(
+        pdfFiles.map(
+          (f) =>
+            new Promise<string>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(String(reader.result))
+              reader.onerror = () => reject(reader.error)
+              reader.readAsDataURL(f)
+            })
+        )
+      )
+      // Collect audio (as typed objects with base64 and format)
+      const audioFiles = messageFiles.filter((f) => (f.type || '').toLowerCase().startsWith('audio/'))
+      const inputAudioFromFiles: Array<{ data: string; format: string }> = await Promise.all(
+        audioFiles.map(
+          (f) =>
+            new Promise<{ data: string; format: string }>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => {
+                try {
+                  const result = String(reader.result || '')
+                  // Expect data URL: data:audio/<fmt>;base64,<b64>
+                  const m = /^data:audio\/([a-zA-Z0-9+.-]+);base64,([A-Za-z0-9+/=]+)$/i.exec(result)
+                  if (m && m[1] && m[2]) {
+                    const mimeSub = m[1].toLowerCase()
+                    const mimeToFmt: Record<string, string> = {
+                      'mpeg': 'mp3',
+                      'mp3': 'mp3',
+                      'wav': 'wav',
+                      'x-wav': 'wav',
+                      'webm': 'webm',
+                      'ogg': 'ogg',
+                      'x-m4a': 'm4a',
+                      'aac': 'aac',
+                      'mp4': 'mp4',
+                      '3gpp': '3gpp',
+                      '3gpp2': '3gpp2',
+                    }
+                    const format = mimeToFmt[mimeSub] || mimeSub
+                    resolve({ data: m[2], format })
+                    return
+                  }
+                  reject(new Error('Invalid audio data URL'))
+                } catch (e) {
+                  reject(e instanceof Error ? e : new Error('Audio processing failed'))
+                }
+              }
+              reader.onerror = () => reject(reader.error)
+              reader.readAsDataURL(f)
+            })
+        )
+      )
       // Extract http(s) image URLs from the prompt text (jpg/jpeg/png only)
       const httpImageUrls = extractHttpImageUrls(trimmed)
-      const inputImages: string[] = Array.from(
-        new Set([...(inputImagesFromFiles || []), ...(httpImageUrls || [])])
+      // Extract http(s) PDF URLs from the prompt text
+      const httpPdfUrls = extractHttpPdfUrls(trimmed)
+
+      // Also extract any inline image tags from the user's text (e.g., <image:...>, <image_partial:...>, or [data:image...])
+      const extractInlineImageUrls = (s: string): string[] => {
+        try {
+          const out: string[] = []
+          const angle = /<(?:image|image_partial):([^>]+)>/gi
+          let m: RegExpExecArray | null
+          while ((m = angle.exec(s)) !== null) {
+            const url = (m[1] || '').trim()
+            if (url) out.push(url)
+          }
+          const bracket = /\[(data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+)\]/gi
+          let mb: RegExpExecArray | null
+          while ((mb = bracket.exec(s)) !== null) {
+            const url = (mb[1] || '').trim()
+            if (url) out.push(url)
+          }
+          return out
+        } catch {
+          return []
+        }
+      }
+      const inlineImageUrlsFromUserText = extractInlineImageUrls(trimmed)
+
+      // If the user is likely referencing/editing the last generated image but didn't paste it,
+      // pull final images from the most recent assistant message.
+      const lastAssistantImages = (() => {
+        try {
+          for (let i = messages.length - 1; i >= 0; i--) {
+            const msg = messages[i]
+            if (msg.role !== 'assistant') continue
+            return extractInlineImageUrls(msg.content || '')
+          }
+        } catch {}
+        return [] as string[]
+      })()
+      let inputImages: string[] = Array.from(
+        new Set([
+          ...(inputImagesFromFiles || []),
+          ...(httpImageUrls || []),
+          ...(inlineImageUrlsFromUserText || []),
+        ])
       )
+      const inputPdfs: string[] = Array.from(new Set([...(inputPdfsFromFiles || []), ...(httpPdfUrls || [])]))
+
+      // Heuristic: if none were explicitly included in the user's text but they likely want to "edit" the last image,
+      // include latest assistant images (limit to first 2 to avoid overlong payloads).
+      try {
+        const likelyEditing = /\b(edit|modify|change|update)\b.*\b(image|photo|picture)\b/i.test(trimmed)
+        if (inputImages.length === 0 && likelyEditing && lastAssistantImages.length > 0) {
+          inputImages = Array.from(new Set([...(lastAssistantImages.slice(0, 2))]))
+        }
+      } catch {}
       // Clear input files after capturing previews and data URLs
       setFiles([])
 
@@ -207,6 +313,8 @@ export default function ChatClient() {
       const body: ChatRequestPayload = {
         messages: payloadMessages,
         inputImages,
+        inputPdfs,
+        inputAudio: inputAudioFromFiles,
         previousResponseId: lastResponseId,
         model: modelChoice,
       }
