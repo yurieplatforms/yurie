@@ -186,6 +186,7 @@ export const modelOptions = [
   { value: 'openrouter/qwen/qwen-plus-2025-07-28:thinking', label: 'Qwen Plus (Thinking)' },
   { value: 'openrouter/openai/gpt-5-codex', label: 'GPT-5 Codex' },
   { value: 'openrouter/anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
+  { value: 'openrouter/perplexity/sonar-deep-research', label: 'Sonar Deep Research' },
 ]
 
 export function getSelectedModelLabel(modelChoice: string): string {

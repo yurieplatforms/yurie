@@ -45,6 +45,7 @@ export function ChatInput({
       const m = String(modelChoice || '').toLowerCase()
       if (m === 'openrouter/qwen/qwen3-max') return false
       if (m === 'openrouter/qwen/qwen-plus-2025-07-28:thinking') return false
+      if (m === 'openrouter/perplexity/sonar-deep-research') return false
       return true
     } catch {
       return true

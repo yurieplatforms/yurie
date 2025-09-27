@@ -369,13 +369,52 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
     }
   } catch {}
 
-  // Enable OpenRouter Web Search by appending :online when the UI toggle is ON
+  // Enable OpenRouter Web Search (plugin-based or :online shortcut)
   try {
-    const mode = (payload.search_parameters as any)?.mode
+    const sp: any = (payload.search_parameters as any) || {}
+    const mode = sp?.mode
     const shouldUseWeb = typeof mode === 'string' && mode.toLowerCase() === 'on'
-    if (shouldUseWeb && !/:\s*online$/i.test(model)) {
-      model = `${model}:online`
-      requestBody.model = model
+    const lowerModel = String(model || '').toLowerCase()
+    const advancedEngine = typeof sp?.engine === 'string' ? sp.engine : undefined
+    const maxResults = typeof sp?.max_results === 'number' ? sp.max_results : undefined
+    const searchPrompt = typeof sp?.search_prompt === 'string' ? sp.search_prompt : undefined
+    const webSearchOptions = sp?.web_search_options && typeof sp.web_search_options === 'object'
+      ? sp.web_search_options
+      : undefined
+
+    if (webSearchOptions) {
+      ;(requestBody as any).web_search_options = webSearchOptions
+    }
+
+    const hasExplicitWebPlugin = Array.isArray((requestBody as any).plugins)
+      && (requestBody as any).plugins.some((p: any) => p && typeof p.id === 'string' && p.id === 'web')
+
+    const wantsAdvancedWebPlugin = Boolean(
+      advancedEngine || maxResults || searchPrompt || webSearchOptions || hasExplicitWebPlugin
+    )
+
+    if (shouldUseWeb) {
+      if (wantsAdvancedWebPlugin) {
+        const plugins = Array.isArray((requestBody as any).plugins)
+          ? (requestBody as any).plugins.slice()
+          : []
+        if (!hasExplicitWebPlugin) {
+          const webPlugin: any = { id: 'web' }
+          // Prefer native for providers that support it when engine is not explicitly set
+          const inferredEngine = advancedEngine
+            || ((/^(openai|anthropic)\//.test(lowerModel) || /^perplexity\//.test(lowerModel)) ? 'native' : undefined)
+          if (inferredEngine) webPlugin.engine = inferredEngine
+          if (typeof maxResults === 'number') webPlugin.max_results = maxResults
+          if (typeof searchPrompt === 'string') webPlugin.search_prompt = searchPrompt
+          plugins.push(webPlugin)
+        }
+        ;(requestBody as any).plugins = plugins
+      } else {
+        if (!/:\s*online$/i.test(model)) {
+          model = `${model}:online`
+          requestBody.model = model
+        }
+      }
     }
   } catch {}
 
@@ -513,7 +552,21 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
                     controller.enqueue(encoder.encode(`<reasoning:${b64}>`))
                   }
                 } catch {}
+                // Collect URL citations from annotations on the message
+                try {
+                  const anns = Array.isArray((ch as any)?.message?.annotations)
+                    ? (ch as any).message.annotations
+                    : []
+                  if (anns.length > 0) collectAnnotations(anns)
+                } catch {}
               }
+            } catch {}
+            // Also inspect annotations on root-level message if present
+            try {
+              const rootAnns = Array.isArray((obj as any)?.message?.annotations)
+                ? (obj as any).message.annotations
+                : []
+              if (rootAnns.length > 0) collectAnnotations(rootAnns)
             } catch {}
           }
         }
