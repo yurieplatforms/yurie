@@ -40,6 +40,16 @@ export function ChatInput({
       return false
     }
   })()
+  const allowImages = (() => {
+    try {
+      const m = String(modelChoice || '').toLowerCase()
+      if (m === 'openrouter/qwen/qwen3-max') return false
+      if (m === 'openrouter/qwen/qwen-plus-2025-07-28:thinking') return false
+      return true
+    } catch {
+      return true
+    }
+  })()
 
   useLayoutEffect(() => {
     const computeWidth = () => {
@@ -130,39 +140,43 @@ export function ChatInput({
                   >
                     <Paperclip className="size-4" />
                   </button>
-                  {/* Hidden native image input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    multiple
-                    onChange={(e) => {
-                      const selected = Array.from(e.target.files ?? [])
-                      const filtered = selected.filter((f) => {
-                        const mime = (f.type || '').toLowerCase()
-                        const isJpeg = mime === 'image/jpeg' || mime === 'image/jpg'
-                        const isPng = mime === 'image/png'
-                        const isWebp = mime === 'image/webp'
-                        const isGif = mime === 'image/gif'
-                        const withinLimit = f.size <= MAX_IMAGE_BYTES
-                        return (isJpeg || isPng || isWebp || isGif) && withinLimit
-                      })
-                      if (filtered.length > 0) onFileUpload(filtered)
-                      if (e.target) e.target.value = ''
-                    }}
-                    className="sr-only"
-                    aria-label="Add images"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    aria-label="Add images"
-                    title="Add images"
-                    className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm p-0 text-foreground/80 transition-colors hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
-                    disabled={isSubmitting}
-                  >
-                    <ImageIcon className="size-4" />
-                  </button>
+                  {/* Image input and button (disabled for Qwen models that don't support images) */}
+                  {allowImages ? (
+                    <>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        multiple
+                        onChange={(e) => {
+                          const selected = Array.from(e.target.files ?? [])
+                          const filtered = selected.filter((f) => {
+                            const mime = (f.type || '').toLowerCase()
+                            const isJpeg = mime === 'image/jpeg' || mime === 'image/jpg'
+                            const isPng = mime === 'image/png'
+                            const isWebp = mime === 'image/webp'
+                            const isGif = mime === 'image/gif'
+                            const withinLimit = f.size <= MAX_IMAGE_BYTES
+                            return (isJpeg || isPng || isWebp || isGif) && withinLimit
+                          })
+                          if (filtered.length > 0) onFileUpload(filtered)
+                          if (e.target) e.target.value = ''
+                        }}
+                        className="sr-only"
+                        aria-label="Add images"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        aria-label="Add images"
+                        title="Add images"
+                        className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm p-0 text-foreground/80 transition-colors hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
+                        disabled={isSubmitting}
+                      >
+                        <ImageIcon className="size-4" />
+                      </button>
+                    </>
+                  ) : null}
                   <button
                     type="button"
                     onClick={onUseWebSearchToggle}
