@@ -424,7 +424,7 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       let firstIdSent = false
-      let lastCitations: string[] = []
+      const lastCitations: string[] = []
       let buffer = ''
       const collectAnnotations = (anns: any[]) => {
         try {
