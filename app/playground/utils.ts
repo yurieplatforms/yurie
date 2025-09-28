@@ -180,7 +180,7 @@ export const modelOptions = [
   { value: 'x-ai/grok-4-0709', label: 'Grok 4' },
   { value: 'x-ai/grok-4-fast-reasoning', label: 'Grok 4 Fast' },
   // OpenRouter models
-  { value: 'openrouter/google/gemini-2.5-flash-image-preview', label: 'Nano Banano' },
+  { value: 'openrouter/google/gemini-2.5-flash-image-preview', label: 'Nano Banana' },
   { value: 'openrouter/google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
   { value: 'openrouter/qwen/qwen3-max', label: 'Qwen3-Max' },
   { value: 'openrouter/qwen/qwen-plus-2025-07-28:thinking', label: 'Qwen Plus (Thinking)' },
