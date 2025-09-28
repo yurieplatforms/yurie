@@ -20,7 +20,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 
 export function ChatInput({
@@ -221,7 +220,7 @@ export function ChatInput({
                         sideOffset={12} 
                         side="bottom"
                         align="start"
-                        className="min-w-[20rem] max-w-[24rem] z-[100] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)] shadow-lg backdrop-blur-md"
+                        className="min-w-[20rem] max-w-[24rem] z-[100] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)] shadow-lg backdrop-blur-md rounded-[20px]"
                       >
                         <div className="px-3 py-2">
                           <input
@@ -233,10 +232,9 @@ export function ChatInput({
                             }}
                             placeholder="Search blog or research…"
                             aria-label="Search context"
-                            className="w-full rounded-lg border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[#807d78] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:outline-none active:ring-0 focus:border-[var(--color-chat-input-border)] transition-colors"
+                            className="w-full rounded-[16px] border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[#807d78] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:outline-none active:ring-0 focus:border-[var(--color-chat-input-border)] transition-colors"
                           />
                         </div>
-                        <DropdownMenuSeparator className="bg-[var(--color-chat-input-border)] mx-2" />
                         <div className="max-h-[min(60vh,20rem)] overflow-y-auto">
                           {contextResults.length === 0 ? (
                             <div className="px-3 py-3 text-sm text-[#807d78] text-center" role="status" aria-live="polite">No results found</div>
@@ -308,7 +306,7 @@ export function ChatInput({
                         sideOffset={12} 
                         side="bottom"
                         align="start"
-                        className="min-w-[20rem] max-w-[24rem] z-[100] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)] shadow-lg backdrop-blur-md"
+                        className="min-w-[20rem] max-w-[24rem] z-[100] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)] shadow-lg backdrop-blur-md rounded-[20px]"
                       >
                         <div className="px-3 py-2">
                           <input
@@ -320,10 +318,9 @@ export function ChatInput({
                             }}
                             placeholder="Search blog or research…"
                             aria-label="Search context"
-                            className="w-full rounded-lg border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[#807d78] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:outline-none active:ring-0 focus:border-[var(--color-chat-input-border)] transition-colors"
+                            className="w-full rounded-[16px] border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[#807d78] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 active:outline-none active:ring-0 focus:border-[var(--color-chat-input-border)] transition-colors"
                           />
                         </div>
-                        <DropdownMenuSeparator className="bg-[var(--color-chat-input-border)] mx-2" />
                         <div className="max-h-[min(60vh,20rem)] overflow-y-auto">
                           {contextResults.length === 0 ? (
                             <div className="px-3 py-3 text-sm text-[#807d78] text-center" role="status" aria-live="polite">No results found</div>
