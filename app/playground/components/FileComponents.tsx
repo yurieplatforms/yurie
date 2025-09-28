@@ -38,13 +38,13 @@ export function MessageAttachmentList({
           return (
             <div
               key={att.id}
-              className="inline-flex items-center gap-2 rounded-md border border-[var(--border-color)] bg-[var(--surface)] px-3 py-2 text-xs"
+              className="inline-flex items-center gap-2 rounded-md border border-[var(--border-color)] bg-[var(--surface)] px-3 py-2 text-xs text-[#807d78]"
             >
               <audio controls src={att.objectUrl} className="h-8">
                 Your browser does not support the audio element.
               </audio>
               <span className="font-medium truncate max-w-[160px]" title={att.name}>{att.name}</span>
-              <span className="ml-2 text-neutral-500">
+              <span className="ml-2 text-[#807d78]">
                 {(att.size / 1024).toFixed(2)}kB
               </span>
             </div>
@@ -56,12 +56,11 @@ export function MessageAttachmentList({
             href={att.objectUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-md border border-[var(--border-color)] bg-[var(--surface)] px-3 py-2 text-xs hover:border-[var(--border-color-hover)]"
+            className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-[#807d78] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)] hover:opacity-80 no-underline"
+            title={att.name}
+            style={{ color: '#807d78' }}
           >
-            <span className="font-medium truncate max-w-[200px]" title={att.name}>{att.name}</span>
-            <span className="ml-2 text-neutral-500">
-              {(att.size / 1024).toFixed(2)}kB
-            </span>
+            <span className="truncate max-w-[220px]">{att.name}</span>
           </a>
         )
       })}

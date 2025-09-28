@@ -27,6 +27,8 @@ export default function ChatClient() {
   const abortControllerRef = useRef<AbortController | null>(null)
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] =
     useState<Record<number, AttachmentPreview[]>>({})
+  const [sentContextByMessageIndex, setSentContextByMessageIndex] =
+    useState<Record<number, { id: string; type: 'blog' | 'research'; slug: string; title: string }[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
   const [modelChoice, setModelChoice] = useState<string>('x-ai/grok-4-fast-reasoning')
@@ -34,6 +36,7 @@ export default function ChatClient() {
   const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(
     getTimeOfDayWord
   )
+  const [contextIds, setContextIds] = useState<string[]>([])
 
   const md = useMarkdownRenderer()
   const suggestionsByCategory: Record<string, string[]> = {
@@ -218,7 +221,7 @@ export default function ChatClient() {
   const handleSubmitWithMessage = useCallback(async (text: string, messageFiles: File[]) => {
     const trimmed = text.trim()
     if (isLoading) return
-    if (trimmed.length === 0 && messageFiles.length === 0) return
+    if (trimmed.length === 0 && messageFiles.length === 0 && contextIds.length === 0) return
     const userMsg: ChatMessage = { role: 'user', content: trimmed }
     const nextMessages: ChatMessage[] = [...messages, userMsg]
     setMessages(nextMessages)
@@ -256,12 +259,52 @@ export default function ChatClient() {
           isImage,
         }
       })
+      const indexForThisMessage = nextMessages.length - 1
       if (attachmentsForPreview.length > 0) {
-        const indexForThisMessage = nextMessages.length - 1
         setSentAttachmentsByMessageIndex((prev) => ({
           ...prev,
           [indexForThisMessage]: attachmentsForPreview,
         }))
+      }
+      // Snapshot current context IDs so we can clear state immediately after
+      const contextIdsSnapshot = Array.isArray(contextIds) ? contextIds.slice() : []
+      if (contextIdsSnapshot.length > 0) {
+        const parse = (id: string): { id: string; type: 'blog' | 'research' | null; slug: string | null } => {
+          try {
+            const [type, slug] = id.split(':')
+            const t = (type || '').toLowerCase()
+            if ((t === 'blog' || t === 'research') && slug) return { id, type: t as any, slug }
+          } catch {}
+          return { id, type: null, slug: null }
+        }
+        const prelim = contextIdsSnapshot.map((id) => {
+          const p = parse(id)
+          const label = p.type && p.slug ? `${p.type}/${p.slug}` : id
+          return { id, type: (p.type || 'blog') as 'blog' | 'research', slug: (p.slug || id) as string, title: label }
+        })
+        setSentContextByMessageIndex((prev) => ({
+          ...prev,
+          [indexForThisMessage]: prelim,
+        }))
+        // Fetch titles to improve labels (non-blocking)
+        Promise.all(
+          prelim.map(async (p) => {
+            try {
+              const res = await fetch(`/api/posts?type=${p.type}&slug=${p.slug}`)
+              if (!res.ok) return p
+              const json = await res.json()
+              const title = json?.post?.title
+              if (typeof title === 'string' && title.trim()) {
+                return { ...p, title: `${title} — ${p.type}` }
+              }
+              return p
+            } catch {
+              return p
+            }
+          })
+        ).then((resolved) => {
+          setSentContextByMessageIndex((prev) => ({ ...prev, [indexForThisMessage]: resolved }))
+        }).catch(() => {})
       }
       // Collect user-attached images (as data URLs)
       const imageFiles = messageFiles.filter((f) => f.type.startsWith('image/'))
@@ -409,6 +452,24 @@ export default function ChatClient() {
         previousResponseId: lastResponseId,
         model: modelChoice,
       }
+      // Convert selected context IDs (e.g., "blog:slug") to structured payload
+      try {
+        if (Array.isArray(contextIdsSnapshot) && contextIdsSnapshot.length > 0) {
+          const parsed = contextIdsSnapshot
+            .map((id) => {
+              const [type, slug] = id.split(':')
+              const t = (type || '').toLowerCase()
+              if ((t === 'blog' || t === 'research') && slug) {
+                return { type: t as 'blog' | 'research', slug }
+              }
+              return null
+            })
+            .filter(Boolean) as Array<{ type: 'blog' | 'research'; slug: string }>
+          if (parsed.length > 0) {
+            body.context_ids = parsed
+          }
+        }
+      } catch {}
       if (supportsReasoningEffort || isOpenRouterModel) {
         body.reasoning = { effort: 'high' }
       }
@@ -525,8 +586,10 @@ export default function ChatClient() {
       setStatus('ready')
 
       abortControllerRef.current = null
+      // Clear selected context once sent
+      setContextIds([])
     }
-  }, [messages, isLoading, modelChoice, useWebSearch, lastResponseId])
+  }, [messages, isLoading, modelChoice, useWebSearch, lastResponseId, contextIds])
 
   const stop = useCallback(() => {
     try {
@@ -541,6 +604,8 @@ export default function ChatClient() {
     setMessages([])
     setFiles([])
     setSentAttachmentsByMessageIndex({})
+    setSentContextByMessageIndex({})
+    setContextIds([])
     setLastResponseId(null)
     // Revoke any created object URLs for message attachment previews
     try {
@@ -707,9 +772,12 @@ export default function ChatClient() {
                       (() => {
                         const attachments =
                           sentAttachmentsByMessageIndex[i] || []
+                        const contextChips = sentContextByMessageIndex[i] || []
                         const hasText = (m.content || '').trim().length > 0
                         const hasAttachments = attachments.length > 0
-                        const attachmentsOnly = !hasText && hasAttachments
+                        const hasContext = contextChips.length > 0
+                        const contextOnly = !hasText && !hasAttachments && hasContext
+                        const attachmentsOnly = !hasText && hasAttachments && !hasContext
                         if (attachmentsOnly) {
                           return (
                             <div
@@ -727,10 +795,39 @@ export default function ChatClient() {
                             </div>
                           )
                         }
+                        if (contextOnly) {
+                          return (
+                            <div
+                              className={cn(
+                                'chat-bubble',
+                                'user',
+                                'compact',
+                                'inline-flex'
+                              )}
+                            >
+                              <div className="flex flex-wrap gap-2">
+                                {contextChips.map((c) => (
+                                  <span key={c.id} className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-[#807d78] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)]">
+                                    @{c.title}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        }
                         return (
                           <div className={cn('chat-bubble', 'user', 'min-w-0')}>
                             <div className="w-full min-w-0">
                               {renderMessageContent(m.role, m.content, status, md)}
+                              {hasContext ? (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {contextChips.map((c) => (
+                                    <span key={c.id} className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-[#807d78] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)]">
+                                      @{c.title}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : null}
                               {hasAttachments ? (
                                 <MessageAttachmentList
                                   attachments={attachments}
@@ -812,6 +909,8 @@ export default function ChatClient() {
           onUseWebSearchToggle={() => setUseWebSearch((v) => !v)}
           modelChoice={modelChoice}
           onModelChange={setModelChoice}
+          selectedContextIds={contextIds}
+          onContextChange={setContextIds}
         />
       </div>
     </section>

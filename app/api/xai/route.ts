@@ -14,7 +14,12 @@ type ChatRequestPayload = {
   model?: string
   reasoning?: { effort?: 'low' | 'medium' | 'high' } | Record<string, unknown>
   search_parameters?: { mode?: 'on' | 'off'; return_citations?: boolean } | Record<string, unknown>
+  // Optional: server-side enrichment with Yurie posts
+  context_posts?: Array<{ type: 'blog' | 'research'; slug: string; title: string; content: string }>
+  context_ids?: Array<{ type: 'blog' | 'research'; slug: string }>
 }
+
+import { getPostsFromAppSubdir } from '@/lib/posts'
 
 const SYSTEM_PROMPT = `
 <SystemPrompt>
@@ -79,7 +84,27 @@ function normalizeOpenRouterModelTag(model?: string | null): string {
   return s.toLowerCase().startsWith('openrouter/') ? s.slice('openrouter/'.length) : s
 }
 
-function buildMessages(payload: ChatRequestPayload) {
+async function loadContextFromIds(ids: Array<{ type: 'blog' | 'research'; slug: string }>) {
+  try {
+    const blog = getPostsFromAppSubdir('blog/posts')
+    const research = getPostsFromAppSubdir('research/posts')
+    const out: Array<{ type: 'blog' | 'research'; slug: string; title: string; content: string }> = []
+    for (const id of ids) {
+      try {
+        const src = id.type === 'blog' ? blog : research
+        const found = src.find((p) => p.slug === id.slug)
+        if (found) {
+          out.push({ type: id.type, slug: id.slug, title: found.metadata.title, content: found.content })
+        }
+      } catch {}
+    }
+    return out
+  } catch {
+    return []
+  }
+}
+
+async function buildMessages(payload: ChatRequestPayload) {
   const out: Array<{ role: string; content: any }> = []
   out.push({ role: 'system', content: [{ type: 'text', text: SYSTEM_PROMPT }] })
 
@@ -93,6 +118,19 @@ function buildMessages(payload: ChatRequestPayload) {
   if (last && typeof last.content === 'string' && last.content.trim()) {
     parts.push({ type: 'text', text: last.content })
   }
+  // Append selected context posts at the end of user parts
+  try {
+    let ctxPosts: Array<{ type: 'blog' | 'research'; slug: string; title: string; content: string }> = []
+    if (Array.isArray(payload.context_posts) && payload.context_posts.length > 0) {
+      ctxPosts = payload.context_posts
+    } else if (Array.isArray(payload.context_ids) && payload.context_ids.length > 0) {
+      ctxPosts = await loadContextFromIds(payload.context_ids)
+    }
+    for (const p of ctxPosts) {
+      const header = `\n\n[Context: ${p.type}/${p.slug}] ${p.title}\n\n`
+      parts.push({ type: 'text', text: header + p.content })
+    }
+  } catch {}
   if (Array.isArray(payload.inputImages)) {
     for (const url of payload.inputImages) {
       if (typeof url !== 'string') continue
@@ -193,13 +231,16 @@ function streamFromXAI(payload: ChatRequestPayload): Response {
   }
 
   const model = resolveModel(payload.model)
-  const messages = buildMessages(payload)
+  // buildMessages may be async now
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
+  const messagesPromise = (async () => await buildMessages(payload))()
   const reasoning = payload.reasoning
   const searchParams = payload.search_parameters
 
   const requestBody: Record<string, any> = {
     model,
-    messages,
+    // placeholder, will be replaced below after resolution
+    messages: [],
     stream: true,
   }
 
@@ -224,6 +265,8 @@ function streamFromXAI(payload: ChatRequestPayload): Response {
       let lastCitations: string[] | null = null
       let buffer = ''
       try {
+        const messages = await messagesPromise
+        requestBody.messages = messages
         const res = await fetch('https://api.x.ai/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -337,12 +380,14 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
   }
 
   let model = normalizeOpenRouterModelTag(payload.model)
-  const messages = buildMessages(payload)
+  // buildMessages may be async now
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
+  const messagesPromise = (async () => await buildMessages(payload))()
   const reasoning = payload.reasoning
 
   const requestBody: Record<string, any> = {
     model,
-    messages,
+    messages: [],
     stream: true,
   }
 
@@ -463,6 +508,8 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
           if (ref) headers['HTTP-Referer'] = ref
           if (title) headers['X-Title'] = title
         } catch {}
+        const messages = await messagesPromise
+        ;(requestBody as any).messages = messages
         const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers,
