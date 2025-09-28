@@ -353,6 +353,18 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
     }
   } catch {}
 
+  // Default to high reasoning effort for OpenRouter models when not explicitly provided
+  try {
+    if (!requestBody.reasoning) {
+      requestBody.reasoning = { effort: 'high' }
+    } else if (
+      typeof (requestBody as any).reasoning === 'object' &&
+      (requestBody as any).reasoning.effort == null
+    ) {
+      ;(requestBody as any).reasoning.effort = 'high'
+    }
+  } catch {}
+
   // If using an OpenRouter model that supports image generation (e.g., Gemini 2.5 Flash Image Preview),
   // request both image and text modalities per OpenRouter docs.
   try {

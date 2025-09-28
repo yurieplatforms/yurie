@@ -11,6 +11,7 @@ import { ChatMessage, AttachmentPreview, ChatRequestPayload, ErrorJSON } from '.
 import { ChatInput } from './components/ChatInput'
 import { MessageAttachmentList } from './components/FileComponents'
 import { renderMessageContent, useMarkdownRenderer } from './components/MessageRenderer'
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
 
 export default function ChatClient() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -35,6 +36,32 @@ export default function ChatClient() {
   )
 
   const md = useMarkdownRenderer()
+
+  const allSuggestions: string[] = [
+    'Analyze NVDA earnings; key risks and opportunities',
+    '5-bullet summary of today\'s top stories',
+    'Recommend shows like Succession',
+    'Summarize the latest LLM safety paper',
+    'Draft a concise meeting request email',
+    'Plan a 3-day Tokyo itinerary',
+    'Explain quantum entanglement simply',
+    'Why did the Roman Empire fall?',
+    'Create a deep-work daily schedule',
+    'Biggest AI releases this week',
+  ]
+  const [quickSuggestions, setQuickSuggestions] = useState<string[]>(allSuggestions)
+
+  useEffect(() => {
+    // Shuffle suggestions on client after hydration to avoid SSR mismatch
+    const copy = [...allSuggestions]
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const tmp = copy[i]
+      copy[i] = copy[j]
+      copy[j] = tmp
+    }
+    setQuickSuggestions(copy)
+  }, [])
 
   useEffect(() => {
     const compute = () => {
@@ -691,6 +718,17 @@ export default function ChatClient() {
             </div>
           </>
         ) : null}
+        <div className="mb-3 sm:mb-4">
+          <Suggestions>
+            {quickSuggestions.map((suggestion) => (
+              <Suggestion
+                key={suggestion}
+                suggestion={suggestion}
+                onClick={(s) => handleSubmitWithMessage(s, [])}
+              />
+            ))}
+          </Suggestions>
+        </div>
         <ChatInput
           onSubmitWithMessage={handleSubmitWithMessage}
           onNewChat={handleNewChat}
