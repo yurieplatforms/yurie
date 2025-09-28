@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { Globe, ImageIcon, ArrowUp, Square, Loader2, Paperclip } from 'lucide-react'
+import { Globe, ImageIcon, ArrowUp, Square, Paperclip } from 'lucide-react'
+import { Loader } from '@/components/ai-elements/loader'
 import { MAX_IMAGE_BYTES, MAX_PDF_BYTES, MAX_AUDIO_BYTES } from '../utils'
 import { ChatInputProps } from '../types'
 import { modelOptions } from '../utils'
@@ -259,7 +260,7 @@ export function ChatInput({
                       title="Sending"
                       disabled
                     >
-                      <Loader2 className="size-4 animate-spin" />
+                      <Loader size={16} />
                     </button>
                   ) : (
                     <button

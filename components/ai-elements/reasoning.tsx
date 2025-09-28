@@ -30,7 +30,7 @@ export function ReasoningTrigger({ title = 'Reasoning', className, ...props }: R
   return (
     <CollapsibleTrigger
       className={cn(
-        'group inline-flex items-center gap-2 text-xs font-medium text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100',
+        'group inline-flex items-center gap-2 text-xs font-medium text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100 cursor-pointer',
         className
       )}
       {...props}
