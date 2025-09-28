@@ -117,7 +117,7 @@ export function ThinkingPanel({
             transition={{ type: 'spring', duration: 0.25, bounce: 0 }}
             className="overflow-hidden"
           >
-            <div className="mt-0 ml-[12px] rounded-lg bg-[var(--color-background)] px-0 py-2">
+            <div className="mt-0 ml-[18px] rounded-lg bg-[var(--color-background)] px-0 py-2">
               <div
                 className="prose-message border-l-[3px] border-neutral-300 pl-3 text-sm leading-relaxed dark:border-neutral-800"
                 dangerouslySetInnerHTML={{ __html: content }}

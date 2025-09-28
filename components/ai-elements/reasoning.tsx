@@ -48,7 +48,7 @@ export function ReasoningContent({ className, children, ...props }: React.Compon
       className={cn('overflow-hidden', className)}
       {...props}
     >
-      <div className="mt-0 ml-[12px] rounded-lg bg-[var(--color-background)] px-0 py-2">
+      <div className="mt-0 ml-[18px] rounded-lg bg-[var(--color-background)] px-0 py-2">
         <div className="prose-message border-l-[3px] border-neutral-300 pl-3 text-sm leading-relaxed dark:border-neutral-800">
           {children}
         </div>
