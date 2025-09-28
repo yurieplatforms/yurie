@@ -243,13 +243,16 @@ export function renderMessageContent(
               </Response>
             )
           }
-          const rawHtml = md.parse(p.value) as string
+          // Render user text as plain text paragraphs with consistent spacing
+          const paragraphs = String(p.value || '').split(/\n{2,}/)
           return (
-            <div
-              key={i}
-              className={cn('prose prose-neutral dark:prose-invert')}
-              dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawHtml) }}
-            />
+            <div key={i} className={cn('w-full min-w-0 space-y-3')}>
+              {paragraphs.map((para, idx) => (
+                <p key={`u-${i}-${idx}`} className={cn('whitespace-pre-wrap break-words')}>
+                  {para}
+                </p>
+              ))}
+            </div>
           )
         }
         if (p.type === 'image') {

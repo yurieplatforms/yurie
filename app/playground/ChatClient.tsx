@@ -36,31 +36,93 @@ export default function ChatClient() {
   )
 
   const md = useMarkdownRenderer()
-
-  const allSuggestions: string[] = [
-    'Analyze NVDA earnings; key risks and opportunities',
-    '5-bullet summary of today\'s top stories',
-    'Recommend shows like Succession',
-    'Summarize the latest LLM safety paper',
-    'Draft a concise meeting request email',
-    'Plan a 3-day Tokyo itinerary',
-    'Explain quantum entanglement simply',
-    'Why did the Roman Empire fall?',
-    'Create a deep-work daily schedule',
-    'Biggest AI releases this week',
-  ]
-  const [quickSuggestions, setQuickSuggestions] = useState<string[]>(allSuggestions)
+  const suggestionsByCategory: Record<string, string[]> = {
+    Research: [
+      'Summarize the latest LLM safety paper',
+      'Outline a 5-page research proposal on climate policy',
+      'Compare transformers and RNNs for sequence tasks',
+      'Design an experiment to test a new hypothesis',
+      'Create a literature review on retrieval-augmented generation',
+      'Explain peer review best practices for reproducibility',
+    ],
+    Technology: [
+      'Biggest AI releases this week',
+      'Explain vector databases in simple terms',
+      'When should I use server components in Next.js?',
+      'What makes a good RAG pipeline?',
+      'Compare serverless vs containers for a small API',
+      'WebGPU vs WebGL for ML in the browser',
+    ],
+    Finance: [
+      'Summarize today’s market movers',
+      'Explain options Greeks in simple terms',
+      'DCF valuation steps for a growth company',
+      'Compare ETFs vs mutual funds advantages',
+      'What is yield curve inversion and why it matters?',
+      'Earnings preview for Apple next quarter',
+    ],
+    History: [
+      'Why did the Roman Empire fall?',
+      'Main causes and effects of World War II',
+      'What sparked the Renaissance?',
+      'How did the Silk Road change the world?',
+      'Explain causes of the Industrial Revolution',
+    ],
+    Science: [
+      'Explain quantum entanglement simply',
+      'What is CRISPR and how does it work?',
+      'How do vaccines train the immune system?',
+      'Why is the sky blue?',
+      'How do black holes evaporate (Hawking radiation)?',
+    ],
+    Entertainment: [
+      'Recommend shows like Succession',
+      'Suggest top movies released this year',
+      'What are the most streamed songs right now?',
+      'Best cozy mystery novels to read next',
+      'Recommend anime similar to Attack on Titan',
+    ],
+    News: [
+      "5-bullet summary of today’s top stories",
+      "What's the key takeaway from today’s jobs report?",
+      'Summarize the latest central bank announcements',
+      'Biggest tech headlines today',
+      'Major geopolitical updates this week',
+    ],
+    'Interesting Topics': [
+      'Share fun facts about the human brain',
+      'What mysteries of the deep ocean are unsolved?',
+      'Explain why cats purr',
+      'Why do we dream?',
+      'How do languages evolve over time?',
+      'Could colonizing Mars be realistic this century?',
+    ],
+  }
+  const [quickSuggestions, setQuickSuggestions] = useState<string[]>([])
 
   useEffect(() => {
-    // Shuffle suggestions on client after hydration to avoid SSR mismatch
-    const copy = [...allSuggestions]
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      const tmp = copy[i]
-      copy[i] = copy[j]
-      copy[j] = tmp
+    // Client-only random selection: guarantee category coverage, then fill to 30 unique
+    const pickOne = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)]
+    const selected = new Set<string>()
+    const categories = Object.values(suggestionsByCategory)
+    // one per category first
+    for (const arr of categories) {
+      if (arr && arr.length > 0) selected.add(pickOne(arr))
     }
-    setQuickSuggestions(copy)
+    // fill remainder up to 30 unique
+    while (selected.size < 30) {
+      const arr = categories[Math.floor(Math.random() * categories.length)]
+      if (arr && arr.length > 0) selected.add(pickOne(arr))
+    }
+    // shuffle
+    const list = Array.from(selected)
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const tmp = list[i]
+      list[i] = list[j]
+      list[j] = tmp
+    }
+    setQuickSuggestions(list.slice(0, 30))
   }, [])
 
   useEffect(() => {
