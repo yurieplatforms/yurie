@@ -212,7 +212,7 @@ export function ChatInput({
                           className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-chat-input-border)] bg-transparent hover:bg-[var(--color-pill-hover)] text-[#807d78] cursor-pointer disabled:cursor-not-allowed transition-colors -ml-1.5"
                           disabled={isSubmitting}
                         >
-                          <AtSign className="size-3" />
+                          <AtSign className="size-4" />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent 
