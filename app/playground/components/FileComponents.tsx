@@ -150,7 +150,7 @@ function FileItem({
         <button
           type="button"
           onClick={handleRemove}
-          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-transparent bg-[var(--color-pill-active)] text-[var(--text-primary)] shadow-none transition-colors hover:border-[var(--border-color-hover)] active:border-[var(--border-color-hover)]"
+          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-transparent bg-[var(--color-pill-active)] text-[var(--text-primary)] shadow-none transition-colors hover:border-[var(--border-color-hover)] active:border-[var(--border-color-hover)] cursor-pointer"
           aria-label="Remove file"
         >
           <X className="size-3" weight="bold" />
