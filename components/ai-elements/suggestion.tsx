@@ -32,7 +32,7 @@ export const Suggestion = ({
   suggestion,
   onClick,
   className,
-  variant = "outline",
+  variant = "ghost",
   size = "sm",
   children,
   ...props
@@ -43,7 +43,16 @@ export const Suggestion = ({
 
   return (
     <Button
-      className={cn("cursor-pointer rounded-full px-4", className)}
+      className={cn(
+        "cursor-pointer rounded-full px-4",
+        // Remove border/outline and shadow
+        "border-0 shadow-none",
+        // Ensure background uses suggestion token in both modes and on hover
+        "bg-[var(--color-suggestion)] dark:bg-[var(--color-suggestion)] hover:bg-[var(--color-suggestion)] dark:hover:bg-[var(--color-suggestion)]",
+        // Keep readable text
+        "text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78]",
+        className
+      )}
       onClick={handleClick}
       size={size}
       type="button"

@@ -49,8 +49,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#E7E7EB' },
-    { media: '(prefers-color-scheme: dark)', color: '#0A0A0A' },
+    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
+    { media: '(prefers-color-scheme: dark)', color: '#191919' },
   ],
 }
 
@@ -65,7 +65,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={cx(
-        'bg-[#E7E7EB] text-[var(--text-primary)] dark:bg-[#0A0A0A]',
+        'bg-[#FFFFFF] text-[var(--text-primary)] dark:bg-[#191919]',
         GeistSans.variable,
         GeistMono.variable
       )}

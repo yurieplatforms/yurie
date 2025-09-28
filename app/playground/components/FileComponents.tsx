@@ -124,9 +124,9 @@ function FileItem({
   
   return (
     <div className="relative mr-2 mb-0 flex items-center">
-      <div className="flex w-full items-center gap-3 rounded-2xl border border-[var(--border-color)] bg-[var(--surface)] p-2 pr-3 transition-colors hover:border-[var(--border-color-hover)]">
+      <div className="flex w-full items-center gap-3 rounded-2xl border border-transparent bg-[var(--color-pill-hover)] p-2 pr-3 transition-colors hover:border-[var(--border-color-hover)] hover:bg-[var(--color-pill-active)]">
         {isLikelyImage ? (
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-neutral-200 dark:bg-neutral-700">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-[var(--color-pill-active)]">
             {previewUrl ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
@@ -151,7 +151,7 @@ function FileItem({
         <button
           type="button"
           onClick={handleRemove}
-          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-[var(--border-color)] bg-[var(--surface)] text-black shadow-none transition-colors hover:border-[var(--border-color-hover)] dark:text-white"
+          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-transparent bg-[var(--color-pill-active)] text-[var(--text-primary)] shadow-none transition-colors hover:border-[var(--border-color-hover)] active:border-[var(--border-color-hover)]"
           aria-label="Remove file"
         >
           <X className="size-3" weight="bold" />

@@ -30,16 +30,14 @@ export function ReasoningTrigger({ title = 'Reasoning', className, ...props }: R
   return (
     <CollapsibleTrigger
       className={cn(
-        'group inline-flex items-center gap-2 text-xs font-medium text-neutral-600 transition-colors hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100 cursor-pointer',
+        'group inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors backdrop-blur-sm border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer',
         className
       )}
       {...props}
     >
-      <span className="inline-flex size-6 aspect-square shrink-0 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] text-[var(--color-accent)] leading-none">
-        <Sparkle className="size-4" weight="bold" aria-hidden="true" />
-      </span>
+      <Sparkle className="size-4" weight="bold" aria-hidden="true" />
       <span>{title}</span>
-      <svg viewBox="0 0 24 24" className="size-4 transition-transform group-data-[state=open]:rotate-180" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
+      <svg viewBox="0 0 24 24" className="size-4 text-[#807d78] dark:text-[#807d78] transition-transform group-data-[state=open]:rotate-180" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
     </CollapsibleTrigger>
   )
 }

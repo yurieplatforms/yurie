@@ -156,7 +156,7 @@ export default function AskAISummary({
 
   const panel =
     open && (error || summary) ? (
-      <div className="prose prose-neutral dark:prose-invert prose-p:my-0.5 prose-ul:my-0.5 prose-ol:my-0.5 prose-li:my-0.5 prose-ul:pl-3 prose-ol:pl-3 prose-headings:mt-1 prose-headings:mb-0.5 prose-headings:text-inherit mt-1 rounded-2xl border border-[var(--border-color)] bg-[#F0F0F3] p-4 text-[13px] leading-snug font-semibold text-[var(--text-primary)] dark:bg-[#0C0C0C]">
+      <div className="prose prose-neutral dark:prose-invert prose-p:my-0.5 prose-ul:my-0.5 prose-ol:my-0.5 prose-li:my-0.5 prose-ul:pl-3 prose-ol:pl-3 prose-headings:mt-1 prose-headings:mb-0.5 prose-headings:text-inherit mt-1 rounded-2xl border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)] p-4 text-[13px] leading-snug font-semibold text-[var(--text-primary)]">
         {error ? (
           <div className="text-red-600 dark:text-red-400">{error}</div>
         ) : (
@@ -182,12 +182,12 @@ export default function AskAISummary({
               type="button"
               onClick={handleClick}
               className={
-                'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-[var(--text-primary)] transition-colors dark:bg-[#0C0C0C] dark:active:bg-[#0C0C0C] ' +
+                'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm text-[var(--text-primary)] transition-colors bg-[var(--color-chat-input)] ' +
                 (loading ? 'cursor-default ' : 'cursor-pointer ') +
                 (isActive
-                  ? ' border-[var(--color-accent)] bg-[#F0F0F3] text-[var(--color-accent)] ring-1 ring-[var(--color-accent)]'
-                  : ' border-[var(--ai-border-color)] bg-[#F0F0F3] hover:border-[var(--ai-border-color-hover)]') +
-                ' ai-hover-glow focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none active:border-[var(--color-accent)] active:bg-[var(--color-accent)]/10 active:text-[var(--color-accent)]' +
+                  ? ' border-[var(--color-chat-input-border)] ring-1 ring-[var(--color-chat-input-border)]'
+                  : ' border-[var(--color-chat-input-border)] hover:border-[var(--color-chat-input-border)] hover:bg-[var(--color-pill-hover)]') +
+                ' focus-visible:ring-2 focus-visible:ring-[var(--color-chat-input-border)] focus-visible:outline-none active:bg-[var(--color-pill-active)] active:border-[var(--color-chat-input-border)]' +
                 (loading ? ' ai-border-glow' : '')
               }
               aria-busy={loading}

@@ -775,7 +775,7 @@ export default function ChatClient() {
         ) : null}
         {isEmpty ? (
           <>
-            <div className="mt-0 mb-8 text-center text-2xl font-medium text-neutral-600 sm:mb-10 sm:text-3xl dark:text-neutral-300">
+            <div className="mt-0 mb-8 text-center text-2xl font-medium text-black sm:mb-10 sm:text-3xl dark:text-white">
               {`What's on your mind ${timeOfDayWord}?`}
             </div>
           </>

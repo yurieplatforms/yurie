@@ -10,7 +10,7 @@
     var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, 'Liberation Mono', 'Courier New';
   /* Light mode background */
-  --color-background: #e7e7eb;
+  --color-background: #ffffff;
   --color-foreground: oklch(0.141 0.005 285.823);
   --color-card: oklch(1 0 0);
   --color-card-foreground: oklch(0.141 0.005 285.823);
@@ -50,11 +50,14 @@
   --sh-jsxliterals: #6266d1;
   --sh-property: #e25a1c;
   --sh-entity: #e25a1c;
-  /* Surface tokens tuned for PURPLE WATER background */
-  --surface: #ffffff;
-  --surface-hover: #f1f2f6;
-  /* Slightly stronger background for table headers */
-  --table-header-bg: #eceff5;
+  /* Surface tokens derived from background for cohesive tables */
+  --surface: var(--color-background);
+  /* Subtle zebra strip: slight contrast from background */
+  --surface-hover: color-mix(in oklch, var(--color-background) 96%, var(--color-foreground) 4%);
+  /* Table header: derive from chat input for consistent look */
+  --table-header-bg: color-mix(in oklch, var(--color-chat-input) 92%, var(--color-foreground) 8%);
+  /* Post list hover background */
+  --list-hover-bg: color-mix(in oklch, var(--color-background) 94%, var(--color-foreground) 6%);
   --border-color: #d4d7df;
   --border-color-hover: #c3c7d2;
   --text-primary: #0b0b0e;
@@ -63,13 +66,29 @@
   --ai-border-color-hover: #dde1ea;
   /* Chat bubble tokens */
   --bubble-assistant-bg: var(--surface);
-  --bubble-user-bg: var(--surface-hover);
+  --bubble-user-bg: #f9f8f7; /* user bubble (light) */
+  /* Chat input background color */
+  --color-chat-input: #ffffff;
+  /* Chat input border color */
+  --color-chat-input-border: #e5e5e5; /* tailwind neutral-200 */
+  /* Suggestion chip background */
+  --color-suggestion: #f9f8f7;
+  /* Chat input toolbar pill hover background */
+  --color-pill-hover: #f3f2f1;
+  /* Chat input toolbar pill active background */
+  --color-pill-active: #ECEFF5;
+  /* Code surfaces aligned with chat input for perfect blending */
+  --code-surface-start: var(--color-chat-input);
+  --code-surface-end: var(--color-chat-input);
+  --code-header-start: var(--color-chat-input);
+  --code-header-end: var(--color-chat-input);
+  --code-border: var(--color-chat-input-border);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     /* Dark mode background */
-    --color-background: #0a0a0a;
+    --color-background: #191919;
     /* Ensure text and UI tokens swap for dark mode */
     --color-foreground: #f5f5f6;
     --color-card: #0e0e10;
@@ -89,11 +108,14 @@
     --color-border: #1f1f23;
     --color-input: #1f1f23;
     --color-ring: #3b3b40;
-    /* Surface tokens tuned for RICH BLACK background */
-    --surface: #0e0e10;
-    --surface-hover: #141416;
-    /* Darker header to distinguish from zebra striping */
-    --table-header-bg: #1d1d21;
+    /* Surface tokens derived from background for cohesive tables */
+    --surface: var(--color-background);
+    /* Subtle zebra strip: lighten background slightly */
+    --surface-hover: color-mix(in oklch, var(--color-background) 88%, var(--color-foreground) 12%);
+    /* Table header: derive from chat input surface for consistency */
+    --table-header-bg: color-mix(in oklch, var(--color-chat-input) 84%, var(--color-foreground) 16%);
+    /* Post list hover background */
+    --list-hover-bg: color-mix(in oklch, var(--color-background) 86%, var(--color-foreground) 14%);
     --border-color: #1a1a1d;
     --border-color-hover: #26262a;
     --text-primary: #f5f5f6;
@@ -102,12 +124,28 @@
     --ai-border-color-hover: #34343a;
     /* Chat bubble tokens */
     --bubble-assistant-bg: var(--surface);
-    --bubble-user-bg: var(--surface-hover);
+    --bubble-user-bg: #202020; /* user bubble (dark) */
+    /* Chat input background color */
+    --color-chat-input: #202020;
+    /* Chat input border color: slightly lighter gray for visibility */
+    --color-chat-input-border: #2f2f2f;
+    /* Suggestion chip background */
+    --color-suggestion: #202020;
+    /* Chat input toolbar pill hover background (use deep neutral gray) */
+    --color-pill-hover: #262626;
+    /* Chat input toolbar pill active background (slightly deeper) */
+    --color-pill-active: #2a2a2a;
     --sh-class: #4c97f8;
     --sh-identifier: white;
     --sh-keyword: #f47067;
     --sh-string: #0fa295;
     --scrollbar-thumb: #171717;
+    /* Code surfaces aligned with chat input in dark mode */
+    --code-surface-start: var(--color-chat-input);
+    --code-surface-end: var(--color-chat-input);
+    --code-header-start: var(--color-chat-input);
+    --code-header-end: var(--color-chat-input);
+    --code-border: var(--color-chat-input-border);
   }
   html {
     color-scheme: dark;
@@ -276,22 +314,20 @@ a:hover {
 
 .prose pre {
   @apply overflow-x-auto rounded-xl border px-4 py-3 text-sm;
-  background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.05),
-    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+  background: linear-gradient(135deg, var(--code-surface-start) 0%, var(--code-surface-end) 100%);
+  border-color: var(--code-border);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05);
   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
   line-height: 1.6;
 }
 
 @media (prefers-color-scheme: dark) {
   .prose pre {
-    background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, var(--code-surface-start) 0%, var(--code-surface-end) 100%);
+    border-color: var(--code-border);
     box-shadow: 
-      0 1px 3px rgba(0, 0, 0, 0.3),
-      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+      0 1px 3px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -457,7 +493,8 @@ a:hover {
 
 /* Blog tables: lighter borders in light mode, darker in dark mode */
 .prose table {
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--color-chat-input-border);
+  background-color: var(--color-chat-input);
   border-radius: 0.5rem;
   display: block;
   max-width: 100%;
@@ -469,12 +506,20 @@ a:hover {
 .prose table thead th {
   @apply font-medium;
   background-color: var(--table-header-bg);
+  color: #807d78;
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose table thead th {
+    background-color: var(--table-header-bg);
+  }
 }
 
 .prose table th,
 .prose table td {
   @apply border-r px-3 py-2 text-left;
   border-right-color: var(--border-color);
+  color: var(--text-primary);
 }
 
 .prose table th:last-child,
@@ -482,9 +527,9 @@ a:hover {
   @apply border-r-0;
 }
 
-/* Subtle zebra striping for readability */
-.prose table tbody tr:nth-child(odd) td {
-  background-color: var(--surface-hover);
+/* Subtle zebra striping for readability - apply to entire row to cover empty space */
+.prose table tbody tr:nth-child(odd) {
+  background-color: var(--color-pill-hover);
 }
 
 /* Consistent grid behavior, numeric alignment, and clipped rounded corners */
@@ -499,7 +544,7 @@ a:hover {
 /* Header separators and row dividers for readability */
 .prose table thead th,
 .prose-message table thead th {
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-chat-input-border);
 }
 .prose table tbody tr + tr td,
 .prose-message table tbody tr + tr td {
@@ -527,7 +572,8 @@ a:hover {
 /* Optional caption styling */
 .prose table caption,
 .prose-message table caption {
-  @apply text-sm text-neutral-500;
+  @apply text-sm;
+  color: #807d78;
   caption-side: bottom;
   padding-top: 0.5rem;
 }
@@ -579,11 +625,10 @@ a:hover {
 
 .prose-message pre {
   @apply overflow-x-auto rounded-xl border px-4 py-3 text-sm;
-  background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.05),
-    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+  background: linear-gradient(135deg, var(--code-surface-start) 0%, var(--code-surface-end) 100%);
+  border-color: var(--code-border);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05);
   font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
   line-height: 1.6;
   white-space: pre;
@@ -592,11 +637,10 @@ a:hover {
 
 @media (prefers-color-scheme: dark) {
   .prose-message pre {
-    background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, var(--code-surface-start) 0%, var(--code-surface-end) 100%);
+    border-color: var(--code-border);
     box-shadow: 
-      0 1px 3px rgba(0, 0, 0, 0.3),
-      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+      0 1px 3px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -630,41 +674,39 @@ a:hover {
 
 .chat-code {
   @apply mb-3 overflow-hidden rounded-xl border;
-  background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+  background: linear-gradient(135deg, var(--code-surface-start) 0%, var(--code-surface-end) 100%);
+  border-color: var(--code-border);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 @media (prefers-color-scheme: dark) {
   .chat-code {
-    background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, var(--code-surface-start) 0%, var(--code-surface-end) 100%);
+    border-color: var(--code-border);
     box-shadow: 
-      0 2px 8px rgba(0, 0, 0, 0.3),
-      0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+      0 2px 8px rgba(0, 0, 0, 0.3);
   }
 }
 
 .chat-code-header {
   @apply flex items-center justify-between px-4 py-2.5 text-xs;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.9) 100%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: linear-gradient(135deg, var(--code-header-start) 0%, var(--code-header-end) 100%);
+  border-bottom: 1px solid var(--code-border);
   backdrop-filter: blur(8px);
 }
 
 @media (prefers-color-scheme: dark) {
   .chat-code-header {
-    background: linear-gradient(135deg, rgba(13, 17, 23, 0.9) 0%, rgba(22, 27, 34, 0.8) 100%);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(135deg, var(--code-header-start) 0%, var(--code-header-end) 100%);
+    border-bottom-color: var(--code-border);
   }
 }
 
 .chat-code-lang {
   @apply tracking-wide font-semibold uppercase select-none;
   color: #7f91e0;
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.05em;
 }
 
@@ -675,28 +717,25 @@ a:hover {
 }
 
 .chat-copy {
-  @apply rounded-md px-3 py-1 text-xs font-medium transition-all duration-200 cursor-pointer;
-  background: rgba(127, 145, 224, 0.1);
-  border: 1px solid rgba(127, 145, 224, 0.2);
-  color: #5a67c4;
+  @apply inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors backdrop-blur-sm cursor-pointer;
+  border-color: transparent;
+  background: transparent;
+  color: #807d78;
 }
 
 .chat-copy:hover {
-  background: rgba(127, 145, 224, 0.15);
-  border-color: rgba(127, 145, 224, 0.3);
-  transform: translateY(-1px);
+  background: var(--color-pill-hover);
+  border-color: transparent;
+}
+
+.chat-copy:active {
+  background: var(--color-pill-active);
+  border-color: var(--border-color-hover);
 }
 
 @media (prefers-color-scheme: dark) {
   .chat-copy {
-    background: rgba(127, 145, 224, 0.15);
-    border-color: rgba(127, 145, 224, 0.3);
-    color: #a5b3f0;
-  }
-  
-  .chat-copy:hover {
-    background: rgba(127, 145, 224, 0.2);
-    border-color: rgba(127, 145, 224, 0.4);
+    color: #807d78;
   }
 }
 
@@ -820,14 +859,21 @@ table {
   max-width: 100%;
   overflow-x: auto;
   white-space: nowrap;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--color-chat-input-border);
+  background-color: var(--color-chat-input);
   border-radius: 0.5rem;
 }
 
 .prose-message table thead th {
   @apply font-medium;
-  color: var(--text-primary);
+  color: #807d78;
   background-color: var(--table-header-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose-message table thead th {
+    background-color: var(--table-header-bg);
+  }
 }
 
 .prose-message table th,
@@ -837,10 +883,15 @@ table {
   color: var(--text-primary);
 }
 
-/* Ensure even rows match Research posts by filling with page background */
-.prose table tbody td,
-.prose-message table tbody td {
-  background-color: var(--color-background);
+/* Default row background matches chat input surface; color whole row */
+.prose table tbody tr,
+.prose-message table tbody tr {
+  background-color: var(--color-chat-input);
+}
+/* Ensure cells inherit row background so the entire width is filled */
+.prose table td,
+.prose-message table td {
+  background-color: transparent;
 }
 
 /* Improve cell content alignment */
@@ -856,8 +907,8 @@ table {
   @apply border-r-0;
 }
 
-.prose-message table tbody tr:nth-child(odd) td {
-  background-color: var(--surface-hover);
+.prose-message table tbody tr:nth-child(odd) {
+  background-color: var(--color-pill-hover);
 }
 
 /* Match page-level scrollbar styling for AI tables as well */
@@ -982,29 +1033,17 @@ table {
 
 /* Glass input wrapper styling for the Playground chat input */
 .glass-input-wrap {
-  @apply relative rounded-[18px] p-[2px];
-  background: linear-gradient(
-    180deg,
-    rgba(127, 145, 224, 0.35) 0%,
-    rgba(127, 145, 224, 0.15) 40%,
-    rgba(127, 145, 224, 0.25) 100%
-  );
-  box-shadow:
-    0 8px 24px rgba(127, 145, 224, 0.25),
-    0 1px 0 rgba(127, 145, 224, 0.35) inset;
+  @apply relative rounded-[22px] p-[2px];
+  background: transparent;
+  box-shadow: none;
 }
 .dark .glass-input-wrap {
-  background: linear-gradient(
-    180deg,
-    rgba(127, 145, 224, 0.45) 0%,
-    rgba(127, 145, 224, 0.22) 40%,
-    rgba(127, 145, 224, 0.38) 100%
-  );
-  box-shadow:
-    0 12px 28px rgba(127, 145, 224, 0.35),
-    0 1px 0 rgba(127, 145, 224, 0.55) inset;
+  background: transparent;
+  box-shadow: none;
 }
 
 .glass-input-inner {
-  @apply rounded-[16px] border border-neutral-200 bg-white/90 backdrop-blur-md dark:border-neutral-800 dark:bg-black/80;
+  @apply rounded-[20px] border backdrop-blur-md;
+  border-color: var(--color-chat-input-border);
+  background-color: var(--color-chat-input);
 }

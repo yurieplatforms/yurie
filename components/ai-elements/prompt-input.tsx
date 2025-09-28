@@ -448,7 +448,7 @@ export const PromptInput = ({
       />
       <form
         className={cn(
-          "w-full overflow-hidden rounded-2xl border border-[var(--border-color)] bg-background",
+          "w-full overflow-hidden rounded-3xl border border-[var(--border-color)] bg-[var(--color-chat-input)]",
           className
         )}
         onSubmit={handleSubmit}
@@ -506,7 +506,7 @@ export const PromptInputTextarea = ({
         "max-h-48 min-h-16",
         "focus-visible:ring-0",
         // soften input text and placeholder
-        "text-foreground/80 placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
+        "text-foreground/80 placeholder:!text-[#807d78] dark:placeholder:!text-[#807d78]",
         className
       )}
       name="message"

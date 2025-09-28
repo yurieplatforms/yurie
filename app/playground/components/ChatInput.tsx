@@ -114,7 +114,7 @@ export function ChatInput({
                 <FileList files={files} onFileRemove={onFileRemove} />
                 <PromptInputTextarea
                   placeholder="Ask Yurie"
-                  className="min-h-[60px] px-3 py-3 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
+                  className="min-h-[60px] px-3 py-3 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:!text-[#807d78] dark:placeholder:!text-[#807d78]"
                 />
               </PromptInputBody>
               <PromptInputToolbar className="px-2 pb-2 pt-1">
@@ -149,7 +149,7 @@ export function ChatInput({
                         onClick={() => attachInputRef.current?.click()}
                         aria-label="Add files"
                         title="Add files"
-                        className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm p-0 text-foreground/80 transition-colors hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
+                        className="inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] backdrop-blur-sm p-0 text-[#807d78] dark:text-[#807d78] transition-colors hover:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed"
                         disabled={isSubmitting}
                       >
                         <Paperclip className="size-4" />
@@ -186,7 +186,7 @@ export function ChatInput({
                         onClick={() => fileInputRef.current?.click()}
                         aria-label="Add images"
                         title="Add images"
-                        className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm p-0 text-foreground/80 transition-colors hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
+                        className="inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] backdrop-blur-sm p-0 text-[#807d78] dark:text-[#807d78] transition-colors hover:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed"
                         disabled={isSubmitting}
                       >
                         <ImageIcon className="size-4" />
@@ -199,20 +199,20 @@ export function ChatInput({
                     aria-pressed={useWebSearch}
                     aria-label="Web search"
                     title="Web search"
-                    className={
+                  className={
                       `inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors backdrop-blur-sm ` +
                       (useWebSearch
-                        ? 'border-2 border-accent bg-[var(--surface)]/90 text-accent'
-                        : 'border-[var(--border-color)] bg-[var(--surface)]/90 text-foreground/80 hover:text-foreground') +
-                      ' cursor-pointer disabled:cursor-not-allowed'
+                        ? 'border-2 border-accent bg-[var(--color-pill-active)]'
+                        : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)]') +
+                      ' text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed'
                     }
                     disabled={isSubmitting}
                   >
-                    <Globe className="size-5" />
+                    <Globe className="size-4" />
                     <span className="text-xs font-medium">Search</span>
                   </button>
                   <div
-                    className="relative inline-flex items-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm"
+                    className="relative inline-flex items-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] backdrop-blur-sm"
                     style={modelSelectorWidth ? { width: `${modelSelectorWidth}px` } : undefined}
                   >
                     <label htmlFor="model-select" className="sr-only">Model</label>
@@ -222,7 +222,7 @@ export function ChatInput({
                       onChange={(e) => onModelChange(e.target.value)}
                       disabled={isSubmitting}
                       aria-label="Model selector"
-                      className={`h-9 inline-block w-full appearance-none bg-transparent pl-3 pr-7 text-xs font-medium text-foreground/80 hover:text-foreground focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 whitespace-nowrap cursor-pointer disabled:cursor-not-allowed`}
+                      className={`h-9 inline-block w-full appearance-none bg-transparent pl-3 pr-7 text-xs font-medium text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 whitespace-nowrap cursor-pointer disabled:cursor-not-allowed`}
                     >
                       {modelOptions.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -230,7 +230,7 @@ export function ChatInput({
                         </option>
                       ))}
                     </select>
-                    <svg viewBox="0 0 24 24" className="pointer-events-none absolute right-2 size-4 text-foreground/60" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
+                    <svg viewBox="0 0 24 24" className="pointer-events-none absolute right-2 size-4 text-[#807d78] dark:text-[#807d78]" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
                     {/* Hidden content sizer to measure text width */}
                     <span
                       ref={modelSizerRef}
@@ -246,7 +246,7 @@ export function ChatInput({
                     <button
                       type="button"
                       onClick={handleStop}
-                      className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm text-foreground/80 hover:text-foreground cursor-pointer"
+                      className="inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] backdrop-blur-sm text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer"
                       aria-label="Stop"
                       title="Stop"
                     >
@@ -255,7 +255,7 @@ export function ChatInput({
                   ) : status === 'submitted' ? (
                     <button
                       type="button"
-                      className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm text-foreground/80 opacity-80"
+                      className="inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] backdrop-blur-sm text-[#807d78] dark:text-[#807d78] opacity-80"
                       aria-label="Sending"
                       title="Sending"
                       disabled
@@ -266,7 +266,7 @@ export function ChatInput({
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="inline-flex size-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)]/90 backdrop-blur-sm text-foreground/80 hover:text-foreground cursor-pointer disabled:cursor-not-allowed"
+                      className="inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] backdrop-blur-sm text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed"
                       aria-label="Send"
                       title="Send"
                     >

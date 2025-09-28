@@ -64,7 +64,7 @@ export function Navbar() {
           <div className="flex w-full h-10 flex-row items-center justify-between px-3 sm:px-4">
             <div ref={menuRef} className="relative">
               <button
-                className={`${isExploreActive ? 'font-bold text-neutral-900 dark:text-neutral-100' : 'font-normal text-neutral-600 dark:text-neutral-400'} group cursor-pointer relative my-1 mr-0 ml-0 flex items-center rounded-xl px-0 py-1 align-middle transition-colors hover:opacity-100 focus-visible:ring-2 focus-visible:ring-neutral-300 focus-visible:outline-none sm:px-0 dark:focus-visible:ring-neutral-700`}
+                className={`${isExploreActive ? 'font-semibold text-foreground' : 'font-normal text-foreground/80'} group cursor-pointer relative my-1 mr-0 ml-0 flex items-center rounded-xl px-0 py-1 align-middle transition-colors hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none sm:px-0`}
                 type="button"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
@@ -97,11 +97,11 @@ export function Navbar() {
               {menuOpen ? (
                 <div
                   role="menu"
-                  className="absolute left-0 z-50 mt-1 min-w-[8rem] rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+                  className="absolute left-0 z-50 mt-1 min-w-[8rem] rounded-lg border border-transparent bg-[var(--surface)]/95 p-1 text-[var(--text-primary)] shadow-lg backdrop-blur"
                 >
                   <Link
                     href="/"
-                    className="relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground"
+                    className="relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
                     onClick={(e) => {
                       if (safePathname === '/') {
                         e.preventDefault()
@@ -118,14 +118,14 @@ export function Navbar() {
                   </Link>
                   <Link
                     href="/research"
-                    className="relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground"
+                    className="relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
                     onClick={() => setMenuOpen(false)}
                   >
                     Research
                   </Link>
                   <Link
                     href="/blog"
-                    className="relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent hover:text-accent-foreground"
+                    className="relative flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
                     onClick={() => setMenuOpen(false)}
                   >
                     Blog
@@ -142,7 +142,7 @@ export function Navbar() {
                       window.dispatchEvent(new CustomEvent('yurie:new-chat'))
                     } catch {}
                   }}
-                  className="inline-flex items-center px-0 py-0 text-sm font-normal text-neutral-600 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 cursor-pointer"
+                  className="inline-flex items-center px-0 py-0 text-sm font-normal text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer"
                   aria-label="New chat"
                   title="New chat"
                 >

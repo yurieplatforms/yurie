@@ -32,7 +32,7 @@ export function PostList({ basePath, posts, limit }: ListProps) {
       {sorted.map((post) => (
         <Link
           key={post.slug}
-          className="mb-1 flex flex-col rounded-xl px-3 py-3 transition-colors last:mb-0 hover:bg-[var(--surface-hover)] hover:opacity-100 focus-visible:ring-2 focus-visible:ring-neutral-300 focus-visible:outline-none sm:px-4 dark:focus-visible:ring-neutral-700"
+          className="mb-1 flex flex-col rounded-xl px-3 py-3 transition-colors last:mb-0 hover:bg-[var(--color-pill-hover)] hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none sm:px-4"
           href={`${basePath}/${post.slug}`}
         >
           <div className="flex w-full items-center gap-3 sm:gap-4">

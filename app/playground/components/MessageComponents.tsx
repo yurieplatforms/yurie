@@ -12,19 +12,19 @@ export function SourcesList({ urls }: { urls: string[] }) {
   const deduped = useMemo(() => dedupeUrls(urls), [urls])
   const shown = expanded ? deduped : deduped.slice(0, MAX_VISIBLE)
   return (
-    <div className="mt-3 rounded-2xl border border-[var(--border-color)] bg-[var(--surface)]/60 p-0 shadow-xs backdrop-blur-[2px]">
+    <div className="mt-3 rounded-2xl border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)] p-0 shadow-xs backdrop-blur-[2px]">
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="inline-flex items-center gap-2">
-          <span className="inline-flex size-6 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] text-[var(--color-accent)]">
+          <span className="inline-flex size-6 items-center justify-center rounded-full border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)] text-[var(--color-accent)]">
             <Globe className="size-4" weight="bold" aria-hidden="true" />
           </span>
-          <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">Sources</span>
+          <span className="text-xs font-semibold text-[#807d78] dark:text-[#807d78]">Sources</span>
         </div>
-        <div className="inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--surface)] px-1.5 py-0.5 text-[10px] leading-none text-neutral-600 dark:text-neutral-400">
+        <div className="inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)] px-1.5 py-0.5 text-[10px] leading-none text-[#807d78] dark:text-[#807d78]">
           {deduped.length}
         </div>
       </div>
-      <div className="h-px w-full bg-[var(--border-color)]/80" />
+      <div className="h-px w-full bg-[var(--color-chat-input-border)]" />
       <ul className="grid grid-cols-1 gap-0.5 p-1.5 sm:grid-cols-2">
         {shown.map((u) => {
           const p = toDisplayParts(u)
@@ -35,7 +35,7 @@ export function SourcesList({ urls }: { urls: string[] }) {
                 target="_blank"
                 rel="noreferrer"
                 title={p.href}
-                className="group flex items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 transition-colors hover:border-[var(--border-color)] hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40"
+                className="group flex items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 transition-colors hover:border-[var(--border-color-hover)] hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40"
               >
                 {p.faviconUrl ? (
                   <Image
@@ -49,14 +49,14 @@ export function SourcesList({ urls }: { urls: string[] }) {
                   <span className="inline-block size-[14px] rounded-sm bg-neutral-300 dark:bg-neutral-700" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[13px] font-medium text-neutral-900 group-hover:underline dark:text-neutral-100">
+                  <div className="truncate text-[13px] font-medium text-foreground group-hover:underline">
                     {p.domain}
                   </div>
-                  <div className="truncate text-[11px] text-neutral-500">
+                  <div className="truncate text-[11px] text-foreground/60">
                     {p.path}
                   </div>
                 </div>
-                <ArrowSquareOut className="ml-1 size-3 shrink-0 text-neutral-400 opacity-0 transition-opacity group-hover:opacity-100" weight="bold" />
+                <ArrowSquareOut className="ml-1 size-3 shrink-0 text-foreground/60 opacity-0 transition-opacity group-hover:opacity-100" weight="bold" />
               </a>
             </li>
           )
@@ -66,7 +66,7 @@ export function SourcesList({ urls }: { urls: string[] }) {
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="mx-2 mb-2 mt-0 inline-flex items-center justify-center rounded-md px-2 py-1 text-[11px] font-medium text-neutral-700 underline-offset-2 transition-colors hover:cursor-pointer hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
+          className="mx-2 mb-2 mt-0 inline-flex items-center justify-center rounded-md px-2 py-1 text-[11px] font-medium text-[#807d78] underline-offset-2 transition-colors hover:cursor-pointer hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78]"
         >
           {expanded ? 'Show less' : `Show all ${deduped.length}`}
         </button>
