@@ -350,7 +350,7 @@ export function ChatInput({
                 )}
                 <PromptInputTextarea
                   placeholder="Ask, search, or make anything..."
-                  className="min-h-[52px] pl-4 pr-6 py-2 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:!text-[#807d78] dark:placeholder:!text-[#807d78]"
+                  className="min-h-[52px] pl-3 pr-6 py-2 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:!text-[#807d78] dark:placeholder:!text-[#807d78]"
                 />
               </PromptInputBody>
               <PromptInputToolbar className="px-3 pb-2 pt-0">
