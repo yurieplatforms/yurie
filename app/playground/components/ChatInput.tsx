@@ -62,6 +62,15 @@ export function ChatInput({
       return true
     }
   })()
+  const allowWebSearch = (() => {
+    try {
+      const m = String(modelChoice || '').toLowerCase()
+      if (m === 'openrouter/perplexity/sonar-deep-research') return false
+      return true
+    } catch {
+      return true
+    }
+  })()
 
   useLayoutEffect(() => {
     const computeWidth = () => {
@@ -193,24 +202,26 @@ export function ChatInput({
                       </button>
                     </>
                   ) : null}
-                  <button
-                    type="button"
-                    onClick={onUseWebSearchToggle}
-                    aria-pressed={useWebSearch}
-                    aria-label="Web search"
-                    title="Web search"
-                  className={
-                      `inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors backdrop-blur-sm ` +
-                      (useWebSearch
-                        ? 'border-2 border-accent bg-[var(--color-pill-active)]'
-                        : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)]') +
-                      ' text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed'
-                    }
-                    disabled={isSubmitting}
-                  >
-                    <Globe className="size-4" />
-                    <span className="text-xs font-medium">Search</span>
-                  </button>
+                  {allowWebSearch ? (
+                    <button
+                      type="button"
+                      onClick={onUseWebSearchToggle}
+                      aria-pressed={useWebSearch}
+                      aria-label="Web search"
+                      title="Web search"
+                      className={
+                        `inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors backdrop-blur-sm ` +
+                        (useWebSearch
+                          ? 'border-2 border-accent bg-[var(--color-pill-active)]'
+                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)]') +
+                        ' text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed'
+                      }
+                      disabled={isSubmitting}
+                    >
+                      <Globe className="size-4" />
+                      <span className="text-xs font-medium">Search</span>
+                    </button>
+                  ) : null}
                   <div
                     className="relative inline-flex items-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] backdrop-blur-sm"
                     style={modelSelectorWidth ? { width: `${modelSelectorWidth}px` } : undefined}

@@ -412,11 +412,15 @@ export default function ChatClient() {
       if (supportsReasoningEffort || isOpenRouterModel) {
         body.reasoning = { effort: 'high' }
       }
-      // xAI Live Search: wire Globe toggle
+      // xAI Live Search: wire Globe toggle (disabled for Sonar Deep Research)
       try {
-        body.search_parameters = useWebSearch
-          ? { mode: 'on', return_citations: true }
-          : { mode: 'off' }
+        const lowerModel = String(modelChoice || '').toLowerCase()
+        const supportsWebToggle = lowerModel !== 'openrouter/perplexity/sonar-deep-research'
+        if (supportsWebToggle) {
+          body.search_parameters = useWebSearch
+            ? { mode: 'on', return_citations: true }
+            : { mode: 'off' }
+        }
       } catch {}
       const res = await fetch('/api/xai', {
         method: 'POST',
