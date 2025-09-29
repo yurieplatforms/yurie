@@ -139,7 +139,7 @@ export function ChatInput({
   const [contextQuery, setContextQuery] = useState('')
   const [isContextOpen, setIsContextOpen] = useState(false)
   const [contextLabels, setContextLabels] = useState<Record<string, string>>({})
-  const [contextImages, setContextImages] = useState<Record<string, string>>({})
+  const [contextImages, setContextImages] = useState<Record<string, string | undefined>>({})
   const contextMenuId = useId()
 
   const fetchContext = useCallback(async (q: string) => {
