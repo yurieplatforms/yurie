@@ -305,7 +305,7 @@ export function ChatInput({
                     })}
                   </div>
                 ) : (
-                  <div className="flex items-center px-3 pt-2 pb-0">
+                  <div className="flex items-center px-3 pt-3 pb-0">
                     <DropdownMenu open={isContextOpen} onOpenChange={(o) => {
                       setIsContextOpen(o)
                       if (o) fetchContext('')
@@ -318,11 +318,11 @@ export function ChatInput({
                           aria-haspopup="menu"
                           aria-expanded={isContextOpen}
                           aria-controls={contextMenuId}
-                          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--color-chat-input-border)] px-2 text-xs transition-colors backdrop-blur-sm bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed -ml-1.5 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
+                          className="inline-flex h-7 items-center gap-1 rounded-full border border-[var(--color-chat-input-border)] px-2 text-xs transition-colors backdrop-blur-sm bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed -ml-0.5 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                           disabled={isSubmitting}
                         >
-                            <AtSign className="size-4" />
-                            <span className="text-sm font-medium">Add context</span>
+                            <AtSign className="size-3.5" />
+                            <span className="text-xs font-medium">Add context</span>
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent 
