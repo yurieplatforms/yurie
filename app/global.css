@@ -66,7 +66,7 @@
   --ai-border-color-hover: #dde1ea;
   /* Chat bubble tokens */
   --bubble-assistant-bg: var(--surface);
-  --bubble-user-bg: #f9f8f7; /* user bubble (light) */
+  --bubble-user-bg: #f0efed; /* user bubble (light) */
   /* Chat input background color */
   --color-chat-input: #ffffff;
   /* Chat input border color */
@@ -124,7 +124,7 @@
     --ai-border-color-hover: #34343a;
     /* Chat bubble tokens */
     --bubble-assistant-bg: var(--surface);
-    --bubble-user-bg: #202020; /* user bubble (dark) */
+    --bubble-user-bg: #2c2c2b; /* user bubble (dark) */
     /* Chat input background color */
     --color-chat-input: #202020;
     /* Chat input border color: slightly lighter gray for visibility */
@@ -757,9 +757,8 @@ a:hover {
 }
 
 .chat-bubble {
-  @apply max-w-[80%] rounded-3xl border border-neutral-200 bg-white px-4 py-2 min-h-[2.5rem] text-base leading-6 break-words text-neutral-900 shadow-xs dark:border-neutral-800 dark:bg-black dark:text-white;
+  @apply max-w-[80%] rounded-3xl bg-white px-4 py-2 min-h-[2.5rem] text-base leading-6 break-words text-neutral-900 shadow-xs dark:bg-black dark:text-white;
   background-color: var(--bubble-assistant-bg);
-  border-color: var(--border-color);
   color: var(--text-primary);
   /* Ensure long words/URLs wrap nicely inside bubbles */
   overflow-wrap: anywhere;
@@ -1014,9 +1013,9 @@ table {
 .ai-text-shimmer {
   background-image: linear-gradient(
     90deg,
-    #7f91e0 0%,
-    #c9d2f4 50%,
-    #7f91e0 100%
+    color-mix(in oklch, var(--color-foreground) 35%, var(--color-background) 65%) 0%,
+    color-mix(in oklch, var(--color-foreground) 10%, var(--color-background) 90%) 50%,
+    color-mix(in oklch, var(--color-foreground) 35%, var(--color-background) 65%) 100%
   );
   background-size: 200% 100%;
   -webkit-background-clip: text;

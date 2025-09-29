@@ -54,7 +54,7 @@ export function ChatInput({
       if (m === 'openrouter/qwen/qwen3-max') return false
       if (m === 'openrouter/qwen/qwen-plus-2025-07-28:thinking') return false
       if (m === 'openrouter/perplexity/sonar-deep-research') return false
-      if (m === 'openrouter/openai/gpt-oss-120b') return false
+      if (m === 'openrouter/openai/gpt-5') return false
       return true
     } catch {
       return true
@@ -318,7 +318,7 @@ export function ChatInput({
                           aria-haspopup="menu"
                           aria-expanded={isContextOpen}
                           aria-controls={contextMenuId}
-                          className="inline-flex h-8 items-center gap-1.5 rounded-full border px-2 text-xs transition-colors backdrop-blur-sm border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed -ml-1.5 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
+                          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--color-chat-input-border)] px-2 text-xs transition-colors backdrop-blur-sm bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed -ml-1.5 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                           disabled={isSubmitting}
                         >
                             <AtSign className="size-4" />
@@ -381,7 +381,7 @@ export function ChatInput({
                 )}
                 <PromptInputTextarea
                   placeholder="Ask, search, or make anything..."
-                  className="min-h-[52px] pl-3 pr-6 py-2 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:!text-[#807d78] dark:placeholder:!text-[#807d78]"
+                  className="min-h-[64px] pl-3 pr-6 pt-4 pb-2 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:!text-[#807d78] dark:placeholder:!text-[#807d78]"
                 />
               </PromptInputBody>
               <PromptInputToolbar className="px-3 pb-2 pt-0">

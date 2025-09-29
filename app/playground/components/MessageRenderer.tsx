@@ -223,7 +223,7 @@ export function renderMessageContent(
     <>
       {role === 'assistant' && reasoningHtml ? (
         <Reasoning className="w-full" isStreaming={status === 'submitted' || status === 'streaming'}>
-          <ReasoningTrigger />
+          <ReasoningTrigger isStreaming={status === 'submitted' || status === 'streaming'} />
           <ReasoningContent>
             <div dangerouslySetInnerHTML={{ __html: reasoningHtml }} />
           </ReasoningContent>

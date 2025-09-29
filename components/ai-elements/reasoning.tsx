@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
-import { Sparkle } from '@phosphor-icons/react'
+import { Lightbulb } from '@phosphor-icons/react'
 
 export type ReasoningProps = React.ComponentProps<typeof Collapsible> & {
   isStreaming?: boolean
@@ -24,19 +24,20 @@ export function Reasoning({ isStreaming, className, children, ...props }: Reason
 
 export type ReasoningTriggerProps = React.ComponentProps<typeof CollapsibleTrigger> & {
   title?: string
+  isStreaming?: boolean
 }
 
-export function ReasoningTrigger({ title = 'Reasoning', className, ...props }: ReasoningTriggerProps) {
+export function ReasoningTrigger({ title = 'Thought', isStreaming, className, ...props }: ReasoningTriggerProps) {
   return (
     <CollapsibleTrigger
       className={cn(
-        'group inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors backdrop-blur-sm border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer',
+        'group inline-flex h-9 items-center gap-1.5 rounded-full border border-transparent px-3 text-xs font-medium transition-colors backdrop-blur-sm bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer',
         className
       )}
       {...props}
     >
-      <Sparkle className="size-4" weight="bold" aria-hidden="true" />
-      <span>{title}</span>
+      <Lightbulb className="size-4" weight="bold" aria-hidden="true" />
+      <span className={isStreaming ? 'ai-text-shimmer' : undefined}>{title}</span>
       <svg viewBox="0 0 24 24" className="size-4 text-[#807d78] dark:text-[#807d78] transition-transform group-data-[state=open]:rotate-180" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
     </CollapsibleTrigger>
   )
