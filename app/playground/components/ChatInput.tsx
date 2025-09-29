@@ -135,10 +135,11 @@ export function ChatInput({
     }
   }, [status, stop])
 
-  const [contextResults, setContextResults] = useState<Array<{ id: string; label: string }>>([])
+  const [contextResults, setContextResults] = useState<Array<{ id: string; label: string; image?: string }>>([])
   const [contextQuery, setContextQuery] = useState('')
   const [isContextOpen, setIsContextOpen] = useState(false)
   const [contextLabels, setContextLabels] = useState<Record<string, string>>({})
+  const [contextImages, setContextImages] = useState<Record<string, string>>({})
   const contextMenuId = useId()
 
   const fetchContext = useCallback(async (q: string) => {
@@ -146,8 +147,8 @@ export function ChatInput({
       const res = await fetch('/api/posts')
       if (!res.ok) return
       const json = await res.json()
-      const posts: Array<{ type: 'blog' | 'research'; slug: string; title: string }>= Array.isArray(json?.posts) ? json.posts : []
-      const items = posts.map((p) => ({ id: `${p.type}:${p.slug}`, label: `${p.title} — ${p.type}` }))
+      const posts: Array<{ type: 'blog' | 'research'; slug: string; title: string; image?: string }>= Array.isArray(json?.posts) ? json.posts : []
+      const items = posts.map((p) => ({ id: `${p.type}:${p.slug}`, label: `${p.title} — ${p.type}`, image: p.image }))
       const filtered = q.trim()
         ? items.filter((i) => i.label.toLowerCase().includes(q.toLowerCase()))
         : items
@@ -160,10 +161,13 @@ export function ChatInput({
     const curr = Array.isArray(selectedContextIds) ? selectedContextIds : []
     if (curr.includes(id)) return
     
-    // Find the label for this ID and store it
+    // Find the label and image for this ID and store them
     const result = contextResults.find(r => r.id === id)
     if (result) {
       setContextLabels(prev => ({ ...prev, [id]: result.label }))
+      if (result.image) {
+        setContextImages(prev => ({ ...prev, [id]: result.image }))
+      }
     }
     
     onContextChange([...curr, id])
@@ -174,8 +178,13 @@ export function ChatInput({
     const curr = Array.isArray(selectedContextIds) ? selectedContextIds : []
     onContextChange(curr.filter((x) => x !== id))
     
-    // Remove the label from storage
+    // Remove the label and image from storage
     setContextLabels(prev => {
+      const updated = { ...prev }
+      delete updated[id]
+      return updated
+    })
+    setContextImages(prev => {
       const updated = { ...prev }
       delete updated[id]
       return updated
@@ -251,7 +260,14 @@ export function ChatInput({
                                 }}
                                 className="mx-2 my-1 px-3 py-2 rounded-lg text-sm text-[var(--text-primary)] hover:bg-[var(--color-pill-hover)] focus:bg-[var(--color-pill-hover)] cursor-pointer transition-colors"
                               >
-                                <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  {r.image && (
+                                    <img
+                                      src={r.image}
+                                      alt=""
+                                      className="size-8 rounded object-cover flex-shrink-0"
+                                    />
+                                  )}
                                   <span className="truncate">{r.label}</span>
                                 </div>
                               </DropdownMenuItem>
@@ -263,8 +279,16 @@ export function ChatInput({
                     {/* Selected context items inline */}
                     {selectedContextIds.map((id) => {
                       const displayName = contextLabels[id] || id.split(':').pop() || id
+                      const imageUrl = contextImages[id]
                       return (
-                        <span key={id} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--color-chat-input-border)] bg-transparent px-2 text-[15px] text-[#807d78]">
+                        <span key={id} className={`inline-flex h-8 items-center gap-1.5 rounded-full border border-[var(--color-chat-input-border)] bg-transparent ${imageUrl ? 'pl-1 pr-2' : 'px-2'} text-[15px] text-[#807d78]`}>
+                          {imageUrl && (
+                            <img
+                              src={imageUrl}
+                              alt=""
+                              className="size-6 rounded-full object-cover flex-shrink-0"
+                            />
+                          )}
                           <span className="truncate max-w-[260px] leading-none">{displayName}</span>
                           {onContextChange ? (
                             <button
@@ -337,7 +361,14 @@ export function ChatInput({
                                 }}
                                 className="mx-2 my-1 px-3 py-2 rounded-lg text-sm text-[var(--text-primary)] hover:bg-[var(--color-pill-hover)] focus:bg-[var(--color-pill-hover)] cursor-pointer transition-colors"
                               >
-                                <div className="flex items-center gap-2 min-w-0">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  {r.image && (
+                                    <img
+                                      src={r.image}
+                                      alt=""
+                                      className="size-8 rounded object-cover flex-shrink-0"
+                                    />
+                                  )}
                                   <span className="truncate">{r.label}</span>
                                 </div>
                               </DropdownMenuItem>
@@ -405,9 +436,9 @@ export function ChatInput({
                       className={
                         `inline-flex h-8 items-center gap-1.5 rounded-full border px-2 text-xs transition-colors backdrop-blur-sm ` +
                         (useWebSearch
-                          ? 'border border-accent bg-[var(--color-pill-active)]'
-                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)]') +
-                        ' text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed'
+                          ? 'border border-accent bg-[var(--color-pill-active)] text-[var(--color-accent)]'
+                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78]') +
+                        ' cursor-pointer disabled:cursor-not-allowed'
                       }
                       disabled={isSubmitting}
                     >

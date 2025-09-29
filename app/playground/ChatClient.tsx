@@ -28,7 +28,7 @@ export default function ChatClient() {
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] =
     useState<Record<number, AttachmentPreview[]>>({})
   const [sentContextByMessageIndex, setSentContextByMessageIndex] =
-    useState<Record<number, { id: string; type: 'blog' | 'research'; slug: string; title: string }[]>>({})
+    useState<Record<number, { id: string; type: 'blog' | 'research'; slug: string; title: string; image?: string }[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
   const [modelChoice, setModelChoice] = useState<string>('x-ai/grok-4-fast-reasoning')
@@ -286,7 +286,7 @@ export default function ChatClient() {
           ...prev,
           [indexForThisMessage]: prelim,
         }))
-        // Fetch titles to improve labels (non-blocking)
+        // Fetch titles and images to improve labels (non-blocking)
         Promise.all(
           prelim.map(async (p) => {
             try {
@@ -294,10 +294,11 @@ export default function ChatClient() {
               if (!res.ok) return p
               const json = await res.json()
               const title = json?.post?.title
+              const image = json?.post?.image
               if (typeof title === 'string' && title.trim()) {
-                return { ...p, title: `${title} — ${p.type}` }
+                return { ...p, title: `${title} — ${p.type}`, image }
               }
-              return p
+              return { ...p, image }
             } catch {
               return p
             }
@@ -807,7 +808,14 @@ export default function ChatClient() {
                             >
                               <div className="flex flex-wrap gap-2">
                                 {contextChips.map((c) => (
-                                  <span key={c.id} className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-[#807d78] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)]">
+                                  <span key={c.id} className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs text-[#807d78] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)] ${c.image ? 'pl-1' : ''}`}>
+                                    {c.image && (
+                                      <img
+                                        src={c.image}
+                                        alt=""
+                                        className="size-5 rounded-full object-cover flex-shrink-0"
+                                      />
+                                    )}
                                     @{c.title}
                                   </span>
                                 ))}
@@ -822,7 +830,14 @@ export default function ChatClient() {
                               {hasContext ? (
                                 <div className="mt-2 flex flex-wrap gap-2">
                                   {contextChips.map((c) => (
-                                    <span key={c.id} className="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-[#807d78] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)]">
+                                    <span key={c.id} className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs text-[#807d78] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)] ${c.image ? 'pl-1' : ''}`}>
+                                      {c.image && (
+                                        <img
+                                          src={c.image}
+                                          alt=""
+                                          className="size-5 rounded-full object-cover flex-shrink-0"
+                                        />
+                                      )}
                                       @{c.title}
                                     </span>
                                   ))}

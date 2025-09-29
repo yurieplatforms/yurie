@@ -7,6 +7,7 @@ type PostListItem = {
   slug: string
   title: string
   summary: string
+  image?: string
 }
 
 function listAll(): PostListItem[] {
@@ -17,6 +18,7 @@ function listAll(): PostListItem[] {
     slug: p.slug,
     title: p.metadata.title,
     summary: p.metadata.summary,
+    image: p.metadata.image,
   })
   return [
     ...blog.map(toItem('blog')),
@@ -63,6 +65,7 @@ export async function GET(request: Request) {
             title: found.metadata.title,
             summary: found.metadata.summary,
             content: found.content,
+            image: found.metadata.image,
           },
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
