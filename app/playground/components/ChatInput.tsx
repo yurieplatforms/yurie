@@ -218,7 +218,7 @@ export function ChatInput({
                           aria-haspopup="menu"
                           aria-expanded={isContextOpen}
                           aria-controls={contextMenuId}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-chat-input-border)] bg-transparent hover:bg-[var(--color-pill-hover)] text-[#807d78] cursor-pointer disabled:cursor-not-allowed transition-colors -ml-1.5"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-chat-input-border)] bg-transparent hover:bg-[var(--color-pill-hover)] text-[#807d78] cursor-pointer disabled:cursor-not-allowed transition-colors -ml-1.5 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                           disabled={isSubmitting}
                         >
                           <AtSign className="size-4" />
@@ -318,7 +318,7 @@ export function ChatInput({
                           aria-haspopup="menu"
                           aria-expanded={isContextOpen}
                           aria-controls={contextMenuId}
-                          className="inline-flex h-8 items-center gap-1.5 rounded-full border px-2 text-xs transition-colors backdrop-blur-sm border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed -ml-1.5"
+                          className="inline-flex h-8 items-center gap-1.5 rounded-full border px-2 text-xs transition-colors backdrop-blur-sm border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed -ml-1.5 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                           disabled={isSubmitting}
                         >
                             <AtSign className="size-4" />
