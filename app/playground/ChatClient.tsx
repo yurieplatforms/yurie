@@ -12,6 +12,8 @@ import { ChatInput } from './components/ChatInput'
 import { MessageAttachmentList } from './components/FileComponents'
 import { renderMessageContent, useMarkdownRenderer } from './components/MessageRenderer'
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
+import { GetStarted, GetStartedItem } from '@/components/ai-elements/get-started'
+import { Search, ScrollText, FileText, Image, X } from 'lucide-react'
 
 export default function ChatClient() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -39,6 +41,28 @@ export default function ChatClient() {
   const [contextIds, setContextIds] = useState<string[]>([])
 
   const md = useMarkdownRenderer()
+  const getStartedItems = [
+    {
+      label: 'Latest tech news',
+      icon: <Search className="size-5" />,
+      prompt: 'Latest tech news',
+    },
+    {
+      label: 'Write a creative story',
+      icon: <ScrollText className="size-5" />,
+      prompt: 'Write a creative story.',
+    },
+    {
+      label: 'Analyze PDFs or images',
+      icon: <FileText className="size-5" />,
+      prompt: 'Analyze the attached PDF or image and summarize key insights with action items.',
+    },
+    {
+      label: 'Create an image',
+      icon: <Image className="size-5" />,
+      prompt: 'Create an image of dinosaurs and a comet.',
+    },
+  ] as const
   const suggestionsByCategory: Record<string, string[]> = {
     Research: [
       'Summarize the latest LLM safety paper',
@@ -218,7 +242,7 @@ export default function ChatClient() {
     } catch {}
   }, [messages.length])
 
-  const handleSubmitWithMessage = useCallback(async (text: string, messageFiles: File[]) => {
+  const handleSubmitWithMessage = useCallback(async (text: string, messageFiles: File[], options?: { forceWebSearch?: boolean; overrideModel?: string }) => {
     const trimmed = text.trim()
     if (isLoading) return
     if (trimmed.length === 0 && messageFiles.length === 0 && contextIds.length === 0) return
@@ -440,10 +464,12 @@ export default function ChatClient() {
       }))
       const ac = new AbortController()
       abortControllerRef.current = ac
+      // Allow per-call model override for special actions (e.g., image generation card)
+      const modelToUse = options?.overrideModel ?? modelChoice
       // Only include reasoning for models that support reasoning_effort (grok-3-mini, grok-3-mini-fast)
-      const supportsReasoningEffort = /grok-3-mini(\b|\-|_)/i.test(modelChoice) || /grok-3-mini-fast/i.test(modelChoice)
+      const supportsReasoningEffort = /grok-3-mini(\b|\-|_)/i.test(modelToUse) || /grok-3-mini-fast/i.test(modelToUse)
       // Also enable reasoning for OpenRouter models (unified reasoning parameter per OpenRouter docs)
-      const isOpenRouterModel = /^openrouter\//i.test(modelChoice)
+      const isOpenRouterModel = /^openrouter\//i.test(modelToUse)
 
       const body: ChatRequestPayload = {
         messages: payloadMessages,
@@ -451,7 +477,7 @@ export default function ChatClient() {
         inputPdfs,
         inputAudio: inputAudioFromFiles,
         previousResponseId: lastResponseId,
-        model: modelChoice,
+        model: modelToUse,
       }
       // Convert selected context IDs (e.g., "blog:slug") to structured payload
       try {
@@ -474,12 +500,13 @@ export default function ChatClient() {
       if (supportsReasoningEffort || isOpenRouterModel) {
         body.reasoning = { effort: 'high' }
       }
-      // xAI Live Search: wire Globe toggle (disabled for Sonar Deep Research)
+      // xAI Live Search: wire toggle (disabled for Sonar Deep Research)
       try {
-        const lowerModel = String(modelChoice || '').toLowerCase()
+        const lowerModel = String(modelToUse || '').toLowerCase()
         const supportsWebToggle = lowerModel !== 'openrouter/perplexity/sonar-deep-research'
         if (supportsWebToggle) {
-          body.search_parameters = useWebSearch
+          const enableSearch = options?.forceWebSearch ? true : useWebSearch
+          body.search_parameters = enableSearch
             ? { mode: 'on', return_citations: true }
             : { mode: 'off' }
         }
@@ -648,6 +675,10 @@ export default function ChatClient() {
   }, [])
 
   const isEmpty = messages.length === 0
+  const [showGetStarted, setShowGetStarted] = useState<boolean>(true)
+  const dismissGetStarted = () => {
+    setShowGetStarted(false)
+  }
   const [outputBottomPad, setOutputBottomPad] = useState<number>(96)
   // Track the top position of the input to anchor the bottom scrim
   // Top coordinate (in px) of the input wrapper relative to the viewport; used to anchor the scrim from prompt top → bottom
@@ -927,6 +958,43 @@ export default function ChatClient() {
           selectedContextIds={contextIds}
           onContextChange={setContextIds}
         />
+        {isEmpty && showGetStarted ? (
+          <div className="mt-3 sm:mt-4">
+            <div className="flex items-center justify-between mb-2 px-1">
+              <div className="text-[13px] font-medium text-[#807d78]">Get started</div>
+              <button
+                type="button"
+                onClick={dismissGetStarted}
+                className="inline-flex items-center justify-center rounded-full p-1 text-[#807d78] hover:bg-[var(--color-suggestion)] cursor-pointer"
+                aria-label="Dismiss"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <GetStarted>
+              {getStartedItems.map((it) => (
+                <GetStartedItem
+                  key={it.label}
+                  label={it.label}
+                  icon={it.icon}
+                  onClick={() => {
+                    if (it.label === 'Analyze PDFs or images') {
+                      try {
+                        window.dispatchEvent(new Event('yurie:attachments:open'))
+                      } catch {}
+                    } else if (it.label === 'Latest tech news') {
+                      handleSubmitWithMessage(it.prompt, [], { forceWebSearch: true })
+                    } else if (it.label === 'Create an image') {
+                      handleSubmitWithMessage(it.prompt, [], { overrideModel: 'openrouter/google/gemini-2.5-flash-image-preview' })
+                    } else {
+                      handleSubmitWithMessage(it.prompt, [])
+                    }
+                  }}
+                />
+              ))}
+            </GetStarted>
+          </div>
+        ) : null}
       </div>
     </section>
   )

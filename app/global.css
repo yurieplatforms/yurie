@@ -302,6 +302,17 @@ a:hover {
   color: inherit;
 }
 
+/* Remove focus rings in nav scope for cleaner look */
+#nav :is(a, button, [role="menuitem"]) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+#nav :is(a, button, [role="menuitem"]):focus,
+#nav :is(a, button, [role="menuitem"]):focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Prevent scroll anchoring from nudging the page when nav/popovers open */
 #nav {
   overflow-anchor: none;

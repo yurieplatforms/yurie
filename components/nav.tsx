@@ -67,7 +67,7 @@ export function Navbar() {
             }}>
               <DropdownMenuTrigger asChild>
                 <button
-                  className={`${isExploreActive ? 'font-semibold text-foreground' : 'font-normal text-foreground/80'} group cursor-pointer relative my-1 mr-0 ml-0 flex items-center rounded-xl px-0 py-1 align-middle transition-colors hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none sm:px-0`}
+                  className={`${isExploreActive ? 'font-semibold text-foreground' : 'font-normal text-foreground/80'} group cursor-pointer relative my-1 mr-0 ml-0 flex items-center rounded-xl px-0 py-1 align-middle transition-colors hover:opacity-100 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 sm:px-0`}
                   type="button"
                   aria-haspopup="menu"
                   aria-expanded={menuOpen}
@@ -91,11 +91,11 @@ export function Navbar() {
                 side="bottom"
                 align="start"
                 sideOffset={4}
-                className="min-w-[8rem] z-[100] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)] shadow-lg backdrop-blur-md rounded-[20px]"
+                className="min-w-[8rem] z-[100] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)] shadow-lg backdrop-blur-md rounded-[20px] focus:outline-none focus-visible:outline-none"
               >
                 <DropdownMenuItem 
                   asChild
-                  className="mx-1 my-0.5 px-3 py-2 rounded-lg text-sm !text-[var(--color-foreground)] hover:bg-[var(--color-pill-hover)] focus:bg-[var(--color-pill-hover)] cursor-pointer transition-colors"
+                  className="mx-1 my-0.5 px-3 py-2 rounded-lg text-sm !text-[var(--color-foreground)] hover:bg-[var(--color-pill-hover)] focus:bg-[var(--color-pill-hover)] focus:outline-none focus-visible:outline-none cursor-pointer transition-colors"
                 >
                   <Link
                     href="/"
@@ -116,7 +116,7 @@ export function Navbar() {
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   asChild
-                  className="mx-1 my-0.5 px-3 py-2 rounded-lg text-sm !text-[var(--color-foreground)] hover:bg-[var(--color-pill-hover)] focus:bg-[var(--color-pill-hover)] cursor-pointer transition-colors"
+                  className="mx-1 my-0.5 px-3 py-2 rounded-lg text-sm !text-[var(--color-foreground)] hover:bg-[var(--color-pill-hover)] focus:bg-[var(--color-pill-hover)] focus:outline-none focus-visible:outline-none cursor-pointer transition-colors"
                 >
                   <Link
                     href="/research"
@@ -127,7 +127,7 @@ export function Navbar() {
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   asChild
-                  className="mx-1 my-0.5 px-3 py-2 rounded-lg text-sm !text-[var(--color-foreground)] hover:bg-[var(--color-pill-hover)] focus:bg-[var(--color-pill-hover)] cursor-pointer transition-colors"
+                  className="mx-1 my-0.5 px-3 py-2 rounded-lg text-sm !text-[var(--color-foreground)] hover:bg-[var(--color-pill-hover)] focus:bg-[var(--color-pill-hover)] focus:outline-none focus-visible:outline-none cursor-pointer transition-colors"
                 >
                   <Link
                     href="/blog"

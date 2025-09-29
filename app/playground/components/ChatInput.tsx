@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useLayoutEffect, useRef, useState, useId } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState, useId, useEffect } from 'react'
 import { Globe, ArrowUp, Square, Paperclip, AtSign } from 'lucide-react'
 import { Loader } from '@/components/ai-elements/loader'
 import { MAX_IMAGE_BYTES, MAX_PDF_BYTES, MAX_AUDIO_BYTES } from '../utils'
@@ -96,6 +96,23 @@ export function ChatInput({
       return true
     }
   })()
+
+  // Listen for global event to open the attachments dialog
+  useEffect(() => {
+    const handler = () => {
+      try {
+        attachmentInputRef.current?.click()
+      } catch {}
+    }
+    try {
+      window.addEventListener('yurie:attachments:open', handler as EventListener)
+    } catch {}
+    return () => {
+      try {
+        window.removeEventListener('yurie:attachments:open', handler as EventListener)
+      } catch {}
+    }
+  }, [])
 
   useLayoutEffect(() => {
     const computeWidth = () => {
