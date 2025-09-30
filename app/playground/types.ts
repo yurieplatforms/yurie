@@ -49,7 +49,11 @@ export type SourceDisplayParts = {
 
 export type ChatInputProps = {
   onSend?: () => void
-  onSubmitWithMessage?: (text: string, files: File[]) => void
+  onSubmitWithMessage?: (
+    text: string,
+    files: File[],
+    options?: { forceWebSearch?: boolean; overrideModel?: string }
+  ) => void
   onNewChat?: () => void
   isSubmitting?: boolean
   files: File[]

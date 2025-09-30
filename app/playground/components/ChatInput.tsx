@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useLayoutEffect, useRef, useState, useId, useEffect } from 'react'
-import { Globe, ArrowUp, Square, Paperclip, AtSign } from 'lucide-react'
+import { Globe, ArrowUp, Square, Paperclip, AtSign, Microscope } from 'lucide-react'
 import { Loader } from '@/components/ai-elements/loader'
 import { MAX_IMAGE_BYTES, MAX_PDF_BYTES, MAX_AUDIO_BYTES } from '../utils'
 import { ChatInputProps } from '../types'
@@ -39,8 +39,16 @@ export function ChatInput({
   onContextChange,
 }: ChatInputProps) {
   const attachmentInputRef = useRef<HTMLInputElement>(null)
+  const prevNonResearchModelRef = useRef<string | null>(null)
   const modelSizerRef = useRef<HTMLSpanElement>(null)
   const [modelSelectorWidth, setModelSelectorWidth] = useState<number | null>(null)
+  const isResearchMode = (() => {
+    try {
+      return String(modelChoice || '').toLowerCase() === 'openrouter/perplexity/sonar-deep-research'
+    } catch {
+      return false
+    }
+  })()
   const allowAudio = (() => {
     try {
       return /^openrouter\/google\/gemini-2\.5-pro$/i.test(modelChoice)
@@ -96,6 +104,75 @@ export function ChatInput({
       return true
     }
   })()
+  const handleToggleWebSearch = useCallback(() => {
+    try {
+      // If turning ON web search while research is active, first turn OFF research
+      if (!useWebSearch && isResearchMode) {
+        const prev = prevNonResearchModelRef.current
+        if (prev && prev.trim()) {
+          onModelChange(prev)
+        } else {
+          const fallback = (Array.isArray(modelOptions) && modelOptions.length > 0)
+            ? modelOptions[0].value
+            : 'x-ai/grok-4-fast-reasoning'
+          onModelChange(fallback)
+        }
+      }
+    } catch {}
+    onUseWebSearchToggle()
+  }, [useWebSearch, isResearchMode, onModelChange, onUseWebSearchToggle])
+  const toggleResearch = useCallback(() => {
+    try {
+      const sonar = 'openrouter/perplexity/sonar-deep-research'
+      const current = String(modelChoice || '')
+      const isOn = String(current).toLowerCase() === sonar
+      if (!isOn) {
+        // Turn ON research: remember current model and switch to Sonar
+        prevNonResearchModelRef.current = current
+        onModelChange(sonar)
+      } else {
+        // Turn OFF research: restore previous model (or default to first option)
+        const prev = prevNonResearchModelRef.current
+        if (prev && prev.trim()) {
+          onModelChange(prev)
+        } else {
+          const fallback = (Array.isArray(modelOptions) && modelOptions.length > 0)
+            ? modelOptions[0].value
+            : 'x-ai/grok-4-fast-reasoning'
+          onModelChange(fallback)
+        }
+      }
+    } catch {}
+  }, [modelChoice, onModelChange])
+
+  const displayModelValue = (() => {
+    try {
+      if (isResearchMode) {
+        const prev = prevNonResearchModelRef.current
+        if (prev && modelOptions.some((o) => o.value === prev)) return prev
+        return (Array.isArray(modelOptions) && modelOptions.length > 0) ? modelOptions[0].value : 'x-ai/grok-4-fast-reasoning'
+      }
+      return modelChoice
+    } catch {
+      return modelChoice
+    }
+  })()
+
+  const displayModelLabel = (() => {
+    try {
+      if (isResearchMode) {
+        const prev = prevNonResearchModelRef.current
+        const found = modelOptions.find((o) => o.value === prev)
+        if (found) return found.label
+        const fallback = (Array.isArray(modelOptions) && modelOptions.length > 0) ? modelOptions[0].label : modelChoice
+        return fallback
+      }
+      const found = modelOptions.find((o) => o.value === modelChoice)
+      return (found ? found.label : modelChoice)
+    } catch {
+      return modelChoice
+    }
+  })()
 
   // Listen for global event to open the attachments dialog
   useEffect(() => {
@@ -128,7 +205,7 @@ export function ChatInput({
     computeWidth()
     window.addEventListener('resize', computeWidth)
     return () => window.removeEventListener('resize', computeWidth)
-  }, [modelChoice])
+  }, [modelChoice, isResearchMode])
 
   const handleSubmit = useCallback(async (message: PromptInputMessage) => {
     const hasText = Boolean(message.text?.trim())
@@ -443,10 +520,30 @@ export function ChatInput({
                     <Paperclip className="size-4" />
                     <span className="text-sm font-medium">Attach</span>
                   </button>
+                  {useWebSearch ? null : (
+                    <button
+                      type="button"
+                      onClick={toggleResearch}
+                      aria-pressed={isResearchMode}
+                      aria-label="Research"
+                      title="Deep research"
+                      className={
+                        `inline-flex h-8 items-center gap-1.5 rounded-full border px-2 text-xs transition-colors backdrop-blur-sm ` +
+                        (isResearchMode
+                          ? 'border border-accent bg-[var(--color-pill-active)] text-[var(--color-accent)]'
+                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78]') +
+                        ' cursor-pointer disabled:cursor-not-allowed'
+                      }
+                      disabled={isSubmitting}
+                    >
+                      <Microscope className="size-4" />
+                      <span className="text-sm font-medium">Research</span>
+                    </button>
+                  )}
                   {allowWebSearch ? (
                     <button
                       type="button"
-                      onClick={onUseWebSearchToggle}
+                      onClick={handleToggleWebSearch}
                       aria-pressed={useWebSearch}
                       aria-label="Web search"
                       title="Web search"
@@ -460,21 +557,27 @@ export function ChatInput({
                       disabled={isSubmitting}
                     >
                       <Globe className="size-4" />
-                      <span className="text-sm font-medium">Search</span>
+                      <span className="text-sm font-medium">Web</span>
                     </button>
                   ) : null}
                   <div
-                    className="relative inline-flex h-8 items-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] backdrop-blur-sm"
+                    className={
+                      `relative inline-flex h-8 items-center rounded-full border border-transparent bg-transparent backdrop-blur-sm ` +
+                      (isResearchMode ? 'opacity-60 hover:bg-transparent cursor-default' : 'hover:bg-[var(--color-pill-hover)]')
+                    }
                     style={modelSelectorWidth ? { width: `${modelSelectorWidth}px` } : undefined}
+                    aria-disabled={isResearchMode ? true : undefined}
                   >
                     <label htmlFor="model-select" className="sr-only">Model</label>
                     <select
                       id="model-select"
-                      value={modelChoice}
+                      value={displayModelValue}
                       onChange={(e) => onModelChange(e.target.value)}
                       disabled={isSubmitting}
+                      aria-disabled={isResearchMode ? true : undefined}
+                      tabIndex={isResearchMode ? -1 : undefined}
                       aria-label="Model selector"
-                      className={`h-8 inline-block w-full appearance-none bg-transparent pl-2 pr-6 text-sm font-medium text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 whitespace-nowrap cursor-pointer disabled:cursor-not-allowed`}
+                      className={`h-8 inline-block w-full appearance-none bg-transparent pl-2 pr-6 text-sm font-medium text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 whitespace-nowrap ${isResearchMode ? 'cursor-default pointer-events-none' : 'cursor-pointer'}`}
                     >
                       {modelOptions.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -489,7 +592,7 @@ export function ChatInput({
                       aria-hidden="true"
                       className="absolute left-0 top-0 invisible whitespace-nowrap text-sm font-medium"
                     >
-                      {(modelOptions.find((o) => o.value === modelChoice)?.label) || modelChoice}
+                      {displayModelLabel}
                     </span>
                   </div>
                 </PromptInputTools>

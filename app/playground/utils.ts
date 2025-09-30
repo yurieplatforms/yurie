@@ -184,7 +184,6 @@ export const modelOptions = [
   { value: 'openrouter/google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
   { value: 'openrouter/anthropic/claude-sonnet-4.5', label: 'Claude Sonnet 4.5' },
   { value: 'openrouter/qwen/qwen-plus-2025-07-28:thinking', label: 'Qwen Plus (Thinking)' },
-  { value: 'openrouter/perplexity/sonar-deep-research', label: 'Sonar Deep Research' },
 ]
 
 export function getSelectedModelLabel(modelChoice: string): string {
