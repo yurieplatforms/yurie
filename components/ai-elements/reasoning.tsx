@@ -37,7 +37,7 @@ export function ReasoningTrigger({ title = 'Thought', isStreaming, className, ..
       {...props}
     >
       <Lightbulb className="size-4" weight="bold" aria-hidden="true" />
-      <span className={isStreaming ? 'ai-text-shimmer' : undefined}>{title}</span>
+      <span className={isStreaming ? 'ai-text-shimmer-white' : undefined}>{title}</span>
       <svg viewBox="0 0 24 24" className="size-4 text-[#807d78] dark:text-[#807d78] transition-transform group-data-[state=open]:rotate-180" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
     </CollapsibleTrigger>
   )

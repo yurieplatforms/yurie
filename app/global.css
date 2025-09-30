@@ -1035,6 +1035,41 @@ table {
   animation: aiTextShimmer 1.1s linear infinite;
 }
 
+/* White shimmer variant for Thought label
+   - In light mode: use a darker shimmer for contrast on white background
+   - In dark mode: use the white shimmer */
+.ai-text-shimmer-white {
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--text-primary) 55%, var(--color-background) 45%) 0%,
+    color-mix(in oklch, var(--text-primary) 92%, var(--color-background) 8%) 50%,
+    color-mix(in oklch, var(--text-primary) 55%, var(--color-background) 45%) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: aiTextShimmer 1.1s linear infinite;
+}
+@media (prefers-color-scheme: dark) {
+  .ai-text-shimmer-white {
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.35) 0%,
+      rgba(255, 255, 255, 0.9) 50%,
+      rgba(255, 255, 255, 0.35) 100%
+    );
+  }
+}
+.dark .ai-text-shimmer-white {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.35) 100%
+  );
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ai-text-shimmer {
     animation: none;

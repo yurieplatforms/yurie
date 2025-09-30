@@ -97,12 +97,13 @@ export function renderMessageContent(
   const legacyBracketPattern =
     '\\[' + 'data:image' + '\\/[a-zA-Z]+;base64,[^\\]]+' + '\\]'
   const pattern = new RegExp(
-    `<image_partial:([^>]+)>|<image:([^>]+)>|<reasoning_partial:([^>]+)>|<reasoning:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|<citations:([^>]+)>|${legacyBracketPattern}`,
+    `<image_partial:([^>]+)>|<image:([^>]+)>|<reasoning_partial:([^>]+)>|<reasoning:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|<citations:([^>]+)>|<web:on>|${legacyBracketPattern}`,
     'g'
   )
   
   const parts: MessagePart[] = []
   let lastIndex = 0
+  let sawWebOn = false
   let match: RegExpExecArray | null
   while ((match = pattern.exec(content)) !== null) {
     if (match.index > lastIndex) {
@@ -128,6 +129,10 @@ export function renderMessageContent(
           ? full.slice(1, -1)
           : ''
     const citationsPayload = match[9]
+    // Detect web search flag token
+    if (full === '<web:on>') {
+      sawWebOn = true
+    }
     if (src) {
       const isPartial = Boolean(partialPayload)
       parts.push({ type: 'image', src, partial: isPartial })
@@ -307,7 +312,11 @@ export function renderMessageContent(
           }
           return [] as string[]
         })()
-        if (role === 'assistant' && latestCitations.length > 0) {
+        if (
+          role === 'assistant' &&
+          (status === 'ready' || status === 'error') &&
+          (sawWebOn || latestCitations.length > 0)
+        ) {
           return <SourcesList urls={latestCitations} />
         }
         return null

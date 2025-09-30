@@ -182,7 +182,7 @@ export const modelOptions = [
   { value: 'x-ai/grok-4-fast-reasoning', label: 'Grok 4 Fast' },
   { value: 'openrouter/google/gemini-2.5-flash-image-preview', label: 'Nano Banana' },
   { value: 'openrouter/google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-  { value: 'openrouter/anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
+  { value: 'openrouter/anthropic/claude-sonnet-4.5', label: 'Claude Sonnet 4.5' },
   { value: 'openrouter/qwen/qwen-plus-2025-07-28:thinking', label: 'Qwen Plus (Thinking)' },
   { value: 'openrouter/perplexity/sonar-deep-research', label: 'Sonar Deep Research' },
 ]
