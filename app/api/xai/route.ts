@@ -243,166 +243,7 @@ async function buildMessages(payload: ChatRequestPayload) {
   return out
 }
 
-function streamFromXAI(payload: ChatRequestPayload): Response {
-  const apiKey = process.env.XAI_API_KEY
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: { code: 500, message: 'Missing XAI_API_KEY' } }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
-  }
 
-  const model = resolveModel(payload.model)
-  // buildMessages may be async now
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  const messagesPromise = (async () => await buildMessages(payload))()
-  const reasoning = payload.reasoning
-  const searchParams = payload.search_parameters
-
-  const requestBody: Record<string, any> = {
-    model,
-    // placeholder, will be replaced below after resolution
-    messages: [],
-    stream: true,
-  }
-
-  try {
-    const lower = (model || '').toLowerCase()
-    const supportsReasoning = lower.includes('grok-3-mini') || lower.includes('grok-3-mini-fast')
-    if (supportsReasoning && reasoning && typeof reasoning === 'object') {
-      requestBody.reasoning = reasoning
-    }
-  } catch {}
-
-  if (searchParams && typeof searchParams === 'object') {
-    requestBody.search_parameters = searchParams
-  }
-
-  const encoder = new TextEncoder()
-  const decoder = new TextDecoder()
-
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      let firstIdSent = false
-      let sentWebFlag = false
-      let lastCitations: string[] | null = null
-      let buffer = ''
-      try {
-        const messages = await messagesPromise
-        requestBody.messages = messages
-        const res = await fetch('https://api.x.ai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        })
-        if (!res.ok || !res.body) {
-          const text = await res.text().catch(() => '')
-          controller.enqueue(
-            encoder.encode(text || `HTTP ${res.status}`)
-          )
-          controller.close()
-          return
-        }
-        const reader = res.body.getReader()
-        while (true) {
-          const { value, done } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-          let idx: number
-          while ((idx = buffer.indexOf('\n')) !== -1) {
-            const line = buffer.slice(0, idx)
-            buffer = buffer.slice(idx + 1)
-            const trimmed = line.trim()
-            if (!trimmed || !trimmed.startsWith('data:')) continue
-            const data = trimmed.slice(5).trim()
-            if (!data || data === '[DONE]') continue
-            let obj: any
-            try {
-              obj = JSON.parse(data)
-            } catch {
-              continue
-            }
-            try {
-              if (!firstIdSent && typeof obj?.id === 'string' && obj.id) {
-                firstIdSent = true
-                controller.enqueue(encoder.encode(`<response_id:${obj.id}>`))
-              }
-            } catch {}
-            // If web search is enabled for this request, announce it once
-            try {
-              if (!sentWebFlag) {
-                const sp = searchParams as any
-                const useWeb = sp && typeof sp?.mode === 'string' && String(sp.mode).toLowerCase() === 'on'
-                if (useWeb) {
-                  sentWebFlag = true
-                  controller.enqueue(encoder.encode(`<web:on>`))
-                }
-              }
-            } catch {}
-            try {
-              const choices = Array.isArray(obj?.choices) ? obj.choices : []
-              for (const ch of choices) {
-                const delta = ch?.delta
-                const content: unknown = delta?.content
-                if (typeof content === 'string' && content) {
-                  controller.enqueue(encoder.encode(content))
-                }
-                const rc: unknown = delta?.reasoning_content
-                if (typeof rc === 'string' && rc) {
-                  try {
-                    const b64 = Buffer.from(rc, 'utf8').toString('base64')
-                    controller.enqueue(encoder.encode(`<reasoning_partial:${b64}>`))
-                  } catch {}
-                }
-                // Emit final reasoning if present on the message (xAI reasoning models)
-                try {
-                  const finalRc: unknown = ch?.message?.reasoning_content
-                  if (typeof finalRc === 'string' && finalRc) {
-                    const b64 = Buffer.from(finalRc, 'utf8').toString('base64')
-                    controller.enqueue(encoder.encode(`<reasoning:${b64}>`))
-                  }
-                } catch {}
-              }
-            } catch {}
-            try {
-              const cits = obj?.citations
-              if (Array.isArray(cits)) {
-                lastCitations = cits.map((u: any) => String(u))
-              }
-            } catch {}
-          }
-        }
-        const rest = decoder.decode()
-        if (rest) {
-          buffer += rest
-        }
-      } catch (e) {
-        try {
-          const msg = e instanceof Error ? e.message : 'Upstream error'
-          controller.enqueue(encoder.encode(msg))
-        } catch {}
-      } finally {
-        try {
-          if (lastCitations && lastCitations.length > 0) {
-            controller.enqueue(encoder.encode(`<citations:${JSON.stringify(lastCitations)}>`))
-          }
-        } catch {}
-        controller.close()
-      }
-    },
-  })
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'no-cache',
-      'X-Accel-Buffering': 'no',
-    },
-  })
-}
 
 function streamFromOpenRouter(payload: ChatRequestPayload): Response {
   const apiKey = process.env.OPENROUTER_API_KEY
@@ -415,7 +256,6 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
 
   let model = normalizeOpenRouterModelTag(payload.model)
   // buildMessages may be async now
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   const messagesPromise = (async () => await buildMessages(payload))()
   const reasoning = payload.reasoning
 
@@ -728,7 +568,7 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
 
       // Phase 1: Claude Sonnet 4.5 (Reasoning) via OpenRouter (if key present)
       const openrouterKey = process.env.OPENROUTER_API_KEY
-      let qwenReasoningStreamedFinal = false
+      
       const qwenReasoningPieces: string[] = []
       try {
         if (openrouterKey) {
@@ -825,13 +665,11 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
                         if (joined) {
                           const b64 = Buffer.from(joined, 'utf8').toString('base64')
                           controller.enqueue(encoder.encode(`<reasoning:${b64}>`))
-                          qwenReasoningStreamedFinal = true
                           qwenReasoningPieces.push(joined)
                         }
                       } else if (typeof finalReasoning === 'string' && finalReasoning) {
                         const b64 = Buffer.from(finalReasoning, 'utf8').toString('base64')
                         controller.enqueue(encoder.encode(`<reasoning:${b64}>`))
-                        qwenReasoningStreamedFinal = true
                         qwenReasoningPieces.push(finalReasoning)
                       }
                     } catch {}

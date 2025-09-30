@@ -33,8 +33,11 @@ export const GetStartedItem = ({ label, icon, onClick, className }: GetStartedIt
       className={cn(
         "flex flex-col items-start justify-center gap-2 rounded-2xl p-4 h-[92px]",
         "w-full cursor-pointer border-0 shadow-none",
-        "bg-[var(--color-suggestion)] hover:bg-[var(--color-suggestion)] dark:bg-[var(--color-suggestion)] dark:hover:bg-[var(--color-suggestion)]",
-        "text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78]",
+        "bg-[var(--color-suggestion)] dark:bg-[var(--color-suggestion)]",
+        "hover:bg-[#f5f4f2] dark:hover:bg-[#2a2a2a]",
+        "text-[#807d78] dark:text-[#807d78]",
+        "hover:text-[#6e6b66] dark:hover:text-[#9a9793]",
+        "transition-colors duration-300 ease-out",
         className
       )}
       onClick={onClick}
