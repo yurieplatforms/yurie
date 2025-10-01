@@ -179,11 +179,11 @@ export function getTimeOfDayWord(): 'today' | 'tonight' {
 export const modelOptions = [
   { value: 'openrouter/openai/gpt-5', label: 'GPT‑5' },
   { value: 'x-ai/grok-4-0709', label: 'Grok 4' },
+  { value: 'openrouter/qwen/qwen-plus-2025-07-28:thinking', label: 'Qwen Plus' },
   { value: 'x-ai/grok-4-fast-reasoning', label: 'Grok 4 Fast' },
   { value: 'openrouter/google/gemini-2.5-flash-image-preview', label: 'Nano Banana' },
   { value: 'openrouter/google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
   { value: 'openrouter/anthropic/claude-sonnet-4.5', label: 'Claude Sonnet 4.5' },
-  { value: 'openrouter/qwen/qwen-plus-2025-07-28:thinking', label: 'Qwen Plus (Thinking)' },
 ]
 
 export function getSelectedModelLabel(modelChoice: string): string {
