@@ -505,7 +505,7 @@ a:hover {
 /* Blog tables: lighter borders in light mode, darker in dark mode */
 .prose table {
   border: 1px solid var(--color-chat-input-border);
-  background-color: var(--color-chat-input);
+  background-color: var(--color-background);
   border-radius: 0.5rem;
   display: block;
   max-width: 100%;
@@ -516,20 +516,20 @@ a:hover {
 /* Consistent header styling and cell padding for blog post tables */
 .prose table thead th {
   @apply font-medium;
-  background-color: var(--table-header-bg);
+  background-color: #f7f6f3;
   color: #807d78;
 }
 
 @media (prefers-color-scheme: dark) {
   .prose table thead th {
-    background-color: var(--table-header-bg);
+    background-color: #202020;
   }
 }
 
 .prose table th,
 .prose table td {
   @apply border-r px-3 py-2 text-left;
-  border-right-color: var(--border-color);
+  border-right-color: var(--color-chat-input-border);
   color: var(--text-primary);
 }
 
@@ -538,10 +538,7 @@ a:hover {
   @apply border-r-0;
 }
 
-/* Subtle zebra striping for readability - apply to entire row to cover empty space */
-.prose table tbody tr:nth-child(odd) {
-  background-color: var(--color-pill-hover);
-}
+/* Removed zebra striping to match app background */
 
 /* Consistent grid behavior, numeric alignment, and clipped rounded corners */
 .prose table,
@@ -559,7 +556,7 @@ a:hover {
 }
 .prose table tbody tr + tr td,
 .prose-message table tbody tr + tr td {
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-chat-input-border);
 }
 
 /* Preserve rounded corners on the outermost cells */
@@ -870,34 +867,29 @@ table {
   overflow-x: auto;
   white-space: nowrap;
   border: 1px solid var(--color-chat-input-border);
-  background-color: var(--color-chat-input);
+  background-color: var(--color-background);
   border-radius: 0.5rem;
 }
 
 .prose-message table thead th {
   @apply font-medium;
   color: #807d78;
-  background-color: var(--table-header-bg);
+  background-color: #f7f6f3;
 }
 
 @media (prefers-color-scheme: dark) {
   .prose-message table thead th {
-    background-color: var(--table-header-bg);
+    background-color: #202020;
   }
 }
 
 .prose-message table th,
 .prose-message table td {
   @apply border-r px-3 py-2 text-left;
-  border-right-color: var(--border-color);
+  border-right-color: var(--color-chat-input-border);
   color: var(--text-primary);
 }
 
-/* Default row background matches chat input surface; color whole row */
-.prose table tbody tr,
-.prose-message table tbody tr {
-  background-color: var(--color-chat-input);
-}
 /* Ensure cells inherit row background so the entire width is filled */
 .prose table td,
 .prose-message table td {
@@ -917,9 +909,7 @@ table {
   @apply border-r-0;
 }
 
-.prose-message table tbody tr:nth-child(odd) {
-  background-color: var(--color-pill-hover);
-}
+/* Removed zebra striping for AI message tables */
 
 /* Match page-level scrollbar styling for AI tables as well */
 @media (hover: hover) and (pointer: fine) {
