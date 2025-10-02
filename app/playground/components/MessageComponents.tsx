@@ -1,76 +1,95 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState, useCallback } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ArrowSquareOut, CaretDown, Globe, Sparkle } from '@phosphor-icons/react'
 import Image from 'next/image'
-import { cn, dedupeUrls, toDisplayParts } from '../utils'
+import { cn, dedupeUrls, inferSourceMeta, toDisplayParts } from '../utils'
+
+const FaviconOrGlobe = memo(({ src }: { src?: string }) => {
+  const [failed, setFailed] = useState(false)
+  const handleError = useCallback(() => setFailed(true), [])
+  
+  if (!src || failed) {
+    return (
+      <Globe className="size-4 text-foreground/50 shrink-0" weight="bold" aria-hidden="true" />
+    )
+  }
+  return (
+    <Image
+      src={src}
+      alt=""
+      width={16}
+      height={16}
+      className="size-4 rounded shrink-0"
+      onError={handleError}
+    />
+  )
+})
+FaviconOrGlobe.displayName = 'FaviconOrGlobe'
+
+const SourceItem = memo(({ url }: { url: string }) => {
+  const meta = useMemo(() => inferSourceMeta(url), [url])
+  const p = useMemo(() => toDisplayParts(url), [url])
+  
+  return (
+    <li className="min-w-0">
+      <a
+        href={meta.href}
+        target="_blank"
+        rel="noreferrer"
+        title={meta.href}
+        className="group flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors hover:bg-[var(--color-pill-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40"
+      >
+        <FaviconOrGlobe src={meta.faviconUrl} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] font-medium text-foreground leading-tight">
+            {meta.title}
+          </div>
+          <div className="truncate text-[11px] text-foreground/55 leading-tight mt-0.5">
+            {meta.subtitle || p.domain}
+          </div>
+        </div>
+        <ArrowSquareOut className="size-3.5 shrink-0 text-foreground/40 opacity-0 transition-opacity group-hover:opacity-100" weight="bold" />
+      </a>
+    </li>
+  )
+})
+SourceItem.displayName = 'SourceItem'
 
 export function SourcesList({ urls }: { urls: string[] }) {
   const [expanded, setExpanded] = useState(false)
   const MAX_VISIBLE = 6
   const deduped = useMemo(() => dedupeUrls(urls), [urls])
-  const shown = expanded ? deduped : deduped.slice(0, MAX_VISIBLE)
+  const shown = useMemo(() => expanded ? deduped : deduped.slice(0, MAX_VISIBLE), [expanded, deduped])
+  const toggleExpanded = useCallback(() => setExpanded(v => !v), [])
+  
   return (
-    <div className="mt-3 rounded-2xl border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)] p-0 shadow-xs backdrop-blur-[2px]">
+    <div className="mt-3 rounded-xl border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)]">
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="inline-flex items-center gap-2">
-          <span className="inline-flex size-6 items-center justify-center rounded-full border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)] text-[var(--color-accent)]">
-            <Globe className="size-4" weight="bold" aria-hidden="true" />
-          </span>
-          <span className="text-xs font-semibold text-[#807d78] dark:text-[#807d78]">Sources</span>
+          <Globe className="size-4 text-foreground/50" weight="bold" aria-hidden="true" />
+          <span className="text-xs font-medium text-foreground/70">Sources</span>
         </div>
-        <div className="inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full border border-[var(--color-chat-input-border)] bg-[var(--color-chat-input)] px-1.5 py-0.5 text-[10px] leading-none text-[#807d78] dark:text-[#807d78]">
-          {deduped.length}
-        </div>
+        <span className="text-[11px] font-medium text-foreground/50">{deduped.length}</span>
       </div>
-      <div className="h-px w-full bg-[var(--color-chat-input-border)]" />
-      <ul className="grid grid-cols-1 gap-0.5 p-1.5 sm:grid-cols-2">
-        {shown.map((u) => {
-          const p = toDisplayParts(u)
-          return (
-            <li key={u} className="min-w-0">
-              <a
-                href={p.href}
-                target="_blank"
-                rel="noreferrer"
-                title={p.href}
-                className="group flex items-center gap-2 rounded-lg border border-transparent px-2.5 py-2 transition-colors hover:border-[var(--border-color-hover)] hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/40"
-              >
-                {p.faviconUrl ? (
-                  <Image
-                    src={p.faviconUrl}
-                    alt=""
-                    width={14}
-                    height={14}
-                    className="size-[14px] rounded-sm"
-                  />
-                ) : (
-                  <span className="inline-block size-[14px] rounded-sm bg-neutral-300 dark:bg-neutral-700" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-[13px] font-medium text-foreground group-hover:underline">
-                    {p.domain}
-                  </div>
-                  <div className="truncate text-[11px] text-foreground/60">
-                    {p.path}
-                  </div>
-                </div>
-                <ArrowSquareOut className="ml-1 size-3 shrink-0 text-foreground/60 opacity-0 transition-opacity group-hover:opacity-100" weight="bold" />
-              </a>
-            </li>
-          )
-        })}
+      <div className="h-px bg-[var(--color-chat-input-border)]" />
+      <ul className="grid grid-cols-1 gap-px p-2 sm:grid-cols-2">
+        {shown.map((url) => (
+          <SourceItem key={url} url={url} />
+        ))}
       </ul>
-      {deduped.length > MAX_VISIBLE ? (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="mx-2 mb-2 mt-0 inline-flex items-center justify-center rounded-md px-2 py-1 text-[11px] font-medium text-[#807d78] underline-offset-2 transition-colors hover:cursor-pointer hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78]"
-        >
-          {expanded ? 'Show less' : `Show all ${deduped.length}`}
-        </button>
-      ) : null}
+      {deduped.length > MAX_VISIBLE && (
+        <div className="px-2 pb-2">
+          <button
+            type="button"
+            onClick={toggleExpanded}
+            className="w-full rounded-lg px-3 py-1.5 text-xs font-medium text-foreground/60 transition-colors hover:bg-[var(--color-pill-hover)] hover:text-foreground cursor-pointer"
+          >
+            {expanded ? 'Show less' : `Show all ${deduped.length}`}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -129,3 +148,4 @@ export function ThinkingPanel({
     </div>
   )
 }
+

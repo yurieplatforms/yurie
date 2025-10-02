@@ -514,12 +514,46 @@ export function ChatInput({
                     onClick={() => attachmentInputRef.current?.click()}
                     aria-label="Add attachments"
                     title="Add attachments"
-                    className="inline-flex h-8 items-center gap-1.5 rounded-full border px-2 text-xs transition-colors backdrop-blur-sm border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed transition-colors"
                     disabled={isSubmitting || !allowAttachments}
                   >
                     <Paperclip className="size-4" />
-                    <span className="text-sm font-medium">Attach</span>
                   </button>
+                  <div
+                    className={
+                      `relative inline-flex h-8 items-center rounded-full border border-transparent bg-transparent backdrop-blur-sm ` +
+                      (isResearchMode ? 'opacity-60 hover:bg-transparent cursor-default' : 'hover:bg-[var(--color-pill-hover)]')
+                    }
+                    style={modelSelectorWidth ? { width: `${modelSelectorWidth}px` } : undefined}
+                    aria-disabled={isResearchMode ? true : undefined}
+                  >
+                    <label htmlFor="model-select" className="sr-only">Model</label>
+                    <select
+                      id="model-select"
+                      value={displayModelValue}
+                      onChange={(e) => onModelChange(e.target.value)}
+                      disabled={isSubmitting}
+                      aria-disabled={isResearchMode ? true : undefined}
+                      tabIndex={isResearchMode ? -1 : undefined}
+                      aria-label="Model selector"
+                      className={`h-8 inline-block w-full appearance-none bg-transparent pl-2 pr-6 text-sm font-medium text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 whitespace-nowrap ${isResearchMode ? 'cursor-default pointer-events-none' : 'cursor-pointer'}`}
+                    >
+                      {modelOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <svg viewBox="0 0 24 24" className="pointer-events-none absolute right-2 size-4 text-[#807d78] dark:text-[#807d78]" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
+                    {/* Hidden content sizer to measure text width */}
+                    <span
+                      ref={modelSizerRef}
+                      aria-hidden="true"
+                      className="absolute left-0 top-0 invisible whitespace-nowrap text-sm font-medium"
+                    >
+                      {displayModelLabel}
+                    </span>
+                  </div>
                   {useWebSearch ? null : (
                     <button
                       type="button"
@@ -560,41 +594,6 @@ export function ChatInput({
                       <span className="text-sm font-medium">Web</span>
                     </button>
                   ) : null}
-                  <div
-                    className={
-                      `relative inline-flex h-8 items-center rounded-full border border-transparent bg-transparent backdrop-blur-sm ` +
-                      (isResearchMode ? 'opacity-60 hover:bg-transparent cursor-default' : 'hover:bg-[var(--color-pill-hover)]')
-                    }
-                    style={modelSelectorWidth ? { width: `${modelSelectorWidth}px` } : undefined}
-                    aria-disabled={isResearchMode ? true : undefined}
-                  >
-                    <label htmlFor="model-select" className="sr-only">Model</label>
-                    <select
-                      id="model-select"
-                      value={displayModelValue}
-                      onChange={(e) => onModelChange(e.target.value)}
-                      disabled={isSubmitting}
-                      aria-disabled={isResearchMode ? true : undefined}
-                      tabIndex={isResearchMode ? -1 : undefined}
-                      aria-label="Model selector"
-                      className={`h-8 inline-block w-full appearance-none bg-transparent pl-2 pr-6 text-sm font-medium text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 whitespace-nowrap ${isResearchMode ? 'cursor-default pointer-events-none' : 'cursor-pointer'}`}
-                    >
-                      {modelOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                    <svg viewBox="0 0 24 24" className="pointer-events-none absolute right-2 size-4 text-[#807d78] dark:text-[#807d78]" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
-                    {/* Hidden content sizer to measure text width */}
-                    <span
-                      ref={modelSizerRef}
-                      aria-hidden="true"
-                      className="absolute left-0 top-0 invisible whitespace-nowrap text-sm font-medium"
-                    >
-                      {displayModelLabel}
-                    </span>
-                  </div>
                 </PromptInputTools>
               </PromptInputToolbar>
               {/* Floating submit button anchored to bottom-right */}

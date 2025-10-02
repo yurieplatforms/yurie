@@ -39,6 +39,68 @@ export function toDisplayParts(rawUrl: string): SourceDisplayParts {
   }
 }
 
+function toTitleCase(input: string): string {
+  try {
+    const lower = input.toLowerCase()
+    return lower.replace(/\b([a-z])/g, (_, c: string) => c.toUpperCase())
+  } catch {
+    return input
+  }
+}
+
+function deriveSlugTitleFromPath(pathname: string): string {
+  try {
+    const withoutQuery = pathname.split('?')[0]
+    const segments = withoutQuery.split('/').filter(Boolean)
+    const last = segments[segments.length - 1] || ''
+    let candidate = decodeURIComponent(last)
+    candidate = candidate.replace(/\.(html?|php|aspx?)$/i, '')
+    candidate = candidate.replace(/[-_]+/g, ' ').trim()
+    // If it looks like just an ID (no letters), ignore
+    if (!/[a-zA-Z]/.test(candidate)) return ''
+    // Collapse extra spaces
+    candidate = candidate.replace(/\s{2,}/g, ' ')
+    return toTitleCase(candidate)
+  } catch {
+    return ''
+  }
+}
+
+export function inferSourceMeta(rawUrl: string): {
+  href: string
+  title: string
+  subtitle?: string
+  faviconUrl: string
+} {
+  const parts = toDisplayParts(rawUrl)
+  const href = parts.href
+  const hostname = (parts.hostname || '').toLowerCase()
+  const isX = /^(?:mobile\.)?(?:twitter\.com|x\.com)$/.test(hostname)
+  if (isX) {
+    const parsed = safeParseUrl(href)
+    const path = parsed?.pathname || '/'
+    const segs = path.split('/').filter(Boolean)
+    // Typical: /{username}/status/{id}
+    const username = segs[0] || ''
+    const atName = username ? `@${username}` : parts.domain
+    return {
+      href,
+      title: atName,
+      subtitle: 'Post on X',
+      faviconUrl: parts.faviconUrl,
+    }
+  }
+
+  const prettyFromSlug = deriveSlugTitleFromPath(parts.path)
+  const title = prettyFromSlug || parts.domain
+  return {
+    href,
+    title,
+    subtitle: parts.domain,
+    faviconUrl: parts.faviconUrl,
+  }
+}
+
 export function dedupeUrls(urls: string[]): string[] {
   const seen = new Set<string>()
   const out: string[] = []
