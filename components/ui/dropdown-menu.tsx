@@ -41,7 +41,7 @@ function DropdownMenuTrigger({
 function DropdownMenuContent({
   className,
   sideOffset = 4,
-  inPortal = true,
+  inPortal = false,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content> & {
   inPortal?: boolean

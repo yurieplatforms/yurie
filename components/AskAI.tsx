@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Image from 'next/image'
 import { marked } from 'marked'
 import { createPortal } from 'react-dom'
 
@@ -194,13 +193,15 @@ export default function AskAISummary({
               aria-pressed={isActive}
               disabled={loading}
             >
-              <Image
+              <img
                 src="/favicon.ico"
                 alt=""
                 width={16}
                 height={16}
                 className="h-4 w-4"
                 aria-hidden="true"
+                draggable={false}
+                decoding="async"
               />
               <span className={loading ? 'ai-text-shimmer' : undefined}>
                 {loading ? 'Generating summary…' : 'Ask AI'}

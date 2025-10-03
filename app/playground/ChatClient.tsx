@@ -36,7 +36,7 @@ export default function ChatClient() {
   const [modelChoice, setModelChoice] = useState<string>('x-ai/grok-4-fast-reasoning')
   const [useWebSearch, setUseWebSearch] = useState<boolean>(false)
   const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(
-    getTimeOfDayWord
+    'today'
   )
   const [contextIds, setContextIds] = useState<string[]>([])
 
@@ -176,6 +176,7 @@ export default function ChatClient() {
     const compute = () => {
       setTimeOfDayWord(getTimeOfDayWord())
     }
+    compute()
     const id = window.setInterval(compute, 60000)
     return () => window.clearInterval(id)
   }, [])
@@ -520,16 +521,14 @@ export default function ChatClient() {
       if (supportsReasoningEffort || isOpenRouterModel) {
         body.reasoning = { effort: 'high' }
       }
-      // xAI Live Search: wire toggle (disabled for Sonar Deep Research)
+      // xAI Live Search: when Grok 4 (research) is active, force Live Search; otherwise follow toggle
       try {
         const lowerModel = String(modelToUse || '').toLowerCase()
-        const supportsWebToggle = lowerModel !== 'openrouter/perplexity/sonar-deep-research'
-        if (supportsWebToggle) {
-          const enableSearch = options?.forceWebSearch ? true : useWebSearch
-          body.search_parameters = enableSearch
-            ? { mode: 'on', return_citations: true }
-            : { mode: 'off' }
-        }
+        const isGrok4 = lowerModel === 'x-ai/grok-4-0709'
+        const enableSearch = isGrok4 || options?.forceWebSearch ? true : useWebSearch
+        body.search_parameters = enableSearch
+          ? { mode: 'on', return_citations: true }
+          : { mode: 'off' }
       } catch {}
       const res = await fetch('/api/xai', {
         method: 'POST',

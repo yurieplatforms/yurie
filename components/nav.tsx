@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -54,7 +53,7 @@ export function Navbar() {
           id="nav"
         >
           <div className="flex w-full h-10 flex-row items-center justify-between px-3 sm:px-4">
-            <DropdownMenu open={menuOpen} onOpenChange={(open) => {
+            <DropdownMenu modal={false} open={menuOpen} onOpenChange={(open) => {
               try {
                 const y = window.scrollY
                 lastScrollYRef.current = y
@@ -73,14 +72,15 @@ export function Navbar() {
                   aria-expanded={menuOpen}
                   onMouseDown={(e) => e.preventDefault()}
                 >
-                  <span className="group inline-flex items-center gap-1 rounded-xl px-0 py-1.5 transition-colors">
-                    <Image
+                  <span className="group inline-flex items-center gap-1 rounded-xl px-0 py-1.5 transition-colors" suppressHydrationWarning>
+                    <img
                       src="/favicon.ico"
                       alt="Yurie"
                       width={20}
                       height={20}
                       className="h-5 w-5 origin-center transform transition-transform duration-200 ease-out select-none group-hover:scale-110 sm:h-6 sm:w-6"
                       draggable={false}
+                      decoding="async"
                     />
                     <span className="leading-none">Yurie</span>
                     <svg viewBox="0 0 24 24" className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" aria-hidden="true"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>

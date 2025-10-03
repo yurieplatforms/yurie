@@ -23,6 +23,8 @@ const FaviconOrGlobe = memo(({ src }: { src?: string }) => {
       height={16}
       className="size-4 rounded shrink-0"
       onError={handleError}
+      loading="lazy"
+      quality={75}
     />
   )
 })

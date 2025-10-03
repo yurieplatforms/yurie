@@ -44,7 +44,8 @@ export function ChatInput({
   const [modelSelectorWidth, setModelSelectorWidth] = useState<number | null>(null)
   const isResearchMode = (() => {
     try {
-      return String(modelChoice || '').toLowerCase() === 'openrouter/perplexity/sonar-deep-research'
+      // Research mode now maps to xAI Grok 4 with Live Search
+      return String(modelChoice || '').toLowerCase() === 'x-ai/grok-4-0709'
     } catch {
       return false
     }
@@ -61,7 +62,6 @@ export function ChatInput({
       const m = String(modelChoice || '').toLowerCase()
       if (m === 'openrouter/qwen/qwen3-max') return false
       if (m === 'openrouter/qwen/qwen-plus-2025-07-28:thinking') return false
-      if (m === 'openrouter/perplexity/sonar-deep-research') return false
       if (m === 'openrouter/openai/gpt-5') return false
       return true
     } catch {
@@ -97,39 +97,25 @@ export function ChatInput({
   })()
   const allowWebSearch = (() => {
     try {
-      const m = String(modelChoice || '').toLowerCase()
-      if (m === 'openrouter/perplexity/sonar-deep-research') return false
+      // Web search is supported for xAI Grok 4 and most others
       return true
     } catch {
       return true
     }
   })()
   const handleToggleWebSearch = useCallback(() => {
-    try {
-      // If turning ON web search while research is active, first turn OFF research
-      if (!useWebSearch && isResearchMode) {
-        const prev = prevNonResearchModelRef.current
-        if (prev && prev.trim()) {
-          onModelChange(prev)
-        } else {
-          const fallback = (Array.isArray(modelOptions) && modelOptions.length > 0)
-            ? modelOptions[0].value
-            : 'x-ai/grok-4-fast-reasoning'
-          onModelChange(fallback)
-        }
-      }
-    } catch {}
+    // Independent web toggle; no Sonar special casing anymore
     onUseWebSearchToggle()
-  }, [useWebSearch, isResearchMode, onModelChange, onUseWebSearchToggle])
+  }, [onUseWebSearchToggle])
   const toggleResearch = useCallback(() => {
     try {
-      const sonar = 'openrouter/perplexity/sonar-deep-research'
+      const grok4 = 'x-ai/grok-4-0709'
       const current = String(modelChoice || '')
-      const isOn = String(current).toLowerCase() === sonar
+      const isOn = String(current).toLowerCase() === grok4
       if (!isOn) {
-        // Turn ON research: remember current model and switch to Sonar
+        // Turn ON research: remember current model and switch to Grok 4 (+ enable web)
         prevNonResearchModelRef.current = current
-        onModelChange(sonar)
+        onModelChange(grok4)
       } else {
         // Turn OFF research: restore previous model (or default to first option)
         const prev = prevNonResearchModelRef.current
@@ -143,7 +129,7 @@ export function ChatInput({
         }
       }
     } catch {}
-  }, [modelChoice, onModelChange])
+  }, [modelChoice, onModelChange, onUseWebSearchToggle, useWebSearch])
 
   const displayModelValue = (() => {
     try {
@@ -320,7 +306,7 @@ export function ChatInput({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent 
                         id={contextMenuId}
-                        inPortal 
+                        inPortal={false} 
                         sideOffset={12} 
                         side="bottom"
                         align="start"
@@ -421,7 +407,7 @@ export function ChatInput({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent 
                         id={contextMenuId}
-                        inPortal 
+                        inPortal={false} 
                         sideOffset={12} 
                         side="bottom"
                         align="start"
@@ -554,13 +540,13 @@ export function ChatInput({
                       {displayModelLabel}
                     </span>
                   </div>
-                  {useWebSearch ? null : (
+                  {(useWebSearch && !isResearchMode) ? null : (
                     <button
                       type="button"
                       onClick={toggleResearch}
                       aria-pressed={isResearchMode}
                       aria-label="Research"
-                      title="Deep research"
+                      title="Grok 4 Research"
                       className={
                         `inline-flex h-8 items-center gap-1.5 rounded-full border px-2 text-xs transition-colors backdrop-blur-sm ` +
                         (isResearchMode
@@ -574,7 +560,7 @@ export function ChatInput({
                       <span className="text-sm font-medium">Research</span>
                     </button>
                   )}
-                  {allowWebSearch ? (
+                  {allowWebSearch && !isResearchMode ? (
                     <button
                       type="button"
                       onClick={handleToggleWebSearch}

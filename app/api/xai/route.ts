@@ -77,6 +77,38 @@ Safety & Privacy
 </SystemPrompt>
 `.trim()
 
+// Research mode (Grok 4 with Live Search) specific system prompt
+// - Produce long-form, comprehensive answers
+// - Avoid bullet points and numbered lists; prefer paragraphs and tables
+// - Never expose internal thinking or chain-of-thought; only present final answer
+// - Use tables to summarize structured information, comparisons, timelines, and pros/cons
+// - Cite reputable sources inline when using web search (no separate sources table)
+const RESEARCH_SYSTEM_PROMPT = `
+<SystemPrompt>
+
+You are Yurie in Research Mode. Provide long-form, comprehensive, deeply detailed answers.
+
+Formatting rules (must follow):
+- Write as long as necessary with no maximum length. Do not self-truncate or prematurely summarize.
+- Output must be Markdown only. Do not use HTML or plain text.
+- Do NOT use bullet points or numbered lists in the final answer.
+- Prefer clear paragraphs for exposition.
+- When presenting structured information (comparisons, metrics, timelines, pros/cons, key takeaways), use one or more tables.
+- Include concise inline citations for claims derived from the web (site/author + date). Do not include a separate sources table.
+- Never include or reveal internal thinking, chain-of-thought, intermediate notes, or hidden planning. Only present the final, user-facing answer.
+
+Style:
+- Aim for thoroughness, clarity, and cohesion. Expand on context, methodology, and assumptions as needed.
+- Favor precise language, concrete examples, and where applicable, brief formulas or definitions (inline).
+- Keep code snippets complete and runnable when requested.
+
+Safety & Integrity:
+- Verify names, dates, and figures; state uncertainty when applicable and suggest how to verify.
+- Prefer primary sources and reputable references.
+
+</SystemPrompt>
+`.trim()
+
 function resolveModel(incoming?: string | null): string {
   const envDefault = process.env.XAI_MODEL_DEFAULT
   if (envDefault && typeof envDefault === 'string' && envDefault.trim()) {
@@ -128,7 +160,17 @@ async function loadContextFromIds(ids: Array<{ type: 'blog' | 'research'; slug: 
 
 async function buildMessages(payload: ChatRequestPayload) {
   const out: Array<{ role: string; content: any }> = []
-  out.push({ role: 'system', content: [{ type: 'text', text: SYSTEM_PROMPT }] })
+  const isResearch = (() => {
+    try {
+      const m = String(payload?.model || '')
+      const lower = m.toLowerCase()
+      return lower.includes('grok-4-0709')
+    } catch {
+      return false
+    }
+  })()
+  const systemText = isResearch ? RESEARCH_SYSTEM_PROMPT : SYSTEM_PROMPT
+  out.push({ role: 'system', content: [{ type: 'text', text: systemText }] })
 
   const incoming = Array.isArray(payload.messages) ? payload.messages : []
   const prior = incoming.slice(0, Math.max(0, incoming.length - 1))
@@ -565,6 +607,7 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
           return false
         }
       })()
+      const suppressReasoningStreaming: boolean = false
 
       // Phase 1: Claude Sonnet 4.5 (Reasoning) via OpenRouter (if key present)
       const openrouterKey = process.env.OPENROUTER_API_KEY
@@ -628,7 +671,9 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
                       const reasonDelta: unknown = (delta as any)?.reasoning
                       if (!hasDetails && typeof reasonDelta === 'string' && reasonDelta) {
                         const b64 = Buffer.from(reasonDelta, 'utf8').toString('base64')
-                        controller.enqueue(encoder.encode(`<reasoning_partial:${b64}>`))
+                        if (!suppressReasoningStreaming) {
+                          controller.enqueue(encoder.encode(`<reasoning_partial:${b64}>`))
+                        }
                         qwenReasoningPieces.push(reasonDelta)
                       }
                     } catch {}
@@ -642,8 +687,10 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
                           const text: unknown = d?.text
                           if (typeof text === 'string' && text) {
                             const b64 = Buffer.from(text, 'utf8').toString('base64')
-                            controller.enqueue(encoder.encode(`<reasoning_partial:${b64}>`))
-                          qwenReasoningPieces.push(text)
+                            if (!suppressReasoningStreaming) {
+                              controller.enqueue(encoder.encode(`<reasoning_partial:${b64}>`))
+                            }
+                            qwenReasoningPieces.push(text)
                           }
                         }
                       }
@@ -664,12 +711,16 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
                         const joined = parts.join('\n')
                         if (joined) {
                           const b64 = Buffer.from(joined, 'utf8').toString('base64')
-                          controller.enqueue(encoder.encode(`<reasoning:${b64}>`))
+                          if (!suppressReasoningStreaming) {
+                            controller.enqueue(encoder.encode(`<reasoning:${b64}>`))
+                          }
                           qwenReasoningPieces.push(joined)
                         }
                       } else if (typeof finalReasoning === 'string' && finalReasoning) {
                         const b64 = Buffer.from(finalReasoning, 'utf8').toString('base64')
-                        controller.enqueue(encoder.encode(`<reasoning:${b64}>`))
+                        if (!suppressReasoningStreaming) {
+                          controller.enqueue(encoder.encode(`<reasoning:${b64}>`))
+                        }
                         qwenReasoningPieces.push(finalReasoning)
                       }
                     } catch {}

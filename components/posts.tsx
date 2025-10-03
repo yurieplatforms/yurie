@@ -43,6 +43,8 @@ export function PostList({ basePath, posts, limit }: ListProps) {
                 width={64}
                 height={64}
                 className="h-16 w-16 flex-shrink-0 rounded-md bg-neutral-100 object-cover dark:bg-neutral-800"
+                loading="lazy"
+                quality={75}
               />
             ) : null}
             <div className="flex flex-col space-y-1">
