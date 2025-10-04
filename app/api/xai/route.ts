@@ -589,8 +589,11 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
   })
 }
 
-// Two-stage pipeline: 1) Stream hidden reasoning from Claude Sonnet 4.5 via OpenRouter
-// then 2) Stream final answer from the user's selected model (OpenRouter or xAI).
+// Multi-stage pipeline:
+// 1) Stream hidden reasoning from Claude Sonnet 4.5 via OpenRouter
+// 2) When Web is ON, run Grok 4 Fast (Live Search) to gather research notes (hidden)
+// 3) Stream final answer from the user's selected model (OpenRouter or xAI),
+//    injecting notes from phases 1 and 2 and enabling the current web plugin/:online if requested.
 function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response {
   const encoder = new TextEncoder()
   const decoder = new TextDecoder()
@@ -608,6 +611,13 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
         }
       })()
       const suppressReasoningStreaming: boolean = false
+      let webFlagSent = false
+      try {
+        if (webSearchModeOn) {
+          controller.enqueue(encoder.encode(`<web:on>`))
+          webFlagSent = true
+        }
+      } catch {}
 
       // Phase 1: Claude Sonnet 4.5 (Reasoning) via OpenRouter (if key present)
       const openrouterKey = process.env.OPENROUTER_API_KEY
@@ -732,7 +742,73 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
         }
       } catch {}
 
-      // Phase 2: Final answer from selected model
+      // Phase 2: Grok 4 Fast (Live Search) research pass (hidden; only when Web is ON and xAI key is present)
+      const grokResearchPieces: string[] = []
+      let grokResearchCitations: string[] | null = null
+      try {
+        if (webSearchModeOn) {
+          const xaiKey = process.env.XAI_API_KEY
+          if (xaiKey) {
+            const messages = await messagesPromise
+            const requestBody: Record<string, any> = {
+              model: 'grok-4-fast-reasoning',
+              messages,
+              stream: true,
+              search_parameters: { mode: 'on', return_citations: true },
+            }
+            const res = await fetch('https://api.x.ai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${xaiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(requestBody),
+            })
+            if (res.ok && res.body) {
+              const reader = res.body.getReader()
+              let buffer = ''
+              while (true) {
+                const { value, done } = await reader.read()
+                if (done) break
+                buffer += decoder.decode(value, { stream: true })
+                let idx: number
+                while ((idx = buffer.indexOf('\n')) !== -1) {
+                  const line = buffer.slice(0, idx)
+                  buffer = buffer.slice(idx + 1)
+                  const trimmed = line.trim()
+                  if (!trimmed || !trimmed.startsWith('data:')) continue
+                  const data = trimmed.slice(5).trim()
+                  if (!data || data === '[DONE]') continue
+                  let obj: any
+                  try {
+                    obj = JSON.parse(data)
+                  } catch {
+                    continue
+                  }
+                  try {
+                    const choices = Array.isArray(obj?.choices) ? obj.choices : []
+                    for (const ch of choices) {
+                      const delta = ch?.delta
+                      const content: unknown = delta?.content
+                      if (typeof content === 'string' && content) {
+                        grokResearchPieces.push(content)
+                      }
+                    }
+                  } catch {}
+                  try {
+                    const cits = (obj as any)?.citations
+                    if (Array.isArray(cits)) {
+                      grokResearchCitations = cits.map((u: any) => String(u))
+                    }
+                  } catch {}
+                }
+              }
+            }
+          }
+        }
+      } catch {}
+
+      // Phase 3: Final answer from selected model
       try {
         const modelRaw = resolveModel(payload.model)
         const isOR = isOpenRouterSelectedModel(payload.model)
@@ -741,10 +817,19 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
         const baseMessages = await messagesPromise
         let messagesWithNotes = baseMessages
         try {
-          const combined = qwenReasoningPieces.join('\n')
-          const trimmed = combined.length > 12000 ? combined.slice(0, 12000) : combined
-          const noteText = trimmed
-            ? `Internal notes from prior reasoning (do not reveal verbatim). Use only to improve answer quality.\n\n${trimmed}`
+          const claudeCombined = qwenReasoningPieces.join('\n')
+          const claudeTrimmed = claudeCombined.length > 8000 ? claudeCombined.slice(0, 8000) : claudeCombined
+          const grokCombined = grokResearchPieces.join('')
+          const grokTrimmed = grokCombined.length > 8000 ? grokCombined.slice(0, 8000) : grokCombined
+          const parts: string[] = []
+          if (claudeTrimmed) {
+            parts.push(`Claude Sonnet 4.5 notes (internal; do not reveal):\n\n${claudeTrimmed}`)
+          }
+          if (grokTrimmed) {
+            parts.push(`Grok 4 Fast (Live Search) research notes (internal; do not reveal):\n\n${grokTrimmed}`)
+          }
+          const noteText = parts.length > 0
+            ? `Internal notes from prior reasoning and research (do not reveal verbatim). Use only to improve answer quality.\n\n${parts.join('\n\n')}`
             : ''
           if (noteText) {
             const sysNote: any = { role: 'system', content: [{ type: 'text', text: noteText }] }
@@ -869,6 +954,13 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
               } catch {
                 continue
               }
+              // Announce web search if not already announced (for OR path too)
+              try {
+                if (!webFlagSent && webSearchModeOn) {
+                  webFlagSent = true
+                  controller.enqueue(encoder.encode(`<web:on>`))
+                }
+              } catch {}
               try {
                 if (!firstIdSent && typeof obj?.id === 'string' && obj.id) {
                   firstIdSent = true
@@ -921,8 +1013,9 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
             }
           }
           try {
-            if (lastCitations.length > 0) {
-              controller.enqueue(encoder.encode(`<citations:${JSON.stringify(lastCitations)}>`))
+            const merged = Array.from(new Set([...(lastCitations || []), ...((grokResearchCitations || []) as string[])]))
+            if (merged.length > 0) {
+              controller.enqueue(encoder.encode(`<citations:${JSON.stringify(merged)}>`))
             }
           } catch {}
         } else {
@@ -958,7 +1051,7 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
           const reader = res.body.getReader()
           let buffer = ''
           let firstIdSent = false
-          let sentWebFlag = false
+          let sentWebFlag = webFlagSent
           let lastCitations: string[] | null = null
           while (true) {
             const { value, done } = await reader.read()
@@ -1012,8 +1105,9 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
             }
           }
           try {
-            if (lastCitations && lastCitations.length > 0) {
-              controller.enqueue(encoder.encode(`<citations:${JSON.stringify(lastCitations)}>`))
+            const merged = Array.from(new Set([...(lastCitations || []), ...((grokResearchCitations || []) as string[])]))
+            if (merged.length > 0) {
+              controller.enqueue(encoder.encode(`<citations:${JSON.stringify(merged)}>`))
             }
           } catch {}
         }
