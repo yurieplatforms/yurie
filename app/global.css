@@ -761,7 +761,7 @@ a:hover {
   @apply justify-start;
 }
 .chat-row.user {
-  @apply justify-end;
+  @apply justify-start;
 }
 
 .chat-bubble {
@@ -784,6 +784,32 @@ a:hover {
 .chat-bubble.user {
   @apply bg-white text-neutral-900 dark:bg-black dark:text-white;
   background-color: var(--bubble-user-bg);
+}
+
+/* Perplexity-style user heading */
+.user-heading {
+  @apply w-full text-2xl sm:text-3xl font-medium tracking-tight text-left text-neutral-900 dark:text-white;
+}
+.user-heading.long {
+  /* Slightly smaller font-size and increased line-height for long prompts */
+  @apply text-xl sm:text-2xl;
+  line-height: 1.25;
+}
+.user-heading.very-long {
+  /* Compact style for very long prompts: smaller, comfortable line-height */
+  @apply text-lg sm:text-xl;
+  line-height: 1.35;
+}
+/* Ensure title spans full width and wraps naturally */
+.user-heading .title {
+  @apply w-full block;
+  max-width: none;
+  text-wrap: pretty;
+}
+
+/* Allow selecting and copying user heading; wrapper used for action hover */
+.user-heading-wrapper {
+  @apply relative w-full;
 }
 
 /* Ensure markdown inside bubbles fits and inherits */
@@ -956,6 +982,26 @@ table {
 
 .title {
   text-wrap: balance;
+}
+
+/* Progress bar animation for loading preview - smooth wave animation */
+@keyframes progressWave {
+  0% {
+    transform: translateX(-100%) scaleX(0.3);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateX(0%) scaleX(0.8);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(100%) scaleX(0.3);
+    opacity: 0.3;
+  }
+}
+.animate-progress-wave {
+  animation: progressWave 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-origin: center;
 }
 
 /* Glowing border effect for Ask AI while generating */

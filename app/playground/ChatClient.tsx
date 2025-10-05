@@ -13,7 +13,7 @@ import { MessageAttachmentList } from './components/FileComponents'
 import { renderMessageContent, useMarkdownRenderer } from './components/MessageRenderer'
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
 import { GetStarted, GetStartedItem } from '@/components/ai-elements/get-started'
-import { Newspaper, ScrollText, ScanText, Palette, X } from 'lucide-react'
+import { Newspaper, ScrollText, ScanText, MapPin, X } from 'lucide-react'
 
 export default function ChatClient() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -58,10 +58,11 @@ export default function ChatClient() {
       prompt: 'Analyze the attached PDF or image and summarize key insights with action items.',
     },
     {
-      label: 'Create an image',
-      icon: <Palette className="size-5" />,
-      prompt: 'Create an image of dinosaurs and a comet.',
+      label: 'Plan a trip to Tokyo',
+      icon: <MapPin className="size-5" />,
+      prompt: 'Plan a 5-day trip to Tokyo with a day-by-day itinerary, estimated budget, local transport tips, and top attractions.',
     },
+    
   ] as const
   const suggestionsByCategory: Record<string, string[]> = {
     Technology: [
@@ -235,6 +236,8 @@ export default function ChatClient() {
     }
   }, [])
 
+  
+
   // If the output area resizes and user is pinned, keep them pinned
   useEffect(() => {
     if (pinnedToBottomRef.current) {
@@ -263,12 +266,35 @@ export default function ChatClient() {
     } catch {}
   }, [messages.length])
 
-  const handleSubmitWithMessage = useCallback(async (text: string, messageFiles: File[], options?: { forceWebSearch?: boolean; overrideModel?: string }) => {
+  const handleSubmitWithMessage = useCallback(async (text: string, messageFiles: File[], options?: { forceWebSearch?: boolean; overrideModel?: string; mode?: 'append' | 'replace_last_user'; baseMessages?: ChatMessage[] }) => {
     const trimmed = text.trim()
     if (isLoading) return
     if (trimmed.length === 0 && messageFiles.length === 0 && contextIds.length === 0) return
-    const userMsg: ChatMessage = { role: 'user', content: trimmed }
-    const nextMessages: ChatMessage[] = [...messages, userMsg]
+    const startMessages: ChatMessage[] = Array.isArray(options?.baseMessages) ? (options!.baseMessages as ChatMessage[]) : messages
+    let nextMessages: ChatMessage[] = []
+    let indexForThisMessage = -1
+    if (options?.mode === 'replace_last_user') {
+      let lastUserIndex = -1
+      for (let i = startMessages.length - 1; i >= 0; i--) {
+        if (startMessages[i].role === 'user') {
+          lastUserIndex = i
+          break
+        }
+      }
+      if (lastUserIndex >= 0) {
+        nextMessages = startMessages.slice()
+        nextMessages[lastUserIndex] = { role: 'user', content: trimmed }
+        indexForThisMessage = lastUserIndex
+      } else {
+        const userMsg: ChatMessage = { role: 'user', content: trimmed }
+        nextMessages = [...startMessages, userMsg]
+        indexForThisMessage = startMessages.length
+      }
+    } else {
+      const userMsg: ChatMessage = { role: 'user', content: trimmed }
+      nextMessages = [...startMessages, userMsg]
+      indexForThisMessage = startMessages.length
+    }
     setMessages(nextMessages)
     setIsLoading(true)
     setStatus('submitted')
@@ -304,8 +330,7 @@ export default function ChatClient() {
           isImage,
         }
       })
-      const indexForThisMessage = nextMessages.length - 1
-      if (attachmentsForPreview.length > 0) {
+      if (attachmentsForPreview.length > 0 && indexForThisMessage >= 0) {
         setSentAttachmentsByMessageIndex((prev) => ({
           ...prev,
           [indexForThisMessage]: attachmentsForPreview,
@@ -451,8 +476,8 @@ export default function ChatClient() {
       // pull final images from the most recent assistant message.
       const lastAssistantImages = (() => {
         try {
-          for (let i = messages.length - 1; i >= 0; i--) {
-            const msg = messages[i]
+          for (let i = nextMessages.length - 1; i >= 0; i--) {
+            const msg = nextMessages[i]
             if (msg.role !== 'assistant') continue
             return extractInlineImageUrls(msg.content || '')
           }
@@ -497,7 +522,7 @@ export default function ChatClient() {
         inputImages,
         inputPdfs,
         inputAudio: inputAudioFromFiles,
-        previousResponseId: lastResponseId,
+        previousResponseId: options?.mode === 'replace_last_user' ? null : lastResponseId,
         model: modelToUse,
       }
       // Convert selected context IDs (e.g., "blog:slug") to structured payload
@@ -666,6 +691,35 @@ export default function ChatClient() {
     setStatus('ready')
   }, [])
 
+  // Listen for inline prompt edit submissions from the message heading
+  useEffect(() => {
+    const handler = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent<{ text?: string }>).detail || {}
+        const next = String(detail.text || '').trim()
+        if (!next) return
+        // Abort any ongoing generation
+        stop()
+        // Find the last user message and truncate to it
+        let lastUserIndex = -1
+        for (let i = messages.length - 1; i >= 0; i--) {
+          if (messages[i].role === 'user') { lastUserIndex = i; break }
+        }
+        const base = lastUserIndex >= 0 ? messages.slice(0, lastUserIndex + 1) : []
+        setLastResponseId(null)
+        handleSubmitWithMessage(next, [], { mode: 'replace_last_user', baseMessages: base })
+      } catch {}
+    }
+    try {
+      window.addEventListener('yurie:prompt:edit-submit', handler as EventListener)
+    } catch {}
+    return () => {
+      try {
+        window.removeEventListener('yurie:prompt:edit-submit', handler as EventListener)
+      } catch {}
+    }
+  }, [messages, stop, handleSubmitWithMessage])
+
   // Listen for global new chat event dispatched from the navbar
   useEffect(() => {
     const handler = () => {
@@ -807,7 +861,7 @@ export default function ChatClient() {
               const isFirst = i === 0
               const speakerChanged = !isFirst && messages[i - 1].role !== m.role
               const topMarginClass = isFirst
-                ? 'mt-1'
+                ? 'mt-6 sm:mt-8'
                 : speakerChanged
                   ? 'mt-2'
                   : 'mt-0.5'
@@ -874,7 +928,7 @@ export default function ChatClient() {
                           )
                         }
                         return (
-                          <div className={cn('chat-bubble', 'user', 'min-w-0')}>
+                          <div className={cn('w-full min-w-0')}>
                             <div className="w-full min-w-0">
                               {renderMessageContent(m.role, m.content, status, md)}
                               {hasContext ? (
@@ -1003,8 +1057,6 @@ export default function ChatClient() {
                       } catch {}
                     } else if (it.label === 'Latest tech news') {
                       handleSubmitWithMessage(it.prompt, [], { forceWebSearch: true })
-                    } else if (it.label === 'Create an image') {
-                      handleSubmitWithMessage(it.prompt, [], { overrideModel: 'openrouter/google/gemini-2.5-flash-image-preview' })
                     } else {
                       handleSubmitWithMessage(it.prompt, [])
                     }

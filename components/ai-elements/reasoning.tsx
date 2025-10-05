@@ -16,7 +16,7 @@ export function Reasoning({ isStreaming, className, children, ...props }: Reason
     else setOpen(false)
   }, [isStreaming])
   return (
-    <Collapsible open={open} onOpenChange={setOpen} className={cn('mb-2', className)} {...props}>
+    <Collapsible open={open} onOpenChange={setOpen} className={cn('mb-2 mt-4 sm:mt-5', className)} {...props}>
       {children}
     </Collapsible>
   )
@@ -46,7 +46,7 @@ export function ReasoningTrigger({ title = 'Thought', isStreaming, className, ..
 export function ReasoningContent({ className, children, ...props }: React.ComponentProps<typeof CollapsibleContent>) {
   return (
     <CollapsibleContent
-      className={cn('overflow-hidden', className)}
+      className={cn('overflow-hidden mt-3', className)}
       {...props}
     >
       <div className="mt-0 ml-[18px] rounded-lg bg-[var(--color-background)] px-0 py-2">

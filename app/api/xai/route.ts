@@ -326,14 +326,7 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
     }
   } catch {}
 
-  // If using an OpenRouter model that supports image generation (e.g., Gemini 2.5 Flash Image Preview),
-  // request both image and text modalities per OpenRouter docs.
-  try {
-    const lowerModel = String(model || '').toLowerCase()
-    if (lowerModel.includes('gemini-2.5-flash-image-preview')) {
-      requestBody.modalities = ['image', 'text']
-    }
-  } catch {}
+  // No special image-generation modalities
 
   // Pass-through plugins (e.g., file-parser for PDFs)
   try {
@@ -499,16 +492,7 @@ function streamFromOpenRouter(payload: ChatRequestPayload): Response {
                     }
                   }
                 } catch {}
-                // Stream image deltas from OpenRouter as inline tags the client can render
-                const deltaImages: any[] = Array.isArray(delta?.images) ? delta.images : []
-                for (const im of deltaImages) {
-                  try {
-                    const url = im?.image_url?.url
-                    if (typeof url === 'string' && url) {
-                      controller.enqueue(encoder.encode(`<image_partial:${url}>`))
-                    }
-                  } catch {}
-                }
+                // Do not stream image deltas; only emit final images when available
                 // If the provider returns final images on the message (non-delta), emit final image tags
                 const msgImages: any[] = Array.isArray(ch?.message?.images) ? ch.message.images : []
                 for (const im of msgImages) {
@@ -864,6 +848,7 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
             messages: messagesWithNotes,
             stream: true,
           }
+        // No image-generation modalities
           // Pass-through search params/plugins similar to streamFromOpenRouter
           try {
             const sp: any = (payload.search_parameters as any) || {}
@@ -976,16 +961,7 @@ function streamWithQwenThinkingThenFinal(payload: ChatRequestPayload): Response 
                     controller.enqueue(encoder.encode(content))
                   }
                   // We intentionally ignore final-stage reasoning tags; Claude Sonnet 4.5 already provided reasoning
-                  // Stream image deltas
-                  const deltaImages: any[] = Array.isArray(delta?.images) ? delta.images : []
-                  for (const im of deltaImages) {
-                    try {
-                      const url = im?.image_url?.url
-                      if (typeof url === 'string' && url) {
-                        controller.enqueue(encoder.encode(`<image_partial:${url}>`))
-                      }
-                    } catch {}
-                  }
+                  // Do not stream image deltas; only emit final images when available
                   const msgImages: any[] = Array.isArray(ch?.message?.images) ? ch.message.images : []
                   for (const im of msgImages) {
                     try {
@@ -1143,14 +1119,7 @@ export async function POST(request: Request) {
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       )
     }
-    // For Nano Banana (Gemini 2.5 Flash Image Preview), skip the Claude Sonnet 4.5 reasoning phase
-    // and stream directly using the selected model.
-    try {
-      const modelLower = typeof payload?.model === 'string' ? payload.model.toLowerCase() : ''
-      if (modelLower.includes('gemini-2.5-flash-image-preview')) {
-        return streamFromOpenRouter(payload)
-      }
-    } catch {}
+    // No special-casing for Gemini image preview
     return streamWithQwenThinkingThenFinal(payload)
   } catch {
     return new Response(

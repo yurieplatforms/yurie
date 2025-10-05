@@ -241,6 +241,57 @@ export const PromptInput = ({
     }
   }, []);
 
+  // Allow external components to prefill and focus the prompt textarea
+  useEffect(() => {
+    const handler = (e: Event) => {
+      try {
+        const detail = (e as CustomEvent<{ text?: string; focus?: boolean; replace?: boolean; append?: boolean }>).detail || {};
+        const form = (formRef.current || (anchorRef.current?.closest('form') as HTMLFormElement | null));
+        // Prefer scoped form lookup, but fall back to a document-level query to be resilient
+        const el = (
+          (form?.elements?.namedItem?.('message') as
+            | (HTMLTextAreaElement & { value?: string })
+            | (HTMLInputElement & { value?: string })
+            | null) ||
+          (document.querySelector('textarea[name="message"], input[name="message"]') as
+            | (HTMLTextAreaElement & { value?: string })
+            | (HTMLInputElement & { value?: string })
+            | null)
+        );
+        if (!el) return;
+        const incoming = String(detail.text ?? '');
+        if (detail.append) {
+          const sep = el.value && incoming && !/\s$/.test(el.value) ? ' ' : '';
+          el.value = `${el.value || ''}${sep}${incoming}`;
+        } else {
+          el.value = incoming;
+        }
+        // Bubble input event so any listeners can react
+        try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch {}
+        if (detail.focus !== false) {
+          try {
+            el.focus();
+            const end = el.value.length;
+            // Place caret at end if supported
+            if (typeof (el as HTMLTextAreaElement).setSelectionRange === 'function') {
+              (el as HTMLTextAreaElement).setSelectionRange(end, end);
+            }
+            // Keep the input visible in the viewport without layout shift
+            try { (el as HTMLElement).scrollIntoView({ block: 'nearest' }); } catch {}
+          } catch {}
+        }
+      } catch {}
+    };
+    try {
+      window.addEventListener('yurie:prompt:prefill', handler as EventListener);
+    } catch {}
+    return () => {
+      try {
+        window.removeEventListener('yurie:prompt:prefill', handler as EventListener);
+      } catch {}
+    };
+  }, []);
+
   const openFileDialog = useCallback(() => {
     inputRef.current?.click();
   }, []);

@@ -39,6 +39,81 @@ export function toDisplayParts(rawUrl: string): SourceDisplayParts {
   }
 }
 
+// Derive a clean, human-friendly site name from a hostname.
+// Handles locale/service subdomains (e.g. en., m.), multi-part TLDs (e.g. co.uk),
+// and common brand/acronym mappings.
+export function getSiteDisplayNameFromHostname(hostnameRaw: string): string {
+  try {
+    let hostname = String(hostnameRaw || '').toLowerCase()
+    hostname = hostname.replace(/^www\./, '')
+    if (!hostname) return ''
+
+    // Remove noisy leading subdomains (locales, mobile, amp, etc.)
+    const noisyPrefixes = new Set<string>([
+      'm', 'mobile', 'amp',
+      // Common locale/language codes
+      'en', 'de', 'fr', 'es', 'pt', 'it', 'ru', 'ja', 'zh', 'zh-cn', 'zh-tw', 'ko', 'ar',
+      'nl', 'sv', 'no', 'fi', 'da', 'pl', 'cs', 'hu', 'el', 'he', 'id', 'vi', 'th', 'hi', 'bn',
+      'tr', 'uk', 'ca'
+    ])
+    let parts = hostname.split('.').filter(Boolean)
+    while (parts.length > 2 && noisyPrefixes.has(parts[0])) {
+      parts = parts.slice(1)
+    }
+
+    // Handle common multi-part TLDs so we can reliably pick the registrable domain
+    const multiPartTlds = new Set<string>([
+      'co.uk', 'org.uk', 'ac.uk', 'gov.uk',
+      'com.au', 'net.au', 'org.au', 'edu.au', 'gov.au',
+      'co.jp', 'ne.jp', 'or.jp', 'ac.jp', 'go.jp',
+      'com.cn', 'net.cn', 'org.cn', 'gov.cn',
+      'com.br', 'com.mx', 'com.tr', 'com.sg', 'co.kr', 'or.kr', 'ac.kr', 'go.kr',
+      'co.in', 'net.in', 'org.in', 'gov.in', 'ac.in',
+      'co.id'
+    ])
+    const lastTwo = parts.slice(-2).join('.')
+    const baseIndex = multiPartTlds.has(lastTwo) ? parts.length - 3 : parts.length - 2
+    const base = parts[Math.max(0, baseIndex)] || ''
+    const cleaned = base.replace(/[^a-z0-9-]/g, '')
+    const lower = cleaned.toLowerCase()
+
+    const acronyms: Record<string, string> = {
+      cnn: 'CNN',
+      cnbc: 'CNBC',
+      bbc: 'BBC',
+      npr: 'NPR',
+      wsj: 'WSJ',
+      ft: 'FT',
+      mit: 'MIT',
+      ieee: 'IEEE',
+      nytimes: 'NYTimes',
+      ibm: 'IBM',
+    }
+    if (acronyms[lower]) return acronyms[lower]
+
+    const brands: Record<string, string> = {
+      wikipedia: 'Wikipedia',
+      theguardian: 'The Guardian',
+      bloomberg: 'Bloomberg',
+      github: 'GitHub',
+      stackoverflow: 'Stack Overflow',
+      ycombinator: 'Y Combinator',
+      medium: 'Medium',
+      arxiv: 'arXiv',
+    }
+    if (brands[lower]) return brands[lower]
+
+    // Title-case hyphenated names: new-yorker -> New Yorker
+    return lower
+      .split('-')
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ')
+  } catch {
+    return hostnameRaw || ''
+  }
+}
+
 function toTitleCase(input: string): string {
   try {
     const lower = input.toLowerCase()
@@ -239,11 +314,8 @@ export function getTimeOfDayWord(): 'today' | 'tonight' {
 }
 
 export const modelOptions = [
-  { value: 'openrouter/openai/gpt-5', label: 'GPT‑5' },
-  { value: 'x-ai/grok-4-0709', label: 'Grok 4' },
   { value: 'openrouter/qwen/qwen-plus-2025-07-28:thinking', label: 'Qwen Plus' },
   { value: 'x-ai/grok-4-fast-reasoning', label: 'Grok 4 Fast' },
-  { value: 'openrouter/google/gemini-2.5-flash-image-preview', label: 'Nano Banana' },
   { value: 'openrouter/google/gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
   { value: 'openrouter/anthropic/claude-sonnet-4.5', label: 'Claude Sonnet 4.5' },
 ]
