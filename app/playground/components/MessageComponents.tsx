@@ -2,7 +2,7 @@
 
 import { memo, useMemo, useState, useCallback } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ArrowSquareOut, CaretDown, Globe, Sparkle } from '@phosphor-icons/react'
+import { CaretDown, Globe, Sparkle } from '@phosphor-icons/react'
 import Image from 'next/image'
 import { cn, dedupeUrls, inferSourceMeta, toDisplayParts, getSiteDisplayNameFromHostname } from '../utils'
 

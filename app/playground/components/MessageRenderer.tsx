@@ -8,7 +8,6 @@ import { cn, sanitizeHtml, decodeBase64Utf8 } from '../utils'
 import { MessagePart } from '../types'
 import { SourcesList } from './MessageComponents'
 import { Copy, Check, Pencil, X, MessageSquare, Globe, ListOrdered, Image } from 'lucide-react'
-import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 function LoadingPreview({
@@ -211,8 +210,7 @@ export function renderMessageContent(
   status: 'submitted' | 'streaming' | 'ready' | 'error',
   md: Marked
 ) {
-  const legacyBracketPattern =
-    ''
+  // legacyBracketPattern removed; we now parse explicit tokens only
   const pattern = new RegExp(
     `<reasoning_partial:([^>]+)>|<reasoning:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|<citations:([^>]+)>|<web:on>`,
     'g'
@@ -379,7 +377,7 @@ export function renderMessageContent(
   })()
   
   const textParts = parts.filter(p => p.type === 'text')
-  const imageParts = parts.filter(p => p.type === 'image' && !p.partial)
+  const imageParts = parts.filter((p): p is Extract<MessagePart, { type: 'image' }> => p.type === 'image' && !p.partial)
   const hasSources = sawWebOn || latestCitations.length > 0
   const hasReasoning = Boolean(reasoningHtml)
   
@@ -388,10 +386,10 @@ export function renderMessageContent(
   const firstParagraphHtml = (() => {
     if (!reasoningHtml) return ''
     // Extract first <p> tag or first block element
-    const match = reasoningHtml.match(/<p[^>]*>.*?<\/p>/s)
+    const match = reasoningHtml.match(/<p[^>]*>[\s\S]*?<\/p>/)
     if (match) return match[0]
     // If no <p> tag, try to get content before double line break
-    const textMatch = reasoningHtml.match(/^.*?(?=\n\n|$)/s)
+    const textMatch = reasoningHtml.match(/^[\s\S]*?(?=\n\n|$)/)
     return textMatch ? textMatch[0] : reasoningHtml
   })()
 
