@@ -1128,3 +1128,18 @@ table {
   border-color: var(--color-chat-input-border);
   background-color: var(--color-chat-input);
 }
+
+/* Add context dropdown list item: high-contrast hover in light and dark modes */
+.context-menu-item {
+  @apply transition-all;
+  color: var(--text-primary);
+  border: 1px solid transparent;
+  background-color: transparent;
+}
+.context-menu-item:hover,
+.context-menu-item:focus {
+  /* Uses theme-aware token for subtle elevated surface */
+  background-color: var(--list-hover-bg);
+  border-color: var(--color-chat-input-border);
+  color: var(--text-primary);
+}

@@ -65,9 +65,6 @@ export type ChatInputProps = {
   onUseWebSearchToggle: () => void
   modelChoice: string
   onModelChange: (value: string) => void
-  // IDs like "blog:<slug>" or "research:<slug>"
-  selectedContextIds?: string[]
-  onContextChange?: (ids: string[]) => void
 }
 
 export type ChatRequestPayload = {
@@ -79,9 +76,6 @@ export type ChatRequestPayload = {
   model?: string
   reasoning?: { effort: 'high' }
   search_parameters?: { mode: 'on' | 'off'; return_citations?: boolean }
-  // Optional server-side context injection from blog/research posts
-  context_posts?: Array<{ type: 'blog' | 'research'; slug: string; title: string; content: string }>
-  context_ids?: Array<{ type: 'blog' | 'research'; slug: string }>
 }
 
 export type ErrorJSON = { 

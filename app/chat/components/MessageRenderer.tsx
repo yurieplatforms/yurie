@@ -4,11 +4,180 @@ import { useMemo, useState, useRef, useEffect } from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
 import { Response } from '@/components/ai-elements/response'
-import { cn, sanitizeHtml, decodeBase64Utf8 } from '../utils'
+import { cn, sanitizeHtml, decodeBase64Utf8, extractHttpImageUrls, toDisplayParts, sortImageUrlsByRelevanceAndRecency } from '../utils'
 import { MessagePart } from '../types'
 import { SourcesList } from './MessageComponents'
-import { Copy, Check, Pencil, X, MessageSquare, Globe, ListOrdered, Image } from 'lucide-react'
+import { Check, X, MessageSquare, Globe, ListOrdered, Image, Lightbulb } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+
+function ImagesTabContent({ inlineImageUrls, citationUrls }: { inlineImageUrls: string[]; citationUrls: string[] }) {
+  const [metaImageUrls, setMetaImageUrls] = useState<string[]>([])
+  const [hiddenSrcs, setHiddenSrcs] = useState<Set<string>>(new Set())
+
+  // Heuristic URL filter to avoid obvious icons, trackers, or tiny assets
+  const shouldDropByHeuristics = (src: string): boolean => {
+    try {
+      const s = String(src || '')
+      const lower = s.toLowerCase()
+      if (!/(\.(?:jpg|jpeg|png|webp|gif))(?:$|[?#])/i.test(lower)) return true
+      if (/(^|[\/_.-])favicon(\.|[\/_-]|$)/i.test(lower)) return true
+      if (/(^|[\/_.-])apple-touch-icon(\.|[\/_-]|$)/i.test(lower)) return true
+      if (/(^|[\/_.-])android-chrome(\.|[\/_-]|$)/i.test(lower)) return true
+      if (/(^|[\/_.-])mstile(\.|[\/_-]|$)/i.test(lower)) return true
+      if (/(^|[\/_.-])safari-pinned(\.|[\/_-]|$)/i.test(lower)) return true
+      if (/(^|[\/_-])icons?(\.|[\/_-]|$)/i.test(lower)) return true
+      if (/(^|[\/_-])icon(?:-\d+x\d+)?(\.|[\/_-]|$)/i.test(lower)) return true
+      if (/(^|[\/_-])logo(\.|[\/_-]|$)/i.test(lower)) return true
+      if (/(^|[\/_-])sprite(\.|[\/_-]|$)/i.test(lower)) return true
+      if (/(^|[\/_-])(pixel|beacon|tracker|spacer)(\.|[\/_-]|$)/i.test(lower)) return true
+      if (/([?&])(w|width|h|height|s|size)=(?:1|2|8|12|16|24|32|40|48|56|64)\b/i.test(lower)) return true
+      if (/(^|[\/_-])(thumb|thumbnail|min|tiny|small)(\.|[\/_-]|$)/i.test(lower)) return true
+      if (/doubleclick\.net|googletagmanager\.com|adservice|adsystem|analytics/i.test(lower)) return true
+      return false
+    } catch {
+      return true
+    }
+  }
+
+  // Concurrency-limited, incremental meta fetching when Images tab is mounted
+  useEffect(() => {
+    let cancelled = false
+    const controller = new AbortController()
+    ;(async () => {
+      try {
+        const deduped = Array.from(new Set((citationUrls || []).filter(Boolean)))
+        if (deduped.length === 0) {
+          setMetaImageUrls([])
+          return
+        }
+        const MAX_CONCURRENCY = 8
+        let inFlight = 0
+        let index = 0
+        const aggregated = new Set<string>()
+
+        const fetchOne = async (u: string): Promise<string[]> => {
+          try {
+            const res = await fetch(`/api/meta?url=${encodeURIComponent(u)}`, { signal: controller.signal, cache: 'force-cache' })
+            if (!res.ok) return []
+            const data = await res.json().catch(() => ({} as any))
+            const imgs: unknown = data && (data as any).images
+            if (!Array.isArray(imgs)) return []
+            return (imgs as any[]).filter((s) => typeof s === 'string') as string[]
+          } catch {
+            return []
+          }
+        }
+
+        const pump = async (): Promise<void> => {
+          if (cancelled) return
+          while (!cancelled && inFlight < MAX_CONCURRENCY && index < deduped.length) {
+            const url = deduped[index++]
+            inFlight++
+            ;(async () => {
+              const imgUrls = await fetchOne(url)
+              inFlight--
+              if (cancelled) return
+              let changed = false
+              for (const src of imgUrls) {
+                if (!shouldDropByHeuristics(src) && !aggregated.has(src)) {
+                  aggregated.add(src)
+                  changed = true
+                }
+              }
+              if (changed) setMetaImageUrls(Array.from(aggregated))
+              if (index < deduped.length) {
+                await pump()
+              }
+            })()
+          }
+        }
+
+        await pump()
+      } catch {
+        if (!cancelled) setMetaImageUrls([])
+      }
+    })()
+    return () => {
+      cancelled = true
+      try { controller.abort() } catch {}
+    }
+  }, [citationUrls.join('|')])
+
+  const combinedImageUrls = (() => {
+    const all = [...(inlineImageUrls || []), ...(metaImageUrls || [])]
+    const uniqueSrcs = Array.from(new Set(all))
+    const filtered = uniqueSrcs.filter((src) => !shouldDropByHeuristics(src))
+    const sorted = sortImageUrlsByRelevanceAndRecency(filtered)
+    const seenByHost = new Set<string>()
+    const out: string[] = []
+    for (const src of sorted) {
+      try {
+        const parts = toDisplayParts(src)
+        const hostKey = String(parts.hostname || parts.domain || src).toLowerCase()
+        if (seenByHost.has(hostKey)) continue
+        seenByHost.add(hostKey)
+        out.push(src)
+      } catch {
+        if (!seenByHost.has(src)) {
+          seenByHost.add(src)
+          out.push(src)
+        }
+      }
+    }
+    // Cap the list for performance; UI still lazy-loads images
+    return out.slice(0, 36)
+  })()
+
+  const handleLoad: React.ReactEventHandler<HTMLImageElement> = (e) => {
+    try {
+      const el = e.currentTarget
+      const src = el.currentSrc || el.src
+      const minDim = 120
+      if (el.naturalWidth < minDim || el.naturalHeight < minDim) {
+        setHiddenSrcs((prev) => {
+          const next = new Set(prev)
+          next.add(src)
+          return next
+        })
+      }
+    } catch {}
+  }
+
+  const handleError: React.ReactEventHandler<HTMLImageElement> = (e) => {
+    try {
+      const src = (e.currentTarget.currentSrc || e.currentTarget.src) as string
+      setHiddenSrcs((prev) => {
+        const next = new Set(prev)
+        next.add(src)
+        return next
+      })
+    } catch {}
+  }
+
+  if (combinedImageUrls.length === 0) {
+    return (
+      <div className="text-sm text-neutral-500">No images found.</div>
+    )
+  }
+  return (
+    <div className="grid grid-cols-3 gap-4">
+      {combinedImageUrls.filter((src) => !hiddenSrcs.has(src)).map((src, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={`img-${i}`}
+          src={src}
+          alt="Image result"
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onLoad={handleLoad}
+          onError={handleError}
+          className="w-full rounded border border-neutral-200 dark:border-neutral-800 object-cover"
+        />
+      ))}
+    </div>
+  )
+}
 
 function LoadingPreview({
   showThinking,
@@ -85,10 +254,8 @@ function LoadingPreview({
       {showThinking && reasoningHtml ? (
         <div className="rounded-lg border border-neutral-200/60 bg-neutral-50/50 p-3.5 dark:border-neutral-800/60 dark:bg-neutral-900/30">
           <div className="mb-2.5 flex items-center gap-2 text-[12px] font-medium text-neutral-600 dark:text-neutral-400">
-            <svg className="size-3.5 text-neutral-500 dark:text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span className={!showPreparing && !(showSearching && showSearchingDelayed) ? 'ai-text-shimmer-white' : undefined}>Thinking</span>
+            <Lightbulb className="size-3.5 text-neutral-500 dark:text-neutral-500" />
+            <span className={!showPreparing && !(showSearching && showSearchingDelayed) ? 'ai-text-shimmer-white' : undefined}>Thought</span>
           </div>
           <div
             className="prose prose-sm prose-neutral dark:prose-invert text-[12.5px] leading-relaxed text-neutral-600 dark:text-neutral-400"
@@ -377,9 +544,20 @@ export function renderMessageContent(
   })()
   
   const textParts = parts.filter(p => p.type === 'text')
-  const imageParts = parts.filter((p): p is Extract<MessagePart, { type: 'image' }> => p.type === 'image' && !p.partial)
   const hasSources = sawWebOn || latestCitations.length > 0
   const hasReasoning = Boolean(reasoningHtml)
+
+  // Derive image URLs from inline assistant text (pure)
+  const inlineImageUrls = (() => {
+    try {
+      const combined = textParts.map((p) => String(p.value || '')).join(' ')
+      return extractHttpImageUrls(combined)
+    } catch {
+      return [] as string[]
+    }
+  })()
+  // Show Images tab whenever Sources tab is shown (when Research/Web is on)
+  const showImagesTab = hasSources
   
   // Extract first paragraph from reasoning HTML
   // (we'll compute preview gating after we know if the first paragraph is complete)
@@ -454,6 +632,14 @@ export function renderMessageContent(
               Answer
             </span>
           </TabsTrigger>
+          {showImagesTab && (
+            <TabsTrigger value="images">
+              <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)]">
+                <Image className="size-3" />
+                Images
+              </span>
+            </TabsTrigger>
+          )}
           {hasSources && (
             <TabsTrigger value="sources">
               <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)]">
@@ -468,12 +654,6 @@ export function renderMessageContent(
                 <ListOrdered className="size-3" />
                 Steps
               </span>
-            </TabsTrigger>
-          )}
-          {imageParts.length > 0 && (
-            <TabsTrigger value="images">
-              <Image className="size-3" />
-              Images
             </TabsTrigger>
           )}
         </TabsList>
@@ -526,19 +706,9 @@ export function renderMessageContent(
           </TabsContent>
         )}
         
-        {imageParts.length > 0 && (
+        {showImagesTab && (
           <TabsContent value="images" className="mt-0">
-            <div className="grid gap-4 sm:grid-cols-2">
-              {imageParts.map((p, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={`img-${i}`}
-                  src={p.src}
-                  alt="Generated image"
-                  className="w-full rounded border border-neutral-200 dark:border-neutral-800"
-                />
-              ))}
-            </div>
+            <ImagesTabContent inlineImageUrls={inlineImageUrls} citationUrls={latestCitations} />
           </TabsContent>
         )}
       </Tabs>
@@ -547,26 +717,10 @@ export function renderMessageContent(
 }
 
 function UserHeadingWithActions({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState<string>(text)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1200)
-    } catch {}
-  }
-  const handleBeginEdit = () => {
-    try {
-      setDraft(text)
-      setIsEditing(true)
-      queueMicrotask(() => {
-        try { textareaRef.current?.focus() } catch {}
-      })
-    } catch {}
-  }
+  
   const handleCancelEdit = () => {
     try {
       setDraft(text)
@@ -655,26 +809,6 @@ function UserHeadingWithActions({ text }: { text: string }) {
             ) : (
               <div className={cn('title whitespace-pre-wrap break-words leading-[1.15] sm:leading-[1.2] select-text')}>
                 <span className="align-baseline">{text}</span>
-                <span className="ml-2 inline-flex items-center gap-1 align-baseline text-neutral-500 dark:text-neutral-400 opacity-0 transition-opacity pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
-                  <button
-                    type="button"
-                    onClick={handleBeginEdit}
-                    className="inline-flex items-center justify-center rounded-md p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                    aria-label="Edit query"
-                    title="Edit"
-                  >
-                    <Pencil className="size-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="inline-flex items-center justify-center rounded-md p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                    aria-label="Copy text"
-                    title="Copy"
-                  >
-                    {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                  </button>
-                </span>
               </div>
             )}
           </div>

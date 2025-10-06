@@ -6,14 +6,12 @@ import {
   useRef,
   useState,
 } from 'react'
-import { cn, getTimeOfDayWord, stripImageData, extractHttpImageUrls, extractHttpPdfUrls } from './utils'
-import { ChatMessage, AttachmentPreview, ChatRequestPayload, ErrorJSON } from './types'
-import { ChatInput } from './components/ChatInput'
-import { MessageAttachmentList } from './components/FileComponents'
-import { renderMessageContent, useMarkdownRenderer } from './components/MessageRenderer'
+import { cn, getTimeOfDayWord, stripImageData, extractHttpImageUrls, extractHttpPdfUrls } from '../utils'
+import { ChatMessage, AttachmentPreview, ChatRequestPayload, ErrorJSON } from '../types'
+import { ChatInput } from './ChatInput'
+import { MessageAttachmentList } from './FileComponents'
+import { renderMessageContent, useMarkdownRenderer } from './MessageRenderer'
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
-import { GetStarted, GetStartedItem } from '@/components/ai-elements/get-started'
-import { Newspaper, ScrollText, ScanText, MapPin, X } from 'lucide-react'
 
 export default function ChatClient() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -29,8 +27,6 @@ export default function ChatClient() {
   const abortControllerRef = useRef<AbortController | null>(null)
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] =
     useState<Record<number, AttachmentPreview[]>>({})
-  const [sentContextByMessageIndex, setSentContextByMessageIndex] =
-    useState<Record<number, { id: string; type: 'blog' | 'research'; slug: string; title: string; image?: string }[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
   const [modelChoice, setModelChoice] = useState<string>('x-ai/grok-4-fast-reasoning')
@@ -38,32 +34,8 @@ export default function ChatClient() {
   const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(
     'today'
   )
-  const [contextIds, setContextIds] = useState<string[]>([])
 
   const md = useMarkdownRenderer()
-  const getStartedItems = [
-    {
-      label: 'Latest tech news',
-      icon: <Newspaper className="size-5" />,
-      prompt: 'Latest tech news',
-    },
-    {
-      label: 'Write a creative story',
-      icon: <ScrollText className="size-5" />,
-      prompt: 'Write a creative story.',
-    },
-    {
-      label: 'Analyze PDFs or images',
-      icon: <ScanText className="size-5" />,
-      prompt: 'Analyze the attached PDF or image and summarize key insights with action items.',
-    },
-    {
-      label: 'Plan a trip to Tokyo',
-      icon: <MapPin className="size-5" />,
-      prompt: 'Plan a 5-day trip to Tokyo with a day-by-day itinerary, estimated budget, local transport tips, and top attractions.',
-    },
-    
-  ] as const
   const suggestionsByCategory: Record<string, string[]> = {
     Technology: [
       'What are the biggest AI breakthroughs happening right now?',
@@ -191,8 +163,6 @@ export default function ChatClient() {
     }
   }, [])
 
-  
-
   useEffect(() => {
     const root = outputRef.current
     if (!root) return
@@ -216,7 +186,6 @@ export default function ChatClient() {
     return () => root.removeEventListener('click', handle)
   }, [])
 
-  // Maintain pinned-to-bottom state and toggle auto-hide scrollbar visibility
   useEffect(() => {
     const el = outputRef.current
     if (!el) return
@@ -235,10 +204,6 @@ export default function ChatClient() {
       el.removeEventListener('scroll', updatePinned)
     }
   }, [])
-
-  
-
-  // If the output area resizes and user is pinned, keep them pinned
   useEffect(() => {
     if (pinnedToBottomRef.current) {
       queueMicrotask(() => {
@@ -246,8 +211,6 @@ export default function ChatClient() {
       })
     }
   })
-
-  // When a new message is appended and user is pinned, keep pinned
   useEffect(() => {
     if (pinnedToBottomRef.current) {
       queueMicrotask(() => {
@@ -255,8 +218,6 @@ export default function ChatClient() {
       })
     }
   }, [messages.length])
-
-  // Broadcast chat state to other components (e.g., navbar)
   useEffect(() => {
     try {
       const hasMessages = messages.length > 0
@@ -266,10 +227,36 @@ export default function ChatClient() {
     } catch {}
   }, [messages.length])
 
+  // Sync model to navbar and listen for navbar model changes
+  useEffect(() => {
+    const onModelChange = (e: Event) => {
+      try {
+        const ce = e as CustomEvent<{ value?: string }>
+        const val = String(ce?.detail?.value || '')
+        if (!val) return
+        setModelChoice(val)
+      } catch {}
+    }
+    try {
+      window.addEventListener('yurie:model:change', onModelChange as EventListener)
+    } catch {}
+    return () => {
+      try {
+        window.removeEventListener('yurie:model:change', onModelChange as EventListener)
+      } catch {}
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      window.dispatchEvent(new CustomEvent('yurie:model:state', { detail: { value: modelChoice } }))
+    } catch {}
+  }, [modelChoice])
+
   const handleSubmitWithMessage = useCallback(async (text: string, messageFiles: File[], options?: { forceWebSearch?: boolean; overrideModel?: string; mode?: 'append' | 'replace_last_user'; baseMessages?: ChatMessage[] }) => {
     const trimmed = text.trim()
     if (isLoading) return
-    if (trimmed.length === 0 && messageFiles.length === 0 && contextIds.length === 0) return
+    if (trimmed.length === 0 && messageFiles.length === 0) return
     const startMessages: ChatMessage[] = Array.isArray(options?.baseMessages) ? (options!.baseMessages as ChatMessage[]) : messages
     let nextMessages: ChatMessage[] = []
     let indexForThisMessage = -1
@@ -300,7 +287,6 @@ export default function ChatClient() {
     setStatus('submitted')
 
     try {
-      // Capture current files as message attachments for preview in the chat container
       const attachmentsForPreview: AttachmentPreview[] = messageFiles.map((f) => {
         const url = URL.createObjectURL(f)
         createdObjectUrlsRef.current.push(url)
@@ -336,48 +322,6 @@ export default function ChatClient() {
           [indexForThisMessage]: attachmentsForPreview,
         }))
       }
-      // Snapshot current context IDs so we can clear state immediately after
-      const contextIdsSnapshot = Array.isArray(contextIds) ? contextIds.slice() : []
-      if (contextIdsSnapshot.length > 0) {
-        const parse = (id: string): { id: string; type: 'blog' | 'research' | null; slug: string | null } => {
-          try {
-            const [type, slug] = id.split(':')
-            const t = (type || '').toLowerCase()
-            if ((t === 'blog' || t === 'research') && slug) return { id, type: t as any, slug }
-          } catch {}
-          return { id, type: null, slug: null }
-        }
-        const prelim = contextIdsSnapshot.map((id) => {
-          const p = parse(id)
-          const label = p.type && p.slug ? `${p.type}/${p.slug}` : id
-          return { id, type: (p.type || 'blog') as 'blog' | 'research', slug: (p.slug || id) as string, title: label }
-        })
-        setSentContextByMessageIndex((prev) => ({
-          ...prev,
-          [indexForThisMessage]: prelim,
-        }))
-        // Fetch titles and images to improve labels (non-blocking)
-        Promise.all(
-          prelim.map(async (p) => {
-            try {
-              const res = await fetch(`/api/posts?type=${p.type}&slug=${p.slug}`)
-              if (!res.ok) return p
-              const json = await res.json()
-              const title = json?.post?.title
-              const image = json?.post?.image
-              if (typeof title === 'string' && title.trim()) {
-                return { ...p, title: `${title} — ${p.type}`, image }
-              }
-              return { ...p, image }
-            } catch {
-              return p
-            }
-          })
-        ).then((resolved) => {
-          setSentContextByMessageIndex((prev) => ({ ...prev, [indexForThisMessage]: resolved }))
-        }).catch(() => {})
-      }
-      // Collect user-attached images (as data URLs)
       const imageFiles = messageFiles.filter((f) => f.type.startsWith('image/'))
       const inputImagesFromFiles: string[] = await Promise.all(
         imageFiles.map(
@@ -390,7 +334,6 @@ export default function ChatClient() {
             })
         )
       )
-      // Collect PDFs (as data URLs)
       const pdfFiles = messageFiles.filter((f) => (f.type || '').toLowerCase() === 'application/pdf')
       const inputPdfsFromFiles: string[] = await Promise.all(
         pdfFiles.map(
@@ -403,7 +346,6 @@ export default function ChatClient() {
             })
         )
       )
-      // Collect audio (as typed objects with base64 and format)
       const audioFiles = messageFiles.filter((f) => (f.type || '').toLowerCase().startsWith('audio/'))
       const inputAudioFromFiles: Array<{ data: string; format: string }> = await Promise.all(
         audioFiles.map(
@@ -413,7 +355,6 @@ export default function ChatClient() {
               reader.onload = () => {
                 try {
                   const result = String(reader.result || '')
-                  // Expect data URL: data:audio/<fmt>;base64,<b64>
                   const m = /^data:audio\/([a-zA-Z0-9+.-]+);base64,([A-Za-z0-9+/=]+)$/i.exec(result)
                   if (m && m[1] && m[2]) {
                     const mimeSub = m[1].toLowerCase()
@@ -444,12 +385,9 @@ export default function ChatClient() {
             })
         )
       )
-      // Extract http(s) image URLs from the prompt text (jpg/jpeg/png only)
       const httpImageUrls = extractHttpImageUrls(trimmed)
-      // Extract http(s) PDF URLs from the prompt text
       const httpPdfUrls = extractHttpPdfUrls(trimmed)
 
-      // Also extract any inline image tags from the user's text (e.g., <image:...>, <image_partial:...>, or [data:image...])
       const extractInlineImageUrls = (s: string): string[] => {
         try {
           const out: string[] = []
@@ -471,9 +409,6 @@ export default function ChatClient() {
         }
       }
       const inlineImageUrlsFromUserText = extractInlineImageUrls(trimmed)
-
-      // If the user is likely referencing/editing the last generated image but didn't paste it,
-      // pull final images from the most recent assistant message.
       const lastAssistantImages = (() => {
         try {
           for (let i = nextMessages.length - 1; i >= 0; i--) {
@@ -492,16 +427,12 @@ export default function ChatClient() {
         ])
       )
       const inputPdfs: string[] = Array.from(new Set([...(inputPdfsFromFiles || []), ...(httpPdfUrls || [])]))
-
-      // Heuristic: if none were explicitly included in the user's text but they likely want to "edit" the last image,
-      // include latest assistant images (limit to first 2 to avoid overlong payloads).
       try {
         const likelyEditing = /\b(edit|modify|change|update)\b.*\b(image|photo|picture)\b/i.test(trimmed)
         if (inputImages.length === 0 && likelyEditing && lastAssistantImages.length > 0) {
           inputImages = Array.from(new Set([...(lastAssistantImages.slice(0, 2))]))
         }
       } catch {}
-      // Clear input files after capturing previews and data URLs
       setFiles([])
 
       const payloadMessages = nextMessages.map((m) => ({
@@ -510,11 +441,8 @@ export default function ChatClient() {
       }))
       const ac = new AbortController()
       abortControllerRef.current = ac
-      // Allow per-call model override for special actions (e.g., image generation card)
       const modelToUse = options?.overrideModel ?? modelChoice
-      // Only include reasoning for models that support reasoning_effort (grok-3-mini, grok-3-mini-fast)
       const supportsReasoningEffort = /grok-3-mini(\b|\-|_)/i.test(modelToUse) || /grok-3-mini-fast/i.test(modelToUse)
-      // Also enable reasoning for OpenRouter models (unified reasoning parameter per OpenRouter docs)
       const isOpenRouterModel = /^openrouter\//i.test(modelToUse)
 
       const body: ChatRequestPayload = {
@@ -525,28 +453,9 @@ export default function ChatClient() {
         previousResponseId: options?.mode === 'replace_last_user' ? null : lastResponseId,
         model: modelToUse,
       }
-      // Convert selected context IDs (e.g., "blog:slug") to structured payload
-      try {
-        if (Array.isArray(contextIdsSnapshot) && contextIdsSnapshot.length > 0) {
-          const parsed = contextIdsSnapshot
-            .map((id) => {
-              const [type, slug] = id.split(':')
-              const t = (type || '').toLowerCase()
-              if ((t === 'blog' || t === 'research') && slug) {
-                return { type: t as 'blog' | 'research', slug }
-              }
-              return null
-            })
-            .filter(Boolean) as Array<{ type: 'blog' | 'research'; slug: string }>
-          if (parsed.length > 0) {
-            body.context_ids = parsed
-          }
-        }
-      } catch {}
       if (supportsReasoningEffort || isOpenRouterModel) {
         body.reasoning = { effort: 'high' }
       }
-      // xAI Live Search: when Grok 4 (research) is active, force Live Search; otherwise follow toggle
       try {
         const lowerModel = String(modelToUse || '').toLowerCase()
         const isGrok4 = lowerModel === 'x-ai/grok-4-0709'
@@ -658,10 +567,8 @@ export default function ChatClient() {
       setStatus('ready')
 
       abortControllerRef.current = null
-      // Clear selected context once sent
-      setContextIds([])
     }
-  }, [messages, isLoading, modelChoice, useWebSearch, lastResponseId, contextIds])
+  }, [messages, isLoading, modelChoice, useWebSearch, lastResponseId])
 
   const stop = useCallback(() => {
     try {
@@ -676,8 +583,6 @@ export default function ChatClient() {
     setMessages([])
     setFiles([])
     setSentAttachmentsByMessageIndex({})
-    setSentContextByMessageIndex({})
-    setContextIds([])
     setLastResponseId(null)
     // Revoke any created object URLs for message attachment previews
     try {
@@ -747,11 +652,19 @@ export default function ChatClient() {
     } catch {}
   }, [])
 
+  // Dispatch generating state for navbar model selector
+  useEffect(() => {
+    try {
+      const isGenerating = status === 'submitted' || status === 'streaming'
+      window.dispatchEvent(
+        new CustomEvent('yurie:generating', {
+          detail: { isGenerating },
+        })
+      )
+    } catch {}
+  }, [status])
+
   const isEmpty = messages.length === 0
-  const [showGetStarted, setShowGetStarted] = useState<boolean>(true)
-  const dismissGetStarted = () => {
-    setShowGetStarted(false)
-  }
   const [outputBottomPad, setOutputBottomPad] = useState<number>(96)
   // Track the top position of the input to anchor the bottom scrim
   // Top coordinate (in px) of the input wrapper relative to the viewport; used to anchor the scrim from prompt top → bottom
@@ -877,12 +790,9 @@ export default function ChatClient() {
                       (() => {
                         const attachments =
                           sentAttachmentsByMessageIndex[i] || []
-                        const contextChips = sentContextByMessageIndex[i] || []
                         const hasText = (m.content || '').trim().length > 0
                         const hasAttachments = attachments.length > 0
-                        const hasContext = contextChips.length > 0
-                        const contextOnly = !hasText && !hasAttachments && hasContext
-                        const attachmentsOnly = !hasText && hasAttachments && !hasContext
+                        const attachmentsOnly = !hasText && hasAttachments
                         if (attachmentsOnly) {
                           return (
                             <div
@@ -900,53 +810,10 @@ export default function ChatClient() {
                             </div>
                           )
                         }
-                        if (contextOnly) {
-                          return (
-                            <div
-                              className={cn(
-                                'chat-bubble',
-                                'user',
-                                'compact',
-                                'inline-flex'
-                              )}
-                            >
-                              <div className="flex flex-wrap gap-2">
-                                {contextChips.map((c) => (
-                                  <span key={c.id} className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs text-[#807d78] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)] ${c.image ? 'pl-1' : ''}`}>
-                                    {c.image && (
-                                      <img
-                                        src={c.image}
-                                        alt=""
-                                        className="size-5 rounded-full object-cover flex-shrink-0"
-                                      />
-                                    )}
-                                    @{c.title}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )
-                        }
                         return (
                           <div className={cn('w-full min-w-0')}>
                             <div className="w-full min-w-0">
                               {renderMessageContent(m.role, m.content, status, md)}
-                              {hasContext ? (
-                                <div className="mt-2 flex flex-wrap gap-2">
-                                  {contextChips.map((c) => (
-                                    <span key={c.id} className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs text-[#807d78] bg-[var(--color-chat-input)] border-[var(--color-chat-input-border)] ${c.image ? 'pl-1' : ''}`}>
-                                      {c.image && (
-                                        <img
-                                          src={c.image}
-                                          alt=""
-                                          className="size-5 rounded-full object-cover flex-shrink-0"
-                                        />
-                                      )}
-                                      @{c.title}
-                                    </span>
-                                  ))}
-                                </div>
-                              ) : null}
                               {hasAttachments ? (
                                 <MessageAttachmentList
                                   attachments={attachments}
@@ -1000,17 +867,19 @@ export default function ChatClient() {
             </div>
           </>
         ) : null}
-        <div className="mb-3 sm:mb-4">
-          <Suggestions>
-            {quickSuggestions.map((suggestion) => (
-              <Suggestion
-                key={suggestion}
-                suggestion={suggestion}
-                onClick={(s) => handleSubmitWithMessage(s, [])}
-              />
-            ))}
-          </Suggestions>
-        </div>
+        {isEmpty ? (
+          <div className="mb-3 sm:mb-4">
+            <Suggestions>
+              {quickSuggestions.map((suggestion) => (
+                <Suggestion
+                  key={suggestion}
+                  suggestion={suggestion}
+                  onClick={(s) => handleSubmitWithMessage(s, [])}
+                />
+              ))}
+            </Suggestions>
+          </div>
+        ) : null}
         <ChatInput
           onSubmitWithMessage={handleSubmitWithMessage}
           onNewChat={handleNewChat}
@@ -1028,44 +897,7 @@ export default function ChatClient() {
           onUseWebSearchToggle={() => setUseWebSearch((v) => !v)}
           modelChoice={modelChoice}
           onModelChange={setModelChoice}
-          selectedContextIds={contextIds}
-          onContextChange={setContextIds}
         />
-        {isEmpty && showGetStarted ? (
-          <div className="mt-3 sm:mt-4">
-            <div className="flex items-center justify-between mb-2 px-1">
-              <div className="text-[13px] font-medium text-[#807d78]">Get started</div>
-              <button
-                type="button"
-                onClick={dismissGetStarted}
-                className="inline-flex items-center justify-center rounded-full p-1 text-[#807d78] hover:bg-[var(--color-suggestion)] cursor-pointer"
-                aria-label="Dismiss"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-            <GetStarted>
-              {getStartedItems.map((it) => (
-                <GetStartedItem
-                  key={it.label}
-                  label={it.label}
-                  icon={it.icon}
-                  onClick={() => {
-                    if (it.label === 'Analyze PDFs or images') {
-                      try {
-                        window.dispatchEvent(new Event('yurie:attachments:open'))
-                      } catch {}
-                    } else if (it.label === 'Latest tech news') {
-                      handleSubmitWithMessage(it.prompt, [], { forceWebSearch: true })
-                    } else {
-                      handleSubmitWithMessage(it.prompt, [])
-                    }
-                  }}
-                />
-              ))}
-            </GetStarted>
-          </div>
-        ) : null}
       </div>
     </section>
   )

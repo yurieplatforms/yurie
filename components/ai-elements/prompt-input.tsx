@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { ChatStatus, FileUIPart } from "ai";
 import {
   ImageIcon,
   PaperclipIcon,
@@ -46,6 +45,18 @@ import {
   useRef,
   useState,
 } from "react";
+
+type FileUIPart = {
+  type: "file";
+  url: string;
+  name?: string;
+  filename?: string;
+  size?: number;
+  contentType?: string;
+  mediaType?: string;
+};
+
+type ChatStatus = "idle" | "loading" | "streaming" | "submitted" | "ready" | "error";
 
 type AttachmentsContext = {
   files: (FileUIPart & { id: string })[];

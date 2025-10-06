@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import ChatClient from './playground/ChatClient'
+import ChatClient from './chat/components/ChatClient'
 
 export const dynamic = 'force-dynamic'
 

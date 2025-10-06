@@ -5,7 +5,6 @@ import { GeistMono } from 'geist/font/mono'
 import { Navbar } from '@/components/nav'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
-import Footer from '@/components/footer'
 import { baseUrl } from './sitemap'
 
 export const metadata: Metadata = {
@@ -21,9 +20,9 @@ export const metadata: Metadata = {
     title: 'Yurie',
   },
   icons: {
-    icon: '/favicon.ico?v=3',
-    shortcut: '/favicon.ico?v=3',
-    apple: '/favicon.ico?v=3',
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
   },
   manifest: '/manifest.webmanifest',
   openGraph: {
@@ -75,7 +74,6 @@ export default function RootLayout({
           <main className="pt-12 flex min-w-0 flex-auto flex-col px-1 sm:px-2 md:px-0">
             <Navbar />
             {children}
-            <Footer />
             <Analytics />
             <SpeedInsights />
           </main>
