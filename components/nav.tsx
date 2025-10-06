@@ -10,7 +10,7 @@ export function Navbar() {
   const pathname = usePathname()
   const safePathname = pathname ?? '/'
   const isPlayground = safePathname === '/'
-  const [hasChatMessages, setHasChatMessages] = useState(false)
+  const [, setHasChatMessages] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [selectedModel, setSelectedModel] = useState<string>(() => {
     try {
