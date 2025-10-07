@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState, useEffect } from 'react'
+import { useCallback, useRef, useEffect } from 'react'
 import { Globe, ArrowUp, Square, Paperclip, Microscope } from 'lucide-react'
 import { Loader } from '@/components/ai-elements/loader'
 import { MAX_IMAGE_BYTES, MAX_PDF_BYTES, MAX_AUDIO_BYTES } from '../utils'
