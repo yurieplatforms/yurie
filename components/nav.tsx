@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -18,8 +18,8 @@ export function Navbar() {
         setHasChatMessages(next)
       } catch {}
     }
-    const onModelState = (_e: Event) => {}
-    const onGeneratingState = (_e: Event) => {}
+    const onModelState = () => {}
+    const onGeneratingState = () => {}
     try {
       window.addEventListener('yurie:chat-state', onChatState as EventListener)
       window.addEventListener('yurie:model:state', onModelState as EventListener)
