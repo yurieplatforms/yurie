@@ -376,7 +376,8 @@ function streamWithClaudeThinkingThenFinal(payload: ChatRequestPayload): Respons
                 
                 // Research mode gets more sources and richer content
                 const exaConfig = isResearchMode ? {
-                  numResults: 180,
+                  // Clamp to provider practical limits and our backend cap
+                  numResults: Math.min(100, MAX_SOURCES_RESEARCH),
                   textMaxChars: 2000,
                   highlightsPerUrl: 3,
                   subpages: 3,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState, useEffect } from 'react'
-import { Globe, ArrowUp, Square, Paperclip, Microscope, X } from 'lucide-react'
+import { Globe, ArrowUp, Square, Paperclip, Microscope } from 'lucide-react'
 import { Loader } from '@/components/ai-elements/loader'
 import { MAX_IMAGE_BYTES, MAX_PDF_BYTES, MAX_AUDIO_BYTES } from '../utils'
 import { ChatInputProps } from '../types'
@@ -32,8 +32,6 @@ export function ChatInput({
 }: ChatInputProps) {
   const attachmentInputRef = useRef<HTMLInputElement>(null)
   const prevNonResearchModelRef = useRef<string | null>(null)
-  const [isResearchHovered, setIsResearchHovered] = useState(false)
-  const [isWebHovered, setIsWebHovered] = useState(false)
   const isResearchMode = (() => {
     try {
       // Research mode now maps to xAI Grok 4 with Live Search
@@ -231,8 +229,6 @@ export function ChatInput({
                     <button
                       type="button"
                       onClick={toggleResearch}
-                      onMouseEnter={() => setIsResearchHovered(true)}
-                      onMouseLeave={() => setIsResearchHovered(false)}
                       aria-pressed={isResearchMode}
                       aria-label="Research"
                       title="Deep Research"
@@ -245,11 +241,7 @@ export function ChatInput({
                       }
                       disabled={isSubmitting}
                     >
-                      {isResearchMode && isResearchHovered ? (
-                        <X className="size-4" />
-                      ) : (
-                        <Microscope className="size-4" />
-                      )}
+                      <Microscope className="size-4" />
                       <span className="text-sm font-medium">Research</span>
                     </button>
                   )}
@@ -257,8 +249,6 @@ export function ChatInput({
                     <button
                       type="button"
                       onClick={handleToggleWebSearch}
-                      onMouseEnter={() => setIsWebHovered(true)}
-                      onMouseLeave={() => setIsWebHovered(false)}
                       aria-pressed={useWebSearch}
                       aria-label="Web search"
                       title="Web search"
@@ -271,11 +261,7 @@ export function ChatInput({
                       }
                       disabled={isSubmitting}
                     >
-                      {useWebSearch && isWebHovered ? (
-                        <X className="size-4" />
-                      ) : (
-                        <Globe className="size-4" />
-                      )}
+                      <Globe className="size-4" />
                       <span className="text-sm font-medium">Web</span>
                     </button>
                   ) : null}
