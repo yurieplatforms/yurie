@@ -50,7 +50,7 @@ function resolveModel(incoming?: string | null): string {
     return envDefault.trim()
   }
   if (!incoming || !String(incoming).trim()) {
-    return 'grok-4-0709'
+    return 'grok-4-fast-reasoning'
   }
   const val = String(incoming)
   if (val.toLowerCase().startsWith('x-ai/')) {
@@ -173,7 +173,7 @@ function streamWithClaudeThinkingThenFinal(payload: ChatRequestPayload): Respons
                   model: 'anthropic/claude-sonnet-4.5',
                   stream: true,
                   messages,
-                  reasoning: { effort: 'high' },
+                  reasoning: { effort: 'low' },
                 }
                 const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                   method: 'POST',

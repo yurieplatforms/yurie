@@ -95,9 +95,15 @@ export function ChatInput({
     }
   })()
   const handleToggleWebSearch = useCallback(() => {
-    // Independent web toggle; no Sonar special casing anymore
+    // Ensure Web mode uses Grok-4 Fast Reasoning
+    try {
+      const desired = 'x-ai/grok-4-fast-reasoning'
+      if (String(modelChoice || '').toLowerCase() !== desired) {
+        onModelChange(desired)
+      }
+    } catch {}
     onUseWebSearchToggle()
-  }, [onUseWebSearchToggle])
+  }, [onUseWebSearchToggle, onModelChange, modelChoice])
   const toggleResearch = useCallback(() => {
     try {
       const grok4 = 'x-ai/grok-4-0709'
@@ -108,16 +114,8 @@ export function ChatInput({
         prevNonResearchModelRef.current = current
         onModelChange(grok4)
       } else {
-        // Turn OFF research: restore previous model (or default to first option)
-        const prev = prevNonResearchModelRef.current
-        if (prev && prev.trim()) {
-          onModelChange(prev)
-        } else {
-          const fallback = (Array.isArray(modelOptions) && modelOptions.length > 0)
-            ? modelOptions[0].value
-            : 'x-ai/grok-4-fast-reasoning'
-          onModelChange(fallback)
-        }
+        // Turn OFF research: always return to Grok-4 Fast Reasoning
+        onModelChange('x-ai/grok-4-fast-reasoning')
       }
     } catch {}
   }, [modelChoice, onModelChange, onUseWebSearchToggle, useWebSearch])

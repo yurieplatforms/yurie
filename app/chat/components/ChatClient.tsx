@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { cn, getTimeOfDayWord, stripImageData, extractHttpImageUrls, extractHttpPdfUrls } from '../utils'
+import { cn, stripImageData, extractHttpImageUrls, extractHttpPdfUrls } from '../utils'
 import { ChatMessage, AttachmentPreview, ChatRequestPayload, ErrorJSON } from '../types'
 import { ChatInput } from './ChatInput'
 import { MessageAttachmentList } from './FileComponents'
@@ -31,9 +31,7 @@ export default function ChatClient() {
   const pinnedToBottomRef = useRef<boolean>(true)
   const [modelChoice, setModelChoice] = useState<string>('x-ai/grok-4-fast-reasoning')
   const [useWebSearch, setUseWebSearch] = useState<boolean>(false)
-  const [timeOfDayWord, setTimeOfDayWord] = useState<'today' | 'tonight'>(
-    'today'
-  )
+  
 
   const md = useMarkdownRenderer()
   const suggestionsByCategory: Record<string, string[]> = {
@@ -145,14 +143,7 @@ export default function ChatClient() {
     setQuickSuggestions(list.slice(0, 30))
   }, [])
 
-  useEffect(() => {
-    const compute = () => {
-      setTimeOfDayWord(getTimeOfDayWord())
-    }
-    compute()
-    const id = window.setInterval(compute, 60000)
-    return () => window.clearInterval(id)
-  }, [])
+  
 
   useEffect(() => {
     const urlsAtMount = createdObjectUrlsRef.current
@@ -227,31 +218,7 @@ export default function ChatClient() {
     } catch {}
   }, [messages.length])
 
-  // Sync model to navbar and listen for navbar model changes
-  useEffect(() => {
-    const onModelChange = (e: Event) => {
-      try {
-        const ce = e as CustomEvent<{ value?: string }>
-        const val = String(ce?.detail?.value || '')
-        if (!val) return
-        setModelChoice(val)
-      } catch {}
-    }
-    try {
-      window.addEventListener('yurie:model:change', onModelChange as EventListener)
-    } catch {}
-    return () => {
-      try {
-        window.removeEventListener('yurie:model:change', onModelChange as EventListener)
-      } catch {}
-    }
-  }, [])
-
-  useEffect(() => {
-    try {
-      window.dispatchEvent(new CustomEvent('yurie:model:state', { detail: { value: modelChoice } }))
-    } catch {}
-  }, [modelChoice])
+  // Navbar model selector removed; no cross-component model sync needed
 
   const handleSubmitWithMessage = useCallback(async (text: string, messageFiles: File[], options?: { forceWebSearch?: boolean; overrideModel?: string; mode?: 'append' | 'replace_last_user'; baseMessages?: ChatMessage[] }) => {
     const trimmed = text.trim()
@@ -652,17 +619,7 @@ export default function ChatClient() {
     } catch {}
   }, [])
 
-  // Dispatch generating state for navbar model selector
-  useEffect(() => {
-    try {
-      const isGenerating = status === 'submitted' || status === 'streaming'
-      window.dispatchEvent(
-        new CustomEvent('yurie:generating', {
-          detail: { isGenerating },
-        })
-      )
-    } catch {}
-  }, [status])
+  // Navbar generating indicator removed
 
   const isEmpty = messages.length === 0
   const [outputBottomPad, setOutputBottomPad] = useState<number>(96)
@@ -860,13 +817,7 @@ export default function ChatClient() {
             className="pointer-events-none absolute inset-x-0 -top-4 bottom-0 rounded-2xl bg-[var(--color-background)]"
           />
         ) : null}
-        {isEmpty ? (
-          <>
-            <div className="mt-0 mb-8 text-center text-2xl font-medium text-black sm:mb-10 sm:text-3xl dark:text-white">
-              {`What's on your mind ${timeOfDayWord}?`}
-            </div>
-          </>
-        ) : null}
+        
         {isEmpty ? (
           <div className="mb-3 sm:mb-4">
             <Suggestions>
