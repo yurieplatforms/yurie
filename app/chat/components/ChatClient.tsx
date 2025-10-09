@@ -11,7 +11,7 @@ import { ChatMessage, AttachmentPreview, ChatRequestPayload, ErrorJSON } from '.
 import { ChatInput } from './ChatInput'
 import { MessageAttachmentList } from './FileComponents'
 import { renderMessageContent, useMarkdownRenderer } from './MessageRenderer'
-import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
+
 
 export default function ChatClient() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -34,116 +34,6 @@ export default function ChatClient() {
   
 
   const md = useMarkdownRenderer()
-  const suggestionsByCategory: Record<string, string[]> = {
-    Technology: [
-      'What are the biggest AI breakthroughs happening right now?',
-      'Explain quantum computing like I\'m 10',
-      'How does blockchain actually work under the hood?',
-      'Compare Rust vs Go for building fast APIs',
-      'What makes a neural network "understand" images?',
-      'Will we have AGI by 2030? What are the arguments?',
-      'How do edge computing and 5G work together?',
-      'Explain the tech behind self-driving cars',
-    ],
-    Finance: [
-      'What caused the 2008 financial crisis in simple terms?',
-      'How do hedge funds make money in bear markets?',
-      'Explain the difference between value and growth investing',
-      'Why do interest rates affect stock prices?',
-      'What is a credit default swap and why does it matter?',
-      'How does Warren Buffett pick stocks?',
-      'Explain cryptocurrency staking like I\'m new to crypto',
-      'What are the best passive income strategies?',
-    ],
-    History: [
-      'What were the greatest unsolved mysteries of ancient Egypt?',
-      'How did the Vikings discover America before Columbus?',
-      'What really happened during the Library of Alexandria fire?',
-      'Explain the fall of Constantinople in 1453',
-      'How did the Manhattan Project stay secret?',
-      'What sparked the French Revolution?',
-      'Why did the Mayan civilization collapse?',
-      'How did code-breaking change World War II?',
-    ],
-    'Sci-Fi & Mystery': [
-      'What are the most mind-bending sci-fi concepts in physics?',
-      'Could we ever build a Dyson Sphere?',
-      'Explain the Fermi Paradox—where are all the aliens?',
-      'What are the creepiest unsolved mysteries in history?',
-      'Could time travel create paradoxes or parallel universes?',
-      'What is the simulation hypothesis and is it plausible?',
-      'Explain the dark forest theory of the universe',
-      'What mysteries surround the Voynich Manuscript?',
-    ],
-    Science: [
-      'How close are we to curing cancer?',
-      'Explain gene editing—can we design perfect humans?',
-      'What happens inside a black hole?',
-      'Could we terraform Mars in our lifetime?',
-      'How does consciousness emerge from neurons?',
-      'What is dark matter and why can\'t we see it?',
-      'Explain the double-slit experiment and quantum weirdness',
-      'How do scientists measure the age of the universe?',
-    ],
-    Entertainment: [
-      'Recommend must-watch sci-fi shows with great plot twists',
-      'Best thriller movies with shocking endings',
-      'Suggest books like Dune or Foundation',
-      'What are the most underrated films of all time?',
-      'Recommend mystery novels with unreliable narrators',
-      'Best podcasts for learning about history and science',
-      'Suggest video games with incredible storytelling',
-      'What are the greatest plot twists in TV history?',
-    ],
-    Research: [
-      'What are the latest discoveries in neuroscience?',
-      'Summarize recent breakthroughs in fusion energy',
-      'How are AI models being used in drug discovery?',
-      'What is the current state of longevity research?',
-      'Explain recent advances in quantum entanglement',
-      'What are scientists learning about exoplanets?',
-      'How is CRISPR evolving beyond gene editing?',
-      'What\'s new in climate science and carbon capture?',
-    ],
-    'Fun Facts & Trivia': [
-      'What are the strangest laws that still exist today?',
-      'Share mind-blowing facts about space and the cosmos',
-      'What are the most bizarre animal behaviors?',
-      'Explain the weirdest coincidences in history',
-      'What are some psychological tricks that always work?',
-      'Share fascinating facts about the human body',
-      'What are the most ingenious ancient inventions?',
-      'Tell me about the strangest discoveries underwater',
-    ],
-  }
-  const [quickSuggestions, setQuickSuggestions] = useState<string[]>([])
-
-  useEffect(() => {
-    // Client-only random selection: guarantee category coverage, then fill to 30 unique
-    const pickOne = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)]
-    const selected = new Set<string>()
-    const categories = Object.values(suggestionsByCategory)
-    // one per category first
-    for (const arr of categories) {
-      if (arr && arr.length > 0) selected.add(pickOne(arr))
-    }
-    // fill remainder up to 30 unique
-    while (selected.size < 30) {
-      const arr = categories[Math.floor(Math.random() * categories.length)]
-      if (arr && arr.length > 0) selected.add(pickOne(arr))
-    }
-    // shuffle
-    const list = Array.from(selected)
-    for (let i = list.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      const tmp = list[i]
-      list[i] = list[j]
-      list[j] = tmp
-    }
-    setQuickSuggestions(list.slice(0, 30))
-  }, [])
-
-  
 
   useEffect(() => {
     const urlsAtMount = createdObjectUrlsRef.current
@@ -816,20 +706,6 @@ export default function ChatClient() {
             aria-hidden
             className="pointer-events-none absolute inset-x-0 -top-4 bottom-0 rounded-2xl bg-[var(--color-background)]"
           />
-        ) : null}
-        
-        {isEmpty ? (
-          <div className="mb-3 sm:mb-4">
-            <Suggestions>
-              {quickSuggestions.map((suggestion) => (
-                <Suggestion
-                  key={suggestion}
-                  suggestion={suggestion}
-                  onClick={(s) => handleSubmitWithMessage(s, [])}
-                />
-              ))}
-            </Suggestions>
-          </div>
         ) : null}
         <ChatInput
           onSubmitWithMessage={handleSubmitWithMessage}

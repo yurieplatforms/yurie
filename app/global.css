@@ -71,8 +71,6 @@
   --color-chat-input: #ffffff;
   /* Chat input border color */
   --color-chat-input-border: #e5e5e5; /* tailwind neutral-200 */
-  /* Suggestion chip background */
-  --color-suggestion: #f9f8f7;
   /* Chat input toolbar pill hover background */
   --color-pill-hover: #f3f2f1;
   /* Chat input toolbar pill active background */
@@ -129,8 +127,6 @@
     --color-chat-input: #202020;
     /* Chat input border color: slightly lighter gray for visibility */
     --color-chat-input-border: #2f2f2f;
-    /* Suggestion chip background */
-    --color-suggestion: #202020;
     /* Chat input toolbar pill hover background (use deep neutral gray) */
     --color-pill-hover: #262626;
     /* Chat input toolbar pill active background (slightly deeper) */
@@ -1114,7 +1110,7 @@ table {
 
 /* Glass input wrapper styling for the Playground chat input */
 .glass-input-wrap {
-  @apply relative rounded-[22px] p-[2px];
+  @apply relative rounded-[40px] p-[2px];
   background: transparent;
   box-shadow: none;
 }
@@ -1124,9 +1120,20 @@ table {
 }
 
 .glass-input-inner {
-  @apply rounded-[20px] border backdrop-blur-md;
+  @apply rounded-[38px] border backdrop-blur-md;
   border-color: var(--color-chat-input-border);
   background-color: var(--color-chat-input);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass-input-inner {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.dark .glass-input-inner {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 /* Add context dropdown list item: high-contrast hover in light and dark modes */

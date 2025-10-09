@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useEffect } from 'react'
-import { Globe, ArrowUp, Square, Paperclip, Microscope } from 'lucide-react'
+import { Globe, ArrowUp, Square, Plus, Telescope } from 'lucide-react'
 import { Loader } from '@/components/ai-elements/loader'
 import { MAX_IMAGE_BYTES, MAX_PDF_BYTES, MAX_AUDIO_BYTES } from '../utils'
 import { ChatInputProps } from '../types'
@@ -174,12 +174,12 @@ export function ChatInput({
                 {/* Preview currently selected files using native list */}
                 <FileList files={files} onFileRemove={onFileRemove} />
                 <PromptInputTextarea
-                  placeholder="Ask, or search anything..."
-                  className="min-h-[64px] pl-3 pr-6 pt-3 pb-3 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:!text-[#807d78] dark:placeholder:!text-[#807d78]"
+                  placeholder="What can I help you with?"
+                  className="min-h-[64px] pl-6 pr-8 pt-5 pb-4 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:!text-[#9b9894] dark:placeholder:!text-[#9b9894]"
                 />
               </PromptInputBody>
-              <PromptInputToolbar className="px-3 pb-2.5 pt-0.5">
-                <PromptInputTools className="-ml-0.5 gap-1.5">
+              <PromptInputToolbar className="px-4 pb-3.5 pt-0.5">
+                <PromptInputTools className="ml-0.5 gap-1.5">
                   {/* Unified attachments input (images, PDFs, and optional audio) */}
                   <input
                     ref={attachmentInputRef}
@@ -215,10 +215,10 @@ export function ChatInput({
                       onClick={() => attachmentInputRef.current?.click()}
                       aria-label="Add attachments"
                       title="Add attachments"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-transparent bg-transparent text-[#807d78] transition-colors hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent bg-transparent text-[#9b9894] transition-all hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-95 dark:text-[#9b9894] dark:hover:text-[#bbb7b2] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={isSubmitting || !allowAttachments}
                     >
-                      <Paperclip className="size-4" />
+                      <Plus className="size-4.5" strokeWidth={2.5} />
                     </button>
                   ) : null}
                   {/* Model selector moved to navbar */}
@@ -230,15 +230,15 @@ export function ChatInput({
                       aria-label="Research"
                       title="Deep Research"
                       className={
-                        `inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs transition-colors backdrop-blur-sm ` +
+                        `inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-all backdrop-blur-sm ` +
                         (isResearchMode
                           ? 'border border-accent bg-[var(--color-pill-active)] text-[var(--color-accent)]'
-                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78]') +
-                        ' cursor-pointer disabled:cursor-not-allowed'
+                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-95 text-[#9b9894] dark:text-[#9b9894] dark:hover:text-[#bbb7b2]') +
+                        ' cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
                       }
                       disabled={isSubmitting}
                     >
-                      <Microscope className="size-4" />
+                      <Telescope className="size-4" />
                       <span className="text-sm font-medium">Research</span>
                     </button>
                   )}
@@ -250,11 +250,11 @@ export function ChatInput({
                       aria-label="Web search"
                       title="Web search"
                       className={
-                        `inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs transition-colors backdrop-blur-sm ` +
+                        `inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-all backdrop-blur-sm ` +
                         (useWebSearch
                           ? 'border border-accent bg-[var(--color-pill-active)] text-[var(--color-accent)]'
-                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78]') +
-                        ' cursor-pointer disabled:cursor-not-allowed'
+                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-95 text-[#9b9894] dark:text-[#9b9894] dark:hover:text-[#bbb7b2]') +
+                        ' cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
                       }
                       disabled={isSubmitting}
                     >
@@ -265,12 +265,12 @@ export function ChatInput({
                 </PromptInputTools>
               </PromptInputToolbar>
               {/* Floating submit button anchored to bottom-right */}
-              <div className="pointer-events-none absolute bottom-1 right-1 z-20">
+              <div className="pointer-events-none absolute bottom-3 right-3 z-20">
                 {status === 'streaming' ? (
                   <button
                     type="button"
                     onClick={handleStop}
-                    className="pointer-events-auto inline-flex size-10 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] backdrop-blur-sm text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer"
+                    className="pointer-events-auto inline-flex size-10 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-95 backdrop-blur-sm text-[#9b9894] dark:text-[#9b9894] dark:hover:text-[#bbb7b2] cursor-pointer transition-all"
                     aria-label="Stop"
                     title="Stop"
                   >
@@ -279,7 +279,7 @@ export function ChatInput({
                 ) : status === 'submitted' ? (
                   <button
                     type="button"
-                    className="pointer-events-auto inline-flex size-10 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] backdrop-blur-sm text-[#807d78] dark:text-[#807d78] opacity-80"
+                    className="pointer-events-auto inline-flex size-10 items-center justify-center rounded-full border border-transparent bg-transparent backdrop-blur-sm text-[#9b9894] dark:text-[#9b9894] opacity-80 transition-all"
                     aria-label="Sending"
                     title="Sending"
                     disabled
@@ -290,11 +290,11 @@ export function ChatInput({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="pointer-events-auto inline-flex size-10 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] backdrop-blur-sm text-[#807d78] hover:text-[#807d78] dark:text-[#807d78] dark:hover:text-[#807d78] cursor-pointer disabled:cursor-not-allowed"
+                    className="pointer-events-auto inline-flex size-10 items-center justify-center rounded-full border border-transparent bg-[var(--color-accent)] hover:bg-[#6d7fc9] active:bg-[#5d6fb5] active:scale-95 backdrop-blur-sm text-white cursor-pointer transition-all disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Send"
                     title="Send"
                   >
-                    <ArrowUp className="size-4" />
+                    <ArrowUp className="size-5" strokeWidth={2} />
                   </button>
                 )}
               </div>
