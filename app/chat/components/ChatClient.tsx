@@ -621,10 +621,10 @@ export default function ChatClient() {
               const isFirst = i === 0
               const speakerChanged = !isFirst && messages[i - 1].role !== m.role
               const topMarginClass = isFirst
-                ? 'mt-6 sm:mt-8'
+                ? 'mt-8 sm:mt-10'
                 : speakerChanged
-                  ? 'mt-2'
-                  : 'mt-0.5'
+                  ? 'mt-6 sm:mt-8'
+                  : 'mt-1'
               return (
                 <div key={i} className={`${topMarginClass} mb-0`}>
                   <div
@@ -706,6 +706,33 @@ export default function ChatClient() {
             aria-hidden
             className="pointer-events-none absolute inset-x-0 -top-4 bottom-0 rounded-2xl bg-[var(--color-background)]"
           />
+        ) : null}
+        {isEmpty ? (
+          <div className="mb-6 sm:mb-8 flex flex-col items-center">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <div className="relative">
+                <div 
+                  className="pointer-events-none absolute -inset-4 -z-10 rounded-full blur-2xl opacity-30"
+                  style={{ 
+                    background: 'radial-gradient(circle at center, rgba(127, 145, 224, 0.35) 0%, rgba(127, 145, 224, 0.15) 40%, transparent 70%)' 
+                  }}
+                />
+                <img
+                  src="/favicon.ico"
+                  alt="Yurie"
+                  width={56}
+                  height={56}
+                  className="h-12 w-12 sm:h-14 sm:w-14 select-none"
+                  draggable={false}
+                  decoding="async"
+                />
+              </div>
+              <span className="leading-none font-semibold text-foreground text-3xl sm:text-4xl tracking-tight">Yurie</span>
+            </div>
+            <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 text-center max-w-md px-4">
+              Ask anything. Attach files. Research the web.
+            </p>
+          </div>
         ) : null}
         <ChatInput
           onSubmitWithMessage={handleSubmitWithMessage}

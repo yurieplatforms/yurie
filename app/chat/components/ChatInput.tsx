@@ -230,10 +230,10 @@ export function ChatInput({
                       aria-label="Research"
                       title="Deep Research"
                       className={
-                        `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-all backdrop-blur-sm ` +
+                        `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all duration-200 backdrop-blur-sm ` +
                         (isResearchMode
-                          ? 'border-accent bg-[var(--color-pill-active)] text-[var(--color-accent)] shadow-sm'
-                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.96] text-[#a7a4a0] dark:text-[#a7a4a0] dark:hover:text-[#c9c6c0]') +
+                          ? 'border-accent/60 bg-[var(--color-pill-active)] text-[var(--color-accent)] shadow-sm hover:border-accent hover:shadow-md'
+                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] hover:border-neutral-200 dark:hover:border-neutral-700 active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.96] text-[#a7a4a0] dark:text-[#a7a4a0] dark:hover:text-[#c9c6c0]') +
                         ' cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
                       }
                       disabled={isSubmitting}
@@ -250,10 +250,10 @@ export function ChatInput({
                       aria-label="Web search"
                       title="Web search"
                       className={
-                        `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-all backdrop-blur-sm ` +
+                        `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all duration-200 backdrop-blur-sm ` +
                         (useWebSearch
-                          ? 'border-accent bg-[var(--color-pill-active)] text-[var(--color-accent)] shadow-sm'
-                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.96] text-[#a7a4a0] dark:text-[#a7a4a0] dark:hover:text-[#c9c6c0]') +
+                          ? 'border-accent/60 bg-[var(--color-pill-active)] text-[var(--color-accent)] shadow-sm hover:border-accent hover:shadow-md'
+                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] hover:border-neutral-200 dark:hover:border-neutral-700 active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.96] text-[#a7a4a0] dark:text-[#a7a4a0] dark:hover:text-[#c9c6c0]') +
                         ' cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
                       }
                       disabled={isSubmitting}
@@ -270,16 +270,16 @@ export function ChatInput({
                   <button
                     type="button"
                     onClick={handleStop}
-                    className="pointer-events-auto inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.92] backdrop-blur-sm text-[#a7a4a0] dark:text-[#a7a4a0] dark:hover:text-[#c9c6c0] cursor-pointer transition-all shadow-sm"
+                    className="pointer-events-auto inline-flex size-9 items-center justify-center rounded-full border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500 active:scale-[0.92] backdrop-blur-sm text-neutral-700 dark:text-neutral-200 cursor-pointer transition-all duration-200 shadow-md hover:shadow-lg"
                     aria-label="Stop"
                     title="Stop"
                   >
-                    <Square className="size-4 flex-shrink-0" strokeWidth={2} />
+                    <Square className="size-4 flex-shrink-0" strokeWidth={2.5} />
                   </button>
                 ) : status === 'submitted' ? (
                   <button
                     type="button"
-                    className="pointer-events-auto inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-transparent backdrop-blur-sm text-[#a7a4a0] dark:text-[#a7a4a0] opacity-80 transition-all"
+                    className="pointer-events-auto inline-flex size-9 items-center justify-center rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 backdrop-blur-sm text-[#a7a4a0] dark:text-[#a7a4a0] transition-all duration-200 shadow-md"
                     aria-label="Sending"
                     title="Sending"
                     disabled
@@ -290,11 +290,11 @@ export function ChatInput({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="pointer-events-auto inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-[var(--color-accent)] hover:bg-[#6d7fc9] active:bg-[#5d6fb5] active:scale-[0.92] backdrop-blur-sm text-white cursor-pointer transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+                    className="pointer-events-auto inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-[var(--color-accent)] hover:bg-[#6d7fc9] active:bg-[#5d6fb5] active:scale-[0.94] backdrop-blur-sm text-white cursor-pointer transition-all duration-200 shadow-md hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Send"
                     title="Send"
                   >
-                    <ArrowUp className="size-5 flex-shrink-0" strokeWidth={2} />
+                    <ArrowUp className="size-5 flex-shrink-0" strokeWidth={2.5} />
                   </button>
                 )}
               </div>

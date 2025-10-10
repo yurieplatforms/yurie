@@ -86,56 +86,56 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Dark mode background */
-    --color-background: #191919;
+    --color-background: #212121;
     /* Ensure text and UI tokens swap for dark mode */
-    --color-foreground: #f5f5f6;
-    --color-card: #0e0e10;
-    --color-card-foreground: #f5f5f6;
-    --color-popover: #0e0e10;
-    --color-popover-foreground: #f5f5f6;
+    --color-foreground: #e8e8e8;
+    --color-card: #2a2a2a;
+    --color-card-foreground: #e8e8e8;
+    --color-popover: #2a2a2a;
+    --color-popover-foreground: #e8e8e8;
     --color-primary: #7f91e0;
     --color-primary-foreground: #ffffff;
-    --color-secondary: oklch(0.18 0.004 286.32);
-    --color-secondary-foreground: #f5f5f6;
-    --color-muted: oklch(0.18 0.004 286.32);
-    --color-muted-foreground: oklch(0.78 0.01 285.938);
+    --color-secondary: #2a2a2a;
+    --color-secondary-foreground: #e8e8e8;
+    --color-muted: #2a2a2a;
+    --color-muted-foreground: #a0a0a0;
     --color-accent: #7f91e0;
     --color-accent-foreground: #ffffff;
     --color-destructive: oklch(0.577 0.245 27.325);
     --color-destructive-foreground: #ffffff;
-    --color-border: #1f1f23;
-    --color-input: #1f1f23;
-    --color-ring: #3b3b40;
+    --color-border: #3a3a3a;
+    --color-input: #3a3a3a;
+    --color-ring: #4a4a4a;
     /* Surface tokens derived from background for cohesive tables */
     --surface: var(--color-background);
     /* Subtle zebra strip: lighten background slightly */
-    --surface-hover: color-mix(in oklch, var(--color-background) 88%, var(--color-foreground) 12%);
+    --surface-hover: #2a2a2a;
     /* Table header: derive from chat input surface for consistency */
-    --table-header-bg: color-mix(in oklch, var(--color-chat-input) 84%, var(--color-foreground) 16%);
+    --table-header-bg: #2a2a2a;
     /* Post list hover background */
-    --list-hover-bg: color-mix(in oklch, var(--color-background) 86%, var(--color-foreground) 14%);
-    --border-color: #1a1a1d;
-    --border-color-hover: #26262a;
-    --text-primary: #f5f5f6;
+    --list-hover-bg: #2a2a2a;
+    --border-color: #3a3a3a;
+    --border-color-hover: #4a4a4a;
+    --text-primary: #e8e8e8;
     /* Ask AI button border: dark gray in dark mode */
-    --ai-border-color: #2a2a2e;
-    --ai-border-color-hover: #34343a;
+    --ai-border-color: #3a3a3a;
+    --ai-border-color-hover: #4a4a4a;
     /* Chat bubble tokens */
     --bubble-assistant-bg: var(--surface);
-    --bubble-user-bg: #2c2c2b; /* user bubble (dark) */
+    --bubble-user-bg: #2a2a2a; /* user bubble (dark) */
     /* Chat input background color */
-    --color-chat-input: #202020;
+    --color-chat-input: #303030;
     /* Chat input border color: slightly lighter gray for visibility */
-    --color-chat-input-border: #2f2f2f;
+    --color-chat-input-border: #3a3a3a;
     /* Chat input toolbar pill hover background (use deep neutral gray) */
-    --color-pill-hover: #262626;
+    --color-pill-hover: #3a3a3a;
     /* Chat input toolbar pill active background (slightly deeper) */
-    --color-pill-active: #2a2a2a;
+    --color-pill-active: #404040;
     --sh-class: #4c97f8;
     --sh-identifier: white;
     --sh-keyword: #f47067;
     --sh-string: #0fa295;
-    --scrollbar-thumb: #171717;
+    --scrollbar-thumb: #3a3a3a;
     /* Code surfaces aligned with chat input in dark mode */
     --code-surface-start: var(--color-chat-input);
     --code-surface-end: var(--color-chat-input);
@@ -170,7 +170,7 @@ html {
   --scrollbar-thumb: #fafafa; /* tailwind neutral-50 */
 }
 .dark {
-  --scrollbar-thumb: #171717; /* tailwind neutral-900 */
+  --scrollbar-thumb: #3a3a3a;
 }
 
 /* Removed deprecated thinking-scroll styles */
@@ -182,7 +182,7 @@ html {
     scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
   }
   .dark .chat-scroll {
-    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   }
 
   .chat-scroll::-webkit-scrollbar {
@@ -203,18 +203,18 @@ html {
 /* Ensure dark mode uses dark thumb on chat container even if variables aren't picked up */
 @media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
   .chat-scroll {
-    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   }
   .chat-scroll::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.22) !important;
+    background-color: rgba(255, 255, 255, 0.15) !important;
   }
 }
 @media (hover: hover) and (pointer: fine) {
   html.dark .chat-scroll {
-    scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   }
   html.dark .chat-scroll::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.22) !important;
+    background-color: rgba(255, 255, 255, 0.15) !important;
   }
 }
 
@@ -249,29 +249,29 @@ html {
 @media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
   html,
   body {
-    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
   }
   html::-webkit-scrollbar-thumb,
   body::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.16) !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
   }
   html:hover::-webkit-scrollbar-thumb,
   body:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.22) !important;
+    background-color: rgba(255, 255, 255, 0.18) !important;
   }
 }
 @media (hover: hover) and (pointer: fine) {
   html.dark,
   html.dark body {
-    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
   }
   html.dark::-webkit-scrollbar-thumb,
   html.dark body::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.16) !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
   }
   html.dark:hover::-webkit-scrollbar-thumb,
   html.dark body:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.22) !important;
+    background-color: rgba(255, 255, 255, 0.18) !important;
   }
 }
 
@@ -334,7 +334,7 @@ a:hover {
     background: linear-gradient(135deg, var(--code-surface-start) 0%, var(--code-surface-end) 100%);
     border-color: var(--code-border);
     box-shadow: 
-      0 1px 3px rgba(0, 0, 0, 0.3);
+      0 2px 4px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -373,6 +373,7 @@ a:hover {
 
 .prose p {
   @apply my-4 text-neutral-800 dark:text-neutral-200;
+  line-height: 1.7;
 }
 
 /* Blog post line elements: lighter in light mode, darker in dark mode */
@@ -390,15 +391,17 @@ a:hover {
 }
 
 .prose h2 {
-  @apply mt-6 mb-2 text-xl font-medium tracking-tight;
+  @apply mt-6 mb-3 text-xl font-semibold tracking-tight;
+  letter-spacing: -0.015em;
 }
 
 .prose h3 {
-  @apply mt-6 mb-2 text-xl font-medium tracking-tight;
+  @apply mt-6 mb-3 text-lg font-semibold tracking-tight;
+  letter-spacing: -0.01em;
 }
 
 .prose h4 {
-  @apply mt-6 mb-2 text-lg font-medium tracking-tight;
+  @apply mt-5 mb-2 text-base font-semibold tracking-tight;
 }
 
 .prose strong {
@@ -406,11 +409,21 @@ a:hover {
 }
 
 .prose ul {
-  @apply list-disc pl-6;
+  @apply list-disc pl-6 my-4;
+}
+
+.prose ul li {
+  @apply my-2;
+  line-height: 1.6;
 }
 
 .prose ol {
-  @apply list-decimal pl-6;
+  @apply list-decimal pl-6 my-4;
+}
+
+.prose ol li {
+  @apply my-2;
+  line-height: 1.6;
 }
 
 .prose > :first-child {
@@ -518,7 +531,7 @@ a:hover {
 
 @media (prefers-color-scheme: dark) {
   .prose table thead th {
-    background-color: #202020;
+    background-color: #2a2a2a;
   }
 }
 
@@ -604,24 +617,24 @@ a:hover {
 }
 @media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
   .prose table {
-    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
   }
   .prose table::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.16) !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
   }
   .prose table:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.22) !important;
+    background-color: rgba(255, 255, 255, 0.18) !important;
   }
 }
 @media (hover: hover) and (pointer: fine) {
   html.dark .prose table {
-    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
   }
   html.dark .prose table::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.16) !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
   }
   html.dark .prose table:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.22) !important;
+    background-color: rgba(255, 255, 255, 0.18) !important;
   }
 }
 
@@ -644,7 +657,7 @@ a:hover {
     background: linear-gradient(135deg, var(--code-surface-start) 0%, var(--code-surface-end) 100%);
     border-color: var(--code-border);
     box-shadow: 
-      0 1px 3px rgba(0, 0, 0, 0.3);
+      0 2px 4px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -677,11 +690,12 @@ a:hover {
 }
 
 .chat-code {
-  @apply mb-3 overflow-hidden rounded-xl border;
+  @apply mb-4 overflow-hidden rounded-xl border;
   background: linear-gradient(135deg, var(--code-surface-start) 0%, var(--code-surface-end) 100%);
   border-color: var(--code-border);
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.04);
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -689,7 +703,8 @@ a:hover {
     background: linear-gradient(135deg, var(--code-surface-start) 0%, var(--code-surface-end) 100%);
     border-color: var(--code-border);
     box-shadow: 
-      0 2px 8px rgba(0, 0, 0, 0.3);
+      0 2px 8px rgba(0, 0, 0, 0.4),
+      0 4px 12px rgba(0, 0, 0, 0.25);
   }
 }
 
@@ -721,20 +736,25 @@ a:hover {
 }
 
 .chat-copy {
-  @apply inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors backdrop-blur-sm cursor-pointer;
+  @apply inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium backdrop-blur-sm cursor-pointer;
   border-color: transparent;
   background: transparent;
   color: #807d78;
+  transition: all 0.2s ease;
 }
 
 .chat-copy:hover {
   background: var(--color-pill-hover);
-  border-color: transparent;
+  border-color: var(--border-color);
+  color: #6b6865;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .chat-copy:active {
   background: var(--color-pill-active);
   border-color: var(--border-color-hover);
+  transform: translateY(0);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -784,17 +804,21 @@ a:hover {
 
 /* Perplexity-style user heading */
 .user-heading {
-  @apply w-full text-2xl sm:text-3xl font-medium tracking-tight text-left text-neutral-900 dark:text-white;
+  @apply w-full text-2xl sm:text-3xl font-semibold tracking-tight text-left text-neutral-900 dark:text-white;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 .user-heading.long {
   /* Slightly smaller font-size and increased line-height for long prompts */
   @apply text-xl sm:text-2xl;
-  line-height: 1.25;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
 }
 .user-heading.very-long {
   /* Compact style for very long prompts: smaller, comfortable line-height */
   @apply text-lg sm:text-xl;
-  line-height: 1.35;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
 }
 /* Ensure title spans full width and wraps naturally */
 .user-heading .title {
@@ -901,7 +925,7 @@ table {
 
 @media (prefers-color-scheme: dark) {
   .prose-message table thead th {
-    background-color: #202020;
+    background-color: #2a2a2a;
   }
 }
 
@@ -955,24 +979,24 @@ table {
 }
 @media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
   .prose-message table {
-    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
   }
   .prose-message table::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.16) !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
   }
   .prose-message table:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.22) !important;
+    background-color: rgba(255, 255, 255, 0.18) !important;
   }
 }
 @media (hover: hover) and (pointer: fine) {
   html.dark .prose-message table {
-    scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
   }
   html.dark .prose-message table::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.16) !important;
+    background-color: rgba(255, 255, 255, 0.12) !important;
   }
   html.dark .prose-message table:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.22) !important;
+    background-color: rgba(255, 255, 255, 0.18) !important;
   }
 }
 
@@ -1053,6 +1077,17 @@ table {
   }
 }
 
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .ai-text-shimmer {
   background-image: linear-gradient(
     90deg,
@@ -1123,17 +1158,33 @@ table {
   @apply rounded-[24px] border backdrop-blur-md;
   border-color: var(--color-chat-input-border);
   background-color: var(--color-chat-input);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.glass-input-inner:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-accent) 18%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
   .glass-input-inner {
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25), 0 1px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .glass-input-inner:focus-within {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-accent) 22%, transparent);
   }
 }
 
 .dark .glass-input-inner {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25), 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dark .glass-input-inner:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-accent) 22%, transparent);
 }
 
 /* Add context dropdown list item: high-contrast hover in light and dark modes */
