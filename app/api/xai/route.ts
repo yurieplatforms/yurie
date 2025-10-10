@@ -650,7 +650,6 @@ function streamWithClaudeThinkingThenFinal(payload: ChatRequestPayload): Respons
           // Pass-through search params/plugins similar to streamFromOpenRouter
           try {
             const sp: any = (payload.search_parameters as any) || {}
-          const mode = sp?.mode
           // Use auto-decided web flag
           const shouldUseWeb = webSearchModeOn === true
             const lowerModel = String(requestBody.model || '').toLowerCase()
