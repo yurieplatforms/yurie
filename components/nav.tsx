@@ -50,31 +50,29 @@ export function Navbar() {
           id="nav"
         >
           <div className="flex w-full h-10 flex-row items-center justify-between px-3 sm:px-4">
-            {(!isPlayground || hasChatMessages) ? (
-              <Link
-                href="/"
-                className="group flex items-center gap-1 px-0 py-1.5 cursor-pointer transition-opacity animate-[fadeInDown_300ms_ease-out]"
-                onClick={(e) => {
-                  if (safePathname === '/') {
-                    e.preventDefault()
-                    try {
-                      window.location.assign('/')
-                    } catch {}
-                  }
-                }}
-              >
-                <img
-                  src="/favicon.ico"
-                  alt="Yurie"
-                  width={20}
-                  height={20}
-                  className="h-5 w-5 origin-center transform transition-transform duration-200 ease-out select-none group-hover:scale-105 sm:h-6 sm:w-6"
-                  draggable={false}
-                  decoding="async"
-                />
-                <span className="leading-none font-semibold text-foreground">Yurie</span>
-              </Link>
-            ) : null}
+            <Link
+              href="/"
+              className="group flex items-center gap-1 px-0 py-1.5 cursor-pointer transition-opacity animate-[fadeInDown_300ms_ease-out]"
+              onClick={(e) => {
+                if (safePathname === '/') {
+                  e.preventDefault()
+                  try {
+                    window.location.assign('/')
+                  } catch {}
+                }
+              }}
+            >
+              <img
+                src="/favicon.ico"
+                alt="Yurie"
+                width={20}
+                height={20}
+                className="h-5 w-5 origin-center transform transition-transform duration-200 ease-out select-none group-hover:scale-105 sm:h-6 sm:w-6"
+                draggable={false}
+                decoding="async"
+              />
+              <span className="leading-none font-semibold text-foreground">Yurie</span>
+            </Link>
             {isPlayground ? (
               <div className="flex items-center gap-2" />
             ) : null}

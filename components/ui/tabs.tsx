@@ -75,7 +75,7 @@ export function TabsList({ children, className }: TabsListProps) {
       >
         {children}
       </div>
-      <div className="absolute bottom-[6px] left-0 right-0 h-[1px] bg-neutral-300/80 dark:bg-neutral-700/80" />
+      <div className="absolute bottom-[6px] left-0 right-0 h-[1px] bg-neutral-300/60 dark:bg-neutral-700/60" />
     </div>
   )
 }
@@ -105,20 +105,20 @@ export function TabsTrigger({
       onClick={() => !disabled && onValueChange(value)}
       className={cn(
         // Minimal professional tabs - subtle and clean
-        'relative px-3 py-1.5 cursor-pointer select-none',
+        'group relative px-3 py-1.5 cursor-pointer select-none',
         'transition-all duration-200 ease-out',
         'disabled:pointer-events-none disabled:opacity-50',
-        'hover:bg-neutral-50 dark:hover:bg-neutral-800/30 rounded-t-lg',
+        'rounded-t-lg',
         className
       )}
     >
       <span
         className={cn(
-          'flex items-center gap-1.5 text-[13px] font-semibold border-b-[2.5px] pb-3.5',
+          'relative flex items-center gap-1.5 text-[13px] font-semibold border-b-[2.5px] pb-3.5',
           'transition-all duration-200 ease-out',
           isSelected
             ? 'text-neutral-900 dark:text-neutral-50 border-neutral-900 dark:border-neutral-50'
-            : 'text-neutral-500 dark:text-neutral-400 border-transparent hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
+            : 'text-neutral-500 dark:text-neutral-400 border-transparent hover:text-neutral-700 dark:hover:text-neutral-300'
         )}
       >
         {children}

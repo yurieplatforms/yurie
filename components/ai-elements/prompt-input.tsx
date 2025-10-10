@@ -568,7 +568,7 @@ export const PromptInputTextarea = ({
         "max-h-40 min-h-12",
         "focus-visible:ring-0",
         // soften input text and placeholder to match chat style
-        "text-foreground/80 placeholder:!text-[#a7a4a0] dark:placeholder:!text-[#a7a4a0]",
+        "text-foreground/80 placeholder:!text-[#a7a4a0] dark:placeholder:!text-[#656765]",
         className
       )}
       name="message"

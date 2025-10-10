@@ -99,7 +99,21 @@ function streamWithClaudeThinkingThenFinal(payload: ChatRequestPayload): Respons
       const webSearchModeOn: boolean = (() => {
         try {
           const sp: any = (payload.search_parameters as any) || {}
-          return typeof sp?.mode === 'string' && String(sp.mode).toLowerCase() === 'on'
+          const explicitMode = typeof sp?.mode === 'string' ? String(sp.mode).toLowerCase() : null
+          if (explicitMode === 'on') return true
+          if (explicitMode === 'off') return false
+          // Auto-enable heuristics
+          const modelLower = String(payload?.model || '').toLowerCase()
+          const isResearchSelected = modelLower.includes('grok-4-0709')
+          if (isResearchSelected) return true
+          const qc = classifyQuery(lastUserQuery)
+          if (qc.needsDeepResearch) return true
+          // Recency/real-time cues
+          if (/\b(today|yesterday|this week|this month|this year|current|now|latest|breaking|live)\b/i.test(lastUserQuery)) return true
+          // Domain-specific fresh data cues
+          if (/\b(price|stock|market|earnings|release|launch|score|game|match|election|cpi|inflation|rate|fed|weather|traffic|crypto|bitcoin|eth)\b/i.test(lastUserQuery)
+              && /\b(current|today|latest|now|recent|live)\b/i.test(lastUserQuery)) return true
+          return false
         } catch {
           return false
         }
@@ -175,6 +189,16 @@ function streamWithClaudeThinkingThenFinal(payload: ChatRequestPayload): Respons
                   messages,
                   reasoning: { effort: 'low' },
                 }
+                // Enable OpenRouter web plugin (":online") for Claude Sonnet 4.5 when web search is on
+                try {
+                  if (webSearchModeOn) {
+                    ;(qwenThinkingBody as any).plugins = [{ id: 'web', engine: 'native' }]
+                    const sp: any = (payload.search_parameters as any) || {}
+                    if (sp && typeof sp.web_search_options === 'object') {
+                      ;(qwenThinkingBody as any).web_search_options = sp.web_search_options
+                    }
+                  }
+                } catch {}
                 const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                   method: 'POST',
                   headers,
@@ -626,8 +650,9 @@ function streamWithClaudeThinkingThenFinal(payload: ChatRequestPayload): Respons
           // Pass-through search params/plugins similar to streamFromOpenRouter
           try {
             const sp: any = (payload.search_parameters as any) || {}
-            const mode = sp?.mode
-            const shouldUseWeb = typeof mode === 'string' && mode.toLowerCase() === 'on'
+          const mode = sp?.mode
+          // Use auto-decided web flag
+          const shouldUseWeb = webSearchModeOn === true
             const lowerModel = String(requestBody.model || '').toLowerCase()
             const advancedEngine = typeof sp?.engine === 'string' ? sp.engine : undefined
             const maxResults = typeof sp?.max_results === 'number' ? sp.max_results : undefined
@@ -777,11 +802,16 @@ function streamWithClaudeThinkingThenFinal(payload: ChatRequestPayload): Respons
             messages: messagesWithNotes,
             stream: true,
           }
-          // Include search parameters if provided
-          const sp = payload.search_parameters
-          if (sp && typeof sp === 'object') {
-            requestBody.search_parameters = sp
-          }
+          // Include search parameters based on auto web flag, merging any provided options
+          try {
+            const sp: any = (payload.search_parameters as any) || {}
+            if (webSearchModeOn) {
+              const base = typeof sp === 'object' && sp ? sp : {}
+              requestBody.search_parameters = { ...base, mode: 'on', return_citations: true }
+            } else {
+              requestBody.search_parameters = { mode: 'off' }
+            }
+          } catch {}
           const res = await fetch('https://api.x.ai/v1/chat/completions', {
             method: 'POST',
             headers: {

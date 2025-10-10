@@ -179,7 +179,7 @@ export function FileList({
           transition={TRANSITION}
           className="overflow-hidden"
         >
-          <div className="flex flex-row overflow-x-auto pl-3 pr-10 pt-3 pb-2">
+        <div className="flex flex-row overflow-x-auto pl-3 pr-3 pt-3 pb-2">
             <AnimatePresence initial={false}>
               {files.map((file) => (
                 <motion.div

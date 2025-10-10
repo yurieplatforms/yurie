@@ -61,8 +61,6 @@ export type ChatInputProps = {
   onFileRemove: (file: File) => void
   stop: () => void
   status?: 'submitted' | 'streaming' | 'ready' | 'error'
-  useWebSearch: boolean
-  onUseWebSearchToggle: () => void
   modelChoice: string
   onModelChange: (value: string) => void
 }

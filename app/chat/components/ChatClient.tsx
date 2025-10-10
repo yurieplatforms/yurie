@@ -30,7 +30,6 @@ export default function ChatClient() {
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
   const [modelChoice, setModelChoice] = useState<string>('x-ai/grok-4-fast-reasoning')
-  const [useWebSearch, setUseWebSearch] = useState<boolean>(false)
   
 
   const md = useMarkdownRenderer()
@@ -313,14 +312,7 @@ export default function ChatClient() {
       if (supportsReasoningEffort || isOpenRouterModel) {
         body.reasoning = { effort: 'high' }
       }
-      try {
-        const lowerModel = String(modelToUse || '').toLowerCase()
-        const isGrok4 = lowerModel === 'x-ai/grok-4-0709'
-        const enableSearch = isGrok4 || options?.forceWebSearch ? true : useWebSearch
-        body.search_parameters = enableSearch
-          ? { mode: 'on', return_citations: true }
-          : { mode: 'off' }
-      } catch {}
+      // Omit search_parameters; backend will auto-enable web search based on query
       const res = await fetch('/api/xai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -425,7 +417,7 @@ export default function ChatClient() {
 
       abortControllerRef.current = null
     }
-  }, [messages, isLoading, modelChoice, useWebSearch, lastResponseId])
+  }, [messages, isLoading, modelChoice, lastResponseId])
 
   const stop = useCallback(() => {
     try {
@@ -707,33 +699,7 @@ export default function ChatClient() {
             className="pointer-events-none absolute inset-x-0 -top-4 bottom-0 rounded-2xl bg-[var(--color-background)]"
           />
         ) : null}
-        {isEmpty ? (
-          <div className="mb-6 sm:mb-8 flex flex-col items-center">
-            <div className="flex items-center justify-center gap-3 mb-3">
-              <div className="relative">
-                <div 
-                  className="pointer-events-none absolute -inset-4 -z-10 rounded-full blur-2xl opacity-30"
-                  style={{ 
-                    background: 'radial-gradient(circle at center, rgba(127, 145, 224, 0.35) 0%, rgba(127, 145, 224, 0.15) 40%, transparent 70%)' 
-                  }}
-                />
-                <img
-                  src="/favicon.ico"
-                  alt="Yurie"
-                  width={56}
-                  height={56}
-                  className="h-12 w-12 sm:h-14 sm:w-14 select-none"
-                  draggable={false}
-                  decoding="async"
-                />
-              </div>
-              <span className="leading-none font-semibold text-foreground text-3xl sm:text-4xl tracking-tight">Yurie</span>
-            </div>
-            <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 text-center max-w-md px-4">
-              Ask anything. Attach files. Research the web.
-            </p>
-          </div>
-        ) : null}
+        {isEmpty ? null : null}
         <ChatInput
           onSubmitWithMessage={handleSubmitWithMessage}
           onNewChat={handleNewChat}
@@ -747,8 +713,6 @@ export default function ChatClient() {
           }
           stop={stop}
           status={status}
-          useWebSearch={useWebSearch}
-          onUseWebSearchToggle={() => setUseWebSearch((v) => !v)}
           modelChoice={modelChoice}
           onModelChange={setModelChoice}
         />

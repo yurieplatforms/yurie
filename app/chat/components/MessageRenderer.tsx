@@ -599,7 +599,7 @@ export function renderMessageContent(
       <Tabs defaultValue="answer" className="w-full">
         <TabsList className="mb-3">
           <TabsTrigger value="answer">
-            <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)]">
+            <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)] group-[[aria-selected=true]]:hover:bg-transparent group-[[aria-selected=true]]:active:bg-transparent">
               <MessageSquare className="size-3" />
               Answer
             </span>
@@ -627,14 +627,14 @@ export function renderMessageContent(
       <Tabs defaultValue="answer" className="w-full">
         <TabsList className="mb-3">
           <TabsTrigger value="answer">
-            <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)]">
+            <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)] group-[[aria-selected=true]]:hover:bg-transparent group-[[aria-selected=true]]:active:bg-transparent">
               <MessageSquare className="size-3" />
               Answer
             </span>
           </TabsTrigger>
           {showImagesTab && (
             <TabsTrigger value="images">
-              <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)]">
+              <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)] group-[[aria-selected=true]]:hover:bg-transparent group-[[aria-selected=true]]:active:bg-transparent">
                 <Image className="size-3" />
                 Images
               </span>
@@ -642,7 +642,7 @@ export function renderMessageContent(
           )}
           {hasSources && (
             <TabsTrigger value="sources">
-              <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)]">
+              <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)] group-[[aria-selected=true]]:hover:bg-transparent group-[[aria-selected=true]]:active:bg-transparent">
                 <Globe className="size-3" />
                 {`Sources${latestCitations.length > 0 ? ` · ${latestCitations.length}` : ''}`}
               </span>
@@ -650,7 +650,7 @@ export function renderMessageContent(
           )}
           {hasReasoning && (
             <TabsTrigger value="steps">
-              <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)]">
+              <span className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 -mx-2 -my-1 transition-colors hover:bg-[var(--color-pill-hover)] active:bg-[var(--color-pill-active)] group-[[aria-selected=true]]:hover:bg-transparent group-[[aria-selected=true]]:active:bg-transparent">
                 <ListOrdered className="size-3" />
                 Steps
               </span>

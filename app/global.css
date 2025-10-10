@@ -74,7 +74,7 @@
   /* Chat input toolbar pill hover background */
   --color-pill-hover: #f3f2f1;
   /* Chat input toolbar pill active background */
-  --color-pill-active: #ECEFF5;
+  --color-pill-active: var(--color-chat-input);
   /* Code surfaces aligned with chat input for perfect blending */
   --code-surface-start: var(--color-chat-input);
   --code-surface-end: var(--color-chat-input);
@@ -86,7 +86,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Dark mode background */
-    --color-background: #212121;
+    --color-background: #191a1a;
     /* Ensure text and UI tokens swap for dark mode */
     --color-foreground: #e8e8e8;
     --color-card: #2a2a2a;
@@ -124,13 +124,13 @@
     --bubble-assistant-bg: var(--surface);
     --bubble-user-bg: #2a2a2a; /* user bubble (dark) */
     /* Chat input background color */
-    --color-chat-input: #303030;
-    /* Chat input border color: slightly lighter gray for visibility */
-    --color-chat-input-border: #3a3a3a;
+    --color-chat-input: #1f2121;
+    /* Chat input border color */
+    --color-chat-input-border: #313333;
     /* Chat input toolbar pill hover background (use deep neutral gray) */
     --color-pill-hover: #3a3a3a;
     /* Chat input toolbar pill active background (slightly deeper) */
-    --color-pill-active: #404040;
+    --color-pill-active: var(--color-chat-input);
     --sh-class: #4c97f8;
     --sh-identifier: white;
     --sh-keyword: #f47067;
@@ -1163,8 +1163,7 @@ table {
 }
 
 .glass-input-inner:focus-within {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-accent) 18%, transparent);
+  border-color: var(--color-chat-input-border);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1173,8 +1172,7 @@ table {
   }
   
   .glass-input-inner:focus-within {
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-accent) 22%, transparent);
+    border-color: var(--color-chat-input-border);
   }
 }
 
@@ -1183,8 +1181,7 @@ table {
 }
 
 .dark .glass-input-inner:focus-within {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-accent) 22%, transparent);
+  border-color: var(--color-chat-input-border);
 }
 
 /* Add context dropdown list item: high-contrast hover in light and dark modes */
