@@ -2,32 +2,23 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 export function Navbar() {
   const pathname = usePathname()
   const safePathname = pathname ?? '/'
   const isPlayground = safePathname === '/'
-  const [hasChatMessages, setHasChatMessages] = useState(false)
+  
 
   useEffect(() => {
-    const onChatState = (e: Event) => {
-      try {
-        const ce = e as CustomEvent
-        const next = Boolean(ce?.detail?.hasMessages)
-        setHasChatMessages(next)
-      } catch {}
-    }
     const onModelState = () => {}
     const onGeneratingState = () => {}
     try {
-      window.addEventListener('yurie:chat-state', onChatState as EventListener)
       window.addEventListener('yurie:model:state', onModelState as EventListener)
       window.addEventListener('yurie:generating', onGeneratingState as EventListener)
     } catch {}
     return () => {
       try {
-        window.removeEventListener('yurie:chat-state', onChatState as EventListener)
         window.removeEventListener('yurie:model:state', onModelState as EventListener)
         window.removeEventListener('yurie:generating', onGeneratingState as EventListener)
       } catch {}
