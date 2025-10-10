@@ -175,11 +175,11 @@ export function ChatInput({
                 <FileList files={files} onFileRemove={onFileRemove} />
                 <PromptInputTextarea
                   placeholder="What can I help you with?"
-                  className="min-h-[64px] pl-6 pr-8 pt-5 pb-4 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:!text-[#9b9894] dark:placeholder:!text-[#9b9894]"
+                  className="min-h-[56px] pl-3 pr-10 pt-3 pb-3 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:italic placeholder:!text-[#9e9b96] dark:placeholder:!text-[#9e9b96]"
                 />
               </PromptInputBody>
-              <PromptInputToolbar className="px-4 pb-3.5 pt-0.5">
-                <PromptInputTools className="ml-0.5 gap-1.5">
+              <PromptInputToolbar className="px-3 pb-3 pt-0">
+                <PromptInputTools className="ml-0 gap-1.5">
                   {/* Unified attachments input (images, PDFs, and optional audio) */}
                   <input
                     ref={attachmentInputRef}
@@ -215,10 +215,10 @@ export function ChatInput({
                       onClick={() => attachmentInputRef.current?.click()}
                       aria-label="Add attachments"
                       title="Add attachments"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent bg-transparent text-[#9b9894] transition-all hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-95 dark:text-[#9b9894] dark:hover:text-[#bbb7b2] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex size-8 items-center justify-center rounded-full border border-transparent bg-transparent text-[#a7a4a0] transition-all hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.92] dark:text-[#a7a4a0] dark:hover:text-[#c9c6c0] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={isSubmitting || !allowAttachments}
                     >
-                      <Plus className="size-4.5" strokeWidth={2.5} />
+                      <Plus className="size-4 flex-shrink-0" strokeWidth={2.5} />
                     </button>
                   ) : null}
                   {/* Model selector moved to navbar */}
@@ -230,16 +230,16 @@ export function ChatInput({
                       aria-label="Research"
                       title="Deep Research"
                       className={
-                        `inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-all backdrop-blur-sm ` +
+                        `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-all backdrop-blur-sm ` +
                         (isResearchMode
-                          ? 'border border-accent bg-[var(--color-pill-active)] text-[var(--color-accent)]'
-                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-95 text-[#9b9894] dark:text-[#9b9894] dark:hover:text-[#bbb7b2]') +
+                          ? 'border-accent bg-[var(--color-pill-active)] text-[var(--color-accent)] shadow-sm'
+                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.96] text-[#a7a4a0] dark:text-[#a7a4a0] dark:hover:text-[#c9c6c0]') +
                         ' cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
                       }
                       disabled={isSubmitting}
                     >
-                      <Telescope className="size-4" />
-                      <span className="text-sm font-medium">Research</span>
+                      <Telescope className="size-4 flex-shrink-0" strokeWidth={2} />
+                      <span className="text-[13px] leading-none">Research</span>
                     </button>
                   )}
                   {allowWebSearch && !isResearchMode ? (
@@ -250,16 +250,16 @@ export function ChatInput({
                       aria-label="Web search"
                       title="Web search"
                       className={
-                        `inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-all backdrop-blur-sm ` +
+                        `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-all backdrop-blur-sm ` +
                         (useWebSearch
-                          ? 'border border-accent bg-[var(--color-pill-active)] text-[var(--color-accent)]'
-                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-95 text-[#9b9894] dark:text-[#9b9894] dark:hover:text-[#bbb7b2]') +
+                          ? 'border-accent bg-[var(--color-pill-active)] text-[var(--color-accent)] shadow-sm'
+                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.96] text-[#a7a4a0] dark:text-[#a7a4a0] dark:hover:text-[#c9c6c0]') +
                         ' cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
                       }
                       disabled={isSubmitting}
                     >
-                      <Globe className="size-4" />
-                      <span className="text-sm font-medium">Web</span>
+                      <Globe className="size-4 flex-shrink-0" strokeWidth={2} />
+                      <span className="text-[13px] leading-none">Web</span>
                     </button>
                   ) : null}
                 </PromptInputTools>
@@ -270,16 +270,16 @@ export function ChatInput({
                   <button
                     type="button"
                     onClick={handleStop}
-                    className="pointer-events-auto inline-flex size-10 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-95 backdrop-blur-sm text-[#9b9894] dark:text-[#9b9894] dark:hover:text-[#bbb7b2] cursor-pointer transition-all"
+                    className="pointer-events-auto inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.92] backdrop-blur-sm text-[#a7a4a0] dark:text-[#a7a4a0] dark:hover:text-[#c9c6c0] cursor-pointer transition-all shadow-sm"
                     aria-label="Stop"
                     title="Stop"
                   >
-                    <Square className="size-4" />
+                    <Square className="size-4 flex-shrink-0" strokeWidth={2} />
                   </button>
                 ) : status === 'submitted' ? (
                   <button
                     type="button"
-                    className="pointer-events-auto inline-flex size-10 items-center justify-center rounded-full border border-transparent bg-transparent backdrop-blur-sm text-[#9b9894] dark:text-[#9b9894] opacity-80 transition-all"
+                    className="pointer-events-auto inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-transparent backdrop-blur-sm text-[#a7a4a0] dark:text-[#a7a4a0] opacity-80 transition-all"
                     aria-label="Sending"
                     title="Sending"
                     disabled
@@ -290,11 +290,11 @@ export function ChatInput({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="pointer-events-auto inline-flex size-10 items-center justify-center rounded-full border border-transparent bg-[var(--color-accent)] hover:bg-[#6d7fc9] active:bg-[#5d6fb5] active:scale-95 backdrop-blur-sm text-white cursor-pointer transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                    className="pointer-events-auto inline-flex size-9 items-center justify-center rounded-full border border-transparent bg-[var(--color-accent)] hover:bg-[#6d7fc9] active:bg-[#5d6fb5] active:scale-[0.92] backdrop-blur-sm text-white cursor-pointer transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Send"
                     title="Send"
                   >
-                    <ArrowUp className="size-5" strokeWidth={2} />
+                    <ArrowUp className="size-5 flex-shrink-0" strokeWidth={2} />
                   </button>
                 )}
               </div>

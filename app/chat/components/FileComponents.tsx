@@ -179,7 +179,7 @@ export function FileList({
           transition={TRANSITION}
           className="overflow-hidden"
         >
-          <div className="flex flex-row overflow-x-auto pl-3">
+          <div className="flex flex-row overflow-x-auto pl-3 pr-10 pt-3 pb-2">
             <AnimatePresence initial={false}>
               {files.map((file) => (
                 <motion.div
@@ -188,7 +188,8 @@ export function FileList({
                   animate={{ width: 180 }}
                   exit={{ width: 0 }}
                   transition={TRANSITION}
-                  className="relative shrink-0 overflow-hidden pt-2"
+                  className="relative shrink-0"
+                  style={{ overflow: 'visible' }}
                 >
                   <FileItem
                     key={`${file.name}-${file.size}-${file.lastModified}`}

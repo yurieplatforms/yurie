@@ -165,7 +165,7 @@ export function PromptInputAttachments({
       style={{ height: attachments.files.length ? height : 0 }}
       {...props}
     >
-      <div className="flex flex-wrap gap-2 p-3 pt-3" ref={contentRef}>
+      <div className="flex flex-wrap gap-2 pl-5 pr-10 pt-3 pb-0" ref={contentRef}>
         {attachments.files.map((file) => (
           <Fragment key={file.id}>{children(file)}</Fragment>
         ))}
@@ -510,7 +510,7 @@ export const PromptInput = ({
       />
       <form
         className={cn(
-          "w-full overflow-hidden rounded-3xl border border-[var(--border-color)] bg-[var(--color-chat-input)]",
+          "w-full overflow-hidden rounded-[22px] border border-[var(--border-color)] bg-[var(--color-chat-input)]",
           className
         )}
         onSubmit={handleSubmit}
@@ -565,10 +565,10 @@ export const PromptInputTextarea = ({
       className={cn(
         "w-full resize-none rounded-none border-none p-3 shadow-none outline-none ring-0",
         "field-sizing-content bg-transparent dark:bg-transparent",
-        "max-h-48 min-h-16",
+        "max-h-40 min-h-12",
         "focus-visible:ring-0",
-        // soften input text and placeholder
-        "text-foreground/80 placeholder:!text-[#807d78] dark:placeholder:!text-[#807d78]",
+        // soften input text and placeholder to match chat style
+        "text-foreground/80 placeholder:!text-[#a7a4a0] dark:placeholder:!text-[#a7a4a0]",
         className
       )}
       name="message"
