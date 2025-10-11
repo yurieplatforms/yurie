@@ -190,41 +190,35 @@ export function ChatInput({
                     aria-label="Add attachments"
                     disabled={!allowAttachments}
                   />
-                  {!isResearchMode ? (
-                    <button
-                      type="button"
-                      onClick={() => attachmentInputRef.current?.click()}
-                      aria-label="Add attachments"
-                      title="Add attachments"
-                      className="inline-flex size-8 items-center justify-center rounded-full border border-transparent bg-transparent text-[#a7a4a0] transition-all hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.92] dark:text-[#656765] dark:hover:text-[#c9c6c0] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                      disabled={isSubmitting || !allowAttachments}
-                    >
-                      <Plus className="size-4 flex-shrink-0" strokeWidth={2.5} />
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => attachmentInputRef.current?.click()}
+                    aria-label="Add attachments"
+                    title="Add attachments"
+                    className="inline-flex size-8 items-center justify-center rounded-full border border-transparent bg-transparent text-[#a7a4a0] transition-all hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.92] dark:text-[#656765] dark:hover:text-[#c9c6c0] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isSubmitting || !allowAttachments}
+                  >
+                    <Plus className="size-4 flex-shrink-0" strokeWidth={2.5} />
+                  </button>
                   {/* Model selector moved to navbar */}
-                  {(
-                    !isResearchMode
-                  ) ? (
-                    <button
-                      type="button"
-                      onClick={toggleResearch}
-                      aria-pressed={isResearchMode}
-                      aria-label="Research"
-                      title="Deep Research"
-                      className={
-                        `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all duration-200 backdrop-blur-sm ` +
-                        (isResearchMode
-                          ? 'border-accent/60 bg-[var(--color-pill-active)] text-[var(--color-accent)] shadow-sm hover:border-accent hover:shadow-md'
-                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] hover:border-neutral-200 dark:hover:border-neutral-700 active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.96] text-[#a7a4a0] dark:text-[#656765] dark:hover:text-[#c9c6c0]') +
-                        ' cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
-                      }
-                      disabled={isSubmitting}
-                    >
-                      <Telescope className="size-4 flex-shrink-0" strokeWidth={2} />
-                      <span className="text-[13px] leading-none">Research</span>
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={toggleResearch}
+                    aria-pressed={isResearchMode}
+                    aria-label="Research"
+                    title="Deep Research"
+                    className={
+                      `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all duration-200 backdrop-blur-sm ` +
+                      (isResearchMode
+                        ? 'border-accent/60 bg-[var(--color-pill-active)] text-[var(--color-accent)] shadow-sm hover:border-accent hover:shadow-md'
+                        : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] hover:border-neutral-200 dark:hover:border-neutral-700 active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.96] text-[#a7a4a0] dark:text-[#656765] dark:hover:text-[#c9c6c0]') +
+                      ' cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
+                    }
+                    disabled={isSubmitting}
+                  >
+                    <Telescope className="size-4 flex-shrink-0" strokeWidth={2} />
+                    <span className="text-[13px] leading-none">Research</span>
+                  </button>
                 </PromptInputTools>
                 <div className="flex items-center gap-1.5">
                   {status === 'streaming' ? (
