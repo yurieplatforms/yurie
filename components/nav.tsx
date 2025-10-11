@@ -43,7 +43,7 @@ export function Navbar() {
           <div className="flex w-full h-10 flex-row items-center justify-between px-3 sm:px-4">
             <Link
               href="/"
-              className="group flex items-center gap-1 px-0 py-1.5 cursor-pointer transition-opacity animate-[fadeInDown_300ms_ease-out]"
+              className="group flex items-center gap-1 px-0 py-1.5 cursor-pointer transition-opacity"
               onClick={(e) => {
                 if (safePathname === '/') {
                   e.preventDefault()
