@@ -51,6 +51,7 @@ export const viewport: Viewport = {
     { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
     { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
+  colorScheme: 'light dark',
 }
 
 const cx = (...classes) => classes.filter(Boolean).join(' ')
