@@ -1,18 +1,17 @@
 'use client'
 
-import { useCallback, useRef, useEffect } from 'react'
-import { ArrowUp, Square, Plus, Telescope } from 'lucide-react'
+import { useCallback, useRef, useEffect, useState } from 'react'
+import { ArrowUp, Square, Telescope, Paperclip } from 'lucide-react'
 import { Loader } from '@/components/ai-elements/loader'
+import { Button } from '@/components/ui/button'
 import { MAX_IMAGE_BYTES, MAX_PDF_BYTES, MAX_AUDIO_BYTES } from '../utils'
 import { ChatInputProps } from '../types'
 import {
   PromptInput,
-  PromptInputBody,
+  PromptInputAction,
+  PromptInputActions,
   PromptInputTextarea,
-  PromptInputToolbar,
-  PromptInputTools,
-  type PromptInputMessage,
-} from '@/components/ai-elements/prompt-input'
+} from '@/components/prompt-kit/prompt-input'
 import { FileList } from './FileComponents'
 
 export function ChatInput({
@@ -29,6 +28,7 @@ export function ChatInput({
 }: ChatInputProps) {
   const attachmentInputRef = useRef<HTMLInputElement>(null)
   const prevNonResearchModelRef = useRef<string | null>(null)
+  const [input, setInput] = useState('')
   const isResearchMode = (() => {
     try {
       // Research mode now maps to xAI Grok 4 with Live Search
@@ -121,8 +121,8 @@ export function ChatInput({
 
   // Model selector moved to navbar; width sizer no longer needed
 
-  const handleSubmit = useCallback(async (message: PromptInputMessage) => {
-    const hasText = Boolean(message.text?.trim())
+  const handleSubmit = useCallback(async () => {
+    const hasText = Boolean(input.trim())
     const hasAttachments = Boolean(files?.length)
 
     if (!(hasText || hasAttachments)) {
@@ -130,11 +130,12 @@ export function ChatInput({
     }
 
     if (onSubmitWithMessage) {
-      onSubmitWithMessage(message.text || '', files || [])
+      onSubmitWithMessage(input, files || [])
+      setInput('')
     } else if (onSend) {
       onSend()
     }
-  }, [onSend, onSubmitWithMessage, files])
+  }, [onSend, onSubmitWithMessage, files, input])
 
   const handleStop = useCallback(() => {
     if (status === 'streaming' || status === 'submitted') {
@@ -148,112 +149,127 @@ export function ChatInput({
         <div className="glass-input-wrap">
           <div className="glass-input-inner">
             <PromptInput
-              className="relative z-10 w-full p-0 pt-0 shadow-none !bg-transparent !border-0"
+              value={input}
+              onValueChange={setInput}
+              isLoading={status === 'streaming' || status === 'submitted'}
               onSubmit={handleSubmit}
+              className="relative z-10 w-full shadow-none"
             >
-              <PromptInputBody>
-                {/* Preview currently selected files using native list */}
+              {files.length > 0 ? (
                 <FileList files={files} onFileRemove={onFileRemove} />
-                <PromptInputTextarea
-                  placeholder="What can I help you with?"
-                  className="min-h-[56px] pl-3 pr-3 pt-3 pb-3 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:italic placeholder:!text-[#9e9b96] dark:placeholder:!text-[#656765]"
-                />
-              </PromptInputBody>
-              <PromptInputToolbar className="px-3 pb-3 pt-0">
-                <PromptInputTools className="ml-0 gap-1.5">
-                  {/* Unified attachments input (images, PDFs, and optional audio) */}
-                  <input
-                    ref={attachmentInputRef}
-                    type="file"
-                    accept={attachmentAccept}
-                    multiple
-                    onChange={(e) => {
-                      const selected = Array.from(e.target.files ?? [])
-                      const filtered = selected.filter((f) => {
-                        const mime = (f.type || '').toLowerCase()
-                        const isPdf = mime === 'application/pdf'
-                        const isWav = (allowFiles && allowAudio) && (mime === 'audio/wav' || mime === 'audio/x-wav')
-                        const isMp3 = (allowFiles && allowAudio) && (mime === 'audio/mpeg' || mime === 'audio/mp3')
-                        const isJpeg = mime === 'image/jpeg' || mime === 'image/jpg'
-                        const isPng = mime === 'image/png'
-                        const isWebp = mime === 'image/webp'
-                        const isGif = mime === 'image/gif'
-                        if (allowFiles && isPdf) return f.size <= MAX_PDF_BYTES
-                        if (allowFiles && (isWav || isMp3)) return f.size <= MAX_AUDIO_BYTES
-                        if (allowImages && (isJpeg || isPng || isWebp || isGif)) return f.size <= MAX_IMAGE_BYTES
-                        return false
-                      })
-                      if (filtered.length > 0) onFileUpload(filtered)
-                      if (e.target) e.target.value = ''
-                    }}
-                    className="sr-only"
-                    aria-label="Add attachments"
-                    disabled={!allowAttachments}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => attachmentInputRef.current?.click()}
-                    aria-label="Add attachments"
-                    title="Add attachments"
-                    className="inline-flex size-8 items-center justify-center rounded-full border border-transparent bg-transparent text-[#a7a4a0] transition-all hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.92] dark:text-[#656765] dark:hover:text-[#c9c6c0] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isSubmitting || !allowAttachments}
-                  >
-                    <Plus className="size-4 flex-shrink-0" strokeWidth={2.5} />
-                  </button>
-                  {/* Model selector moved to navbar */}
-                  <button
-                    type="button"
-                    onClick={toggleResearch}
-                    aria-pressed={isResearchMode}
-                    aria-label="Research"
-                    title="Deep Research"
-                    className={
-                      `inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all duration-200 backdrop-blur-sm ` +
-                      (isResearchMode
-                        ? 'border-accent/60 bg-[var(--color-pill-active)] text-[var(--color-accent)] shadow-sm hover:border-accent hover:shadow-md'
-                        : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] hover:border-neutral-200 dark:hover:border-neutral-700 active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.96] text-[#a7a4a0] dark:text-[#656765] dark:hover:text-[#c9c6c0]') +
-                      ' cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
-                    }
-                    disabled={isSubmitting}
-                  >
-                    <Telescope className="size-4 flex-shrink-0" strokeWidth={2} />
-                    <span className="text-[13px] leading-none">Research</span>
-                  </button>
-                </PromptInputTools>
-                <div className="flex items-center gap-1.5">
-                  {status === 'streaming' ? (
+              ) : null}
+              <PromptInputTextarea
+                placeholder="What can I help you with?"
+                className="min-h-[56px] pl-3 pr-3 pt-3 pb-3 text-base leading-[1.3] sm:text-base md:text-base text-foreground/80 placeholder:!text-[#9e9b96] dark:placeholder:!text-[#656765]"
+              />
+              {/* Unified attachments input (images, PDFs, and optional audio) */}
+              <input
+                ref={attachmentInputRef}
+                type="file"
+                accept={attachmentAccept}
+                multiple
+                onChange={(e) => {
+                  const selected = Array.from(e.target.files ?? [])
+                  const filtered = selected.filter((f) => {
+                    const mime = (f.type || '').toLowerCase()
+                    const isPdf = mime === 'application/pdf'
+                    const isWav = (allowFiles && allowAudio) && (mime === 'audio/wav' || mime === 'audio/x-wav')
+                    const isMp3 = (allowFiles && allowAudio) && (mime === 'audio/mpeg' || mime === 'audio/mp3')
+                    const isJpeg = mime === 'image/jpeg' || mime === 'image/jpg'
+                    const isPng = mime === 'image/png'
+                    const isWebp = mime === 'image/webp'
+                    const isGif = mime === 'image/gif'
+                    if (allowFiles && isPdf) return f.size <= MAX_PDF_BYTES
+                    if (allowFiles && (isWav || isMp3)) return f.size <= MAX_AUDIO_BYTES
+                    if (allowImages && (isJpeg || isPng || isWebp || isGif)) return f.size <= MAX_IMAGE_BYTES
+                    return false
+                  })
+                  if (filtered.length > 0) onFileUpload(filtered)
+                  if (e.target) e.target.value = ''
+                }}
+                className="sr-only"
+                aria-label="Add attachments"
+                disabled={!allowAttachments}
+                id="chat-file-upload"
+              />
+              <PromptInputActions className="flex items-center justify-between gap-3 px-3 pt-0 pb-3">
+                <div className="flex items-center gap-2">
+                  <PromptInputAction tooltip="Attach files">
                     <button
                       type="button"
-                      onClick={handleStop}
-                      className="inline-flex size-8 items-center justify-center rounded-full border border-transparent bg-transparent text-[#a7a4a0] transition-all hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.92] dark:text-[#656765] dark:hover:text-[#c9c6c0] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label="Stop"
-                      title="Stop"
+                      onClick={() => attachmentInputRef.current?.click()}
+                      aria-label="Add attachments"
+                      className={
+                        `inline-flex h-8 items-center gap-2 rounded-full border px-3.5 text-sm font-semibold transition-all duration-200 backdrop-blur-sm ` +
+                        'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] hover:border-neutral-200 dark:hover:border-neutral-700 active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.96] text-[#a7a4a0] dark:text-[#656765] dark:hover:text-[#c9c6c0] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
+                      }
+                      disabled={isSubmitting || !allowAttachments}
                     >
-                      <Square className="size-4 flex-shrink-0" strokeWidth={2.5} />
+                      <Paperclip className="size-5 flex-shrink-0" />
+                      <span className="text-[13px] leading-none">Attach</span>
                     </button>
-                  ) : status === 'submitted' ? (
+                  </PromptInputAction>
+                  <PromptInputAction tooltip="Deep Research">
                     <button
                       type="button"
-                      className="inline-flex size-8 items-center justify-center rounded-full border border-transparent bg-transparent text-[#a7a4a0] transition-all hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.92] dark:text-[#656765] dark:hover:text-[#c9c6c0] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label="Sending"
-                      title="Sending"
-                      disabled
-                    >
-                      <Loader size={16} />
-                    </button>
-                  ) : (
-                    <button
-                      type="submit"
+                      onClick={toggleResearch}
+                      aria-pressed={isResearchMode}
+                      aria-label="Research"
+                      className={
+                        `inline-flex h-8 items-center gap-2 rounded-full border px-3.5 text-sm font-semibold transition-all duration-200 backdrop-blur-sm ` +
+                        (isResearchMode
+                          ? 'border-accent/60 bg-[var(--color-pill-active)] text-[var(--color-accent)] shadow-sm hover:border-accent hover:shadow-md'
+                          : 'border-transparent bg-transparent hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] hover:border-neutral-200 dark:hover:border-neutral-700 active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.96] text-[#a7a4a0] dark:text-[#656765] dark:hover:text-[#c9c6c0]') +
+                        ' cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
+                      }
                       disabled={isSubmitting}
-                      className="inline-flex size-8 items-center justify-center rounded-full border border-transparent bg-transparent text-[#a7a4a0] transition-all hover:bg-[var(--color-pill-hover)] hover:text-[#6b6865] active:border-[var(--border-color-hover)] active:bg-[var(--color-pill-active)] active:scale-[0.92] dark:text-[#656765] dark:hover:text-[#c9c6c0] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label="Send"
-                      title="Send"
                     >
-                      <ArrowUp className="size-4 flex-shrink-0" strokeWidth={2.5} />
+                      <Telescope className="size-5 flex-shrink-0" strokeWidth={2} />
+                      <span className="text-[13px] leading-none">Research</span>
                     </button>
+                  </PromptInputAction>
+                </div>
+                <div className="flex items-center">
+                  {status === 'streaming' ? (
+                    <PromptInputAction tooltip="Stop">
+                      <Button
+                        variant="default"
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        onClick={handleStop}
+                        aria-label="Stop"
+                      >
+                        <Square className="size-5" />
+                      </Button>
+                    </PromptInputAction>
+                  ) : status === 'submitted' ? (
+                    <PromptInputAction tooltip="Sending">
+                      <Button
+                        variant="default"
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        aria-label="Sending"
+                        disabled
+                      >
+                        <Loader size={16} />
+                      </Button>
+                    </PromptInputAction>
+                  ) : (
+                    <PromptInputAction tooltip="Send message">
+                      <Button
+                        variant="default"
+                        size="icon"
+                        className="h-8 w-8 rounded-full"
+                        onClick={handleSubmit}
+                        aria-label="Send"
+                        disabled={isSubmitting}
+                      >
+                        <ArrowUp className="size-5" />
+                      </Button>
+                    </PromptInputAction>
                   )}
                 </div>
-              </PromptInputToolbar>
+              </PromptInputActions>
             </PromptInput>
           </div>
         </div>

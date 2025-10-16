@@ -86,7 +86,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     /* Dark mode background */
-    --color-background: #191a1a;
+    --color-background: #000000;
     /* Ensure text and UI tokens swap for dark mode */
     --color-foreground: #e8e8e8;
     --color-card: #2a2a2a;
@@ -124,7 +124,7 @@
     --bubble-assistant-bg: var(--surface);
     --bubble-user-bg: #2a2a2a; /* user bubble (dark) */
     /* Chat input background color */
-    --color-chat-input: #1f2121;
+    --color-chat-input: #222222;
     /* Chat input border color */
     --color-chat-input-border: #313333;
     /* Chat input toolbar pill hover background (use deep neutral gray) */
@@ -1156,14 +1156,14 @@ table {
 
 .glass-input-inner {
   @apply rounded-[24px] border backdrop-blur-md;
-  border-color: var(--color-chat-input-border);
+  border-color: color-mix(in oklch, var(--color-chat-input-border) 40%, var(--color-chat-input) 60%);
   background-color: var(--color-chat-input);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .glass-input-inner:focus-within {
-  border-color: var(--color-chat-input-border);
+  border-color: color-mix(in oklch, var(--color-chat-input-border) 40%, var(--color-chat-input) 60%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1172,7 +1172,7 @@ table {
   }
   
   .glass-input-inner:focus-within {
-    border-color: var(--color-chat-input-border);
+    border-color: color-mix(in oklch, var(--color-chat-input-border) 40%, var(--color-chat-input) 60%);
   }
 }
 
@@ -1181,7 +1181,7 @@ table {
 }
 
 .dark .glass-input-inner:focus-within {
-  border-color: var(--color-chat-input-border);
+  border-color: color-mix(in oklch, var(--color-chat-input-border) 40%, var(--color-chat-input) 60%);
 }
 
 /* Add context dropdown list item: high-contrast hover in light and dark modes */
