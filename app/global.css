@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@source "../node_modules/streamdown/dist/index.js";
+
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New";
@@ -225,11 +227,11 @@ a:hover { opacity: 0.9; }
 }
 
 .prose pre {
-  @apply bg-neutral-50 dark:bg-neutral-900 rounded-lg overflow-x-auto border border-neutral-200 dark:border-neutral-900 py-2 px-3 text-sm;
+  @apply bg-white dark:bg-[#303030] rounded-none overflow-x-auto border border-neutral-200 dark:border-[#555555] py-2 px-3 text-sm;
 }
 
 .prose code {
-  @apply px-1 py-0.5 rounded-lg;
+  @apply px-1 py-0.5 rounded-none;
 }
 
 .prose pre code {
@@ -378,10 +380,86 @@ a:hover { opacity: 0.9; }
 }
 
 .chat-code {
-  @apply border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden mb-2;
+  @apply bg-white dark:bg-[#303030] border border-neutral-200 dark:border-[#555555] rounded-none overflow-hidden mb-2;
 }
 .chat-code-header {
-  @apply flex items-center justify-between px-3 py-1.5 text-xs bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800;
+  @apply flex items-center justify-start gap-2 px-3 py-1.5 text-xs bg-white dark:bg-[#303030] border-b border-neutral-200 dark:border-[#555555];
+  gap: 0.75rem; /* increase space between controls */
+}
+/* Push everything except the first item to the right (keeps language label on left) */
+.chat-code-header > :first-child { margin-right: auto; }
+
+/* Streamdown code block header: push controls to the right */
+.prose-message [data-code-block-header] {
+  justify-content: flex-start !important;
+}
+.prose-message [data-code-block-header] > :first-child {
+  margin-right: auto;
+}
+.prose-message [data-code-block-header] > div {
+  gap: 0.75rem !important; /* space between copy and download */
+}
+
+/* Match Streamdown code blocks to chat input background/border */
+.prose-message [data-code-block-container] {
+  @apply border border-neutral-200 dark:border-[#555555] rounded-none overflow-hidden;
+}
+.prose-message [data-code-block-header] {
+  @apply bg-white dark:bg-[#303030] border-b border-neutral-200 dark:border-[#555555];
+}
+/* Ensure the actual <pre> matches the chat input */
+.prose-message [data-code-block] pre {
+  @apply bg-white dark:bg-[#303030] text-sm;
+  border: 0 !important;
+  outline: 0 !important;
+}
+
+/* Force Shiki inline styles to match chat input background */
+.prose [data-code-block] pre {
+  background-color: #ffffff !important;
+  --shiki-color-background: #ffffff;
+}
+.dark .prose [data-code-block] pre {
+  background-color: #303030 !important;
+  --shiki-color-background: #303030;
+}
+.prose-message [data-code-block] pre {
+  background-color: #ffffff !important;
+  --shiki-color-background: #ffffff;
+}
+.dark .prose-message [data-code-block] pre {
+  background-color: #303030 !important;
+  --shiki-color-background: #303030;
+}
+
+/* Improve code text contrast/readability in dark mode */
+/* Improve code text contrast/readability in dark mode via Shiki variables */
+.dark .prose [data-code-block] pre,
+.dark .prose-message [data-code-block] pre {
+  --shiki-color-text: #e7e7e7 !important; /* base text */
+  --shiki-token-comment: #9aa4b2 !important; /* brighter comments */
+}
+
+/* Also remove inner border/outline for user-rendered code blocks */
+.prose [data-code-block] pre {
+  border: 0 !important;
+  outline: 0 !important;
+}
+
+/* Hard override to ensure readable token colors in dark mode */
+.dark .prose [data-code-block] pre code,
+.dark .prose-message [data-code-block] pre code {
+  color: #e9edf2 !important;
+}
+.dark .prose [data-code-block] pre code span,
+.dark .prose-message [data-code-block] pre code span {
+  color: #e9edf2 !important;
+}
+
+/* Ensure Streamdown table controls are right-aligned */
+.prose-message [data-streamdown="table-wrapper"] > div:first-child {
+  justify-content: flex-end !important;
+  gap: 0.75rem !important; /* space between copy and download */
 }
 .chat-code-lang {
   @apply uppercase tracking-wide text-neutral-500 dark:text-neutral-400 select-none;
@@ -418,8 +496,14 @@ a:hover { opacity: 0.9; }
   @apply bg-white text-neutral-900 dark:bg-[#383838] dark:text-white;
 }
 .chat-bubble.user {
-  @apply bg-white text-neutral-900 dark:bg-[#383838] dark:text-white;
+  @apply rounded-none max-w-[50%] text-base leading-5 px-2 py-0.5 bg-white text-neutral-900 dark:bg-[#383838] dark:text-white;
 }
+/* Reduce inner vertical padding for user bubble content */
+.chat-bubble.user .prose { @apply py-0.5; }
+/* Tighter vertical spacing for user bubble paragraphs and edges */
+.chat-bubble.user .prose p { @apply my-1; }
+.chat-bubble.user .prose > :first-child { margin-top: 0 !important; }
+.chat-bubble.user .prose > :last-child { margin-bottom: 0 !important; }
 
 /* Ensure markdown inside bubbles fits and inherits */
 .chat-bubble .prose { @apply m-0 w-full py-1 px-1; }
@@ -502,31 +586,38 @@ table {
   max-width: 100%;
   overflow-x: auto;
   white-space: nowrap;
-  border: 1px solid theme(colors.neutral.200);
-  border-radius: 0.5rem;
+  border: 0;
+  border-radius: 0;
+  border-spacing: 0;
 }
 
 .dark .prose-message table {
-  border-color: theme(colors.neutral.800);
+  border-color: transparent;
 }
 
 .prose-message table thead th {
-  @apply bg-neutral-50 dark:bg-neutral-900 font-medium;
+  @apply font-medium;
+  border-bottom: 1px solid theme(colors.neutral.200);
+}
+.dark .prose-message table thead th {
+  border-bottom-color: #555555;
 }
 
 .prose-message table th,
 .prose-message table td {
-  @apply px-3 py-2 text-left border-r border-neutral-200 dark:border-neutral-800;
+  @apply px-3 py-2 text-left;
+}
+
+/* Horizontal separators between body rows only */
+.prose-message table tbody tr + tr td {
+  border-top: 1px solid theme(colors.neutral.200);
+}
+.dark .prose-message table tbody tr + tr td {
+  border-top-color: #555555;
 }
 
 .prose-message table th:last-child,
-.prose-message table td:last-child {
-  @apply border-r-0;
-}
-
-.prose-message table tbody tr:nth-child(odd) td {
-  @apply bg-neutral-50 dark:bg-neutral-900/30;
-}
+.prose-message table td:last-child {}
 
 .title {
   text-wrap: balance;
