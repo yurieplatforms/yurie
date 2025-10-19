@@ -31,7 +31,7 @@ export const Response = memo(
             </CodeBlock>
           )
         },
-        code({ inline, className: codeClassName, children, ...codeProps }) {
+        code({ className: codeClassName, children, ...codeProps }) {
           // Keep inline code inline to avoid placing block elements inside <p>
           return (
             <code className={codeClassName} {...codeProps}>
