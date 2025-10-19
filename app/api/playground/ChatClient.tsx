@@ -1,12 +1,11 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
-import { Marked } from 'marked'
-import { highlight } from 'sugar-high'
 import { ArrowUp, Stop, Paperclip, X, FilePdf, Lightbulb, CaretDown } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { Response as StreamResponse } from '../../components/ai-elements/response'
 
 type ChatMessage = {
   role: 'user' | 'assistant'
@@ -41,7 +40,7 @@ function PromptInput({ className, isLoading = false, maxHeight = 240, value, onV
     <PromptInputContext.Provider
       value={{ isLoading, value: value ?? internalValue, setValue: onValueChange ?? handleChange, maxHeight, onSubmit }}
     >
-      <div className={cn('bg-white dark:bg-[#303030] rounded-3xl border border-neutral-200 dark:border-neutral-800 p-2 shadow-xs', className)}>
+      <div className={cn('bg-white dark:bg-[#303030] rounded-none border border-neutral-200 dark:border-[#555555] p-2 shadow-xs', className)}>
         {children}
       </div>
     </PromptInputContext.Provider>
@@ -102,7 +101,7 @@ function MessageAttachmentList({ attachments }: { attachments: AttachmentPreview
             key={att.id}
             src={att.objectUrl}
             alt={att.name}
-            className="rounded border border-neutral-200 dark:border-neutral-800 max-h-56 object-cover"
+            className="rounded-none max-h-56 object-cover"
           />
         ) : (
           <a
@@ -110,7 +109,7 @@ function MessageAttachmentList({ attachments }: { attachments: AttachmentPreview
             href={att.objectUrl}
             target="_blank"
             rel="noreferrer"
-            className="bg-white dark:bg-black hover:bg-neutral-50 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-md px-3 py-2 text-xs inline-flex items-center gap-2"
+            className="bg-white dark:bg-black hover:bg-neutral-50 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-none px-3 py-2 text-xs inline-flex items-center gap-2"
           >
             {(() => {
               const isPdf = att.mime === 'application/pdf' || (att.name.split('.').pop() || '').toLowerCase() === 'pdf'
@@ -167,8 +166,8 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
   }
   return (
     <div className="relative mr-2 mb-0 flex items-center">
-      <div className="bg-white dark:bg-[#404040] hover:bg-neutral-50 dark:hover:bg-[#4a4a4a] border-neutral-200 dark:border-[#555555] flex w-full items-center gap-3 rounded-2xl border p-2 pr-3 transition-colors">
-        <div className="bg-neutral-200 dark:bg-neutral-700 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md">
+      <div className="bg-white dark:bg-[#404040] hover:bg-neutral-50 dark:hover:bg-[#4a4a4a] border-neutral-200 dark:border-[#555555] flex w-full items-center gap-3 rounded-none border p-2 pr-3 transition-colors">
+        <div className="bg-neutral-200 dark:bg-neutral-700 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-none">
           {isLikelyImage ? (
             previewUrl ? (
               <img src={previewUrl} alt={file.name} className="h-full w-full object-cover" loading="eager" decoding="async" onError={loadDataUrlFallback} />
@@ -193,7 +192,7 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
         <button
           type="button"
           onClick={handleRemove}
-          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-[#4a4a4a] shadow-none transition-colors"
+          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-none border-[3px] border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-[#4a4a4a] shadow-none transition-colors"
           aria-label="Remove file"
         >
           <X className="size-3" />
@@ -260,7 +259,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         htmlFor={inputId}
         role="button"
         tabIndex={0}
-        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] cursor-pointer"
+        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none cursor-pointer border border-transparent bg-transparent hover:bg-white dark:hover:bg-[#404040] hover:border-neutral-200 dark:hover:border-[#555555] transition-colors"
         aria-label="Add files"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -279,31 +278,28 @@ type ChatInputProps = {
   value: string
   onValueChange: (value: string) => void
   onSend: () => void
-  isSubmitting?: boolean
   files: File[]
   onFileUpload: (files: File[]) => void
   onFileRemove: (file: File) => void
+  model: string
+  onModelChange: (model: string) => void
   stop: () => void
   status?: 'submitted' | 'streaming' | 'ready' | 'error'
 }
-function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUpload, onFileRemove, stop, status }: ChatInputProps) {
+function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRemove, model, onModelChange, stop, status }: ChatInputProps) {
   const isOnlyWhitespace = (text: string) => !/[^\s]/.test(text)
+  const isBusy = status === 'streaming' || status === 'submitted'
 
   const handleSend = useCallback(() => {
-    if (isSubmitting) return
-    if (status === 'streaming' || status === 'submitted') {
+    if (isBusy) {
       stop()
       return
     }
     onSend()
-  }, [isSubmitting, onSend, status, stop])
+  }, [isBusy, onSend, stop])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (isSubmitting) {
-      e.preventDefault()
-      return
-    }
-    if (e.key === 'Enter' && (status === 'streaming' || status === 'submitted')) {
+    if (isBusy) {
       e.preventDefault()
       return
     }
@@ -312,7 +308,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
       e.preventDefault()
       onSend()
     }
-  }, [files.length, isSubmitting, onSend, status, value])
+  }, [files.length, isBusy, onSend, value])
 
   const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items
@@ -333,6 +329,17 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
     }
   }, [onFileUpload])
 
+  const modelMeasureRef = useRef<HTMLSpanElement>(null)
+  const [modelSelectWidth, setModelSelectWidth] = useState<number>(0)
+  useEffect(() => {
+    try {
+      const el = modelMeasureRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      setModelSelectWidth(Math.ceil(rect.width))
+    } catch {}
+  }, [model])
+
   return (
     <div className="relative flex w-full flex-col gap-4">
       <div className="relative order-2 pb-3 sm:pb-4 md:order-1">
@@ -341,21 +348,41 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
           <PromptInputTextarea
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder="Ask anything"
+            placeholder="Message Yurie"
             className="min-h-[44px] pt-3 px-4 text-base leading-[1.3] sm:text-base md:text-base"
           />
           <PromptInputActions className="mt-3 w-full justify-between p-2">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               <ButtonFileUpload onFileUpload={onFileUpload} />
+              <div className="relative inline-block h-9 shrink-0" style={{ width: modelSelectWidth ? `${modelSelectWidth}px` : undefined }}>
+                <span
+                  aria-hidden="true"
+                  ref={modelMeasureRef}
+                className="invisible inline-block h-9 rounded-none border border-transparent bg-transparent text-sm px-3 pr-7 whitespace-nowrap"
+                >
+                  {model}
+                </span>
+                <label htmlFor="model-select" className="sr-only">Model</label>
+                <select
+                  id="model-select"
+                  value={model}
+                  onChange={(e) => onModelChange(e.target.value)}
+                  className="absolute inset-0 rounded-none border border-transparent bg-transparent hover:bg-white dark:hover:bg-[#404040] hover:border-neutral-200 dark:hover:border-[#555555] hover:cursor-pointer disabled:cursor-not-allowed text-sm pl-3 pr-7 text-neutral-900 dark:text-neutral-100 appearance-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 transition-colors"
+                  aria-label="Select model"
+                  disabled={isBusy}
+                >
+                  <option value="gpt-5-nano">gpt-5-nano</option>
+                  <option value="gpt-5-mini">gpt-5-mini</option>
+                  <option value="gpt-5">gpt-5</option>
+                  <option value="gpt-5-pro">gpt-5-pro</option>
+                </select>
+                <CaretDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-300 size-4" aria-hidden="true" />
+              </div>
             </div>
             <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
               <button
-                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white"
-                disabled={
-                  status !== 'streaming' &&
-                  status !== 'submitted' &&
-                  (isSubmitting || (isOnlyWhitespace(value) && files.length === 0))
-                }
+                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none transition-all duration-300 ease-out border border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white hover:cursor-pointer disabled:cursor-not-allowed transform translate-x-[2px]"
+                disabled={!isBusy && (isOnlyWhitespace(value) && files.length === 0)}
                 type="button"
                 onClick={handleSend}
                 aria-label={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send message'}
@@ -377,7 +404,6 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
 export default function ChatClient() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const outputRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputWrapperRef = useRef<HTMLDivElement>(null)
@@ -392,6 +418,7 @@ export default function ChatClient() {
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
+  const [selectedModel, setSelectedModel] = useState<string>('gpt-5-nano')
 
   useEffect(() => {
     return () => {
@@ -401,55 +428,7 @@ export default function ChatClient() {
     }
   }, [])
 
-  const md = useMemo(() => {
-    const instance = new Marked({ gfm: true, breaks: true })
-    instance.use({
-      renderer: {
-        code({ text, lang }: { text: string; lang?: string }) {
-          const language = (lang || '').trim().split(/\s+/)[0]
-          const html = highlight(text)
-          const langClass = language ? `language-${language}` : ''
-          const label = language || 'text'
-          return `
-<div class=\"chat-code\">
-  <div class=\"chat-code-header\">
-    <span class=\"chat-code-lang\">${label}</span>
-    <button type=\"button\" class=\"chat-copy\">Copy</button>
-  </div>
-  <pre><code class=\"${langClass}\">${html}</code></pre>
-</div>`
-        },
-        codespan({ text }: { text: string }) {
-          const html = highlight(text)
-          return `<code>${html}</code>`
-        },
-      },
-    })
-    return instance
-  }, [])
-
-  useEffect(() => {
-    const root = outputRef.current
-    if (!root) return
-    const handle = (e: Event) => {
-      const target = e.target as HTMLElement | null
-      const btn = target?.closest('.chat-copy') as HTMLButtonElement | null
-      if (!btn) return
-      const wrapper = btn.closest('.chat-code') as HTMLElement | null
-      const codeEl = wrapper?.querySelector('pre code') as HTMLElement | null
-      const text = codeEl?.textContent || ''
-      try {
-        navigator.clipboard.writeText(text)
-        const previous = btn.textContent
-        btn.textContent = 'Copied'
-        setTimeout(() => {
-          btn.textContent = previous || 'Copy'
-        }, 1200)
-      } catch {}
-    }
-    root.addEventListener('click', handle)
-    return () => root.removeEventListener('click', handle)
-  }, [])
+  // Streamdown provides built-in copy controls for code blocks; no manual listeners needed
 
   useEffect(() => {
     const recompute = () => {
@@ -589,19 +568,7 @@ export default function ChatClient() {
     return result.join('\n')
   }
 
-  function sanitizeHtml(html: string): string {
-    if (!html) return html
-    const blockedContentTags = ['script', 'style', 'title', 'iframe', 'object', 'embed', 'noscript']
-    const contentTagPattern = new RegExp(`<\\s*(${blockedContentTags.join('|')})\\b[\\s\\S]*?<\\/\\s*\\1\\s*>`, 'gi')
-    html = html.replace(contentTagPattern, '')
-    const blockedVoidTags = ['link', 'meta', 'base', 'form', 'input', 'select', 'option', 'textarea', 'frame', 'frameset']
-    const voidTagPattern = new RegExp(`<\\s*(${blockedVoidTags.join('|')})\\b[^>]*>`, 'gi')
-    html = html.replace(voidTagPattern, '')
-    html = html.replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    html = html.replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"')
-
-    return html
-  }
+  // sanitizeHtml removed; StreamResponse handles markdown safely
 
   function renderMessageContent(role: 'user' | 'assistant', content: string) {
     const legacyBracketPattern = "\\[" + "data:image" + "\\/[a-zA-Z]+;base64,[^\\]]+" + "\\]"
@@ -668,13 +635,14 @@ export default function ChatClient() {
       <>
         {parts.map((p, i) => {
           if (p.type === 'text') {
-            const rawHtml = md.parse(p.value) as string
             return (
               <div
                 key={i}
-                className={cn(role === 'assistant' ? 'prose-message' : 'prose prose-neutral dark:prose-invert')}
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(rawHtml) }}
-              />
+                className={cn(role === 'assistant' ? 'prose-message' : 'prose prose-neutral dark:prose-invert')}>
+                <StreamResponse className="w-full" parseIncompleteMarkdown>
+                  {p.value}
+                </StreamResponse>
+              </div>
             )
           }
           if (p.type === 'image') {
@@ -720,14 +688,27 @@ export default function ChatClient() {
     )
   }
 
+  // Shared helpers to process streamed chunks
+  const processStreamChunk = useCallback((raw: string, assistantIndex: number) => {
+    if (!raw) return ''
+    const thoughtRegex = /<thinking:([^>]+)>/g
+    let clean = raw.replace(thoughtRegex, (_m, delta: string) => {
+      if (!delta) return ''
+      setReasoningByMessageIndex((prev) => ({ ...prev, [assistantIndex]: (prev[assistantIndex] || '') + delta }))
+      return ''
+    })
+    const idMatch = /<response_id:([^>]+)>/.exec(clean)
+    if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
+    return clean
+  }, [])
+
   async function handleSend() {
     const trimmed = input.trim()
-    if (!trimmed || isLoading) return
+    if ((trimmed.length === 0 && files.length === 0) || status === 'submitted' || status === 'streaming') return
     const userMsg: ChatMessage = { role: 'user', content: trimmed }
     const nextMessages: ChatMessage[] = [...messages, userMsg]
     setMessages(nextMessages)
     setInput('')
-    setIsLoading(true)
     setStatus('submitted')
 
     try {
@@ -798,6 +779,7 @@ export default function ChatClient() {
           inputImages,
           inputPdfs,
           previousResponseId: lastResponseId,
+          model: selectedModel,
         }),
         signal: ac.signal,
       })
@@ -822,20 +804,8 @@ export default function ChatClient() {
         const { value, done } = await reader.read()
         if (done) break
         const chunk = decoder.decode(value, { stream: true })
-        const thoughtRegex = /<thinking:([^>]+)>/g
-        let cleanChunk = chunk
-        let tm: RegExpExecArray | null
-        while ((tm = thoughtRegex.exec(chunk)) !== null) {
-          const delta = tm[1]
-          if (delta && currentAssistantIndexRef.current !== null) {
-            const idx = currentAssistantIndexRef.current
-            setReasoningByMessageIndex((prev) => ({ ...prev, [idx!]: (prev[idx!] || '') + delta }))
-          }
-        }
-        cleanChunk = cleanChunk.replace(thoughtRegex, '')
+        const cleanChunk = processStreamChunk(chunk, assistantIndex)
         assistantText += cleanChunk
-        const idMatch = /<response_id:([^>]+)>/g.exec(cleanChunk)
-        if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
         setMessages((prev) => {
           const updated = [...prev]
           const lastIndex = updated.length - 1
@@ -855,20 +825,8 @@ export default function ChatClient() {
 
       const finalChunk = decoder.decode()
       if (finalChunk) {
-        const thoughtRegex = /<thinking:([^>]+)>/g
-        let cleanFinal = finalChunk
-        let tm: RegExpExecArray | null
-        while ((tm = thoughtRegex.exec(finalChunk)) !== null) {
-          const delta = tm[1]
-          if (delta && currentAssistantIndexRef.current !== null) {
-            const idx = currentAssistantIndexRef.current
-            setReasoningByMessageIndex((prev) => ({ ...prev, [idx!]: (prev[idx!] || '') + delta }))
-          }
-        }
-        cleanFinal = cleanFinal.replace(thoughtRegex, '')
+        const cleanFinal = processStreamChunk(finalChunk, assistantIndex)
         assistantText += cleanFinal
-        const idMatch = /<response_id:([^>]+)>/g.exec(cleanFinal)
-        if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
         setMessages((prev) => {
           const updated = [...prev]
           const lastIndex = updated.length - 1
@@ -886,7 +844,6 @@ export default function ChatClient() {
       ])
       setStatus('error')
     } finally {
-      setIsLoading(false)
       setStatus('ready')
       currentAssistantIndexRef.current = null
       abortControllerRef.current = null
@@ -897,19 +854,19 @@ export default function ChatClient() {
     try {
       abortControllerRef.current?.abort()
     } catch {}
-    setIsLoading(false)
     setStatus('ready')
   }, [])
 
   return (
-    <section ref={containerRef} className={cn('w-full flex flex-col px-3 sm:px-4', messages.length === 0 && 'justify-center min-h-[60vh]')}>
+    <section ref={containerRef} className={cn('w-full h-full flex flex-col', messages.length === 0 && 'justify-start pt-40 sm:pt-48 max-w-3xl mx-auto')}>
       <div
         ref={outputRef}
-        className={cn('rounded pt-1 pb-3 overflow-y-auto text-base font-sans chat-scroll', messages.length === 0 && 'hidden')}
+        className={cn('rounded-none pt-1 pb-3 overflow-y-auto text-base font-sans chat-scroll w-full max-w-3xl mx-auto px-3 sm:px-4', messages.length === 0 && 'hidden')}
         style={{ height: outputHeight ? `${outputHeight}px` : undefined }}
       >
         {messages.length === 0 ? null : (
-          messages.map((m, i) => {
+          <div className="w-full">
+          {messages.map((m, i) => {
             const isFirst = i === 0
             const speakerChanged = !isFirst && messages[i - 1].role !== m.role
             const topMarginClass = isFirst ? 'mt-1' : speakerChanged ? 'mt-2' : 'mt-0.5'
@@ -937,12 +894,12 @@ export default function ChatClient() {
                             onClick={() => setReasoningOpenByIndex((prev) => ({ ...prev, [i]: !prev[i] }))}
                             className={cn(
                               'inline-flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 px-0 py-0',
-                              'hover:opacity-80 transition-opacity'
+                              'hover:opacity-80 transition-opacity cursor-pointer'
                             )}
                             aria-expanded={isOpen}
                             aria-controls={`thinking-panel-${i}`}
                           >
-                            <Lightbulb className="size-3.5 text-[#7f91e0]" weight="fill" aria-hidden="true" />
+                            <Lightbulb className="size-3.5" aria-hidden="true" />
                             <span className="font-medium">Thought</span>
                             <CaretDown className={cn('size-3 transition-transform', isOpen && 'rotate-180')} aria-hidden="true" />
                           </button>
@@ -957,13 +914,14 @@ export default function ChatClient() {
                                 transition={{ duration: 0.2, ease: 'easeOut' }}
                                 className="overflow-hidden"
                               >
-                                <div className="mt-2 max-h-64 overflow-auto thinking-scroll rounded-xl bg-white dark:bg-[#303030] border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
+                                <div className="mt-2 max-h-64 overflow-auto thinking-scroll rounded-none bg-white dark:bg-[#303030] border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
                                   <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1">
                                   </div>
-                                  <div
-                                    className="prose-message prose-thinking font-sans text-[13px] leading-5"
-                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(md.parse(formatThinkingForMarkdown(reasoningText)) as string) }}
-                                  />
+                                  <div className="prose-message prose-thinking font-sans text-[13px] leading-5">
+                                    <StreamResponse className="w-full" parseIncompleteMarkdown>
+                                      {formatThinkingForMarkdown(reasoningText)}
+                                    </StreamResponse>
+                                  </div>
                                 </div>
                               </motion.div>
                             )}
@@ -978,16 +936,17 @@ export default function ChatClient() {
                 </div>
               </div>
             )
-          })
+          })}
+          </div>
         )}
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn(messages.length === 0 ? 'mt-0 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
-        aria-busy={isLoading}
+        className={cn('max-w-3xl mx-auto w-full px-3 sm:px-4', messages.length === 0 ? 'mt-0 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
+        aria-busy={status === 'submitted' || status === 'streaming'}
       >
         {messages.length === 0 ? (
-          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-3 sm:mt-4 mb-10 sm:mb-12">
+          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-1 sm:mt-2 mb-6 sm:mb-8">
             What's on your mind today?
           </div>
         ) : null}
@@ -995,10 +954,11 @@ export default function ChatClient() {
           value={input}
           onValueChange={setInput}
           onSend={handleSend}
-          isSubmitting={isLoading}
           files={files}
           onFileUpload={(newFiles) => setFiles((prev) => [...prev, ...newFiles])}
           onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
+          model={selectedModel}
+          onModelChange={setSelectedModel}
           stop={stop}
           status={status}
         />

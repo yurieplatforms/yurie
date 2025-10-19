@@ -39,6 +39,76 @@ async function dataUrlToFile(dataUrl: string, filename: string) {
   return await toFile(blob, filename)
 }
 
+// Shared streaming response headers
+const STREAM_HEADERS = {
+  'Content-Type': 'text/plain; charset=utf-8',
+  'Cache-Control': 'no-cache',
+  'X-Accel-Buffering': 'no',
+} as const
+
+type UrlCitation = { url?: string; title?: string }
+
+function collectCitationsAndSummary(outputs: any[]): {
+  citations: UrlCitation[]
+  summaryText?: string
+} {
+  const citations: UrlCitation[] = []
+  const addCitation = (url?: string, title?: string) => {
+    if (!url) return
+    if (citations.some((c) => c.url === url)) return
+    citations.push({ url, title })
+  }
+  let summaryText: string | undefined
+  for (const out of outputs) {
+    if (out?.type === 'message') {
+      const content = Array.isArray(out.content) ? out.content : []
+      for (const c of content) {
+        if (c?.type === 'output_text' && Array.isArray(c.annotations)) {
+          for (const ann of c.annotations) {
+            if (ann?.type === 'url_citation') addCitation(ann.url, ann.title)
+          }
+        }
+      }
+    }
+    if (out?.type === 'web_search_call') {
+      const srcs = out?.action?.sources
+      if (Array.isArray(srcs)) for (const s of srcs) addCitation(s?.url, s?.title)
+    }
+    if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
+      for (const s of out.summary) {
+        if (s?.type === 'summary_text' && typeof s.text === 'string' && s.text) {
+          summaryText = s.text
+          break
+        }
+      }
+    }
+  }
+  return { citations, summaryText }
+}
+
+function enqueueSourcesIfAny(controller: any, encoder: TextEncoder, citations: UrlCitation[]) {
+  if (!Array.isArray(citations) || citations.length === 0) return
+  controller.enqueue(encoder.encode(`\n\nSources:\n`))
+  for (const s of citations) {
+    const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
+    controller.enqueue(encoder.encode(`- [${title}](${s.url})\n`))
+  }
+}
+
+function enqueueSummaryIfAny(controller: any, encoder: TextEncoder, summaryText?: string) {
+  if (!summaryText) return
+  controller.enqueue(encoder.encode(`\n<summary_text:${summaryText}>\n`))
+}
+
+function enqueueResponseIdIfAny(controller: any, encoder: TextEncoder, finalResponse: any) {
+  try {
+    const respId: unknown = finalResponse?.id
+    if (typeof respId === 'string' && respId) {
+      controller.enqueue(encoder.encode(`\n<response_id:${respId}>\n`))
+    }
+  } catch {}
+}
+
 export async function POST(request: Request) {
   try {
     const {
@@ -210,65 +280,18 @@ export async function POST(request: Request) {
               const finalResponse = hasFinal ? await (stream as any).final() : undefined
               try {
                 const outputs: any[] = (finalResponse && (finalResponse as any).output) || []
-                const citations: { url?: string; title?: string }[] = []
-                const addCitation = (url?: string, title?: string) => {
-                  if (!url) return
-                  if (citations.some((c) => c.url === url)) return
-                  citations.push({ url, title })
-                }
-                let reasoningSummaryText: string | undefined
-                for (const out of outputs) {
-                  if (out?.type === 'message') {
-                    const content = Array.isArray(out.content) ? out.content : []
-                    for (const c of content) {
-                      if (c?.type === 'output_text' && Array.isArray(c.annotations)) {
-                        for (const ann of c.annotations) {
-                          if (ann?.type === 'url_citation') addCitation(ann.url, ann.title)
-                        }
-                      }
-                    }
-                  }
-                  if (out?.type === 'web_search_call') {
-                    const srcs = out?.action?.sources
-                    if (Array.isArray(srcs)) for (const s of srcs) addCitation(s?.url, s?.title)
-                  }
-                  if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
-                    for (const s of out.summary) {
-                      if (s?.type === 'summary_text' && typeof s.text === 'string' && s.text) {
-                        reasoningSummaryText = s.text
-                        break
-                      }
-                    }
-                  }
-                }
-                if (citations.length > 0) {
-                  controller.enqueue(encoder.encode(`\n\nSources:\n`))
-                  for (const s of citations) {
-                    const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
-                    controller.enqueue(encoder.encode(`- [${title}](${s.url})\n`))
-                  }
-                }
-                if (reasoningSummaryText) {
-                  controller.enqueue(encoder.encode(`\n<summary_text:${reasoningSummaryText}>\n`))
-                }
+                const { citations, summaryText } = collectCitationsAndSummary(outputs)
+                enqueueSourcesIfAny(controller, encoder, citations)
+                enqueueSummaryIfAny(controller, encoder, summaryText)
               } catch {}
-              const respId: unknown = (finalResponse as any)?.id
-              if (typeof respId === 'string' && respId) {
-                controller.enqueue(encoder.encode(`\n<response_id:${respId}>\n`))
-              }
+              enqueueResponseIdIfAny(controller, encoder, finalResponse)
             } catch {}
             controller.close()
           }
         },
       })
 
-      return new Response(readable, {
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Cache-Control': 'no-cache',
-          'X-Accel-Buffering': 'no',
-        },
-      })
+      return new Response(readable, { headers: { ...STREAM_HEADERS } })
     }
 
     const wantsImage =
@@ -296,7 +319,7 @@ export async function POST(request: Request) {
         }
 
         if (maskDataUrl) {
-          const readable = new ReadableStream<Uint8Array>({
+        const readable = new ReadableStream<Uint8Array>({
             async start(controller) {
               try {
                 const result = await (async () => {
@@ -352,13 +375,7 @@ export async function POST(request: Request) {
             },
           })
 
-          return new Response(readable, {
-            headers: {
-              'Content-Type': 'text/plain; charset=utf-8',
-              'Cache-Control': 'no-cache',
-              'X-Accel-Buffering': 'no',
-            },
-          })
+          return new Response(readable, { headers: { ...STREAM_HEADERS } })
         }
 
         const responseCreateParams: any = {
@@ -432,36 +449,19 @@ export async function POST(request: Request) {
                     )
                   }
                 }
-                for (const out of outputs) {
-                  if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
-                    for (const s of out.summary) {
-                      if (s?.type === 'summary_text' && typeof s.text === 'string' && s.text) {
-                        reasoningSummaryText = s.text
-                        break
-                      }
-                    }
-                  }
-                }
-                if (reasoningSummaryText) {
-                  controller.enqueue(encoder.encode(`\n<summary_text:${reasoningSummaryText}>\n`))
-                }
-                const respId: unknown = (finalResponse as any)?.id
-                if (typeof respId === 'string' && respId) {
-                  controller.enqueue(encoder.encode(`\n<response_id:${respId}>\n`))
-                }
+                try {
+                  const { citations, summaryText } = collectCitationsAndSummary(outputs)
+                  enqueueSourcesIfAny(controller, encoder, citations)
+                  enqueueSummaryIfAny(controller, encoder, summaryText || reasoningSummaryText)
+                } catch {}
+                enqueueResponseIdIfAny(controller, encoder, finalResponse)
               } catch {}
               controller.close()
             }
           },
         })
 
-        return new Response(readable, {
-          headers: {
-            'Content-Type': 'text/plain; charset=utf-8',
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-          },
-        })
+        return new Response(readable, { headers: { ...STREAM_HEADERS } })
       } catch (err) {
         console.error('Image generation error', err)
         return new Response('There was an error generating the image. Please try again.', {
@@ -529,51 +529,12 @@ export async function POST(request: Request) {
             let reasoningSummaryText: string | undefined
             try {
               const outputsAny: any[] = (finalResponse && (finalResponse as any).output) || []
-              const citations: { url?: string; title?: string }[] = []
-              const addCitation = (url?: string, title?: string) => {
-                if (!url) return
-                if (citations.some((c) => c.url === url)) return
-                citations.push({ url, title })
-              }
-              for (const out of outputsAny) {
-                if (out?.type === 'message') {
-                  const content = Array.isArray(out.content) ? out.content : []
-                  for (const c of content) {
-                    if (c?.type === 'output_text' && Array.isArray(c.annotations)) {
-                      for (const ann of c.annotations) {
-                        if (ann?.type === 'url_citation') addCitation(ann.url, ann.title)
-                      }
-                    }
-                  }
-                }
-                if (out?.type === 'web_search_call') {
-                  const srcs = out?.action?.sources
-                  if (Array.isArray(srcs)) for (const s of srcs) addCitation(s?.url, s?.title)
-                }
-                if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
-                  for (const s of out.summary) {
-                    if (s?.type === 'summary_text' && typeof s.text === 'string' && s.text) {
-                      reasoningSummaryText = s.text
-                      break
-                    }
-                  }
-                }
-              }
-              if (citations.length > 0) {
-                controller.enqueue(encoder.encode(`\n\nSources:\n`))
-                for (const s of citations) {
-                  const title = s.title && String(s.title).trim().length > 0 ? s.title : s.url
-                  controller.enqueue(encoder.encode(`- [${title}](${s.url})\n`))
-                }
-              }
-              if (reasoningSummaryText) {
-                controller.enqueue(encoder.encode(`\n<summary_text:${reasoningSummaryText}>\n`))
-              }
+              const { citations, summaryText } = collectCitationsAndSummary(outputsAny)
+              enqueueSourcesIfAny(controller, encoder, citations)
+              reasoningSummaryText = summaryText
+              enqueueSummaryIfAny(controller, encoder, reasoningSummaryText)
             } catch {}
-            const respId: unknown = (finalResponse as any)?.id
-            if (typeof respId === 'string' && respId) {
-              controller.enqueue(encoder.encode(`\n<response_id:${respId}>\n`))
-            }
+            enqueueResponseIdIfAny(controller, encoder, finalResponse)
             const status: unknown = (finalResponse as any)?.status
             const incompleteReason: unknown = (finalResponse as any)?.incomplete_details?.reason
             if (status === 'incomplete' && typeof incompleteReason === 'string' && incompleteReason) {
@@ -585,13 +546,7 @@ export async function POST(request: Request) {
       },
     })
 
-    return new Response(readable, {
-      headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        'X-Accel-Buffering': 'no',
-      },
-    })
+    return new Response(readable, { headers: { ...STREAM_HEADERS } })
   } catch (error) {
     console.error('Playground API error', error)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {

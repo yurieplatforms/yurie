@@ -14,6 +14,12 @@ export function Navbar() {
   const pathname = usePathname()
   const isPlayground = pathname.startsWith('/playground') || pathname === '/'
   const handlePlaygroundClick: React.MouseEventHandler<HTMLAnchorElement> = (_e) => {}
+  
+  const handleHomeClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
+    e.preventDefault()
+    window.location.href = '/'
+  }
+  
   return (
     <aside className={isPlayground ? 'mb-4 tracking-tight' : 'mb-16 tracking-tight'}>
       <div className="lg:sticky lg:top-20">
@@ -29,7 +35,7 @@ export function Navbar() {
                   key={path}
                   href={path}
                   className={`${isActive ? 'font-bold text-neutral-900 dark:text-neutral-100' : 'font-normal text-neutral-600 dark:text-neutral-400'} transition-all hover:text-neutral-800 dark:hover:text-neutral-200 flex items-center align-middle relative py-1 pl-0 pr-4 sm:pr-5 lg:pr-6 my-1 mr-0 ml-0`}
-                  onClick={path === '/playground' ? handlePlaygroundClick : undefined}
+                  onClick={path === '/' ? handleHomeClick : path === '/playground' ? handlePlaygroundClick : undefined}
                 >
                   {path === '/' ? (
                     <>

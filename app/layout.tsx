@@ -71,10 +71,10 @@ export default function RootLayout({
       )}
       suppressHydrationWarning
     >
-      <body className="font-sans antialiased max-w-3xl mx-2 sm:mx-4 mt-8 lg:mx-auto">
+      <body className="font-sans antialiased overflow-hidden h-screen flex flex-col">
         {/* auto-sync dark mode with system preference (runs before interactive) */}
         <Script id="theme-sync" strategy="beforeInteractive">{`try{var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');var d=document.documentElement;var set=()=>{m.matches?d.classList.add('dark'):d.classList.remove('dark')};set();m&&m.addEventListener&&m.addEventListener('change',set);}catch(e){}`}</Script>
-        <main className="flex-auto min-w-0 mt-6 flex flex-col px-1 sm:px-2 md:px-0">
+        <main className="flex-auto min-w-0 flex flex-col px-1 sm:px-2 md:px-0 overflow-hidden max-w-3xl mx-2 sm:mx-4 mt-8 lg:mx-auto w-full">
           <Navbar />
           {children}
           <Analytics />
