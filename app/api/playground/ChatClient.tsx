@@ -1,11 +1,12 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
-import { ArrowUp, Stop, Paperclip, X, FilePdf, Lightbulb, CaretDown } from '@phosphor-icons/react'
+import { ArrowUp, Stop, Paperclip, X, FilePdf, CaretDown } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { Response as StreamResponse } from '../../components/ai-elements/response'
+import { Reasoning, ReasoningContent, ReasoningTrigger } from '../../components/ai-elements/reasoning'
 
 type ChatMessage = {
   role: 'user' | 'assistant'
@@ -329,6 +330,11 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
     }
   }, [onFileUpload])
 
+  const getModelLabel = useCallback((value: string) => {
+    return value === 'gpt-5-pro-2025-10-06' ? 'gpt-5-pro' : value
+  }, [])
+  const displayModelLabel = getModelLabel(model)
+
   const modelMeasureRef = useRef<HTMLSpanElement>(null)
   const [modelSelectWidth, setModelSelectWidth] = useState<number>(0)
   useEffect(() => {
@@ -353,14 +359,13 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
           />
           <PromptInputActions className="mt-3 w-full justify-between p-2">
             <div className="flex flex-wrap gap-2 items-center">
-              <ButtonFileUpload onFileUpload={onFileUpload} />
               <div className="relative inline-block h-9 shrink-0" style={{ width: modelSelectWidth ? `${modelSelectWidth}px` : undefined }}>
                 <span
                   aria-hidden="true"
                   ref={modelMeasureRef}
                 className="invisible inline-block h-9 rounded-none border border-transparent bg-transparent text-sm px-3 pr-7 whitespace-nowrap"
                 >
-                  {model}
+                  {displayModelLabel}
                 </span>
                 <label htmlFor="model-select" className="sr-only">Model</label>
                 <select
@@ -374,26 +379,29 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
                   <option value="gpt-5-nano">gpt-5-nano</option>
                   <option value="gpt-5-mini">gpt-5-mini</option>
                   <option value="gpt-5">gpt-5</option>
-                  <option value="gpt-5-pro">gpt-5-pro</option>
+                  <option value="gpt-5-pro-2025-10-06">gpt-5-pro</option>
                 </select>
                 <CaretDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-300 size-4" aria-hidden="true" />
               </div>
             </div>
-            <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
-              <button
-                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none transition-all duration-300 ease-out border border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white hover:cursor-pointer disabled:cursor-not-allowed transform translate-x-[2px]"
-                disabled={!isBusy && (isOnlyWhitespace(value) && files.length === 0)}
-                type="button"
-                onClick={handleSend}
-                aria-label={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send message'}
-              >
-                {status === 'streaming' || status === 'submitted' ? (
-                  <Stop className="size-4" weight="bold" aria-hidden="true" />
-                ) : (
-                  <ArrowUp className="size-4" weight="bold" aria-hidden="true" />
-                )}
-              </button>
-            </PromptInputAction>
+            <div className="flex items-center gap-2">
+              <ButtonFileUpload onFileUpload={onFileUpload} />
+              <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
+                <button
+                  className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none transition-all duration-300 ease-out border border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white hover:cursor-pointer disabled:cursor-not-allowed transform translate-x-[2px]"
+                  disabled={!isBusy && (isOnlyWhitespace(value) && files.length === 0)}
+                  type="button"
+                  onClick={handleSend}
+                  aria-label={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send message'}
+                >
+                  {status === 'streaming' || status === 'submitted' ? (
+                    <Stop className="size-4" weight="bold" aria-hidden="true" />
+                  ) : (
+                    <ArrowUp className="size-4" weight="bold" aria-hidden="true" />
+                  )}
+                </button>
+              </PromptInputAction>
+            </div>
           </PromptInputActions>
         </PromptInput>
       </div>
@@ -411,7 +419,6 @@ export default function ChatClient() {
   const [files, setFiles] = useState<File[]>([])
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
   const [reasoningByMessageIndex, setReasoningByMessageIndex] = useState<Record<number, string>>({})
-  const [reasoningOpenByIndex, setReasoningOpenByIndex] = useState<Record<number, boolean>>({})
   const currentAssistantIndexRef = useRef<number | null>(null)
   const [status, setStatus] = useState<'submitted' | 'streaming' | 'ready' | 'error'>('ready')
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -419,6 +426,7 @@ export default function ChatClient() {
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
   const [selectedModel, setSelectedModel] = useState<string>('gpt-5-nano')
+  const streamBufferRef = useRef<string>('')
 
   useEffect(() => {
     return () => {
@@ -692,11 +700,28 @@ export default function ChatClient() {
   const processStreamChunk = useCallback((raw: string, assistantIndex: number) => {
     if (!raw) return ''
     const thoughtRegex = /<thinking:([^>]+)>/g
-    let clean = raw.replace(thoughtRegex, (_m, delta: string) => {
+
+    // Prepend any buffered partial tag from previous chunk
+    let text = streamBufferRef.current ? streamBufferRef.current + raw : raw
+    streamBufferRef.current = ''
+
+    let clean = text.replace(thoughtRegex, (_m, delta: string) => {
       if (!delta) return ''
       setReasoningByMessageIndex((prev) => ({ ...prev, [assistantIndex]: (prev[assistantIndex] || '') + delta }))
       return ''
     })
+
+    // If a chunk ends with an incomplete `<thinking:` tag (missing closing '>'),
+    // buffer it so it doesn't leak to the UI and will be completed by the next chunk.
+    const lastThinkingStart = clean.lastIndexOf('<thinking:')
+    if (lastThinkingStart !== -1) {
+      const tail = clean.slice(lastThinkingStart)
+      if (!tail.includes('>')) {
+        streamBufferRef.current = tail
+        clean = clean.slice(0, lastThinkingStart)
+      }
+    }
+
     const idMatch = /<response_id:([^>]+)>/.exec(clean)
     if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
     return clean
@@ -779,7 +804,16 @@ export default function ChatClient() {
           inputImages,
           inputPdfs,
           previousResponseId: lastResponseId,
+          // Forward the UI model selection
           model: selectedModel,
+          // Expose a knob for reasoning effort; default handled on server
+          reasoningEffort: 'medium',
+          // Reserve space; adjust as needed for cost control
+          max_output_tokens: 30000,
+          // Opt-in to reasoning summaries where supported
+          includeReasoningSummary: true,
+          // Enable encrypted reasoning items for stateless use (server decides include key)
+          includeEncryptedReasoning: true,
         }),
         signal: ac.signal,
       })
@@ -847,6 +881,7 @@ export default function ChatClient() {
       setStatus('ready')
       currentAssistantIndexRef.current = null
       abortControllerRef.current = null
+      streamBufferRef.current = ''
     }
   }
 
@@ -855,6 +890,7 @@ export default function ChatClient() {
       abortControllerRef.current?.abort()
     } catch {}
     setStatus('ready')
+    streamBufferRef.current = ''
   }, [])
 
   return (
@@ -872,7 +908,6 @@ export default function ChatClient() {
             const topMarginClass = isFirst ? 'mt-1' : speakerChanged ? 'mt-2' : 'mt-0.5'
             const reasoningText = reasoningByMessageIndex[i] || ''
             const hasReasoning = m.role === 'assistant' && reasoningText.trim().length > 0
-            const isOpen = reasoningOpenByIndex[i] === true
             return (
               <div key={i} className={`${topMarginClass} mb-0`}>
                 <div className={cn('chat-row', m.role === 'user' ? 'user' : 'assistant')}>
@@ -889,43 +924,10 @@ export default function ChatClient() {
                     <div className={cn('min-w-0 w-full')}>
                       {hasReasoning && (
                         <div className="mt-3 mb-2">
-                          <button
-                            type="button"
-                            onClick={() => setReasoningOpenByIndex((prev) => ({ ...prev, [i]: !prev[i] }))}
-                            className={cn(
-                              'inline-flex items-center gap-1.5 text-xs text-neutral-700 dark:text-neutral-300 px-0 py-0',
-                              'hover:opacity-80 transition-opacity cursor-pointer'
-                            )}
-                            aria-expanded={isOpen}
-                            aria-controls={`thinking-panel-${i}`}
-                          >
-                            <Lightbulb className="size-3.5" aria-hidden="true" />
-                            <span className="font-medium">Thought</span>
-                            <CaretDown className={cn('size-3 transition-transform', isOpen && 'rotate-180')} aria-hidden="true" />
-                          </button>
-                          <AnimatePresence initial={false}>
-                            {isOpen && (
-                              <motion.div
-                                id={`thinking-panel-${i}`}
-                                key={`thinking-panel-${i}`}
-                                initial={{ height: 0, opacity: 0, y: -2 }}
-                                animate={{ height: 'auto', opacity: 1, y: 0 }}
-                                exit={{ height: 0, opacity: 0, y: -2 }}
-                                transition={{ duration: 0.2, ease: 'easeOut' }}
-                                className="overflow-hidden"
-                              >
-                                <div className="mt-2 max-h-64 overflow-auto thinking-scroll rounded-none bg-white dark:bg-[#303030] border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
-                                  <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1">
-                                  </div>
-                                  <div className="prose-message prose-thinking font-sans text-[13px] leading-5">
-                                    <StreamResponse className="w-full" parseIncompleteMarkdown>
-                                      {formatThinkingForMarkdown(reasoningText)}
-                                    </StreamResponse>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                          <Reasoning className="w-full" isStreaming={status === 'streaming' && i === messages.length - 1}>
+                            <ReasoningTrigger />
+                            <ReasoningContent>{formatThinkingForMarkdown(reasoningText)}</ReasoningContent>
+                          </Reasoning>
                         </div>
                       )}
                       <div className="min-w-0 w-full">
