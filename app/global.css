@@ -307,7 +307,7 @@ a:hover { opacity: 0.9; }
   @apply my-4 text-neutral-800 dark:text-neutral-200;
 }
 
-/* Ensure AI messages use dark text colors like blog posts */
+/* Ensure AI messages use dark text colors for readability */
 .prose-message:not(.prose-thinking) p,
 .prose-message:not(.prose-thinking) li,
 .prose-message:not(.prose-thinking) blockquote {
@@ -407,7 +407,7 @@ a:hover { opacity: 0.9; }
 .chat-row.user { @apply justify-end; }
 
 .chat-bubble {
-  @apply max-w-[80%] break-words rounded-3xl px-3 py-0.5 text-base leading-6 shadow-xs border bg-white text-neutral-900 dark:bg-black dark:text-white border-neutral-200 dark:border-neutral-800;
+  @apply max-w-[80%] break-words rounded-3xl px-3 py-0.5 text-base leading-6 shadow-xs border bg-white text-neutral-900 dark:bg-[#383838] dark:text-white border-neutral-200 dark:border-[#505050];
   /* Ensure long words/URLs wrap nicely inside bubbles */
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -415,17 +415,17 @@ a:hover { opacity: 0.9; }
   text-wrap: pretty;
 }
 .chat-bubble.assistant {
-  @apply bg-white text-neutral-900 dark:bg-black dark:text-white;
+  @apply bg-white text-neutral-900 dark:bg-[#383838] dark:text-white;
 }
 .chat-bubble.user {
-  @apply bg-white text-neutral-900 dark:bg-black dark:text-white;
+  @apply bg-white text-neutral-900 dark:bg-[#383838] dark:text-white;
 }
 
 /* Ensure markdown inside bubbles fits and inherits */
 .chat-bubble .prose { @apply m-0 w-full py-1 px-1; }
 /* Darker horizontal rule inside chat bubbles for better contrast */
 .chat-bubble .prose hr { @apply my-3 border-neutral-300 dark:border-neutral-700; }
-/* Keep internal blog spacing intact but trim outer edges inside chat bubbles */
+/* Keep internal prose spacing intact but trim outer edges inside chat bubbles */
 .chat-bubble .prose > :first-child { margin-top: 0.25rem !important; }
 .chat-bubble .prose > :last-child { margin-bottom: 0.25rem !important; }
 

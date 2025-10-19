@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
 import { Marked } from 'marked'
 import { highlight } from 'sugar-high'
-import { ArrowUp, Stop, Paperclip, X, FilePdf, Brain, CaretDown } from '@phosphor-icons/react'
+import { ArrowUp, Stop, Paperclip, X, FilePdf, Lightbulb, CaretDown } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 import clsx, { type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -41,7 +41,7 @@ function PromptInput({ className, isLoading = false, maxHeight = 240, value, onV
     <PromptInputContext.Provider
       value={{ isLoading, value: value ?? internalValue, setValue: onValueChange ?? handleChange, maxHeight, onSubmit }}
     >
-      <div className={cn('bg-white dark:bg-black rounded-3xl border border-neutral-200 dark:border-neutral-800 p-2 shadow-xs', className)}>
+      <div className={cn('bg-white dark:bg-[#303030] rounded-3xl border border-neutral-200 dark:border-neutral-800 p-2 shadow-xs', className)}>
         {children}
       </div>
     </PromptInputContext.Provider>
@@ -167,7 +167,7 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
   }
   return (
     <div className="relative mr-2 mb-0 flex items-center">
-      <div className="bg-white dark:bg-black hover:bg-neutral-50 dark:hover:bg-neutral-900 border-neutral-200 dark:border-neutral-800 flex w-full items-center gap-3 rounded-2xl border p-2 pr-3 transition-colors">
+      <div className="bg-white dark:bg-[#404040] hover:bg-neutral-50 dark:hover:bg-[#4a4a4a] border-neutral-200 dark:border-[#555555] flex w-full items-center gap-3 rounded-2xl border p-2 pr-3 transition-colors">
         <div className="bg-neutral-200 dark:bg-neutral-700 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-md">
           {isLikelyImage ? (
             previewUrl ? (
@@ -193,7 +193,7 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
         <button
           type="button"
           onClick={handleRemove}
-          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-900 shadow-none transition-colors"
+          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-[#4a4a4a] shadow-none transition-colors"
           aria-label="Remove file"
         >
           <X className="size-3" />
@@ -260,7 +260,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         htmlFor={inputId}
         role="button"
         tabIndex={0}
-        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black cursor-pointer"
+        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full border border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] cursor-pointer"
         aria-label="Add files"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -350,7 +350,7 @@ function ChatInput({ value, onValueChange, onSend, isSubmitting, files, onFileUp
             </div>
             <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
               <button
-                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black text-black dark:text-white"
+                className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-full transition-all duration-300 ease-out border border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white"
                 disabled={
                   status !== 'streaming' &&
                   status !== 'submitted' &&
@@ -527,16 +527,16 @@ export default function ChatClient() {
       if (/^\d+\.\s+/.test(trimmed)) return false
       if (/^>\s+/.test(trimmed)) return false
       if (/^#{1,6}\s/.test(trimmed)) return false
-      return /^[A-Z][A-Za-z0-9'’()\[\]\/,&\- ]+$/.test(trimmed)
+      return /^[A-Z][A-Za-z0-9''()\[\]\/,&\- ]+$/.test(trimmed)
     }
 
     const boldenLabels = (line: string): string =>
       line.replace(/(^|\n)([A-Z][A-Za-z\- ]{2,40}):\s/g, (_m, p1, p2) => `${p1}**${p2}:** `)
 
     const promoteInlineHeadings = (line: string): string => {
-      const inlineHeadingRe = /([.!?;:])\s*([A-Z][A-Za-z0-9'’()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
-      const dashHeadingRe = /(\s[\-–—]\s)\s*([A-Z][A-Za-z0-9'’()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
-      const gluedHeadingRe = /([a-z])([A-Z][a-zA-Z]+(?:\s+[A-Z][A-Za-z0-9'’()\[\]\/,&\-]+){2,9})(?=\s|$)/g
+      const inlineHeadingRe = /([.!?;:])\s*([A-Z][A-Za-z0-9''()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9''()\[\]\/,&\-]+){2,9})(?=\s|$)/g
+      const dashHeadingRe = /(\s[\-–—]\s)\s*([A-Z][A-Za-z0-9''()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9''()\[\]\/,&\-]+){2,9})(?=\s|$)/g
+      const gluedHeadingRe = /([a-z])([A-Z][a-zA-Z]+(?:\s+[A-Z][A-Za-z0-9''()\[\]\/,&\-]+){2,9})(?=\s|$)/g
       let out = line.replace(inlineHeadingRe, (_m, p1, p2) => `${p1}\n\n## ${p2}\n\n`)
       out = out.replace(dashHeadingRe, (_m, _sep, p2) => `\n\n## ${p2}\n\n`)
       out = out.replace(gluedHeadingRe, (_m, prev, title) => `${prev}\n\n## ${title}\n\n`)
@@ -942,8 +942,8 @@ export default function ChatClient() {
                             aria-expanded={isOpen}
                             aria-controls={`thinking-panel-${i}`}
                           >
-                            <Brain className="size-3.5 text-[#7f91e0]" weight="fill" aria-hidden="true" />
-                            <span className="font-medium">{isOpen ? 'Hide reasoning' : 'Show reasoning'}</span>
+                            <Lightbulb className="size-3.5 text-[#7f91e0]" weight="fill" aria-hidden="true" />
+                            <span className="font-medium">Thought</span>
                             <CaretDown className={cn('size-3 transition-transform', isOpen && 'rotate-180')} aria-hidden="true" />
                           </button>
                           <AnimatePresence initial={false}>
@@ -957,10 +957,8 @@ export default function ChatClient() {
                                 transition={{ duration: 0.2, ease: 'easeOut' }}
                                 className="overflow-hidden"
                               >
-                                <div className="mt-2 max-h-64 overflow-auto thinking-scroll rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
+                                <div className="mt-2 max-h-64 overflow-auto thinking-scroll rounded-xl bg-white dark:bg-[#303030] border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
                                   <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-neutral-500 dark:text-neutral-400 mb-1">
-                                    <span className="inline-flex size-1.5 rounded-full" style={{ backgroundColor: '#7f91e0' }} />
-                                    <span>Reasoning</span>
                                   </div>
                                   <div
                                     className="prose-message prose-thinking font-sans text-[13px] leading-5"
@@ -1008,3 +1006,4 @@ export default function ChatClient() {
     </section>
   )
 }
+
