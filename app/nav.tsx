@@ -8,23 +8,12 @@ const navItems = {
   '/': {
     name: 'home',
   },
-  '/blog': {
-    name: 'blog',
-  },
-  '/playground': {
-    name: 'playground',
-  },
 }
 
 export function Navbar() {
   const pathname = usePathname()
-  const isPlayground = pathname.startsWith('/playground')
-  const handlePlaygroundClick: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
-    if (pathname === '/playground') {
-      e.preventDefault()
-      window.location.assign('/playground')
-    }
-  }
+  const isPlayground = pathname.startsWith('/playground') || pathname === '/'
+  const handlePlaygroundClick: React.MouseEventHandler<HTMLAnchorElement> = (_e) => {}
   return (
     <aside className={isPlayground ? 'mb-4 tracking-tight' : 'mb-16 tracking-tight'}>
       <div className="lg:sticky lg:top-20">
@@ -43,13 +32,16 @@ export function Navbar() {
                   onClick={path === '/playground' ? handlePlaygroundClick : undefined}
                 >
                   {path === '/' ? (
-                    <Image
-                      src="/favicon.ico"
-                      alt="Home"
-                      width={32}
-                      height={32}
-                      className="w-8 h-8"
-                    />
+                    <>
+                      <Image
+                        src="/favicon.ico"
+                        alt="Home"
+                        width={20}
+                        height={20}
+                        className="w-5 h-5"
+                      />
+                      <span className="ml-2">Yurie</span>
+                    </>
                   ) : (
                     name
                   )}
@@ -62,3 +54,4 @@ export function Navbar() {
     </aside>
   )
 }
+
