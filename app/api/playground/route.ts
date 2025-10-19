@@ -101,12 +101,10 @@ function enqueueSummaryIfAny(controller: any, encoder: TextEncoder, summaryText?
 }
 
 function enqueueResponseIdIfAny(controller: any, encoder: TextEncoder, finalResponse: any) {
-  try {
-    const respId: unknown = finalResponse?.id
-    if (typeof respId === 'string' && respId) {
-      controller.enqueue(encoder.encode(`\n<response_id:${respId}>\n`))
-    }
-  } catch {}
+  const respId = finalResponse?.id
+  if (typeof respId === 'string' && respId) {
+    controller.enqueue(encoder.encode(`\n<response_id:${respId}>\n`))
+  }
 }
 
 export async function POST(request: Request) {
@@ -118,7 +116,11 @@ export async function POST(request: Request) {
       maskDataUrl,
       previousResponseId,
       reasoningEffort,
+      max_output_tokens,
+      includeReasoningSummary,
+      includeEncryptedReasoning,
       forceImageGeneration,
+      model: requestedModel,
     } = (await request.json()) as {
       messages: ChatMessage[]
       inputImages?: string[]
@@ -126,7 +128,11 @@ export async function POST(request: Request) {
       maskDataUrl?: string | null
       previousResponseId?: string | null
       reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
+      max_output_tokens?: number
+      includeReasoningSummary?: boolean
+      includeEncryptedReasoning?: boolean
       forceImageGeneration?: boolean
+      model?: string
     }
 
     if (!Array.isArray(messages)) {
@@ -199,8 +205,17 @@ export async function POST(request: Request) {
       prompt = header + trimmedHistory + tail
     }
 
-    const selectedModel = 'gpt-5-nano'
-    const useWebSearchEffective = true
+    const allowedModels = new Set(['gpt-5-nano', 'gpt-5-mini', 'gpt-5', 'gpt-5-pro', 'gpt-5-pro-2025-10-06'])
+    const selectedModel =
+      typeof requestedModel === 'string' && allowedModels.has(requestedModel)
+        ? requestedModel
+        : 'gpt-5-nano'
+    const modelAliases: Record<string, string> = {
+      'gpt-5-pro': 'gpt-5-pro-2025-10-06',
+    }
+    const effectiveModel = modelAliases[selectedModel] || selectedModel
+    const isProModel = String(effectiveModel).startsWith('gpt-5-pro')
+    const useWebSearchEffective = process.env.ENABLE_WEB_SEARCH === '1'
 
     const buildWebSearchTool = (): any => {
       return { type: 'web_search' as const, search_context_size: 'high' as const }
@@ -213,7 +228,8 @@ export async function POST(request: Request) {
     const selectedEffort: 'minimal' | 'low' | 'medium' | 'high' =
       reasoningEffort === 'minimal' || reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
         ? reasoningEffort
-        : 'low'
+        : 'medium'
+    const enforcedEffort: 'minimal' | 'low' | 'medium' | 'high' = isProModel ? 'high' : selectedEffort
 
     const lastUserMessage =
       [...messages].reverse().find((m) => m.role === 'user')?.content?.trim() ?? ''
@@ -230,29 +246,39 @@ export async function POST(request: Request) {
 
     if (!forceImageGeneration && (hasInputImages || hasInputPdfs) && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
       const encoder = new TextEncoder()
-      const visionTools: any[] = [buildCodeInterpreterTool()]
+      const visionTools: any[] = []
+      if (!isProModel) visionTools.push(buildCodeInterpreterTool())
       if (webSearchAllowed) {
         visionTools.push(buildWebSearchTool())
       }
       const responseCreateParams: any = {
-        model: selectedModel,
+        model: effectiveModel,
         instructions: INSTRUCTIONS_MARKDOWN,
-        reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
-        text: ({ verbosity: 'high' } as any),
-        input: [
-          {
-            role: 'user',
-            content: [
-              { type: 'input_text', text: lastUserMessage || 'Analyze the attached files' },
-              ...((inputImages || []).map((url) => ({ type: 'input_image', image_url: url }))),
-              ...((inputPdfs || []).map((p) => ({ type: 'input_file', filename: p.filename, file_data: p.dataUrl }))),
-            ],
-          },
-        ],
-        tools: visionTools as any,
+        reasoning: {
+          effort: enforcedEffort,
+          ...(includeReasoningSummary ? { summary: 'auto' } : {}),
+        },
+        input: [{
+          role: 'user',
+          content: [
+            { type: 'input_text', text: lastUserMessage || 'Analyze the attached files' },
+            ...(inputImages || []).map((url) => ({ type: 'input_image', image_url: url })),
+            ...(inputPdfs || []).map((p) => ({ type: 'input_file', filename: p.filename, file_data: p.dataUrl })),
+          ],
+        }],
+        tools: visionTools,
         previous_response_id: previousResponseId ?? undefined,
         tool_choice: 'auto',
-        include: webSearchAllowed ? (['web_search_call.results'] as any) : undefined,
+        include: [
+          ...(webSearchAllowed ? ['web_search_call.results'] as string[] : []),
+          ...(includeEncryptedReasoning ? ['reasoning.encrypted_content'] as string[] : []),
+        ],
+        ...(typeof max_output_tokens === 'number' && max_output_tokens > 0 ? { max_output_tokens } : {}),
+      }
+      
+      if (isProModel) {
+        responseCreateParams.background = true
+        responseCreateParams.store = true
       }
       const stream = await client.responses.stream(responseCreateParams)
       const readable = new ReadableStream<Uint8Array>({
@@ -299,72 +325,36 @@ export async function POST(request: Request) {
       ((explicitImageVerb.test(lastUserMessage) || imageDescriptorTerms.test(lastUserMessage) || editIntent.test(lastUserMessage)) &&
         !analysisIntent.test(lastUserMessage)) ||
       hasInputImages ||
-      // PDF inputs should not trigger image generation path
-      false ||
       Boolean(maskDataUrl)
 
     if (wantsImage) {
       try {
         const encoder = new TextEncoder()
-        const toolOptions: any = {
-          type: 'image_generation',
-          model: 'gpt-image-1',
-          size: 'auto',
-          quality: 'high',
-          background: 'auto',
-          output_format: 'png',
-          partial_images: 3,
-          input_fidelity: 'high',
-          moderation: 'auto',
-        }
 
         if (maskDataUrl) {
-        const readable = new ReadableStream<Uint8Array>({
+          const readable = new ReadableStream<Uint8Array>({
             async start(controller) {
               try {
-                const result = await (async () => {
-                  if (maskDataUrl) {
-                    const maskFile = maskDataUrl
-                      ? await dataUrlToFile(maskDataUrl, 'mask.png')
-                      : undefined
+                const maskFile = await dataUrlToFile(maskDataUrl, 'mask.png')
+                const editParams: any = {
+                  model: 'gpt-image-1',
+                  image: inputImages?.[0] ? [await dataUrlToFile(inputImages[0], 'image_1.png')] : undefined,
+                  mask: maskFile,
+                  prompt: lastUserMessage,
+                  size: 'auto',
+                  quality: 'high',
+                  background: 'auto',
+                  input_fidelity: 'high',
+                  output_format: 'png',
+                }
 
-                    const editParams: any = {
-                      model: 'gpt-image-1',
-                      image: inputImages?.[0]
-                        ? [await dataUrlToFile(inputImages[0], 'image_1.png')]
-                        : undefined,
-                      prompt: lastUserMessage,
-                      size: 'auto',
-                      quality: 'high',
-                      background: 'auto',
-                      input_fidelity: 'high',
-                      output_format: 'png',
-                    }
-                    if (maskFile) editParams.mask = maskFile
-
-                    return await client.images.edit(editParams)
-                  }
-                  const genParams: any = {
-                    model: 'gpt-image-1',
-                    prompt: lastUserMessage,
-                    size: 'auto',
-                    quality: 'high',
-                    background: 'auto',
-                    input_fidelity: 'high',
-                    output_format: 'png',
-                  }
-                  return await client.images.generate(genParams)
-                })()
-
+                const result = await client.images.edit(editParams)
                 const image_base64 = (result as any).data?.[0]?.b64_json
+                
                 if (typeof image_base64 === 'string' && image_base64.length > 0) {
-                  controller.enqueue(
-                    encoder.encode(`\n<image:data:image/png;base64,${image_base64}>\n`)
-                  )
+                  controller.enqueue(encoder.encode(`\n<image:data:image/png;base64,${image_base64}>\n`))
                 } else {
-                  controller.enqueue(
-                    encoder.encode(`\n[error] No image returned from Image API\n`)
-                  )
+                  controller.enqueue(encoder.encode(`\n[error] No image returned from Image API\n`))
                 }
               } catch (err) {
                 const message = err instanceof Error ? err.message : 'Unknown error'
@@ -378,27 +368,42 @@ export async function POST(request: Request) {
           return new Response(readable, { headers: { ...STREAM_HEADERS } })
         }
 
-        const responseCreateParams: any = {
-          model: selectedModel,
-          instructions: INSTRUCTIONS_MARKDOWN,
-          reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
-          text: ({ verbosity: 'high' } as any),
-          tools: [toolOptions as any],
-          previous_response_id: previousResponseId ?? undefined,
+        const toolOptions: any = {
+          type: 'image_generation',
+          model: 'gpt-image-1',
+          size: 'auto',
+          quality: 'high',
+          background: 'auto',
+          output_format: 'png',
+          partial_images: 3,
+          input_fidelity: 'high',
+          moderation: 'auto',
         }
-        if (hasInputImages) {
-          const content = [
-            { type: 'input_text', text: lastUserMessage },
-            ...inputImages.map((url) => ({ type: 'input_image', image_url: url })),
-          ]
-          responseCreateParams.input = [
-            {
-              role: 'user',
-              content,
-            },
-          ]
-        } else {
-          responseCreateParams.input = lastUserMessage
+
+        const responseCreateParams: any = {
+          model: effectiveModel,
+          instructions: INSTRUCTIONS_MARKDOWN,
+          reasoning: {
+            effort: enforcedEffort,
+            ...(includeReasoningSummary ? { summary: 'auto' } : {}),
+          },
+          tools: [toolOptions],
+          previous_response_id: previousResponseId ?? undefined,
+          input: hasInputImages
+            ? [{
+                role: 'user',
+                content: [
+                  { type: 'input_text', text: lastUserMessage },
+                  ...inputImages.map((url) => ({ type: 'input_image', image_url: url })),
+                ],
+              }]
+            : lastUserMessage,
+          ...(typeof max_output_tokens === 'number' && max_output_tokens > 0 ? { max_output_tokens } : {}),
+        }
+        
+        if (isProModel) {
+          responseCreateParams.background = true
+          responseCreateParams.store = true
         }
 
         const stream = await client.responses.stream(responseCreateParams)
@@ -434,25 +439,21 @@ export async function POST(request: Request) {
                 const imageCalls = Array.isArray(outputs)
                   ? outputs.filter((o: any) => o && o.type === 'image_generation_call')
                   : []
-                let reasoningSummaryText: string | undefined
+                
                 for (const call of imageCalls) {
-                  const base64: unknown = (call && (call as any).result) as unknown
+                  const base64 = call?.result
                   if (typeof base64 === 'string' && base64.length > 0) {
-                    controller.enqueue(
-                      encoder.encode(`\n<image:data:image/png;base64,${base64}>\n`)
-                    )
+                    controller.enqueue(encoder.encode(`\n<image:data:image/png;base64,${base64}>\n`))
                   }
-                  const revised: unknown = (call as any)?.revised_prompt
+                  const revised = call?.revised_prompt
                   if (typeof revised === 'string' && revised) {
-                    controller.enqueue(
-                      encoder.encode(`\n<revised_prompt:${revised}>\n`)
-                    )
+                    controller.enqueue(encoder.encode(`\n<revised_prompt:${revised}>\n`))
                   }
                 }
                 try {
                   const { citations, summaryText } = collectCitationsAndSummary(outputs)
                   enqueueSourcesIfAny(controller, encoder, citations)
-                  enqueueSummaryIfAny(controller, encoder, summaryText || reasoningSummaryText)
+                  enqueueSummaryIfAny(controller, encoder, summaryText)
                 } catch {}
                 enqueueResponseIdIfAny(controller, encoder, finalResponse)
               } catch {}
@@ -471,23 +472,35 @@ export async function POST(request: Request) {
       }
     }
 
-    const toolList: any[] = [{ type: 'image_generation' } as any, buildCodeInterpreterTool()]
+    // Only include compute tools that are supported for this model
+    const toolList: any[] = []
+    if (!isProModel) toolList.push(buildCodeInterpreterTool())
     if (webSearchAllowed) {
       toolList.push(buildWebSearchTool())
     }
-    const includeList: any[] = []
-    if (webSearchAllowed) includeList.push('web_search_call.results')
-    const stream = await client.responses.stream({
-      model: selectedModel,
-      reasoning: ({ effort: selectedEffort as any, summary: 'auto' } as any),
-      text: ({ verbosity: 'high' } as any),
+    const responseParams: any = {
+      model: effectiveModel,
+      reasoning: {
+        effort: enforcedEffort,
+        ...(includeReasoningSummary ? { summary: 'auto' } : {}),
+      },
       instructions: INSTRUCTIONS_MARKDOWN,
       input: prompt,
-      tools: toolList as any,
+      tools: toolList,
       previous_response_id: previousResponseId ?? undefined,
       tool_choice: 'auto',
-      include: includeList.length > 0 ? (includeList as any) : undefined,
-    } as any)
+      include: [
+        ...(webSearchAllowed ? ['web_search_call.results'] as string[] : []),
+        ...(includeEncryptedReasoning ? ['reasoning.encrypted_content'] as string[] : []),
+      ],
+      ...(typeof max_output_tokens === 'number' && max_output_tokens > 0 ? { max_output_tokens } : {}),
+    }
+    
+    if (isProModel) {
+      responseParams.background = true
+      responseParams.store = true
+    }
+    const stream = await client.responses.stream(responseParams as any)
 
     const encoder = new TextEncoder()
     const readable = new ReadableStream<Uint8Array>({
@@ -507,7 +520,7 @@ export async function POST(request: Request) {
             }
           }
         } catch (error) {
-          console.error('Text stream error', error)
+          console.error('Text stream error', error instanceof Error ? { message: error.message, stack: error.stack } : error)
           controller.enqueue(encoder.encode(`\n[error] A server error occurred. Please try again.`))
         } finally {
           try {
@@ -519,24 +532,20 @@ export async function POST(request: Request) {
               : []
 
             for (const call of imageCalls) {
-              const base64: unknown = (call && call.result) as unknown
+              const base64 = call?.result
               if (typeof base64 === 'string' && base64.length > 0) {
-                controller.enqueue(
-                  encoder.encode(`\n<image:data:image/png;base64,${base64}>\n`)
-                )
+                controller.enqueue(encoder.encode(`\n<image:data:image/png;base64,${base64}>\n`))
               }
             }
-            let reasoningSummaryText: string | undefined
+            
             try {
-              const outputsAny: any[] = (finalResponse && (finalResponse as any).output) || []
-              const { citations, summaryText } = collectCitationsAndSummary(outputsAny)
+              const { citations, summaryText } = collectCitationsAndSummary(outputs)
               enqueueSourcesIfAny(controller, encoder, citations)
-              reasoningSummaryText = summaryText
-              enqueueSummaryIfAny(controller, encoder, reasoningSummaryText)
+              enqueueSummaryIfAny(controller, encoder, summaryText)
             } catch {}
             enqueueResponseIdIfAny(controller, encoder, finalResponse)
-            const status: unknown = (finalResponse as any)?.status
-            const incompleteReason: unknown = (finalResponse as any)?.incomplete_details?.reason
+            const status = finalResponse?.status
+            const incompleteReason = finalResponse?.incomplete_details?.reason
             if (status === 'incomplete' && typeof incompleteReason === 'string' && incompleteReason) {
               controller.enqueue(encoder.encode(`\n<incomplete:${incompleteReason}>\n`))
             }

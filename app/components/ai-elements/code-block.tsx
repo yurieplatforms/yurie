@@ -1,0 +1,165 @@
+"use client"
+
+import clsx, { type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+import { Check as CheckIcon, Copy as CopyIcon } from "@phosphor-icons/react"
+import type { ComponentProps, HTMLAttributes, ReactNode } from "react"
+import { createContext, useContext, useState } from "react"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism"
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+type CodeBlockContextType = {
+  code: string
+}
+
+const CodeBlockContext = createContext<CodeBlockContextType>({
+  code: "",
+})
+
+export type CodeBlockProps = HTMLAttributes<HTMLDivElement> & {
+  code: string
+  language: string
+  showLineNumbers?: boolean
+  children?: ReactNode
+}
+
+export const CodeBlock = ({
+  code,
+  language,
+  showLineNumbers = false,
+  className,
+  children,
+  ...props
+}: CodeBlockProps) => (
+  <CodeBlockContext.Provider value={{ code }}>
+    <div
+      className={cn(
+        "relative w-full overflow-hidden rounded-none bg-white text-neutral-900",
+        "dark:bg-[#303030] dark:text-neutral-100",
+        className
+      )}
+      {...props}
+    >
+      <div className="relative">
+        <SyntaxHighlighter
+          className="overflow-hidden dark:hidden"
+          codeTagProps={{
+            className: "font-mono text-sm",
+          }}
+          customStyle={{
+            margin: 0,
+            padding: "1rem",
+            fontSize: "0.875rem",
+            background: "hsl(var(--background))",
+            color: "hsl(var(--foreground))",
+            border: "none",
+            outline: "none",
+            boxShadow: "none",
+          }}
+          language={language}
+          lineNumberStyle={{
+            color: "hsl(var(--muted-foreground))",
+            paddingRight: "1rem",
+            minWidth: "2.5rem",
+          }}
+          showLineNumbers={showLineNumbers}
+          style={oneLight}
+        >
+          {code}
+        </SyntaxHighlighter>
+        <SyntaxHighlighter
+          className="hidden overflow-hidden dark:block"
+          codeTagProps={{
+            className: "font-mono text-sm",
+          }}
+          customStyle={{
+            margin: 0,
+            padding: "1rem",
+            fontSize: "0.875rem",
+            background: "hsl(var(--background))",
+            color: "hsl(var(--foreground))",
+            border: "none",
+            outline: "none",
+            boxShadow: "none",
+          }}
+          language={language}
+          lineNumberStyle={{
+            color: "hsl(var(--muted-foreground))",
+            paddingRight: "1rem",
+            minWidth: "2.5rem",
+          }}
+          showLineNumbers={showLineNumbers}
+          style={oneDark}
+        >
+          {code}
+        </SyntaxHighlighter>
+        {children && (
+          <div className="absolute top-2 right-2 flex items-center gap-2">
+            {children}
+          </div>
+        )}
+      </div>
+    </div>
+  </CodeBlockContext.Provider>
+)
+
+export type CodeBlockCopyButtonProps = ComponentProps<'button'> & {
+  onCopy?: () => void
+  onError?: (error: Error) => void
+  timeout?: number
+}
+
+export const CodeBlockCopyButton = ({
+  onCopy,
+  onError,
+  timeout = 2000,
+  children,
+  className,
+  ...props
+}: CodeBlockCopyButtonProps) => {
+  const [isCopied, setIsCopied] = useState(false)
+  const { code } = useContext(CodeBlockContext)
+
+  const copyToClipboard = async () => {
+    if (typeof window === "undefined" || !navigator.clipboard.writeText) {
+      onError?.(new Error("Clipboard API not available"))
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(code)
+      setIsCopied(true)
+      onCopy?.()
+      setTimeout(() => setIsCopied(false), timeout)
+    } catch (error) {
+      onError?.(error as Error)
+    }
+  }
+
+  const Icon = isCopied ? CheckIcon : CopyIcon
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        "shrink-0 inline-flex items-center justify-center rounded p-1",
+        "text-neutral-600 hover:bg-neutral-100",
+        "dark:text-neutral-300 dark:hover:bg-neutral-800",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+        "focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600",
+        className
+      )}
+      onClick={copyToClipboard}
+      aria-label={isCopied ? "Copied" : "Copy code"}
+      {...props}
+    >
+      {children ?? <Icon size={14} />}
+    </button>
+  )
+}
+
+
