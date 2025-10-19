@@ -90,6 +90,7 @@ export const Reasoning = memo(function Reasoning({
       }, AUTO_CLOSE_DELAY)
       return () => clearTimeout(t)
     }
+    return undefined
   }, [isStreaming, isOpen, hasAutoClosed, handleSetOpen])
 
   const contextValue = useMemo(
