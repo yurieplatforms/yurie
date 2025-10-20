@@ -404,7 +404,7 @@ a:hover { opacity: 0.9; }
   @apply bg-white text-neutral-900 dark:bg-[#383838] dark:text-white;
 }
 .chat-bubble.user {
-  @apply rounded-none max-w-[50%] text-base leading-5 px-2 py-0.5 bg-white text-neutral-900 dark:bg-[#383838] dark:text-white;
+  @apply rounded-none max-w-[72%] sm:max-w-[60%] text-base leading-5 px-2 py-0.5 bg-white text-neutral-900 dark:bg-[#383838] dark:text-white;
 }
 /* Reduce inner vertical padding for user bubble content */
 .chat-bubble.user .prose { @apply py-0.5; }
