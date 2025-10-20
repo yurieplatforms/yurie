@@ -1,14 +1,9 @@
 "use client"
 
 import { memo, useCallback, useContext, useEffect, useMemo, useState, createContext, type ComponentProps } from 'react'
-import clsx, { type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
 import { Response } from './response'
 import { CaretDown as ChevronDown, Lightbulb as Brain } from '@phosphor-icons/react'
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+import { cn } from '@/app/lib/utils'
 
 type ReasoningContextValue = {
   isStreaming: boolean
@@ -124,7 +119,7 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({ className, chil
       onClick={() => setIsOpen(!isOpen)}
       aria-expanded={isOpen}
       className={cn(
-        'flex w-full items-center gap-2 text-neutral-600 dark:text-neutral-300 text-sm transition-colors hover:text-neutral-900 dark:hover:text-neutral-50',
+        'flex w-full items-center gap-2 text-neutral-600 dark:text-neutral-300 text-sm transition-colors hover:text-neutral-900 dark:hover:text-neutral-50 cursor-pointer',
         className
       )}
       {...props}
