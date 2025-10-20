@@ -176,7 +176,7 @@ export async function POST(request: Request) {
       prompt = header + trimmedHistory + tail
     }
 
-    const allowedModels = new Set(['gpt-5-nano', 'gpt-5-mini', 'gpt-5'])
+    const allowedModels = new Set(['gpt-5-nano', 'gpt-5-mini', 'gpt-5', 'gpt-5-codex'])
     const selectedModel =
       typeof requestedModel === 'string' && allowedModels.has(requestedModel)
         ? requestedModel

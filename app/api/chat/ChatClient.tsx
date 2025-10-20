@@ -383,6 +383,7 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
                   <option value="gpt-5">gpt-5</option>
                   <option value="gpt-5-mini">gpt-5-mini</option>
                   <option value="gpt-5-nano">gpt-5-nano</option>
+                  <option value="gpt-5-codex">gpt-5-codex</option>
                 </select>
                 <CaretDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-300 size-4" aria-hidden="true" />
               </div>
