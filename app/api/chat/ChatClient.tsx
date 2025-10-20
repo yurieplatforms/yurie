@@ -261,7 +261,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         htmlFor={inputId}
         role="button"
         tabIndex={0}
-        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none cursor-pointer border border-transparent bg-transparent hover:bg-white dark:hover:bg-[#404040] hover:border-neutral-200 dark:hover:border-[#555555] transition-colors"
+        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none cursor-pointer border border-transparent bg-transparent hover:bg-white dark:hover:bg-[#404040] hover:border-neutral-200 dark:hover:border-[#555555] transition-colors transform translate-x-[4px]"
         aria-label="Add files"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -406,7 +406,7 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
               <ButtonFileUpload onFileUpload={onFileUpload} />
               <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
                 <button
-                  className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none transition-all duration-300 ease-out border border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white hover:cursor-pointer disabled:cursor-not-allowed transform translate-x-[2px]"
+                  className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none transition-all duration-300 ease-out border border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white hover:cursor-pointer disabled:cursor-not-allowed transform translate-x-[6px]"
                   disabled={!isBusy && (isOnlyWhitespace(value) && files.length === 0)}
                   type="button"
                   onClick={handleSend}
@@ -669,7 +669,7 @@ export default function ChatClient() {
             return (
               <div
                 key={i}
-                className={cn(role === 'assistant' ? 'prose-message' : 'prose prose-neutral dark:prose-invert')}>
+                className={cn('prose prose-neutral dark:prose-invert')}>
                 <StreamResponse className="w-full" parseIncompleteMarkdown>
                   {p.value}
                 </StreamResponse>
@@ -920,7 +920,7 @@ export default function ChatClient() {
     <section ref={containerRef} className={cn('w-full h-full flex flex-col', messages.length === 0 && 'justify-start pt-40 sm:pt-48 max-w-3xl mx-auto')}>
       <div
         ref={outputRef}
-        className={cn('rounded-none pt-1 pb-3 overflow-y-auto text-base font-sans chat-scroll w-full max-w-3xl mx-auto px-3 sm:px-4', messages.length === 0 && 'hidden')}
+        className={cn('rounded-none pt-1 pb-3 overflow-y-auto text-base font-sans w-full max-w-3xl mx-auto px-3 sm:px-4', messages.length === 0 && 'hidden')}
         style={{ height: outputHeight ? `${outputHeight}px` : undefined }}
       >
         {messages.length === 0 ? null : (
@@ -933,9 +933,14 @@ export default function ChatClient() {
             const hasReasoning = m.role === 'assistant' && reasoningText.trim().length > 0
             return (
               <div key={i} className={`${topMarginClass} mb-0`}>
-                <div className={cn('chat-row', m.role === 'user' ? 'user' : 'assistant')}>
+                <div className={cn('w-full flex items-end gap-1', m.role === 'user' ? 'justify-end' : 'justify-start')}>
                   {m.role === 'user' ? (
-                    <div className={cn('chat-bubble', 'user', 'min-w-0')}>
+                    <div
+                      className={cn(
+                        'min-w-0 max-w-[72%] sm:max-w-[60%] break-words rounded-none px-3 py-2 text-base leading-6 shadow-xs',
+                        'border border-neutral-200 dark:border-[#555555] bg-white text-neutral-900 dark:bg-[#383838] dark:text-white'
+                      )}
+                    >
                       <div className="min-w-0 w-full">
                         {renderMessageContent(m.role, m.content)}
                         {sentAttachmentsByMessageIndex[i]?.length ? (
@@ -971,7 +976,7 @@ export default function ChatClient() {
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         {messages.length === 0 ? (
-          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-1 sm:mt-2 mb-6 sm:mb-8">
+          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-1 sm:mt-2 mb-6 sm:mb-8 px-3 sm:px-0">
             What's on your mind today?
           </div>
         ) : null}

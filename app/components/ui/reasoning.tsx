@@ -152,8 +152,8 @@ export const ReasoningContent = memo(function ReasoningContent({ className, chil
       {...props}
     >
       {isOpen && (
-        <div className="mt-2 max-h-64 overflow-auto thinking-scroll rounded-none bg-white dark:bg-[#303030] border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
-          <div className="prose-message prose-thinking font-sans text-[13px] leading-5">
+        <div className="mt-2 max-h-64 overflow-auto rounded-none bg-white dark:bg-[#303030] border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
+          <div className="prose prose-neutral dark:prose-invert font-sans text-[13px] leading-5">
             <Response className="w-full">{children}</Response>
           </div>
         </div>
