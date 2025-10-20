@@ -30,5 +30,10 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "postcss": "^8.4.35",
     "typescript": "5.3.3"
+  },
+  "postcss": {
+    "plugins": {
+      "@tailwindcss/postcss": {}
+    }
   }
 }
