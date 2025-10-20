@@ -217,7 +217,7 @@ function FileList({ files, onFileRemove }: { files: File[]; onFileRemove: (file:
           transition={TRANSITION}
           className="overflow-hidden"
         >
-          <div className="flex flex-row overflow-x-auto pl-3">
+          <div className="flex flex-row overflow-x-auto pl-2">
             <AnimatePresence initial={false}>
               {files.map((file) => (
                 <motion.div
