@@ -1,14 +1,9 @@
 "use client"
 
 import { memo, type ComponentProps } from 'react'
-import clsx, { type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
 import { Streamdown } from 'streamdown'
 import { CodeBlock, CodeBlockCopyButton } from './code-block'
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+import { cn } from '@/app/lib/utils'
 
 type ResponseProps = ComponentProps<typeof Streamdown>
 

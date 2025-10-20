@@ -1,16 +1,11 @@
 "use client"
 
-import clsx, { type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
 import { Check as CheckIcon, Copy as CopyIcon } from "@phosphor-icons/react"
 import type { ComponentProps, HTMLAttributes, ReactNode } from "react"
 import { createContext, useContext, useState } from "react"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
 import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism"
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+import { cn } from "@/app/lib/utils"
 
 type CodeBlockContextType = {
   code: string

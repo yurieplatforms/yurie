@@ -1,12 +1,11 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
-import { ArrowUp, Stop, Paperclip, X, FilePdf, CaretDown } from '@phosphor-icons/react'
+import { ArrowUp, Stop, Paperclip, X, FilePdf, CaretDown, Lightning } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
-import clsx, { type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
 import { Response as StreamResponse } from '../../components/ai-elements/response'
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '../../components/ai-elements/reasoning'
+import { cn } from '@/app/lib/utils'
 
 type ChatMessage = {
   role: 'user' | 'assistant'
@@ -20,10 +19,6 @@ type AttachmentPreview = {
   mime: string
   objectUrl: string
   isImage: boolean
-}
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
 }
 
 const PromptInputContext = createContext<any>(null)
@@ -284,10 +279,12 @@ type ChatInputProps = {
   onFileRemove: (file: File) => void
   model: string
   onModelChange: (model: string) => void
+  reasoningEffort: 'low' | 'high'
+  onReasoningEffortChange: (effort: 'low' | 'high') => void
   stop: () => void
   status?: 'submitted' | 'streaming' | 'ready' | 'error'
 }
-function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRemove, model, onModelChange, stop, status }: ChatInputProps) {
+function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRemove, model, onModelChange, reasoningEffort, onReasoningEffortChange, stop, status }: ChatInputProps) {
   const isOnlyWhitespace = (text: string) => !/[^\s]/.test(text)
   const isBusy = status === 'streaming' || status === 'submitted'
 
@@ -331,7 +328,7 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
   }, [onFileUpload])
 
   const getModelLabel = useCallback((value: string) => {
-    return value === 'gpt-5-pro-2025-10-06' ? 'gpt-5-pro' : value
+    return value
   }, [])
   const displayModelLabel = getModelLabel(model)
 
@@ -358,7 +355,7 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
             className="min-h-[44px] pt-3 px-4 text-base leading-[1.3] sm:text-base md:text-base"
           />
           <PromptInputActions className="mt-3 w-full justify-between p-2">
-            <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex flex-wrap gap-1 items-center">
               <div className="relative inline-block h-9 shrink-0" style={{ width: modelSelectWidth ? `${modelSelectWidth}px` : undefined }}>
                 <span
                   aria-hidden="true"
@@ -376,15 +373,30 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
                   aria-label="Select model"
                   disabled={isBusy}
                 >
-                  <option value="gpt-5-nano">gpt-5-nano</option>
-                  <option value="gpt-5-mini">gpt-5-mini</option>
                   <option value="gpt-5">gpt-5</option>
-                  <option value="gpt-5-pro-2025-10-06">gpt-5-pro</option>
+                  <option value="gpt-5-mini">gpt-5-mini</option>
+                  <option value="gpt-5-nano">gpt-5-nano</option>
                 </select>
                 <CaretDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-300 size-4" aria-hidden="true" />
               </div>
+              <button
+                type="button"
+                onClick={() => onReasoningEffortChange(reasoningEffort === 'low' ? 'high' : 'low')}
+                disabled={isBusy}
+                className={cn(
+                  "h-9 rounded-none border border-transparent bg-transparent text-sm px-3 whitespace-nowrap transition-colors disabled:cursor-not-allowed hover:cursor-pointer inline-flex items-center gap-2 hover:bg-white dark:hover:bg-[#404040] hover:border-neutral-200 dark:hover:border-[#555555]",
+                  reasoningEffort === 'high'
+                    ? "text-[#7f91e0]"
+                    : "text-neutral-900 dark:text-neutral-100"
+                )}
+                aria-label={`Extended thinking: ${reasoningEffort === 'high' ? 'on' : 'off'}`}
+                aria-pressed={reasoningEffort === 'high'}
+              >
+                <Lightning className="size-4" weight="bold" aria-hidden="true" />
+                Extended thinking
+              </button>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <ButtonFileUpload onFileUpload={onFileUpload} />
               <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
                 <button
@@ -425,7 +437,8 @@ export default function ChatClient() {
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
-  const [selectedModel, setSelectedModel] = useState<string>('gpt-5-nano')
+  const [selectedModel, setSelectedModel] = useState<string>('gpt-5')
+  const [reasoningEffort, setReasoningEffort] = useState<'low' | 'high'>('low')
   const streamBufferRef = useRef<string>('')
 
   useEffect(() => {
@@ -807,7 +820,7 @@ export default function ChatClient() {
           // Forward the UI model selection
           model: selectedModel,
           // Expose a knob for reasoning effort; default handled on server
-          reasoningEffort: 'medium',
+          reasoningEffort: reasoningEffort,
           // Reserve space; adjust as needed for cost control
           max_output_tokens: 30000,
           // Opt-in to reasoning summaries where supported
@@ -961,6 +974,8 @@ export default function ChatClient() {
           onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
           model={selectedModel}
           onModelChange={setSelectedModel}
+          reasoningEffort={reasoningEffort}
+          onReasoningEffortChange={setReasoningEffort}
           stop={stop}
           status={status}
         />
