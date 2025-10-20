@@ -11,7 +11,7 @@ export const Response = memo(
   ({ className, components, ...props }: ResponseProps) => (
     <Streamdown
       className={cn('size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0', className)}
-      controls={{ code: false, table: true, mermaid: true }}
+      controls={{ code: false, table: false, mermaid: false }}
       components={{
         ...components,
         pre(preProps: any) {

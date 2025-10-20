@@ -153,6 +153,8 @@ export async function POST(request: Request) {
       '',
       '**Format:** Always respond in **markdown**. Use headings, bullets, tables, code blocks, and emojis when they enhance clarity or engagement.',
       '',
+      '**Code:** When providing code, return it inline using fenced code blocks (```language). Do not create attachments or downloadable files. Avoid linking to generated files; paste the complete code snippet instead.',
+      '',
       '**Style:** Be conversational yet concise. Show personality while staying helpful. When presenting data or comparisons, use tables. Add relevant emojis to make responses more engaging.',
       '',
       '**Behavior:** Use tools when needed, cite sources, verify information, and admit uncertainty. Keep reasoning internal unless asked.',
@@ -191,9 +193,7 @@ export async function POST(request: Request) {
       return { type: 'web_search' as const, search_context_size: 'high' as const }
     }
 
-    const buildCodeInterpreterTool = (): any => {
-      return { type: 'code_interpreter' as const, container: { type: 'auto' as const } }
-    }
+    // Code interpreter tool removed as per product decision
 
     const selectedEffort: 'minimal' | 'low' | 'medium' | 'high' =
       reasoningEffort === 'minimal' || reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
@@ -217,7 +217,6 @@ export async function POST(request: Request) {
     if (!forceImageGeneration && (hasInputImages || hasInputPdfs) && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
       const encoder = new TextEncoder()
       const visionTools: any[] = []
-      if (!isProModel) visionTools.push(buildCodeInterpreterTool())
       if (webSearchAllowed) {
         visionTools.push(buildWebSearchTool())
       }
@@ -444,7 +443,6 @@ export async function POST(request: Request) {
 
     // Only include compute tools that are supported for this model
     const toolList: any[] = []
-    if (!isProModel) toolList.push(buildCodeInterpreterTool())
     if (webSearchAllowed) {
       toolList.push(buildWebSearchTool())
     }

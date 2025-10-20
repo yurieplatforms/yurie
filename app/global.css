@@ -72,102 +72,13 @@ html {
   --scrollbar-thumb: #171717; /* tailwind neutral-900 */
 }
 
-/* Desktop-only auto-hide scrollbar helper for scrollable containers */
-@media (hover: hover) and (pointer: fine) {
-  .scrollbar-auto-hide {
-    scrollbar-width: none; /* Firefox */
-  }
-  .scrollbar-auto-hide::-webkit-scrollbar {
-    width: 0; /* Chrome/Safari */
-    height: 0;
-    background: transparent;
-  }
-  /* When explicitly shown, render a thin scrollbar */
-  .scrollbar-auto-hide.show-scrollbar {
-    scrollbar-width: thin;
-  }
-  .scrollbar-auto-hide.show-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  .scrollbar-auto-hide.show-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(120, 120, 120, 0.5);
-    border-radius: 8px;
-  }
-  .dark .scrollbar-auto-hide.show-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(160, 160, 160, 0.4);
-  }
-}
+/* Desktop-only auto-hide scrollbar helper removed; rely on defaults */
 
-/* Scoped scrollbar styling only for thinking container */
-@media (hover: hover) and (pointer: fine) {
-  .thinking-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
-  }
-  .dark .thinking-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
+/* Thinking container specific scrollbars removed */
 
-  .thinking-scroll::-webkit-scrollbar {
-    width: 1px;
-    height: 1px;
-  }
-  .thinking-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .thinking-scroll::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.18);
-    border-radius: 8px;
-    border: 1px solid transparent;
-    background-clip: padding-box;
-  }
-  .thinking-scroll::-webkit-scrollbar-corner {
-    background: transparent;
-  }
-}
+/* Chat output area custom scrollbars removed */
 
-/* Scoped scrollbar styling for chat output area */
-@media (hover: hover) and (pointer: fine) {
-  .chat-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
-  }
-  .dark .chat-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
-
-  .chat-scroll::-webkit-scrollbar {
-    width: 1px;
-    height: 1px;
-  }
-  .chat-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .chat-scroll::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.18);
-    border-radius: 8px;
-  }
-  .chat-scroll::-webkit-scrollbar-corner {
-    background: transparent;
-  }
-}
-/* Ensure dark mode uses dark thumb on chat container even if variables aren't picked up */
-@media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
-  .chat-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
-  .chat-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
-}
-@media (hover: hover) and (pointer: fine) {
-  html.dark .chat-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
-  html.dark .chat-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
-}
-
-/* Ensure dark mode uses dark thumb on thinking container even if variables aren't picked up */
-@media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
-  .thinking-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
-  .thinking-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  html.dark .thinking-scroll { scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
-  html.dark .thinking-scroll::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.22) !important; }
-}
+/* Thinking container dark-mode scrollbar overrides removed */
 
 /* Page-level scrollbar: thinner and lighter for outer page only */
 @media (hover: hover) and (pointer: fine) {
@@ -243,7 +154,7 @@ a:hover { opacity: 0.9; }
 }
 
 .prose p {
-  @apply my-4 text-neutral-800 dark:text-neutral-200;
+  @apply my-3 text-neutral-800 dark:text-neutral-200;
 }
 
 .prose h1 {
@@ -275,245 +186,122 @@ a:hover { opacity: 0.9; }
 }
 
 .prose > :first-child {
-  margin-top: 1.25em !important;
-  margin-bottom: 1.25em !important;
-}
-
-.prose-message > :first-child {
-  margin-top: 1.25em !important;
-  margin-bottom: 1.25em !important;
-}
-
-.prose-message > :last-child {
-  margin-bottom: 1.25em !important;
-}
-
-.prose-message {
-  @apply w-full;
-  max-width: 100% !important;
-  width: 100% !important;
-  display: block;
-}
-
-.prose-message > * {
-  max-width: 100% !important;
-}
-
-.prose-message p {
-  @apply my-4 text-neutral-800 dark:text-neutral-200;
-}
-
-/* Ensure AI messages use dark text colors for readability */
-.prose-message:not(.prose-thinking) p,
-.prose-message:not(.prose-thinking) li,
-.prose-message:not(.prose-thinking) blockquote {
-  @apply text-neutral-800 dark:text-neutral-200;
-}
-
-.prose-message:not(.prose-thinking) strong {
-  @apply font-medium text-neutral-800 dark:text-neutral-200;
-}
-
-.prose-message h1 {
-  @apply text-4xl font-medium tracking-tight mt-6 mb-2;
-}
-.prose-message h2 {
-  @apply text-xl font-medium tracking-tight mt-6 mb-2;
-}
-.prose-message h3 {
-  @apply text-xl font-medium tracking-tight mt-6 mb-2;
-}
-.prose-message h4 {
-  @apply text-lg font-medium tracking-tight mt-6 mb-2;
-}
-
-.prose-message strong {
-  @apply font-medium;
-}
-.prose-message em {
-  font-style: italic;
-}
-
-.prose-message ul {
-  @apply list-disc pl-6;
-}
-.prose-message ol {
-  @apply list-decimal pl-6;
-}
-.prose-message li > ul,
-.prose-message li > ol {
-  @apply mt-1 mb-0;
-}
-
-.prose-message a {
-  color: var(--color-accent);
-  @apply underline transition-all decoration-neutral-400 dark:decoration-neutral-600 underline-offset-2 decoration-[0.1em];
-}
-
-.prose-message blockquote {
-  @apply border-l-4 border-neutral-200 dark:border-neutral-800 pl-3 my-2 text-neutral-700 dark:text-neutral-300;
-}
-
-.prose-message hr {
-  @apply my-3 border-neutral-200 dark:border-neutral-800;
-}
-
-.prose-thinking h1 { @apply text-base font-medium tracking-tight mt-2 mb-1 text-neutral-800 dark:text-neutral-200; }
-.prose-thinking h2 { @apply text-sm font-medium tracking-tight mt-1.5 mb-1 text-neutral-800 dark:text-neutral-200; }
-.prose-thinking h3 { @apply text-[13px] font-medium tracking-tight mt-1.5 mb-1 text-neutral-800 dark:text-neutral-200; }
-.prose-thinking h4 { @apply text-xs font-medium tracking-tight mt-1.5 mb-1 text-neutral-800 dark:text-neutral-200; }
-.prose-thinking p  { @apply my-1 text-neutral-700 dark:text-neutral-300; }
-.prose-thinking strong { @apply font-medium text-neutral-800 dark:text-neutral-200; }
-.prose-thinking em { font-style: italic; }
-
-/* legacy code block styles removed */
-
-/* legacy code block styles removed */
-
-/* legacy code block styles removed */
-
-/* Ensure Streamdown table controls are right-aligned */
-.prose-message [data-streamdown="table-wrapper"] > div:first-child {
-  justify-content: flex-end !important;
-  gap: 0.75rem !important; /* space between copy and download */
-}
-/* legacy code block styles removed */
-
-/* Unified speaker chip styling for chat messages */
-.chat-speaker {
-  @apply inline-flex items-center gap-1.5 rounded-full border border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-black/70 backdrop-blur px-2 py-0.5 text-sm leading-4 text-neutral-700 dark:text-neutral-300 mr-2;
-}
-.chat-speaker-text { @apply font-bold text-white; }
-
-/* Chat bubble containers */
-.chat-row {
-  @apply w-full flex items-end gap-1;
-}
-.chat-row.assistant { @apply justify-start; }
-.chat-row.user { @apply justify-end; }
-
-.chat-bubble {
-  @apply max-w-[80%] break-words rounded-3xl px-3 py-0.5 text-base leading-6 shadow-xs border bg-white text-neutral-900 dark:bg-[#383838] dark:text-white border-neutral-200 dark:border-[#505050];
-  /* Ensure long words/URLs wrap nicely inside bubbles */
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  hyphens: auto;
-  text-wrap: pretty;
-}
-.chat-bubble.assistant {
-  @apply bg-white text-neutral-900 dark:bg-[#383838] dark:text-white;
-}
-.chat-bubble.user {
-  @apply rounded-none max-w-[72%] sm:max-w-[60%] text-base leading-5 px-2 py-0.5 bg-white text-neutral-900 dark:bg-[#383838] dark:text-white;
-}
-/* Reduce inner vertical padding for user bubble content */
-.chat-bubble.user .prose { @apply py-0.5; }
-/* Tighter vertical spacing for user bubble paragraphs and edges */
-.chat-bubble.user .prose p { @apply my-1; }
-.chat-bubble.user .prose > :first-child { margin-top: 0 !important; }
-.chat-bubble.user .prose > :last-child { margin-bottom: 0 !important; }
-
-/* Ensure markdown inside bubbles fits and inherits */
-.chat-bubble .prose { @apply m-0 w-full py-1 px-1; }
-/* Darker horizontal rule inside chat bubbles for better contrast */
-.chat-bubble .prose hr { @apply my-3 border-neutral-300 dark:border-neutral-700; }
-/* Keep internal prose spacing intact but trim outer edges inside chat bubbles */
-.chat-bubble .prose > :first-child { margin-top: 0.25rem !important; }
-.chat-bubble .prose > :last-child { margin-bottom: 0.25rem !important; }
-
-/* legacy code block styles removed */
-
-/* legacy code block styles removed */
-
-.prose-message p,
-.prose-message li {
-  @apply font-normal;
-}
-
-/* Tighter spacing for explicit chat labels placed before content blocks */
-.prose-message .chat-label {
   margin-top: 0 !important;
-  @apply text-neutral-800 dark:text-neutral-200;
 }
 
-/* Remove outlines/borders for assistant (AI) messages */
-.chat-row.assistant > div img { border: 0 !important; outline: 0 !important; }
-.chat-row.assistant > div .thinking-scroll { border: 0 !important; box-shadow: none !important; }
-.chat-row.assistant > div button[aria-controls^="thinking-panel-"] { border: 0 !important; box-shadow: none !important; }
+.prose > :last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Removed prose-message and prose-thinking; using base prose utilities */
+
+/* legacy code block styles removed */
+
+/* legacy code block styles removed */
+
+/* legacy code block styles removed */
+
+/* Streamdown table controls disabled for performance */
+/* legacy code block styles removed */
+
+/* Removed chat-speaker, chat-row, chat-bubble utilities; replaced by Tailwind classes */
+
+/* legacy code block styles removed */
+
+/* legacy code block styles removed */
+
+/* Removed prose-message font overrides */
+
+/* Removed chat-label overrides */
+
+/* Removed assistant-specific border overrides */
 
 /* Always show code block scrollbars; do not hide globally */
 
-input[type='text'],
-input[type='email'] {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  -webkit-text-size-adjust: 100%;
-  text-rendering: optimizeLegibility;
-}
+/* Removed input normalizations and stable-input/no-focus-outline helpers */
 
-.stable-input {
-  line-height: 1.5;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  contain: layout paint style;
-}
-
-.stable-input:focus {
-  contain: paint;
-}
-
-.no-focus-outline:focus,
-.no-focus-outline:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
-}
-
+/* Optimized table styling - no borders, no transitions or hover effects */
 table {
-  display: block;
-  max-width: fit-content;
-  overflow-x: auto;
-  white-space: nowrap;
-}
-
-.prose-message table {
-  display: block;
+  width: 100%;
+  border-collapse: collapse;
+  display: table;
   max-width: 100%;
   overflow-x: auto;
-  white-space: nowrap;
-  border: 0;
-  border-radius: 0;
+  font-size: 0.875rem;
   border-spacing: 0;
+  margin: 1rem 0;
+  border: none;
 }
 
-.dark .prose-message table {
-  border-color: transparent;
+.prose table {
+  display: table;
+  margin: 1rem 0;
 }
 
-.prose-message table thead th {
-  @apply font-medium;
-  border-bottom: 1px solid theme(colors.neutral.200);
-}
-.dark .prose-message table thead th {
-  border-bottom-color: #555555;
+table thead {
+  background-color: #fafafa;
 }
 
-.prose-message table th,
-.prose-message table td {
-  @apply px-3 py-2 text-left;
+@media (prefers-color-scheme: dark) {
+  table thead {
+    background-color: #282828;
+  }
 }
 
-/* Horizontal separators between body rows only */
-.prose-message table tbody tr + tr td {
-  border-top: 1px solid theme(colors.neutral.200);
-}
-.dark .prose-message table tbody tr + tr td {
-  border-top-color: #555555;
+table thead th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  color: #404040;
+  border: none;
 }
 
-.prose-message table th:last-child,
-.prose-message table td:last-child {}
+@media (prefers-color-scheme: dark) {
+  table thead th {
+    color: #d4d4d4;
+  }
+}
+
+table tbody {
+  background-color: white;
+}
+
+@media (prefers-color-scheme: dark) {
+  table tbody {
+    background-color: #303030;
+  }
+}
+
+table tbody td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  color: #171717;
+  border: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  table tbody td {
+    color: #f5f5f5;
+  }
+}
+
+table tbody td:first-child {
+  font-weight: 500;
+  color: #525252;
+}
+
+@media (prefers-color-scheme: dark) {
+  table tbody td:first-child {
+    color: #a3a3a3;
+  }
+}
+
+/* Removed prose-message table overrides */
 
 .title {
   text-wrap: balance;
