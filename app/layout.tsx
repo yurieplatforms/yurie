@@ -7,6 +7,7 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { baseUrl } from './sitemap'
 import Script from 'next/script'
+import { cn } from './lib/utils'
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -54,8 +55,6 @@ export const viewport: Viewport = {
   ],
 }
 
-const cx = (...classes) => classes.filter(Boolean).join(' ')
-
 export default function RootLayout({
   children,
 }: {
@@ -64,7 +63,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cx(
+      className={cn(
         'text-black bg-white dark:text-white dark:bg-[#212121]',
         GeistSans.variable,
         GeistMono.variable
@@ -74,7 +73,7 @@ export default function RootLayout({
       <body className="font-sans antialiased overflow-hidden h-screen flex flex-col">
         {/* auto-sync dark mode with system preference (runs before interactive) */}
         <Script id="theme-sync" strategy="beforeInteractive">{`try{var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');var d=document.documentElement;var set=()=>{m.matches?d.classList.add('dark'):d.classList.remove('dark')};set();m&&m.addEventListener&&m.addEventListener('change',set);}catch(e){}`}</Script>
-        <main className="flex-auto min-w-0 flex flex-col px-1 sm:px-2 md:px-0 overflow-hidden max-w-3xl mx-2 sm:mx-4 mt-8 lg:mx-auto w-full">
+        <main className="flex-auto min-w-0 flex flex-col overflow-hidden w-full max-w-3xl mx-auto px-3 sm:px-4 mt-6 md:mt-8">
           <Navbar />
           {children}
           <Analytics />

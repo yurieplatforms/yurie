@@ -2,7 +2,7 @@
 
 import { memo, type ComponentProps } from 'react'
 import { Streamdown } from 'streamdown'
-import { CodeBlock, CodeBlockCopyButton } from './code-block'
+import { CodeBlock, CodeBlockCopyButton } from './codeblock'
 import { cn } from '@/app/lib/utils'
 
 type ResponseProps = ComponentProps<typeof Streamdown>

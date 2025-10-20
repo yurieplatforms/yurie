@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
 import { ArrowUp, Stop, Paperclip, X, FilePdf, CaretDown, Lightning } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Response as StreamResponse } from '../../components/ai-elements/response'
-import { Reasoning, ReasoningContent, ReasoningTrigger } from '../../components/ai-elements/reasoning'
+import { Response as StreamResponse } from '../../components/ui/response'
+import { Reasoning, ReasoningContent, ReasoningTrigger } from '../../components/ui/reasoning'
 import { cn } from '@/app/lib/utils'
+
+// ============ Type Definitions ============
 
 type ChatMessage = {
   role: 'user' | 'assistant'
@@ -21,10 +23,14 @@ type AttachmentPreview = {
   isImage: boolean
 }
 
+// ============ Context & Hooks ============
+
 const PromptInputContext = createContext<any>(null)
 function usePromptInput() {
   return useContext(PromptInputContext)
 }
+
+// ============ Sub-Components ============
 
 function PromptInput({ className, isLoading = false, maxHeight = 240, value, onValueChange, onSubmit, children }: any) {
   const [internalValue, setInternalValue] = useState(value || '')
@@ -344,17 +350,17 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
   }, [model])
 
   return (
-    <div className="relative flex w-full flex-col gap-4">
-      <div className="relative order-2 pb-3 sm:pb-4 md:order-1">
-        <PromptInput className="relative z-10 w-full p-0 pt-1 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange}>
+    <div className="relative flex w-full flex-col gap-3 sm:gap-4">
+      <div className="relative order-2 pb-2 sm:pb-4 md:order-1">
+        <PromptInput className="relative z-10 w-full p-0 pt-0.5 shadow-xs" maxHeight={200} value={value} onValueChange={onValueChange}>
           <FileList files={files} onFileRemove={onFileRemove} />
           <PromptInputTextarea
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             placeholder="Message Yurie"
-            className="min-h-[44px] pt-3 px-4 text-base leading-[1.3] sm:text-base md:text-base"
+            className="min-h-[44px] pt-2 px-3 sm:px-4 text-base leading-[1.4] sm:text-base md:text-base"
           />
-          <PromptInputActions className="mt-3 w-full justify-between p-2">
+          <PromptInputActions className="mt-2 sm:mt-3 w-full justify-between px-2 py-2">
             <div className="flex flex-wrap gap-1 items-center">
               <div className="relative inline-block h-9 shrink-0" style={{ width: modelSelectWidth ? `${modelSelectWidth}px` : undefined }}>
                 <span
@@ -389,14 +395,14 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
                     ? "text-[#7f91e0]"
                     : "text-neutral-900 dark:text-neutral-100"
                 )}
-                aria-label={`Extended thinking: ${reasoningEffort === 'high' ? 'on' : 'off'}`}
+                aria-label={`Extended: ${reasoningEffort === 'high' ? 'on' : 'off'}`}
                 aria-pressed={reasoningEffort === 'high'}
               >
                 <Lightning className="size-4" weight="bold" aria-hidden="true" />
-                Extended thinking
+                Extended
               </button>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 pr-1">
               <ButtonFileUpload onFileUpload={onFileUpload} />
               <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
                 <button
@@ -421,6 +427,8 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
   )
 }
 
+// ============ Main Component ============
+
 export default function ChatClient() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -440,6 +448,8 @@ export default function ChatClient() {
   const [selectedModel, setSelectedModel] = useState<string>('gpt-5')
   const [reasoningEffort, setReasoningEffort] = useState<'low' | 'high'>('low')
   const streamBufferRef = useRef<string>('')
+
+  // ============ Helper Functions ============
 
   useEffect(() => {
     return () => {
@@ -809,7 +819,7 @@ export default function ChatClient() {
       const payloadMessages = nextMessages.map((m) => ({ ...m, content: stripImageData(m.content) }))
       const ac = new AbortController()
       abortControllerRef.current = ac
-      const res = await fetch('/api/playground', {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
