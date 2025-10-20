@@ -54,10 +54,6 @@ function collectCitationsAndSummary(outputs: any[]): {
         }
       }
     }
-    if (out?.type === 'web_search_call') {
-      const srcs = out?.action?.sources
-      if (Array.isArray(srcs)) for (const s of srcs) addCitation(s?.url, s?.title)
-    }
     if (out?.type === 'reasoning' && Array.isArray(out.summary)) {
       for (const s of out.summary) {
         if (s?.type === 'summary_text' && typeof s.text === 'string' && s.text) {
@@ -187,11 +183,6 @@ export async function POST(request: Request) {
         : 'gpt-5-nano'
     const effectiveModel = selectedModel
     const isProModel = false
-    const useWebSearchEffective = process.env.ENABLE_WEB_SEARCH === '1'
-
-    const buildWebSearchTool = (): any => {
-      return { type: 'web_search' as const, search_context_size: 'high' as const }
-    }
 
     // Code interpreter tool removed as per product decision
 
@@ -211,15 +202,11 @@ export async function POST(request: Request) {
       /\b(describe|explain|analy[sz]e|caption|tell me about)\b[^\n]*\b(image|picture|photo|it|this)\b/i
     const hasInputImages = Array.isArray(inputImages) && inputImages.length > 0
     const hasInputPdfs = Array.isArray(inputPdfs) && inputPdfs.length > 0
-    const webSearchAllowed = useWebSearchEffective && !hasInputImages && !hasInputPdfs
     const editIntent = /\b(edit|add|replace|remove|overlay|combine|composite|blend|merge|variation|variations|logo|stamp|put|insert|inpaint|mask|fill|make it|make this|turn this into)\b/i
 
     if (!forceImageGeneration && (hasInputImages || hasInputPdfs) && (!explicitImageVerb.test(lastUserMessage) || analysisIntent.test(lastUserMessage)) && !editIntent.test(lastUserMessage)) {
       const encoder = new TextEncoder()
       const visionTools: any[] = []
-      if (webSearchAllowed) {
-        visionTools.push(buildWebSearchTool())
-      }
       const responseCreateParams: any = {
         model: effectiveModel,
         instructions: INSTRUCTIONS_MARKDOWN,
@@ -239,7 +226,6 @@ export async function POST(request: Request) {
         previous_response_id: previousResponseId ?? undefined,
         tool_choice: 'auto',
         include: [
-          ...(webSearchAllowed ? ['web_search_call.results'] as string[] : []),
           ...(includeEncryptedReasoning ? ['reasoning.encrypted_content'] as string[] : []),
         ],
         ...(typeof max_output_tokens === 'number' && max_output_tokens > 0 ? { max_output_tokens } : {}),
@@ -443,9 +429,6 @@ export async function POST(request: Request) {
 
     // Only include compute tools that are supported for this model
     const toolList: any[] = []
-    if (webSearchAllowed) {
-      toolList.push(buildWebSearchTool())
-    }
     const responseParams: any = {
       model: effectiveModel,
       reasoning: {
@@ -458,7 +441,6 @@ export async function POST(request: Request) {
       previous_response_id: previousResponseId ?? undefined,
       tool_choice: 'auto',
       include: [
-        ...(webSearchAllowed ? ['web_search_call.results'] as string[] : []),
         ...(includeEncryptedReasoning ? ['reasoning.encrypted_content'] as string[] : []),
       ],
       ...(typeof max_output_tokens === 'number' && max_output_tokens > 0 ? { max_output_tokens } : {}),

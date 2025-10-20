@@ -42,7 +42,7 @@ function PromptInput({ className, isLoading = false, maxHeight = 240, value, onV
     <PromptInputContext.Provider
       value={{ isLoading, value: value ?? internalValue, setValue: onValueChange ?? handleChange, maxHeight, onSubmit }}
     >
-      <div className={cn('bg-white dark:bg-[#303030] rounded-none border border-neutral-200 dark:border-[#555555] p-2 shadow-xs', className)}>
+      <div className={cn('bg-white dark:bg-[#303030] rounded-none p-2 shadow-xs', className)}>
         {children}
       </div>
     </PromptInputContext.Provider>
@@ -168,7 +168,7 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
   }
   return (
     <div className="relative mr-2 mb-0 flex items-center">
-      <div className="bg-white dark:bg-[#404040] hover:bg-neutral-50 dark:hover:bg-[#4a4a4a] border-neutral-200 dark:border-[#555555] flex w-full items-center gap-3 rounded-none border p-2 pr-3 transition-colors">
+      <div className="bg-white dark:bg-[#404040] hover:bg-neutral-50 dark:hover:bg-[#4a4a4a] flex w-full items-center gap-3 rounded-none p-2 pr-3 transition-colors">
         <div className="bg-neutral-200 dark:bg-neutral-700 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-none">
           {isLikelyImage ? (
             previewUrl ? (
@@ -194,7 +194,7 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
         <button
           type="button"
           onClick={handleRemove}
-          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-none border-[3px] border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-[#4a4a4a] shadow-none transition-colors"
+          className="absolute top-1 right-1 z-10 inline-flex size-6 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-none bg-neutral-100 dark:bg-[#505050] text-black dark:text-white hover:bg-neutral-50 dark:hover:bg-[#4a4a4a] shadow-none transition-colors cursor-pointer"
           aria-label="Remove file"
         >
           <X className="size-3" />
@@ -261,7 +261,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         htmlFor={inputId}
         role="button"
         tabIndex={0}
-        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none cursor-pointer border border-transparent bg-transparent hover:bg-white dark:hover:bg-[#404040] hover:border-neutral-200 dark:hover:border-[#555555] transition-colors transform translate-x-[4px]"
+        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none cursor-pointer bg-transparent hover:bg-white dark:hover:bg-[#404040] transition-colors transform translate-x-[4px]"
         aria-label="Add files"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -366,7 +366,7 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
                 <span
                   aria-hidden="true"
                   ref={modelMeasureRef}
-                className="invisible inline-block h-9 rounded-none border border-transparent bg-transparent text-sm px-3 pr-7 whitespace-nowrap"
+                className="invisible inline-block h-9 rounded-none bg-transparent text-sm px-3 pr-7 whitespace-nowrap"
                 >
                   {displayModelLabel}
                 </span>
@@ -375,7 +375,8 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
                   id="model-select"
                   value={model}
                   onChange={(e) => onModelChange(e.target.value)}
-                  className="absolute inset-0 rounded-none border border-transparent bg-transparent hover:bg-white dark:hover:bg-[#404040] hover:border-neutral-200 dark:hover:border-[#555555] hover:cursor-pointer disabled:cursor-not-allowed text-sm pl-3 pr-7 text-neutral-900 dark:text-neutral-100 appearance-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 transition-colors"
+                  className="absolute inset-0 rounded-none bg-transparent hover:bg-white dark:hover:bg-[#404040] hover:cursor-pointer disabled:cursor-not-allowed text-sm pl-3 pr-7 text-neutral-900 dark:text-neutral-100 appearance-none outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 transition-colors"
+                  style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                   aria-label="Select model"
                   disabled={isBusy}
                 >
@@ -390,7 +391,7 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
                 onClick={() => onReasoningEffortChange(reasoningEffort === 'low' ? 'high' : 'low')}
                 disabled={isBusy}
                 className={cn(
-                  "h-9 rounded-none border border-transparent bg-transparent text-sm px-3 whitespace-nowrap transition-colors disabled:cursor-not-allowed hover:cursor-pointer inline-flex items-center gap-2 hover:bg-white dark:hover:bg-[#404040] hover:border-neutral-200 dark:hover:border-[#555555]",
+                  "h-9 rounded-none bg-transparent text-sm px-3 whitespace-nowrap transition-colors disabled:cursor-not-allowed hover:cursor-pointer inline-flex items-center gap-2 hover:bg-white dark:hover:bg-[#404040]",
                   reasoningEffort === 'high'
                     ? "text-[#7f91e0]"
                     : "text-neutral-900 dark:text-neutral-100"
@@ -406,7 +407,7 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
               <ButtonFileUpload onFileUpload={onFileUpload} />
               <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
                 <button
-                  className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none transition-all duration-300 ease-out border border-neutral-200 dark:border-[#555555] bg-white dark:bg-[#404040] text-black dark:text-white hover:cursor-pointer disabled:cursor-not-allowed transform translate-x-[6px]"
+                  className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none transition-all duration-300 ease-out bg-white dark:bg-[#404040] text-black dark:text-white hover:cursor-pointer disabled:cursor-not-allowed transform translate-x-[5px]"
                   disabled={!isBusy && (isOnlyWhitespace(value) && files.length === 0)}
                   type="button"
                   onClick={handleSend}
@@ -938,7 +939,7 @@ export default function ChatClient() {
                     <div
                       className={cn(
                         'min-w-0 max-w-[72%] sm:max-w-[60%] break-words rounded-none px-3 py-2 text-base leading-6 shadow-xs',
-                        'border border-neutral-200 dark:border-[#555555] bg-white text-neutral-900 dark:bg-[#383838] dark:text-white'
+                        'bg-white text-neutral-900 dark:bg-[#383838] dark:text-white'
                       )}
                     >
                       <div className="min-w-0 w-full">
