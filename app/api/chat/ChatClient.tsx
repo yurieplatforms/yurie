@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState, useId, createContext, useContext } from 'react'
-import { ArrowUp, Stop, Paperclip, X, FilePdf, CaretDown, Lightning } from '@phosphor-icons/react'
+import { ArrowUp, Stop, Paperclip, X, FilePdf, CaretDown } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Response as StreamResponse } from '../../components/ui/response'
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '../../components/ui/reasoning'
@@ -42,7 +42,7 @@ function PromptInput({ className, isLoading = false, maxHeight = 240, value, onV
     <PromptInputContext.Provider
       value={{ isLoading, value: value ?? internalValue, setValue: onValueChange ?? handleChange, maxHeight, onSubmit }}
     >
-      <div className={cn('bg-white dark:bg-[#303030] rounded-none p-2 shadow-xs', className)}>
+      <div className={cn('bg-white dark:bg-[#303030] rounded-none p-2 shadow-sm border border-neutral-200/70 dark:border-neutral-700/70', className)}>
         {children}
       </div>
     </PromptInputContext.Provider>
@@ -168,7 +168,7 @@ function FileItem({ file, onRemove }: { file: File; onRemove: (file: File) => vo
   }
   return (
     <div className="relative mr-2 mb-0 flex items-center">
-      <div className="bg-white dark:bg-[#404040] hover:bg-neutral-50 dark:hover:bg-[#4a4a4a] flex w-full items-center gap-3 rounded-none p-2 pr-3 transition-colors">
+      <div className="bg-neutral-100 dark:bg-[#404040] hover:bg-neutral-200 dark:hover:bg-[#4a4a4a] flex w-full items-center gap-3 rounded-none p-2 pr-3 transition-colors">
         <div className="bg-neutral-200 dark:bg-neutral-700 flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-none">
           {isLikelyImage ? (
             previewUrl ? (
@@ -261,7 +261,7 @@ function ButtonFileUpload({ onFileUpload }: { onFileUpload: (files: File[]) => v
         htmlFor={inputId}
         role="button"
         tabIndex={0}
-        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none cursor-pointer bg-transparent hover:bg-white dark:hover:bg-[#404040] transition-colors transform translate-x-[4px]"
+        className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none cursor-pointer bg-transparent hover:bg-neutral-100 dark:hover:bg-[#404040] transition-colors transform translate-x-[4px]"
         aria-label="Add files"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -285,12 +285,10 @@ type ChatInputProps = {
   onFileRemove: (file: File) => void
   model: string
   onModelChange: (model: string) => void
-  reasoningEffort: 'low' | 'high'
-  onReasoningEffortChange: (effort: 'low' | 'high') => void
   stop: () => void
   status?: 'submitted' | 'streaming' | 'ready' | 'error'
 }
-function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRemove, model, onModelChange, reasoningEffort, onReasoningEffortChange, stop, status }: ChatInputProps) {
+function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRemove, model, onModelChange, stop, status }: ChatInputProps) {
   const isOnlyWhitespace = (text: string) => !/[^\s]/.test(text)
   const isBusy = status === 'streaming' || status === 'submitted'
 
@@ -375,7 +373,7 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
                   id="model-select"
                   value={model}
                   onChange={(e) => onModelChange(e.target.value)}
-                  className="absolute inset-0 rounded-none bg-transparent hover:bg-white dark:hover:bg-[#404040] hover:cursor-pointer disabled:cursor-not-allowed text-sm pl-3 pr-7 text-neutral-900 dark:text-neutral-100 appearance-none outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 transition-colors"
+                  className="absolute inset-0 rounded-none bg-transparent hover:bg-neutral-100 dark:hover:bg-[#404040] hover:cursor-pointer disabled:cursor-not-allowed text-sm pl-3 pr-7 text-neutral-900 dark:text-neutral-100 appearance-none outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 transition-colors"
                   style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                   aria-label="Select model"
                   disabled={isBusy}
@@ -387,28 +385,13 @@ function ChatInput({ value, onValueChange, onSend, files, onFileUpload, onFileRe
                 </select>
                 <CaretDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-300 size-4" aria-hidden="true" />
               </div>
-              <button
-                type="button"
-                onClick={() => onReasoningEffortChange(reasoningEffort === 'low' ? 'high' : 'low')}
-                disabled={isBusy}
-                className={cn(
-                  "h-9 rounded-none bg-transparent text-sm px-3 whitespace-nowrap transition-colors disabled:cursor-not-allowed hover:cursor-pointer inline-flex items-center gap-2 hover:bg-white dark:hover:bg-[#404040]",
-                  reasoningEffort === 'high'
-                    ? "text-[#7f91e0]"
-                    : "text-neutral-900 dark:text-neutral-100"
-                )}
-                aria-label={`Extended: ${reasoningEffort === 'high' ? 'on' : 'off'}`}
-                aria-pressed={reasoningEffort === 'high'}
-              >
-                <Lightning className="size-4" weight="bold" aria-hidden="true" />
-                Extended
-              </button>
+              
             </div>
             <div className="flex items-center gap-1 pr-1">
               <ButtonFileUpload onFileUpload={onFileUpload} />
               <PromptInputAction tooltip={status === 'streaming' || status === 'submitted' ? 'Stop' : 'Send'}>
                 <button
-                  className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none transition-all duration-300 ease-out bg-white dark:bg-[#404040] text-black dark:text-white hover:cursor-pointer disabled:cursor-not-allowed transform translate-x-[5px]"
+                  className="size-9 inline-flex items-center justify-center p-0 leading-none rounded-none transition-all duration-300 ease-out bg-neutral-100 dark:bg-[#404040] text-black dark:text-white hover:cursor-pointer disabled:cursor-not-allowed transform translate-x-[5px]"
                   disabled={!isBusy && (isOnlyWhitespace(value) && files.length === 0)}
                   type="button"
                   onClick={handleSend}
@@ -448,7 +431,7 @@ export default function ChatClient() {
   const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
   const [selectedModel, setSelectedModel] = useState<string>('gpt-5')
-  const [reasoningEffort, setReasoningEffort] = useState<'low' | 'high'>('low')
+  
   const streamBufferRef = useRef<string>('')
 
   // ============ Helper Functions ============
@@ -831,8 +814,8 @@ export default function ChatClient() {
           previousResponseId: lastResponseId,
           // Forward the UI model selection
           model: selectedModel,
-          // Expose a knob for reasoning effort; default handled on server
-          reasoningEffort: reasoningEffort,
+          // Use medium reasoning effort by default
+          reasoningEffort: 'medium',
           // Reserve space; adjust as needed for cost control
           max_output_tokens: 30000,
           // Opt-in to reasoning summaries where supported
@@ -919,7 +902,7 @@ export default function ChatClient() {
   }, [])
 
   return (
-    <section ref={containerRef} className={cn('w-full h-full flex flex-col', messages.length === 0 && 'justify-start pt-40 sm:pt-48 max-w-3xl mx-auto')}>
+    <section ref={containerRef} className={cn('w-full h-full flex flex-col', messages.length === 0 && 'justify-center max-w-3xl mx-auto')}>
       <div
         ref={outputRef}
         className={cn('rounded-none pt-1 pb-3 overflow-y-auto text-base font-sans w-full max-w-3xl mx-auto px-3 sm:px-4', messages.length === 0 && 'hidden')}
@@ -974,11 +957,11 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('max-w-3xl mx-auto w-full px-3 sm:px-4', messages.length === 0 ? 'mt-0 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
+        className={cn('max-w-3xl mx-auto w-full px-3 sm:px-4', messages.length === 0 ? '-mt-12 sm:-mt-16 md:-mt-40 lg:-mt-48 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-0')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         {messages.length === 0 ? (
-          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl text-center mt-1 sm:mt-2 mb-6 sm:mb-8 px-3 sm:px-0">
+          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-xl sm:text-2xl md:text-3xl text-center mt-0 mb-8 sm:mb-10 md:mb-12 px-3 sm:px-0">
             What's on your mind today?
           </div>
         ) : null}
@@ -991,8 +974,6 @@ export default function ChatClient() {
           onFileRemove={(file) => setFiles((prev) => prev.filter((f) => f !== file))}
           model={selectedModel}
           onModelChange={setSelectedModel}
-          reasoningEffort={reasoningEffort}
-          onReasoningEffortChange={setReasoningEffort}
           stop={stop}
           status={status}
         />
