@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Response as StreamResponse } from '../../components/ui/response'
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '../../components/ui/reasoning'
-import { PromptInputBox } from '@/app/components/chatinput'
+import { PromptInputBox } from '@/app/components/ui/chatinput'
 import { cn } from '@/app/lib/utils'
 
 // ============ Type Definitions ============
