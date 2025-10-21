@@ -14,35 +14,76 @@ const STREAM_HEADERS = {
 } as const
 export async function POST(request: Request) {
   try {
-    const { messages, model, reasoningEffort, includeReasoningSummary } = (await request.json()) as {
+    const { messages, model, reasoningEffort, includeReasoningSummary, useSearch, inputImages } = (await request.json()) as {
       messages?: ChatMessage[]
       model?: string
       reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
       includeReasoningSummary?: boolean
+      useSearch?: boolean
+      inputImages?: string[]
     }
 
     const client = new OpenAI()
 
-    const selectedModel = typeof model === 'string' && model ? model : 'gpt-5'
+    const selectedModel = typeof model === 'string' && model ? model : 'gpt-4.1'
 
+    // Build input with proper OpenAI format for images
     const input = Array.isArray(messages) && messages.length > 0
-      ? messages.map((m) => ({ role: m.role, content: m.content }))
+      ? messages.map((m, idx) => {
+          // Only add images to the last user message
+          const isLastUserMessage = m.role === 'user' && idx === messages.length - 1
+          const hasImages = isLastUserMessage && Array.isArray(inputImages) && inputImages.length > 0
+          
+          if (hasImages) {
+            // Format content as array with text and images
+            const content: any[] = []
+            
+            // Add text if present
+            if (m.content) {
+              content.push({ type: 'input_text', text: m.content })
+            }
+            
+            // Add images
+            inputImages!.forEach((imageDataUrl) => {
+              content.push({
+                type: 'input_image',
+                image_url: imageDataUrl
+              })
+            })
+            
+            return { role: m.role, content }
+          }
+          
+          // Regular text message
+          return { role: m.role, content: m.content }
+        })
       : [{ role: 'user', content: '' }]
 
-    const effort: 'minimal' | 'low' | 'medium' | 'high' =
-      reasoningEffort === 'minimal' || reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
-        ? reasoningEffort
-        : 'medium'
-
-    const reasoningParams: any = { effort }
-    if (includeReasoningSummary) reasoningParams.summary = 'auto'
-
-    const stream = await client.responses.create({
+    // Only include reasoning params for models that support it (gpt-5)
+    const requestParams: any = {
       model: selectedModel,
       input,
-      reasoning: reasoningParams,
       stream: true,
-    })
+    }
+
+    // Add web search tool if enabled
+    if (useSearch) {
+      requestParams.tools = [{ type: 'web_search' }]
+    }
+
+    // Add reasoning parameters only if reasoningEffort is provided (for gpt-5)
+    if (reasoningEffort) {
+      const effort: 'minimal' | 'low' | 'medium' | 'high' =
+        reasoningEffort === 'minimal' || reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
+          ? reasoningEffort
+          : 'medium'
+
+      const reasoningParams: any = { effort }
+      if (includeReasoningSummary) reasoningParams.summary = 'auto'
+      requestParams.reasoning = reasoningParams
+    }
+
+    const stream = await client.responses.create(requestParams)
 
     const encoder = new TextEncoder()
     const readable = new ReadableStream<Uint8Array>({
