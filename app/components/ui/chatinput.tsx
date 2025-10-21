@@ -348,6 +348,7 @@ const PromptInputActions: React.FC<PromptInputActionsProps> = ({ children, class
 interface PromptInputActionProps extends React.ComponentProps<typeof Tooltip> {
   tooltip: React.ReactNode
   children: React.ReactNode
+  className?: string
   side?: "top" | "bottom" | "left" | "right"
 }
 const PromptInputAction: React.FC<PromptInputActionProps> = ({
