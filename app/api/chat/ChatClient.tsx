@@ -528,7 +528,7 @@ export default function ChatClient() {
   }, [messages, status, lastResponseId, processStreamChunk])
 
   return (
-    <section ref={containerRef} className={cn('w-full h-full flex flex-col', messages.length === 0 && 'justify-center max-w-3xl mx-auto')}>
+    <section ref={containerRef} className={cn('w-full h-full flex flex-col', messages.length === 0 && 'justify-start sm:justify-center max-w-3xl mx-auto')}>
       <div
         ref={outputRef}
         className={cn('rounded-none pt-1 pb-3 overflow-y-auto text-base font-sans w-full max-w-3xl mx-auto px-3 sm:px-4', messages.length === 0 && 'hidden')}
@@ -583,11 +583,11 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('max-w-3xl mx-auto w-full px-3 sm:px-4', messages.length === 0 ? '-mt-12 sm:-mt-16 md:-mt-40 lg:-mt-48 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+24px)] sm:mb-6')}
+        className={cn('max-w-3xl mx-auto w-full px-3 sm:px-4', messages.length === 0 ? 'mt-2 sm:-mt-16 md:-mt-40 lg:-mt-48 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+24px)] sm:mb-6')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         {messages.length === 0 ? (
-          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-xl sm:text-2xl md:text-3xl text-center mt-0 mb-8 sm:mb-10 md:mb-12 px-3 sm:px-0">
+          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-xl sm:text-2xl md:text-3xl text-center mt-0 mb-4 sm:mb-10 md:mb-12 px-3 sm:px-0">
             What's on your mind today?
           </div>
         ) : null}
