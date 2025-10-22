@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Yurie',
     start_url: '/',
     display: 'standalone',
-    background_color: '#000000',
-    theme_color: '#000000',
+    background_color: '#212121',
+    theme_color: '#212121',
     icons: [
       {
         src: '/favicon.ico?v=3',
