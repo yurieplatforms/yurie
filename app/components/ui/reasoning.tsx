@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useContext, useEffect, useMemo, useState, createContext, type ComponentProps } from 'react'
 import { Response } from './response'
-import { CaretDown as ChevronDown, Lightbulb as Brain } from '@phosphor-icons/react'
+import { CaretDown as ChevronDown, Lightbulb } from '@phosphor-icons/react'
 import { cn } from '@/app/lib/utils'
 
 type ReasoningContextValue = {
@@ -126,7 +126,7 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({ className, chil
     >
       {children ?? (
         <>
-          <Brain className="size-4" aria-hidden="true" />
+          <Lightbulb className="size-4" aria-hidden="true" />
           <span>{getThinkingMessage(isStreaming, duration, title)}</span>
           <ChevronDown className={cn('size-4 transition-transform', isOpen ? 'rotate-180' : 'rotate-0')} aria-hidden="true" />
         </>
