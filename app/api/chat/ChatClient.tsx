@@ -583,11 +583,11 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('max-w-3xl mx-auto w-full px-2 sm:px-4', messages.length === 0 ? '-mt-32 sm:-mt-16 md:-mt-40 lg:-mt-48 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+32px)] sm:mb-6')}
+        className={cn('max-w-3xl mx-auto w-full px-2 sm:px-4', messages.length === 0 ? '-mt-40 sm:-mt-24 md:-mt-40 lg:-mt-48 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+32px)] sm:mb-6')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         {messages.length === 0 ? (
-          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-xl sm:text-2xl md:text-3xl text-center mt-0 mb-4 sm:mb-10 md:mb-12 px-3 sm:px-0">
+          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl md:text-3xl text-center mt-0 mb-8 px-3 sm:px-0">
             What's on your mind today?
           </div>
         ) : null}

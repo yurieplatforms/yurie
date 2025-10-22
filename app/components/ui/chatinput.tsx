@@ -537,7 +537,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                         e.stopPropagation()
                         handleRemoveFile(index)
                       }}
-                      className="absolute top-1 right-1 rounded-full bg-gray-700/90 dark:bg-[#444444]/90 hover:bg-gray-800 dark:hover:bg-[#555555] p-0.5 opacity-100 transition-all"
+                      className="absolute top-1 right-1 rounded-full bg-gray-700/90 dark:bg-[#444444]/90 hover:bg-gray-800 dark:hover:bg-[#555555] p-0.5 opacity-100 transition-all cursor-pointer"
                     >
                       <X className="h-3 w-3 text-white dark:text-gray-200" />
                     </button>
@@ -585,7 +585,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 type="button"
                 onClick={() => handleToggleChange("search")}
                 className={cn(
-                  "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
+                  "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8 cursor-pointer",
                   showSearch
                     ? "bg-[#1EAEDB]/15 border-[#1EAEDB] text-[#1EAEDB]"
                     : "bg-transparent border-transparent text-gray-500 dark:text-[#9CA3AF] hover:text-gray-700 dark:hover:text-[#D1D5DB]"
@@ -621,7 +621,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 type="button"
                 onClick={() => handleToggleChange("think")}
                 className={cn(
-                  "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8",
+                  "rounded-full transition-all flex items-center gap-1 px-2 py-1 border h-8 cursor-pointer",
                   showThink
                     ? "bg-[#8B5CF6]/15 border-[#8B5CF6] text-[#8B5CF6]"
                     : "bg-transparent border-transparent text-gray-500 dark:text-[#9CA3AF] hover:text-gray-700 dark:hover:text-[#D1D5DB]"
@@ -659,7 +659,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             <Button
               variant="default"
               size="icon"
-              className="h-8 w-8 rounded-full transition-all duration-200 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-white/80 text-white dark:text-[#1F2023]"
+              className="h-8 w-8 rounded-full transition-all duration-200 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-white/80 text-white dark:text-[#1F2023] cursor-pointer"
               onClick={handleSubmit}
               disabled={isLoading}
             >
