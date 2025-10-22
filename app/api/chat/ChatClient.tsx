@@ -281,7 +281,11 @@ export default function ChatClient() {
             return (
               <div
                 key={i}
-                className={cn('prose prose-neutral dark:prose-invert')}>
+                className={cn(
+                  'prose prose-neutral dark:prose-invert break-words',
+                  // Tighter vertical rhythm inside bubbles without changing font size
+                  'prose-p:my-0 prose-p:leading-snug prose-li:my-0 prose-ul:my-1 prose-ol:my-1 prose-pre:my-2'
+                )}>
                 <StreamResponse className="w-full" parseIncompleteMarkdown>
                   {p.value}
                 </StreamResponse>
@@ -583,7 +587,7 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('max-w-3xl mx-auto w-full px-2 sm:px-4', messages.length === 0 ? '-mt-44 sm:-mt-24 md:-mt-40 lg:-mt-48 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+32px)] sm:mb-6')}
+        className={cn('max-w-3xl mx-auto w-full px-2 sm:px-4', messages.length === 0 ? '-mt-44 sm:-mt-24 md:-mt-40 lg:-mt-48 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+16px)] sm:mb-4')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         {messages.length === 0 ? (
