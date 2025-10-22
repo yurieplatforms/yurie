@@ -398,16 +398,8 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const [files, setFiles] = React.useState<File[]>([])
   const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({})
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null)
-  const [showSearch, setShowSearch] = React.useState<boolean>(() => {
-    if (typeof window === "undefined") return false
-    const saved = window.localStorage.getItem("yurie.inputMode")
-    return saved === "search"
-  })
-  const [showThink, setShowThink] = React.useState<boolean>(() => {
-    if (typeof window === "undefined") return false
-    const saved = window.localStorage.getItem("yurie.inputMode")
-    return saved === "think"
-  })
+  const [showSearch, setShowSearch] = React.useState<boolean>(false)
+  const [showThink, setShowThink] = React.useState<boolean>(false)
   const uploadInputRef = React.useRef<HTMLInputElement>(null)
   const promptBoxRef = React.useRef<HTMLDivElement>(null)
 
@@ -420,6 +412,23 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
       setShowSearch(false)
     }
   }
+
+  // Hydration-safe: read persisted input mode after mount to avoid SSR/client mismatch
+  React.useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("yurie.inputMode")
+      if (saved === "search") {
+        setShowSearch(true)
+        setShowThink(false)
+      } else if (saved === "think") {
+        setShowThink(true)
+        setShowSearch(false)
+      } else {
+        setShowSearch(false)
+        setShowThink(false)
+      }
+    } catch {}
+  }, [])
 
   React.useEffect(() => {
     try {
