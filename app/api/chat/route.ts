@@ -12,6 +12,7 @@ const STREAM_HEADERS = {
   'Cache-Control': 'no-cache',
   'X-Accel-Buffering': 'no',
 } as const
+const INSTRUCTIONS = 'You are Yurie, a helpful assistant.'
 export async function POST(request: Request) {
   try {
     const { messages, model, reasoningEffort, includeReasoningSummary, useSearch, inputImages } = (await request.json()) as {
@@ -65,6 +66,9 @@ export async function POST(request: Request) {
       input,
       stream: true,
     }
+
+    // Set system-level instructions per OpenAI best practices
+    requestParams.instructions = INSTRUCTIONS
 
     // Add web search tool if enabled
     if (useSearch) {
