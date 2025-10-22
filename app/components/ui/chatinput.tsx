@@ -398,8 +398,16 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const [files, setFiles] = React.useState<File[]>([])
   const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({})
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null)
-  const [showSearch, setShowSearch] = React.useState(false)
-  const [showThink, setShowThink] = React.useState(false)
+  const [showSearch, setShowSearch] = React.useState<boolean>(() => {
+    if (typeof window === "undefined") return false
+    const saved = window.localStorage.getItem("yurie.inputMode")
+    return saved === "search"
+  })
+  const [showThink, setShowThink] = React.useState<boolean>(() => {
+    if (typeof window === "undefined") return false
+    const saved = window.localStorage.getItem("yurie.inputMode")
+    return saved === "think"
+  })
   const uploadInputRef = React.useRef<HTMLInputElement>(null)
   const promptBoxRef = React.useRef<HTMLDivElement>(null)
 
@@ -412,6 +420,13 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
       setShowSearch(false)
     }
   }
+
+  React.useEffect(() => {
+    try {
+      const mode = showSearch ? "search" : showThink ? "think" : "none"
+      window.localStorage.setItem("yurie.inputMode", mode)
+    } catch {}
+  }, [showSearch, showThink])
 
   const isImageFile = (file: File) => file.type.startsWith("image/")
 
@@ -482,8 +497,6 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
       setInput("")
       setFiles([])
       setFilePreviews({})
-      setShowThink(false)
-      setShowSearch(false)
     }
   }
 
