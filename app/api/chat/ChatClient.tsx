@@ -413,28 +413,32 @@ export default function ChatClient() {
         }
         // Upload attachments directly to storage to avoid large request payloads (413 on Vercel)
         async function uploadFileToBlob(file: File): Promise<string> {
-          const createRes = await fetch('/api/upload', {
+          const pathname = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name}`
+          const res = await fetch('/api/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename: file.name, contentType: file.type }),
+            body: JSON.stringify({
+              type: 'blob.generate-client-token',
+              payload: {
+                pathname,
+                multipart: false,
+                clientPayload: null,
+              },
+            }),
           })
-          if (!createRes.ok) throw new Error('Failed to create upload URL')
-          const { uploadUrl } = (await createRes.json()) as { uploadUrl: string }
-          if (!uploadUrl) throw new Error('Invalid upload URL')
+          if (!res.ok) throw new Error('Failed to generate client token')
+          const data = await res.json()
+          const clientToken: string | undefined = data?.clientToken
+          if (!clientToken) throw new Error('Missing client token')
 
-          const uploadRes = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': file.type || 'application/octet-stream',
-              'x-vercel-filename': file.name,
-            },
-            body: file,
+          // Use client-side helper via the SDK's /client export
+          const { upload } = await import('@vercel/blob/client')
+          const uploaded = await upload(pathname, file, {
+            access: 'public',
+            handleUploadUrl: '/api/upload',
+            contentType: file.type || 'application/octet-stream',
           })
-          if (!uploadRes.ok) throw new Error('File upload failed')
-          const uploaded = await uploadRes.json()
-          const publicUrl: string = uploaded?.url || uploaded?.downloadUrl || ''
-          if (!publicUrl) throw new Error('Upload did not return a URL')
-          return publicUrl
+          return uploaded?.url || uploaded?.downloadUrl || ''
         }
 
         const imageFiles = filesToProcess.filter((f) => f.type.startsWith('image/'))
