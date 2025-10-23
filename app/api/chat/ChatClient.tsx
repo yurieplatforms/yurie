@@ -412,26 +412,8 @@ export default function ChatClient() {
           setSentAttachmentsByMessageIndex((prev) => ({ ...prev, [indexForThisMessage]: attachmentsForPreview }))
         }
         // Upload attachments directly to storage to avoid large request payloads (413 on Vercel)
-        async function uploadFileToBlob(file: File): Promise<string> {
+        const uploadFileToBlob = async (file: File): Promise<string> => {
           const pathname = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name}`
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'blob.generate-client-token',
-              payload: {
-                pathname,
-                multipart: false,
-                clientPayload: null,
-              },
-            }),
-          })
-          if (!res.ok) throw new Error('Failed to generate client token')
-          const data = await res.json()
-          const clientToken: string | undefined = data?.clientToken
-          if (!clientToken) throw new Error('Missing client token')
-
-          // Use client-side helper via the SDK's /client export
           const { upload } = await import('@vercel/blob/client')
           const uploaded = await upload(pathname, file, {
             access: 'public',
