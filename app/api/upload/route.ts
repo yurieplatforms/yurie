@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server'
-import { createUploadURL } from '@vercel/blob'
+import { handleUpload } from '@vercel/blob/client'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const { filename, contentType } = (await request.json?.()) || {}
+    const body = await request.json()
 
     const allowedContentTypes = [
       'application/pdf',
@@ -20,28 +20,29 @@ export async function POST(request: NextRequest) {
       'image/avif',
       'image/heic',
       'image/heif',
-    ] as const
+    ]
 
-    if (typeof contentType === 'string' && contentType.length > 0) {
-      if (!allowedContentTypes.includes(contentType as any)) {
-        return new Response(JSON.stringify({ error: 'Unsupported content type' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        })
-      }
-    }
-
-    const { url } = await createUploadURL({
-      access: 'public',
-      allowedContentTypes: allowedContentTypes as unknown as string[],
+    const result = await handleUpload({
+      request,
+      body,
+      onBeforeGenerateToken: async (_pathname, _clientPayload, _multipart) => {
+        return {
+          allowedContentTypes,
+          maximumSizeInBytes: 10 * 1024 * 1024,
+          addRandomSuffix: true,
+          allowOverwrite: false,
+        }
+      },
+      // Optionally, update your DB when uploads finish
+      // onUploadCompleted: async ({ blob }) => {}
     })
 
-    return new Response(JSON.stringify({ uploadUrl: url, filename }), {
+    return new Response(JSON.stringify(result), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     })
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'Failed to create upload URL' }), {
+    return new Response(JSON.stringify({ error: 'Failed to handle upload' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
