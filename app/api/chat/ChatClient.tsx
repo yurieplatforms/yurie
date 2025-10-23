@@ -413,6 +413,20 @@ export default function ChatClient() {
         }
         // Upload attachments directly to storage to avoid large request payloads (413 on Vercel)
         const uploadFileToBlob = async (file: File): Promise<string> => {
+          // Try server upload first for very small files (<= ~4.5 MB)
+          if (file.size <= 4.5 * 1024 * 1024) {
+            try {
+              const serverRes = await fetch(`/api/upload/server?filename=${encodeURIComponent(file.name)}`, {
+                method: 'POST',
+                body: file,
+              })
+              if (serverRes.ok) {
+                const blob = await serverRes.json()
+                if (blob?.url) return blob.url
+              }
+            } catch {}
+          }
+          // Fallback to client upload via handleUpload
           const pathname = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name}`
           const { upload } = await import('@vercel/blob/client')
           const uploaded = await upload(pathname, file, {
