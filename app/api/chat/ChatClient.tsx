@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { FileText } from 'lucide-react'
 import { Response as StreamResponse } from '../../components/ui/response'
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '../../components/ui/reasoning'
 import { PromptInputBox } from '@/app/components/ui/chatinput'
@@ -36,7 +37,15 @@ function MessageAttachmentList({ attachments }: { attachments: AttachmentPreview
             alt={att.name}
             className="rounded-none max-h-56 object-cover"
           />
-        ) : null
+        ) : (
+          <div
+            key={att.id}
+            className="flex items-center gap-2 px-2 py-1 rounded-xl bg-neutral-100 dark:bg-[#3A3A40] text-xs text-neutral-800 dark:text-neutral-100 border border-neutral-200 dark:border-transparent"
+          >
+            <FileText className="w-4 h-4" />
+            <span className="max-w-[12rem] truncate">{att.name}</span>
+          </div>
+        )
       ))}
     </div>
   )
@@ -426,6 +435,7 @@ export default function ChatClient() {
               })
           )
         )
+        const selectedModel = (useThinkMode || inputPdfs.length > 0) ? 'gpt-5' : 'gpt-4.1'
         const stripImageData = (text: string): string => {
           const angleTag = /<image:[^>]+>/gi
           const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
@@ -447,7 +457,7 @@ export default function ChatClient() {
             inputPdfs,
             previousResponseId: lastResponseId,
             // Use gpt-4.1 by default, gpt-5 with medium reasoning when think is enabled
-            model: useThinkMode ? 'gpt-5' : 'gpt-4.1',
+            model: selectedModel,
             reasoningEffort: useThinkMode ? 'medium' : undefined,
             // Reserve space; adjust as needed for cost control
             max_output_tokens: 30000,
@@ -590,11 +600,6 @@ export default function ChatClient() {
         className={cn('max-w-3xl mx-auto w-full px-2 sm:px-4', messages.length === 0 ? '-mt-44 sm:-mt-24 md:-mt-40 lg:-mt-48 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+16px)] sm:mb-4')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
-        {messages.length === 0 ? (
-          <div className="text-neutral-600 dark:text-neutral-300 font-medium text-2xl sm:text-3xl md:text-3xl text-center mt-0 mb-8 px-3 sm:px-0">
-            What's on your mind today?
-          </div>
-        ) : null}
         <PromptInputBox
           onSend={handleSendMessage}
           isLoading={status === 'streaming' || status === 'submitted'}
