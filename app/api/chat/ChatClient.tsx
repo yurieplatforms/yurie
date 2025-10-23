@@ -411,31 +411,41 @@ export default function ChatClient() {
           const indexForThisMessage = nextMessages.length - 1
           setSentAttachmentsByMessageIndex((prev) => ({ ...prev, [indexForThisMessage]: attachmentsForPreview }))
         }
+        // Upload attachments directly to storage to avoid large request payloads (413 on Vercel)
+        async function uploadFileToBlob(file: File): Promise<string> {
+          const createRes = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, contentType: file.type }),
+          })
+          if (!createRes.ok) throw new Error('Failed to create upload URL')
+          const { uploadUrl } = (await createRes.json()) as { uploadUrl: string }
+          if (!uploadUrl) throw new Error('Invalid upload URL')
+
+          const uploadRes = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': file.type || 'application/octet-stream',
+              'x-vercel-filename': file.name,
+            },
+            body: file,
+          })
+          if (!uploadRes.ok) throw new Error('File upload failed')
+          const uploaded = await uploadRes.json()
+          const publicUrl: string = uploaded?.url || uploaded?.downloadUrl || ''
+          if (!publicUrl) throw new Error('Upload did not return a URL')
+          return publicUrl
+        }
+
         const imageFiles = filesToProcess.filter((f) => f.type.startsWith('image/'))
-        const inputImages: string[] = await Promise.all(
-          imageFiles.map(
-            (f) =>
-              new Promise<string>((resolve, reject) => {
-                const reader = new FileReader()
-                reader.onload = () => resolve(String(reader.result))
-                reader.onerror = () => reject(reader.error)
-                reader.readAsDataURL(f)
-              })
-          )
-        )
         const pdfFiles = filesToProcess.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
-        const inputPdfs: { filename: string; dataUrl: string }[] = await Promise.all(
-          pdfFiles.map(
-            (f) =>
-              new Promise<{ filename: string; dataUrl: string }>((resolve, reject) => {
-                const reader = new FileReader()
-                reader.onload = () => resolve({ filename: f.name, dataUrl: String(reader.result) })
-                reader.onerror = () => reject(reader.error)
-                reader.readAsDataURL(f)
-              })
-          )
-        )
-        const selectedModel = (useThinkMode || inputPdfs.length > 0) ? 'gpt-5' : 'gpt-4.1'
+
+        const [imageUrls, pdfUrls] = await Promise.all([
+          Promise.all(imageFiles.map((f) => uploadFileToBlob(f))).catch(() => [] as string[]),
+          Promise.all(pdfFiles.map((f) => uploadFileToBlob(f))).catch(() => [] as string[]),
+        ])
+
+        const selectedModel = (useThinkMode || pdfUrls.length > 0) ? 'gpt-5' : 'gpt-4.1'
         const stripImageData = (text: string): string => {
           const angleTag = /<image:[^>]+>/gi
           const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
@@ -453,8 +463,8 @@ export default function ChatClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             messages: payloadMessages,
-            inputImages,
-            inputPdfs,
+            inputImageUrls: imageUrls,
+            inputPdfUrls: pdfUrls,
             previousResponseId: lastResponseId,
             // Use gpt-4.1 by default, gpt-5 with medium reasoning when think is enabled
             model: selectedModel,

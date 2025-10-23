@@ -15,7 +15,7 @@ const STREAM_HEADERS = {
 const INSTRUCTIONS = 'You are Yurie, a helpful assistant.'
 export async function POST(request: Request) {
   try {
-    const { messages, model, reasoningEffort, includeReasoningSummary, useSearch, inputImages, inputPdfs } = (await request.json()) as {
+    const { messages, model, reasoningEffort, includeReasoningSummary, useSearch, inputImages, inputPdfs, inputImageUrls, inputPdfUrls } = (await request.json()) as {
       messages?: ChatMessage[]
       model?: string
       reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
@@ -23,21 +23,25 @@ export async function POST(request: Request) {
       useSearch?: boolean
       inputImages?: string[]
       inputPdfs?: { filename: string; dataUrl: string }[]
+      inputImageUrls?: string[]
+      inputPdfUrls?: string[]
     }
 
     const client = new OpenAI()
 
     const selectedModel = typeof model === 'string' && model ? model : 'gpt-4.1'
 
-    // Build input with proper OpenAI format for images
+    // Build input with proper OpenAI format for images and PDFs
     const input = Array.isArray(messages) && messages.length > 0
       ? messages.map((m, idx) => {
           // Only add images/PDFs to the last user message
           const isLastUserMessage = m.role === 'user' && idx === messages.length - 1
           const hasImages = isLastUserMessage && Array.isArray(inputImages) && inputImages.length > 0
+          const hasImageUrls = isLastUserMessage && Array.isArray(inputImageUrls) && inputImageUrls.length > 0
           const hasPdfs = isLastUserMessage && Array.isArray(inputPdfs) && inputPdfs.length > 0
+          const hasPdfUrls = isLastUserMessage && Array.isArray(inputPdfUrls) && inputPdfUrls.length > 0
 
-          if (hasImages || hasPdfs) {
+          if (hasImages || hasImageUrls || hasPdfs || hasPdfUrls) {
             const content: any[] = []
 
             if (m.content) {
@@ -50,12 +54,27 @@ export async function POST(request: Request) {
               })
             }
 
+            if (hasImageUrls) {
+              inputImageUrls!.forEach((imageUrl) => {
+                content.push({ type: 'input_image', image_url: imageUrl })
+              })
+            }
+
             if (hasPdfs) {
               inputPdfs!.forEach(({ filename, dataUrl }) => {
                 content.push({
                   type: 'input_file',
                   filename,
                   file_data: dataUrl,
+                })
+              })
+            }
+
+            if (hasPdfUrls) {
+              inputPdfUrls!.forEach((fileUrl) => {
+                content.push({
+                  type: 'input_file',
+                  file_url: fileUrl,
                 })
               })
             }
