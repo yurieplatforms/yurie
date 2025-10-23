@@ -15,13 +15,14 @@ const STREAM_HEADERS = {
 const INSTRUCTIONS = 'You are Yurie, a helpful assistant.'
 export async function POST(request: Request) {
   try {
-    const { messages, model, reasoningEffort, includeReasoningSummary, useSearch, inputImages } = (await request.json()) as {
+    const { messages, model, reasoningEffort, includeReasoningSummary, useSearch, inputImages, inputPdfs } = (await request.json()) as {
       messages?: ChatMessage[]
       model?: string
       reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
       includeReasoningSummary?: boolean
       useSearch?: boolean
       inputImages?: string[]
+      inputPdfs?: { filename: string; dataUrl: string }[]
     }
 
     const client = new OpenAI()
@@ -31,31 +32,37 @@ export async function POST(request: Request) {
     // Build input with proper OpenAI format for images
     const input = Array.isArray(messages) && messages.length > 0
       ? messages.map((m, idx) => {
-          // Only add images to the last user message
+          // Only add images/PDFs to the last user message
           const isLastUserMessage = m.role === 'user' && idx === messages.length - 1
           const hasImages = isLastUserMessage && Array.isArray(inputImages) && inputImages.length > 0
-          
-          if (hasImages) {
-            // Format content as array with text and images
+          const hasPdfs = isLastUserMessage && Array.isArray(inputPdfs) && inputPdfs.length > 0
+
+          if (hasImages || hasPdfs) {
             const content: any[] = []
-            
-            // Add text if present
+
             if (m.content) {
               content.push({ type: 'input_text', text: m.content })
             }
-            
-            // Add images
-            inputImages!.forEach((imageDataUrl) => {
-              content.push({
-                type: 'input_image',
-                image_url: imageDataUrl
+
+            if (hasImages) {
+              inputImages!.forEach((imageDataUrl) => {
+                content.push({ type: 'input_image', image_url: imageDataUrl })
               })
-            })
-            
+            }
+
+            if (hasPdfs) {
+              inputPdfs!.forEach(({ filename, dataUrl }) => {
+                content.push({
+                  type: 'input_file',
+                  filename,
+                  file_data: dataUrl,
+                })
+              })
+            }
+
             return { role: m.role, content }
           }
-          
-          // Regular text message
+
           return { role: m.role, content: m.content }
         })
       : [{ role: 'user', content: '' }]
