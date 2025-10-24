@@ -12,7 +12,37 @@ const STREAM_HEADERS = {
   'Cache-Control': 'no-cache',
   'X-Accel-Buffering': 'no',
 } as const
-const INSTRUCTIONS = 'You are Yurie, a helpful assistant.'
+const INSTRUCTIONS = 'You are Yurie, a helpful assistant. When up-to-date, real-world, or hard-to-remember facts are needed, and the web_search tool is available, call it to gather information before answering. Use web_search sparingly and only when it will materially improve accuracy or timeliness. If you do not need it, answer directly.'
+
+// Simple heuristic to decide whether a query likely needs web search
+function shouldEnableSearchFromQuery(text: string | undefined | null): boolean {
+  if (!text) return false
+  const t = text.toLowerCase()
+
+  // Explicit user intent to search/browse
+  const explicitSearchRe = /(search|look up|google|bing|browse|check (?:online|the web|the internet)|find (?:online|on the web)|web results|browse the web)/i
+  if (explicitSearchRe.test(t)) return true
+
+  // Recency-sensitive keywords
+  const recencyRe = /(latest|current|today|now|recent|breaking|news|update|up[- ]to[- ]date|live|this (?:week|month|year))/i
+  if (recencyRe.test(t)) return true
+
+  // Common live/volatile info triggers
+  const volatileRe = /(stock|price|weather|score|earnings|release date|schedule|deadline|launch|trending|trend|ranking|rank)/i
+  if (volatileRe.test(t)) return true
+
+  // Questions about very recent years suggest recency
+  if (/\b202[4-9]\b/.test(t) && /(what|who|when|where|is|are)/i.test(t)) return true
+
+  // Presence of URLs often benefits from web context
+  if (/https?:\/\//i.test(t)) return true
+
+  // Docs/help queries
+  const docsRe = /(docs|documentation|api reference|how to (?:use|install|configure)|error code|stack trace)/i
+  if (docsRe.test(t)) return true
+
+  return false
+}
 export async function POST(request: Request) {
   try {
     const { messages, model, reasoningEffort, includeReasoningSummary, useSearch, inputImages, inputPdfs, inputImageUrls, inputPdfUrls } = (await request.json()) as {
@@ -29,9 +59,24 @@ export async function POST(request: Request) {
 
     const client = new OpenAI()
 
+    // Default to gpt-4.1 which supports vision and file inputs
     const selectedModel = typeof model === 'string' && model ? model : 'gpt-4.1'
 
-    // Build input with proper OpenAI format for images and PDFs
+    // Log incoming file attachments for debugging
+    if (inputImages && inputImages.length > 0) {
+      console.log('[API] Received images (base64):', inputImages.length, 'files')
+    }
+    if (inputPdfs && inputPdfs.length > 0) {
+      console.log('[API] Received PDFs (base64):', inputPdfs.length, 'files')
+    }
+    if (inputImageUrls && inputImageUrls.length > 0) {
+      console.log('[API] Received image URLs:', inputImageUrls.length, 'files')
+    }
+    if (inputPdfUrls && inputPdfUrls.length > 0) {
+      console.log('[API] Received PDF URLs:', inputPdfUrls.length, 'files')
+    }
+
+    // Build input with proper OpenAI Responses API format for images and PDFs
     const input = Array.isArray(messages) && messages.length > 0
       ? messages.map((m, idx) => {
           // Only add images/PDFs to the last user message
@@ -50,18 +95,21 @@ export async function POST(request: Request) {
 
             if (hasImages) {
               inputImages!.forEach((imageDataUrl) => {
+                console.log('[API] Adding base64 image to content (length:', imageDataUrl.length, ')')
                 content.push({ type: 'input_image', image_url: imageDataUrl })
               })
             }
 
             if (hasImageUrls) {
               inputImageUrls!.forEach((imageUrl) => {
+                console.log('[API] Adding image URL to content:', imageUrl.substring(0, 50) + '...')
                 content.push({ type: 'input_image', image_url: imageUrl })
               })
             }
 
             if (hasPdfs) {
               inputPdfs!.forEach(({ filename, dataUrl }) => {
+                console.log('[API] Adding base64 PDF to content:', filename, '(length:', dataUrl.length, ')')
                 content.push({
                   type: 'input_file',
                   filename,
@@ -72,6 +120,7 @@ export async function POST(request: Request) {
 
             if (hasPdfUrls) {
               inputPdfUrls!.forEach((fileUrl) => {
+                console.log('[API] Adding PDF URL to content:', fileUrl.substring(0, 50) + '...')
                 content.push({
                   type: 'input_file',
                   file_url: fileUrl,
@@ -79,6 +128,7 @@ export async function POST(request: Request) {
               })
             }
 
+            console.log('[API] Built content array with', content.length, 'items')
             return { role: m.role, content }
           }
 
@@ -96,8 +146,14 @@ export async function POST(request: Request) {
     // Set system-level instructions per OpenAI best practices
     requestParams.instructions = INSTRUCTIONS
 
-    // Add web search tool if enabled
-    if (useSearch) {
+    // Decide whether to enable web search tool automatically based on the latest user message
+    const lastUserMessage = Array.isArray(messages)
+      ? [...messages].reverse().find((m) => m.role === 'user')
+      : undefined
+    const autoEnableSearch = shouldEnableSearchFromQuery(lastUserMessage?.content)
+
+    // Add web search tool if explicitly requested or auto-detected
+    if (useSearch || autoEnableSearch) {
       requestParams.tools = [{ type: 'web_search' }]
     }
 
@@ -112,6 +168,8 @@ export async function POST(request: Request) {
       if (includeReasoningSummary) reasoningParams.summary = 'auto'
       requestParams.reasoning = reasoningParams
     }
+
+    console.log('[API] Calling OpenAI with model:', selectedModel, 'tools:', requestParams.tools ? 'enabled' : 'none')
 
     const stream = await client.responses.create(requestParams)
 

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { FileText } from 'lucide-react'
 import { Response as StreamResponse } from '../../components/ui/response'
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '../../components/ui/reasoning'
-import { PromptInputBox } from '@/app/components/ui/chatinput'
+import { AIChatInput } from '../../components/ui/ai-chat-input'
 import { cn } from '@/app/lib/utils'
 
 // ============ Type Definitions ============
@@ -59,6 +59,7 @@ export default function ChatClient() {
   const containerRef = useRef<HTMLDivElement>(null)
   const inputWrapperRef = useRef<HTMLDivElement>(null)
   const [outputHeight, setOutputHeight] = useState<number>(0)
+  // local input state moves inside AIChatInput
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
   const [reasoningByMessageIndex, setReasoningByMessageIndex] = useState<Record<number, string>>({})
   const currentAssistantIndexRef = useRef<number | null>(null)
@@ -91,17 +92,36 @@ export default function ChatClient() {
         const inputBox = inputEl?.getBoundingClientRect()
         const inputHeight = inputBox?.height ?? 0
         const mt = inputEl ? parseFloat(getComputedStyle(inputEl).marginTop || '0') : 0
-        const available = Math.max(0, viewportHeight - containerTop - inputHeight - mt)
+        const mb = inputEl ? parseFloat(getComputedStyle(inputEl).marginBottom || '0') : 0
+        const available = Math.max(0, viewportHeight - containerTop - inputHeight - mt - mb)
         setOutputHeight(Math.floor(available))
       } catch {}
     }
     recompute()
-    const ro = inputWrapperRef.current ? new ResizeObserver(recompute) : null
+    const ro = inputWrapperRef.current ? new ResizeObserver(() => {
+      // Use requestAnimationFrame to ensure DOM has updated
+      requestAnimationFrame(recompute)
+    }) : null
     if (ro && inputWrapperRef.current) ro.observe(inputWrapperRef.current)
+    
+    // Also observe all children for size changes
+    const childObserver = new MutationObserver(() => {
+      requestAnimationFrame(recompute)
+    })
+    if (inputWrapperRef.current) {
+      childObserver.observe(inputWrapperRef.current, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['style', 'class']
+      })
+    }
+    
     window.addEventListener('resize', recompute)
     window.visualViewport?.addEventListener('resize', recompute)
     return () => {
       if (ro) ro.disconnect()
+      childObserver.disconnect()
       window.removeEventListener('resize', recompute)
       window.visualViewport?.removeEventListener('resize', recompute)
     }
@@ -375,11 +395,12 @@ export default function ChatClient() {
     return clean
   }, [])
 
-  const handleSendMessage = useCallback((message: string, uploadedFiles?: File[], options?: { showThink?: boolean; showSearch?: boolean }) => {
+  const handleSendMessage = useCallback((message: string, uploadedFiles?: File[], options?: { showThink?: boolean; showSearch?: boolean; model?: string }) => {
     const trimmed = message.trim()
     const filesToProcess = uploadedFiles || []
     const useThinkMode = options?.showThink || false
     const useSearchMode = options?.showSearch || false
+    const preferredModel = options?.model
     if ((trimmed.length === 0 && filesToProcess.length === 0) || status === 'submitted' || status === 'streaming') return
     
     const userMsg: ChatMessage = { role: 'user', content: trimmed }
@@ -411,41 +432,44 @@ export default function ChatClient() {
           const indexForThisMessage = nextMessages.length - 1
           setSentAttachmentsByMessageIndex((prev) => ({ ...prev, [indexForThisMessage]: attachmentsForPreview }))
         }
-        // Upload attachments directly to storage to avoid large request payloads (413 on Vercel)
-        const uploadFileToBlob = async (file: File): Promise<string> => {
-          // Try server upload first for very small files (<= ~4.5 MB)
-          if (file.size <= 4.5 * 1024 * 1024) {
-            try {
-              const serverRes = await fetch(`/api/upload/server?filename=${encodeURIComponent(file.name)}`, {
-                method: 'POST',
-                body: file,
-              })
-              if (serverRes.ok) {
-                const blob = await serverRes.json()
-                if (blob?.url) return blob.url
-              }
-            } catch {}
-          }
-          // Fallback to client upload via handleUpload
-          const pathname = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}-${file.name}`
-          const { upload } = await import('@vercel/blob/client')
-          const uploaded = await upload(pathname, file, {
-            access: 'public',
-            handleUploadUrl: '/api/upload',
-            contentType: file.type || 'application/octet-stream',
+
+        // Convert files to base64 data URLs for direct API submission
+        // This follows OpenAI's documented approach for file inputs
+        const fileToBase64 = async (file: File): Promise<string> => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(file)
           })
-          return uploaded?.url || uploaded?.downloadUrl || ''
         }
 
         const imageFiles = filesToProcess.filter((f) => f.type.startsWith('image/'))
         const pdfFiles = filesToProcess.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
 
-        const [imageUrls, pdfUrls] = await Promise.all([
-          Promise.all(imageFiles.map((f) => uploadFileToBlob(f))).catch(() => [] as string[]),
-          Promise.all(pdfFiles.map((f) => uploadFileToBlob(f))).catch(() => [] as string[]),
-        ])
+        // Convert files to base64 data URLs
+        let imageDataUrls: string[] = []
+        let pdfData: Array<{ filename: string; dataUrl: string }> = []
+        
+        try {
+          if (imageFiles.length > 0) {
+            imageDataUrls = await Promise.all(imageFiles.map((f) => fileToBase64(f)))
+            console.log('Encoded images:', imageDataUrls.length, 'files')
+          }
+          if (pdfFiles.length > 0) {
+            const pdfDataUrls = await Promise.all(pdfFiles.map((f) => fileToBase64(f)))
+            pdfData = pdfFiles.map((f, i) => ({ filename: f.name, dataUrl: pdfDataUrls[i] }))
+            console.log('Encoded PDFs:', pdfData.length, 'files')
+          }
+        } catch (encodeError) {
+          console.error('File encoding failed:', encodeError)
+          throw new Error('Failed to process files. Please try again.')
+        }
 
-        const selectedModel = (useThinkMode || pdfUrls.length > 0) ? 'gpt-5' : 'gpt-4.1'
+        // Use vision-capable models for images/PDFs
+        const selectedModel = (typeof preferredModel === 'string' && preferredModel)
+          ? preferredModel
+          : ((useThinkMode || pdfData.length > 0 || imageDataUrls.length > 0) ? 'gpt-5' : 'gpt-4.1')
         const stripImageData = (text: string): string => {
           const angleTag = /<image:[^>]+>/gi
           const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
@@ -463,12 +487,12 @@ export default function ChatClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             messages: payloadMessages,
-            inputImageUrls: imageUrls,
-            inputPdfUrls: pdfUrls,
+            inputImages: imageDataUrls,
+            inputPdfs: pdfData,
             previousResponseId: lastResponseId,
             // Use gpt-4.1 by default, gpt-5 with medium reasoning when think is enabled
             model: selectedModel,
-            reasoningEffort: useThinkMode ? 'medium' : undefined,
+            reasoningEffort: useThinkMode ? 'low' : undefined,
             // Reserve space; adjust as needed for cost control
             max_output_tokens: 30000,
             // Opt-in to reasoning summaries where supported
@@ -610,10 +634,16 @@ export default function ChatClient() {
         className={cn('max-w-3xl mx-auto w-full px-2 sm:px-4', messages.length === 0 ? '-mt-44 sm:-mt-24 md:-mt-40 lg:-mt-48 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+16px)] sm:mb-4')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
-        <PromptInputBox
-          onSend={handleSendMessage}
+        <AIChatInput
           isLoading={status === 'streaming' || status === 'submitted'}
-          placeholder="Message Yurie"
+          className="max-w-3xl mx-auto"
+          onSend={(text, files, options) => {
+            handleSendMessage(text, files, {
+              showThink: options?.model === 'gpt-5',
+              showSearch: false,
+              model: options?.model,
+            })
+          }}
         />
       </div>
     </section>
