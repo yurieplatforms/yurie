@@ -442,7 +442,7 @@ export default function ChatClient() {
           })
         }
 
-        const encodeImageWithResize = async (file: File, maxDimension = 1600, quality = 0.8): Promise<string> => {
+        const encodeImageWithResize = async (file: File, maxDimension = 1200, quality = 0.72): Promise<string> => {
           try {
             const imgUrl = URL.createObjectURL(file)
             const img = new Image()
@@ -476,6 +476,29 @@ export default function ChatClient() {
           }
         }
 
+        const encodeImageToTarget = async (
+          file: File,
+          targetChars: number,
+          dimCandidates = [1200, 1024, 800, 640, 512, 384],
+          qualityCandidates = [0.72, 0.64, 0.56, 0.48, 0.4]
+        ): Promise<string | null> => {
+          for (const d of dimCandidates) {
+            for (const q of qualityCandidates) {
+              try {
+                const s = await encodeImageWithResize(file, d, q)
+                if (s && s.length <= targetChars) return s
+              } catch {}
+            }
+          }
+          // Return smallest we can produce even if above target
+          try {
+            const smallest = await encodeImageWithResize(file, dimCandidates[dimCandidates.length - 1], qualityCandidates[qualityCandidates.length - 1])
+            return smallest || null
+          } catch {
+            return null
+          }
+        }
+
         const imageFiles = filesToProcess.filter((f) => f.type.startsWith('image/'))
         const pdfFiles = filesToProcess.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
 
@@ -484,19 +507,70 @@ export default function ChatClient() {
         let pdfData: Array<{ filename: string; dataUrl: string }> = []
         
         try {
-          if (imageFiles.length > 0) {
-            imageDataUrls = await Promise.all(imageFiles.map((f) => encodeImageWithResize(f)))
-            console.log('Encoded images (resized):', imageDataUrls.length, 'files')
-          }
+          // PDFs first so we can budget image sizes in production
           if (pdfFiles.length > 0) {
             const pdfDataUrls = await Promise.all(pdfFiles.map((f) => fileToBase64(f)))
             pdfData = pdfFiles.map((f, i) => ({ filename: f.name, dataUrl: pdfDataUrls[i] }))
             console.log('Encoded PDFs:', pdfData.length, 'files')
           }
+          if (imageFiles.length > 0) {
+            const isProduction = process.env.NODE_ENV === 'production'
+            if (isProduction) {
+              const TOTAL_BUDGET_CHARS = 3_200_000 // ~3.2MB JSON body cap (safe under server limits)
+              const OVERHEAD_CHARS = 120_000 // buffer for JSON + text
+              const pdfChars = pdfData.reduce((n, p) => n + (p?.dataUrl?.length || 0), 0)
+              const availableForImages = Math.max(0, TOTAL_BUDGET_CHARS - OVERHEAD_CHARS - pdfChars)
+              const perImageBudget = Math.max(120_000, Math.floor(availableForImages / imageFiles.length))
+              const encoded = await Promise.all(imageFiles.map((f) => encodeImageToTarget(f, perImageBudget)))
+              imageDataUrls = (encoded.filter(Boolean) as string[])
+              const dropped = imageFiles.length - imageDataUrls.length
+              if (dropped > 0) {
+                console.warn('Dropped', dropped, 'images due to production size budget')
+              }
+            } else {
+              imageDataUrls = await Promise.all(imageFiles.map((f) => encodeImageWithResize(f)))
+            }
+            console.log('Encoded images (resized):', imageDataUrls.length, 'files')
+          }
         } catch (encodeError) {
           console.error('File encoding failed:', encodeError)
           throw new Error('Failed to process files. Please try again.')
         }
+
+        // In production (e.g., Vercel), request body size is limited. Block overly large payloads upfront.
+        try {
+          const isProduction = process.env.NODE_ENV === 'production'
+          if (isProduction) {
+            const attachmentsChars = imageDataUrls.reduce((n, s) => n + (s?.length || 0), 0)
+              + pdfData.reduce((n, p) => n + (p?.dataUrl?.length || 0), 0)
+            // Add small buffer for JSON overhead and other fields
+            const estimatedTotalChars = attachmentsChars + 64_000
+            // Keep well under common 4.5MB limits; base64 expands ~33%, use ~3.5MB cap
+            const PROD_MAX_PAYLOAD_CHARS = 3_500_000
+            if (estimatedTotalChars > PROD_MAX_PAYLOAD_CHARS) {
+              setMessages((prev) => ([
+                ...prev,
+                {
+                  role: 'assistant',
+                  content: 'Attachments are too large for the hosted server limit. Please send fewer/smaller files (try under ~2MB per file for images, ~2.5MB for PDFs), or reduce image resolution.'
+                },
+              ]))
+              setStatus('ready')
+              return
+            }
+            // Also guard against a single very large PDF (~2.6M chars ~2MB)
+            for (const p of pdfData) {
+              if ((p?.dataUrl?.length || 0) > 2_600_000) {
+                setMessages((prev) => ([
+                  ...prev,
+                  { role: 'assistant', content: `PDF "${p.filename}" is too large for the hosted server limit. Please upload a smaller PDF (try under ~2.5MB).` },
+                ]))
+                setStatus('ready')
+                return
+              }
+            }
+          }
+        } catch {}
 
         // Use a fast vision-capable model to improve reliability on deploy
         const selectedModel = 'gpt-4.1-mini'
@@ -531,6 +605,9 @@ export default function ChatClient() {
         })
 
         if (!res.ok || !res.body) {
+          if (res.status === 413) {
+            throw new Error('Payload too large for server. Please attach fewer/smaller files.')
+          }
           throw new Error(`Request failed: ${res.status}`)
         }
 

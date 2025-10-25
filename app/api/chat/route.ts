@@ -1,5 +1,7 @@
 import OpenAI from 'openai'
 export const runtime = 'nodejs'
+export const maxDuration = 60
+export const dynamic = 'force-dynamic'
 
 type ChatMessage = {
   role: 'system' | 'user' | 'assistant'
