@@ -171,7 +171,8 @@ export async function POST(request: Request) {
 
     console.log('[API] Calling OpenAI with model:', selectedModel, 'tools:', requestParams.tools ? 'enabled' : 'none')
 
-    const stream = await client.responses.create(requestParams)
+    // Use the streaming helper per OpenAI SDK best practices
+    const stream = await client.responses.stream(requestParams as any)
 
     const encoder = new TextEncoder()
     const readable = new ReadableStream<Uint8Array>({

@@ -15,7 +15,7 @@ const PLACEHOLDERS = [
 ];
 
 type AIChatInputProps = {
-  onSend?: (text: string, files?: File[], options?: { model?: string }) => void
+  onSend?: (text: string, files?: File[]) => void
   isLoading?: boolean
   className?: string
 }
@@ -25,7 +25,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
   const [showPlaceholder, setShowPlaceholder] = useState(true);
   const [isActive, setIsActive] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  const [selectedModel, setSelectedModel] = useState<string>("gpt-4.1");
+  
   const [files, setFiles] = useState<File[]>([]);
   const [filePreviews, setFilePreviews] = useState<{ [key: string]: string }>({});
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -62,24 +62,21 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [inputValue]);
 
-  // Persist model selection
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem("yurie.model");
-      if (saved) setSelectedModel(saved);
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("yurie.model", selectedModel);
-    } catch {}
-  }, [selectedModel]);
+  
 
   const handleActivate = () => setIsActive(true);
 
   // File handling functions
-  const isImageFile = (file: File) => file.type.startsWith("image/");
+  const isImageFile = (file: File) => {
+    const allowed = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+      "image/gif",
+    ];
+    return allowed.includes(file.type);
+  };
   const isAllowedFile = (file: File) => 
     isImageFile(file) || file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 
@@ -92,35 +89,36 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
       console.log("File too large (max 10MB)");
       return;
     }
-    setFiles([file]);
+    setFiles((prev) => [...prev, file]);
     if (isImageFile(file)) {
       const reader = new FileReader();
-      reader.onload = (e) => setFilePreviews({ [file.name]: (e.target?.result as string) });
+      reader.onload = (e) => setFilePreviews((prev) => ({ ...prev, [file.name]: (e.target?.result as string) }));
       reader.readAsDataURL(file);
-    } else {
-      setFilePreviews({});
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      processFile(e.target.files[0]);
+      Array.from(e.target.files).forEach(processFile);
       if (e.target) e.target.value = "";
     }
   };
 
   const handleRemoveFile = (index: number) => {
     const fileToRemove = files[index];
+    setFiles((prev) => prev.filter((_, i) => i !== index));
     if (fileToRemove && filePreviews[fileToRemove.name]) {
-      setFilePreviews({});
+      setFilePreviews((prev) => {
+        const { [fileToRemove.name]: _removed, ...rest } = prev;
+        return rest;
+      });
     }
-    setFiles([]);
   };
 
   const handleSend = () => {
     const text = inputValue.trim();
     if ((!text && files.length === 0) || isLoading) return;
-    onSend?.(text, files, { model: selectedModel });
+    onSend?.(text, files);
     setInputValue("");
     setFiles([]);
     setFilePreviews({});
@@ -234,13 +232,18 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
             type="file"
             className="sr-only"
             onChange={handleFileSelect}
-            accept="image/*,application/pdf"
+            accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
+            multiple
           />
           <label
             htmlFor={fileInputId}
             className="p-3 rounded-full text-neutral-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-[#3A3A40] transition cursor-pointer"
             title="Attach file"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              // Ensure the file dialog opens reliably across browsers
+              fileInputRef.current?.click();
+            }}
           >
             <Paperclip size={20} />
           </label>
@@ -296,35 +299,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
             </div>
           </div>
 
-          {/* Model Selector - Segmented Control Style */}
-          <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-[#3A3A40] rounded-full p-1">
-            <button
-              type="button"
-              onClick={() => setSelectedModel("gpt-4.1")}
-              disabled={isLoading}
-              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer ${
-                selectedModel === "gpt-4.1"
-                  ? "bg-white dark:bg-[#505050] text-gray-900 dark:text-white shadow-sm"
-                  : "text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-neutral-200"
-              }`}
-              title="GPT-4.1 - Fast and capable with vision"
-            >
-              4.1
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedModel("gpt-5")}
-              disabled={isLoading}
-              className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all cursor-pointer ${
-                selectedModel === "gpt-5"
-                  ? "bg-white dark:bg-[#505050] text-gray-900 dark:text-white shadow-sm"
-                  : "text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-neutral-200"
-              }`}
-              title="GPT-5 - Most capable with reasoning"
-            >
-              5
-            </button>
-          </div>
+          
 
           <button
             className="flex items-center gap-1 bg-black hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-white/90 p-3 rounded-full font-medium justify-center disabled:opacity-50 cursor-pointer"

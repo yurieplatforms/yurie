@@ -395,12 +395,11 @@ export default function ChatClient() {
     return clean
   }, [])
 
-  const handleSendMessage = useCallback((message: string, uploadedFiles?: File[], options?: { showThink?: boolean; showSearch?: boolean; model?: string }) => {
+  const handleSendMessage = useCallback((message: string, uploadedFiles?: File[]) => {
     const trimmed = message.trim()
     const filesToProcess = uploadedFiles || []
-    const useThinkMode = options?.showThink || false
-    const useSearchMode = options?.showSearch || false
-    const preferredModel = options?.model
+    const useThinkMode = false
+    const useSearchMode = false
     if ((trimmed.length === 0 && filesToProcess.length === 0) || status === 'submitted' || status === 'streaming') return
     
     const userMsg: ChatMessage = { role: 'user', content: trimmed }
@@ -467,9 +466,7 @@ export default function ChatClient() {
         }
 
         // Use vision-capable models for images/PDFs
-        const selectedModel = (typeof preferredModel === 'string' && preferredModel)
-          ? preferredModel
-          : ((useThinkMode || pdfData.length > 0 || imageDataUrls.length > 0) ? 'gpt-5' : 'gpt-4.1')
+        const selectedModel = 'gpt-4.1'
         const stripImageData = (text: string): string => {
           const angleTag = /<image:[^>]+>/gi
           const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
@@ -490,16 +487,11 @@ export default function ChatClient() {
             inputImages: imageDataUrls,
             inputPdfs: pdfData,
             previousResponseId: lastResponseId,
-            // Use gpt-4.1 by default, gpt-5 with medium reasoning when think is enabled
             model: selectedModel,
-            reasoningEffort: useThinkMode ? 'low' : undefined,
             // Reserve space; adjust as needed for cost control
             max_output_tokens: 30000,
-            // Opt-in to reasoning summaries where supported
-            includeReasoningSummary: useThinkMode,
-            // Enable encrypted reasoning items for stateless use (server decides include key)
-            includeEncryptedReasoning: useThinkMode,
-            // Enable web search when search button is active
+            includeReasoningSummary: false,
+            includeEncryptedReasoning: false,
             useSearch: useSearchMode,
           }),
           signal: ac.signal,
@@ -637,12 +629,8 @@ export default function ChatClient() {
         <AIChatInput
           isLoading={status === 'streaming' || status === 'submitted'}
           className="max-w-3xl mx-auto"
-          onSend={(text, files, options) => {
-            handleSendMessage(text, files, {
-              showThink: options?.model === 'gpt-5',
-              showSearch: false,
-              model: options?.model,
-            })
+          onSend={(text, files) => {
+            handleSendMessage(text, files)
           }}
         />
       </div>
