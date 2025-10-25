@@ -62,8 +62,8 @@ export async function POST(request: Request) {
 
     const client = new OpenAI()
 
-    // Default to gpt-4.1 which supports vision and file inputs
-    const selectedModel = typeof model === 'string' && model ? model : 'gpt-4.1'
+    // Default to gpt-4o which supports vision and PDF inputs
+    const selectedModel = typeof model === 'string' && model ? model : 'gpt-4o'
 
     // Log incoming file attachments for debugging
     if (inputImages && inputImages.length > 0) {
@@ -99,14 +99,14 @@ export async function POST(request: Request) {
             if (hasImages) {
               inputImages!.forEach((imageDataUrl) => {
                 console.log('[API] Adding base64 image to content (length:', imageDataUrl.length, ')')
-                content.push({ type: 'input_image', image_url: imageDataUrl })
+                content.push({ type: 'input_image', image_url: imageDataUrl, detail: 'high' })
               })
             }
 
             if (hasImageUrls) {
               inputImageUrls!.forEach((imageUrl) => {
                 console.log('[API] Adding image URL to content:', imageUrl.substring(0, 50) + '...')
-                content.push({ type: 'input_image', image_url: imageUrl })
+                content.push({ type: 'input_image', image_url: imageUrl, detail: 'high' })
               })
             }
 
