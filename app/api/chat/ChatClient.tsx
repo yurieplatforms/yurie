@@ -174,7 +174,7 @@ export default function ChatClient() {
       const trimmed = text.trim()
       if (trimmed.length < 8 || trimmed.length > 80) return false
       if (/[.!?;:]\s*$/.test(trimmed)) return false
-      if (/[-*+]\s+/.test(trimmed)) return false
+      if (/[\-*+]\s+/.test(trimmed)) return false
       if (/^\d+\.\s+/.test(trimmed)) return false
       if (/^>\s+/.test(trimmed)) return false
       if (/^#{1,6}\s/.test(trimmed)) return false
@@ -431,12 +431,28 @@ export default function ChatClient() {
           setSentAttachmentsByMessageIndex((prev) => ({ ...prev, [indexForThisMessage]: attachmentsForPreview }))
         }
 
-        // Convert files to base64 data URLs for direct API submission
-        // This follows OpenAI's documented approach for file inputs
+        // Convert files to base64 (images as data URLs with resize; PDFs as raw base64) for API submission
+        // Standard browser FileReader approach for file inputs
         const fileToBase64 = async (file: File): Promise<string> => {
           return new Promise((resolve, reject) => {
             const reader = new FileReader()
             reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(file)
+          })
+        }
+        const fileToBase64RawPdf = async (file: File): Promise<string> => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+              try {
+                const result = String(reader.result || '')
+                const m = result.match(/^data:[^;]+;base64,(.*)$/)
+                resolve(m ? m[1] : '')
+              } catch (e) {
+                reject(e)
+              }
+            }
             reader.onerror = reject
             reader.readAsDataURL(file)
           })
@@ -500,25 +516,28 @@ export default function ChatClient() {
         }
 
         const imageFiles = filesToProcess.filter((f) => f.type.startsWith('image/'))
-        const pdfFiles = filesToProcess.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
+        const pdfFiles = filesToProcess.filter((f) => (f.type === 'application/pdf') || (f.name || '').toLowerCase().endsWith('.pdf'))
 
-        // Convert files to base64 data URLs
+        // Convert files to base64
         let imageDataUrls: string[] = []
-        let pdfData: Array<{ filename: string; dataUrl: string }> = []
+        let pdfBase64s: string[] = []
         
         try {
-          // PDFs first so we can budget image sizes in production
+          // Encode PDFs (raw base64, no data URL header)
           if (pdfFiles.length > 0) {
-            const pdfDataUrls = await Promise.all(pdfFiles.map((f) => fileToBase64(f)))
-            pdfData = pdfFiles.map((f, i) => ({ filename: f.name, dataUrl: pdfDataUrls[i] }))
-            console.log('Encoded PDFs:', pdfData.length, 'files')
+            try {
+              pdfBase64s = await Promise.all(pdfFiles.map((f) => fileToBase64RawPdf(f)))
+            } catch (e) {
+              console.error('PDF encoding failed:', e)
+              throw new Error('Failed to process PDFs. Please try again.')
+            }
           }
           if (imageFiles.length > 0) {
             const isProduction = process.env.NODE_ENV === 'production'
             if (isProduction) {
               const TOTAL_BUDGET_CHARS = 3_200_000 // ~3.2MB JSON body cap (safe under server limits)
               const OVERHEAD_CHARS = 120_000 // buffer for JSON + text
-              const pdfChars = pdfData.reduce((n, p) => n + (p?.dataUrl?.length || 0), 0)
+              const pdfChars = pdfBase64s.reduce((n, s) => n + (s?.length || 0), 0)
               const availableForImages = Math.max(0, TOTAL_BUDGET_CHARS - OVERHEAD_CHARS - pdfChars)
               const perImageBudget = Math.max(120_000, Math.floor(availableForImages / imageFiles.length))
               const encoded = await Promise.all(imageFiles.map((f) => encodeImageToTarget(f, perImageBudget)))
@@ -541,8 +560,7 @@ export default function ChatClient() {
         try {
           const isProduction = process.env.NODE_ENV === 'production'
           if (isProduction) {
-            const attachmentsChars = imageDataUrls.reduce((n, s) => n + (s?.length || 0), 0)
-              + pdfData.reduce((n, p) => n + (p?.dataUrl?.length || 0), 0)
+            const attachmentsChars = imageDataUrls.reduce((n, s) => n + (s?.length || 0), 0) + pdfBase64s.reduce((n, s) => n + (s?.length || 0), 0)
             // Add small buffer for JSON overhead and other fields
             const estimatedTotalChars = attachmentsChars + 64_000
             // Keep well under common 4.5MB limits; base64 expands ~33%, use ~3.5MB cap
@@ -558,30 +576,40 @@ export default function ChatClient() {
               setStatus('ready')
               return
             }
-            // Also guard against a single very large PDF (~2.6M chars ~2MB)
-            for (const p of pdfData) {
-              if ((p?.dataUrl?.length || 0) > 2_600_000) {
-                setMessages((prev) => ([
-                  ...prev,
-                  { role: 'assistant', content: `PDF "${p.filename}" is too large for the hosted server limit. Please upload a smaller PDF (try under ~2.5MB).` },
-                ]))
-                setStatus('ready')
-                return
-              }
-            }
           }
         } catch {}
 
-        // Use a fast vision-capable model to improve reliability on deploy
-        const selectedModel = 'gpt-4.1-mini'
+        // Extract image and PDF URLs from the message
+        const extractUrls = (text: string): { images: string[]; pdfs: string[] } => {
+          const urlRe = /(https?:\/\/[^\s)]+)(?=\)?)/gi
+          const imageExts = ['.png','.jpg','.jpeg','.gif','.webp','.bmp','.svg','.heic','.heif','.tif','.tiff','.avif']
+          const images: string[] = []
+          const pdfs: string[] = []
+          let m: RegExpExecArray | null
+          while ((m = urlRe.exec(text)) !== null) {
+            const u = m[1]
+            const lower = u.toLowerCase()
+            if (lower.endsWith('.pdf')) pdfs.push(u)
+            else if (imageExts.some((e) => lower.endsWith(e))) images.push(u)
+          }
+          return { images, pdfs }
+        }
+        const urlExtraction = extractUrls(trimmed)
+
+        // Use Claude Sonnet 4.5 on the server
+        const selectedModel = 'claude-sonnet-4-5'
         const stripImageData = (text: string): string => {
           const angleTag = /<image:[^>]+>/gi
           const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
           const bareDataUrl = /data:image\/[a-zA-Z0-9+.-]+;base64,[A-Za-z0-9+/=]+/gi
+          const bracketPdfDataUrl = /\[data:application\/pdf;base64,[^\]]+\]/gi
+          const barePdfDataUrl = /data:application\/pdf;base64,[A-Za-z0-9+/=]+/gi
           return text
             .replace(angleTag, '[image omitted]')
             .replace(bracketDataUrl, '[image omitted]')
             .replace(bareDataUrl, '[image omitted]')
+            .replace(bracketPdfDataUrl, '[pdf omitted]')
+            .replace(barePdfDataUrl, '[pdf omitted]')
         }
         const payloadMessages = nextMessages.map((m) => ({ ...m, content: stripImageData(m.content) }))
         const ac = new AbortController()
@@ -592,11 +620,15 @@ export default function ChatClient() {
           body: JSON.stringify({
             messages: payloadMessages,
             inputImages: imageDataUrls,
-            inputPdfs: pdfData,
+            inputPdfBase64: pdfBase64s,
+            inputImageUrls: urlExtraction.images,
+            inputPdfUrls: urlExtraction.pdfs,
             previousResponseId: lastResponseId,
             model: selectedModel,
             // Reserve space; adjust as needed for cost control
             max_output_tokens: 30000,
+            // Enable extended thinking so the server streams thinking deltas
+            thinking: { type: 'enabled', budget_tokens: 4000 },
             includeReasoningSummary: false,
             includeEncryptedReasoning: false,
             useSearch: useSearchMode,
@@ -608,7 +640,20 @@ export default function ChatClient() {
           if (res.status === 413) {
             throw new Error('Payload too large for server. Please attach fewer/smaller files.')
           }
-          throw new Error(`Request failed: ${res.status}`)
+          let detail = ''
+          try {
+            detail = await res.text()
+          } catch {}
+          let msg = `Request failed: ${res.status}`
+          try {
+            const json = JSON.parse(detail)
+            if (json && typeof json.error === 'string' && json.error) {
+              msg += ` - ${json.error}`
+            }
+          } catch {
+            if (detail) msg += ` - ${detail.slice(0, 200)}`
+          }
+          throw new Error(msg)
         }
 
         const reader = res.body.getReader()
@@ -678,7 +723,7 @@ export default function ChatClient() {
   }, [messages, status, lastResponseId, processStreamChunk])
 
   return (
-    <section ref={containerRef} className={cn('w-full h-full flex flex-col', messages.length === 0 && 'justify-center max-w-3xl mx-auto')}>
+    <section ref={containerRef} className={cn('w-full h-full min-h-screen flex flex-col', messages.length === 0 && 'justify-center max-w-3xl mx-auto')}>
       <div
         ref={outputRef}
         className={cn('rounded-none pt-1 pb-3 overflow-y-auto text-base font-sans w-full max-w-3xl mx-auto px-2 sm:px-4', messages.length === 0 && 'hidden')}
@@ -698,9 +743,10 @@ export default function ChatClient() {
                   {m.role === 'user' ? (
                     <div
                       className={cn(
-                        'min-w-0 max-w-[80%] sm:max-w-[60%] break-words rounded-3xl px-3 py-0.5 text-base leading-snug shadow-xs',
-                        'bg-neutral-100 text-neutral-900 border border-neutral-200 dark:bg-[#383838] dark:text-white dark:border-transparent'
+                        'min-w-0 max-w-[80%] sm:max-w-[60%] break-words px-3 py-0.5 text-base leading-snug',
+                        'bg-white text-neutral-900 border border-gray-200 dark:bg-[#303030] dark:text-white dark:border-[#444444]'
                       )}
+                      style={{ borderRadius: 32, boxShadow: "0 2px 8px 0 rgba(0,0,0,0.08)" }}
                     >
                       <div className="min-w-0 w-full">
                         {renderMessageContent(m.role, m.content)}
@@ -733,7 +779,7 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('max-w-3xl mx-auto w-full px-2 sm:px-4', messages.length === 0 ? '-mt-44 sm:-mt-24 md:-mt-40 lg:-mt-48 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+16px)] sm:mb-4')}
+        className={cn('max-w-3xl mx-auto w-full px-2 sm:px-4', messages.length === 0 ? '-mt-32 sm:-mt-40 md:-mt-48 lg:-mt-56 xl:-mt-64 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+16px)] sm:mb-4')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         <AIChatInput

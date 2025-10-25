@@ -1,4 +1,5 @@
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
+
 export const runtime = 'nodejs'
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -14,7 +15,8 @@ const STREAM_HEADERS = {
   'Cache-Control': 'no-cache',
   'X-Accel-Buffering': 'no',
 } as const
-const INSTRUCTIONS = 'You are Yurie, a helpful assistant. When up-to-date, real-world, or hard-to-remember facts are needed, and the web_search tool is available, call it to gather information before answering. Use web_search sparingly and only when it will materially improve accuracy or timeliness. If you do not need it, answer directly.'
+const INSTRUCTIONS = 'You are Yurie, a helpful assistant. When up-to-date, real-world, or hard-to-remember facts are needed, and web search is available, use it to gather information before answering. Use web search sparingly and only when it will materially improve accuracy or timeliness. If you do not need it, answer directly.'
+const SEARCH_SOURCES_SUFFIX = '\n\nIf you used web search for this answer, end with a short Sources section listing the 3–5 most relevant links as markdown bullets `[Title](URL)` (avoid duplicates). Do not include a Sources section if you did not use web search.'
 
 // Simple heuristic to decide whether a query likely needs web search
 function shouldEnableSearchFromQuery(text: string | undefined | null): boolean {
@@ -47,172 +49,242 @@ function shouldEnableSearchFromQuery(text: string | undefined | null): boolean {
 }
 export async function POST(request: Request) {
   try {
-    const { messages, model, reasoningEffort, includeReasoningSummary, useSearch, inputImages, inputPdfs, inputImageUrls, inputPdfUrls, max_output_tokens } = (await request.json()) as {
+    const { messages, model, useSearch, inputImages, inputImageUrls, inputPdfBase64, inputPdfUrls, max_output_tokens, web_search, search_results, thinking } = (await request.json()) as {
       messages?: ChatMessage[]
       model?: string
-      reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
-      includeReasoningSummary?: boolean
       useSearch?: boolean
       inputImages?: string[]
-      inputPdfs?: { filename: string; dataUrl: string }[]
       inputImageUrls?: string[]
+      inputPdfBase64?: string[]
       inputPdfUrls?: string[]
       max_output_tokens?: number
+      web_search?: {
+        max_uses?: number
+        allowed_domains?: string[]
+        blocked_domains?: string[]
+        user_location?: {
+          type: 'approximate'
+          city?: string
+          region?: string
+          country?: string
+          timezone?: string
+        }
+      }
+      search_results?: Array<{
+        source: string
+        title: string
+        content: Array<{ type?: 'text'; text: string }>
+        citations?: { enabled?: boolean }
+        cache_control?: { type: 'ephemeral' }
+      }>
+      thinking?: {
+        type?: 'enabled'
+        budget_tokens?: number
+      }
     }
 
-    const client = new OpenAI()
-
-    // Default to gpt-4o which supports vision and PDF inputs
-    const selectedModel = typeof model === 'string' && model ? model : 'gpt-4o'
+    // Default to Claude Sonnet 4.5
+    const selectedModel = model && typeof model === 'string' && model.trim().length > 0
+      ? model
+      : 'claude-sonnet-4-5'
 
     // Log incoming file attachments for debugging
     if (inputImages && inputImages.length > 0) {
       console.log('[API] Received images (base64):', inputImages.length, 'files')
     }
-    if (inputPdfs && inputPdfs.length > 0) {
-      console.log('[API] Received PDFs (base64):', inputPdfs.length, 'files')
-    }
     if (inputImageUrls && inputImageUrls.length > 0) {
       console.log('[API] Received image URLs:', inputImageUrls.length, 'files')
+    }
+    if (inputPdfBase64 && inputPdfBase64.length > 0) {
+      console.log('[API] Received PDFs (base64):', inputPdfBase64.length, 'files')
     }
     if (inputPdfUrls && inputPdfUrls.length > 0) {
       console.log('[API] Received PDF URLs:', inputPdfUrls.length, 'files')
     }
 
-    // Build input with proper OpenAI Responses API format for images and PDFs
-    const input = Array.isArray(messages) && messages.length > 0
-      ? messages.map((m, idx) => {
-          // Only add images/PDFs to the last user message
-          const isLastUserMessage = m.role === 'user' && idx === messages.length - 1
-          const hasImages = isLastUserMessage && Array.isArray(inputImages) && inputImages.length > 0
-          const hasImageUrls = isLastUserMessage && Array.isArray(inputImageUrls) && inputImageUrls.length > 0
-          const hasPdfs = isLastUserMessage && Array.isArray(inputPdfs) && inputPdfs.length > 0
-          const hasPdfUrls = isLastUserMessage && Array.isArray(inputPdfUrls) && inputPdfUrls.length > 0
+    // Build Claude Messages API input (supports mixed text and images on the last user message)
+    const hasClientMessages = Array.isArray(messages) && messages.length > 0
+    const lastUserIndex = hasClientMessages ? [...messages].reverse().findIndex((m) => m.role === 'user') : -1
+    const absoluteLastUserIndex = lastUserIndex === -1 ? -1 : (messages!.length - 1 - lastUserIndex)
+    const anyCitationsEnabled = Array.isArray(search_results) && search_results.some((sr: any) => sr && sr.citations && sr.citations.enabled === true)
 
-          if (hasImages || hasImageUrls || hasPdfs || hasPdfUrls) {
+    const claudeMessages = hasClientMessages
+      ? messages!.map((m, idx) => {
+          const isLastUser = m.role === 'user' && idx === absoluteLastUserIndex
+          const hasImages = isLastUser && Array.isArray(inputImages) && inputImages.length > 0
+          const hasImageUrls = isLastUser && Array.isArray(inputImageUrls) && inputImageUrls.length > 0
+          const hasSearchResults = isLastUser && Array.isArray(search_results) && search_results.length > 0
+          const hasPdfBase64 = isLastUser && Array.isArray(inputPdfBase64) && inputPdfBase64.length > 0
+          const hasPdfUrls = isLastUser && Array.isArray(inputPdfUrls) && inputPdfUrls.length > 0
+          if (hasImages || hasImageUrls || hasSearchResults || hasPdfBase64 || hasPdfUrls) {
             const content: any[] = []
             const textToUse = (typeof m.content === 'string' && m.content.trim().length > 0)
               ? m.content
-              : 'Please analyze the attached files.'
-            content.push({ type: 'input_text', text: textToUse })
-
+              : 'Please analyze the attached images.'
+            // 1) Optional search results (appear before the user's text)
+            if (hasSearchResults) {
+              const normalized = (search_results || []).map((sr: any) => {
+                const blocks = Array.isArray(sr?.content)
+                  ? sr.content
+                      .map((b: any) => ({ type: 'text', text: String(b?.text || '') }))
+                      .filter((b: any) => b.text && b.text.length > 0)
+                  : []
+                const out: any = {
+                  type: 'search_result',
+                  source: String(sr?.source || ''),
+                  title: String(sr?.title || ''),
+                  content: blocks,
+                }
+                if (anyCitationsEnabled) out.citations = { enabled: true }
+                if (sr?.cache_control && sr.cache_control.type === 'ephemeral') {
+                  out.cache_control = { type: 'ephemeral' }
+                }
+                return out
+              }).filter((sr: any) => sr.source && sr.title && Array.isArray(sr.content) && sr.content.length > 0)
+              content.push(...normalized)
+            }
+            // 2) User text
+            content.push({ type: 'text', text: textToUse })
+            // 3) PDFs (base64)
+            if (hasPdfBase64) {
+              inputPdfBase64!.forEach((b64) => {
+                if (typeof b64 === 'string' && b64.trim().length > 0) {
+                  content.push({
+                    type: 'document',
+                    source: { type: 'base64', media_type: 'application/pdf', data: b64 },
+                  })
+                }
+              })
+            }
+            // 4) PDFs (URLs)
+            if (hasPdfUrls) {
+              inputPdfUrls!.forEach((url) => {
+                if (typeof url === 'string' && url.startsWith('http')) {
+                  content.push({
+                    type: 'document',
+                    source: { type: 'url', url },
+                  })
+                }
+              })
+            }
             if (hasImages) {
               inputImages!.forEach((imageDataUrl) => {
-                console.log('[API] Adding base64 image to content (length:', imageDataUrl.length, ')')
-                content.push({ type: 'input_image', image_url: imageDataUrl, detail: 'high' })
+                try { console.log('[API] Adding base64 image to content (length:', imageDataUrl.length, ')') } catch {}
+                try {
+                  const match = imageDataUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.*)$/)
+                  if (match) {
+                    const mediaType = match[1]
+                    const data = match[2]
+                    content.push({
+                      type: 'image',
+                      source: { type: 'base64', media_type: mediaType, data },
+                    })
+                  } else {
+                    // Fallback: if not a data URL, treat as URL
+                    content.push({ type: 'image', source: { type: 'url', url: imageDataUrl } })
+                  }
+                } catch {}
               })
             }
-
             if (hasImageUrls) {
               inputImageUrls!.forEach((imageUrl) => {
-                console.log('[API] Adding image URL to content:', imageUrl.substring(0, 50) + '...')
-                content.push({ type: 'input_image', image_url: imageUrl, detail: 'high' })
+                try { console.log('[API] Adding image URL to content:', imageUrl.substring(0, 50) + '...') } catch {}
+                content.push({ type: 'image', source: { type: 'url', url: imageUrl } })
               })
             }
-
-            if (hasPdfs) {
-              inputPdfs!.forEach(({ filename, dataUrl }) => {
-                console.log('[API] Adding base64 PDF to content:', filename, '(length:', dataUrl.length, ')')
-                content.push({
-                  type: 'input_file',
-                  filename,
-                  file_data: dataUrl,
-                })
-              })
-            }
-
-            if (hasPdfUrls) {
-              inputPdfUrls!.forEach((fileUrl) => {
-                console.log('[API] Adding PDF URL to content:', fileUrl.substring(0, 50) + '...')
-                content.push({
-                  type: 'input_file',
-                  file_url: fileUrl,
-                })
-              })
-            }
-
-            console.log('[API] Built content array with', content.length, 'items')
             return { role: m.role, content }
           }
-
           return { role: m.role, content: m.content }
         })
       : [{ role: 'user', content: '' }]
 
-    // Only include reasoning params for models that support it (gpt-5)
-    const requestParams: any = {
+    // Auto-detect if the query likely needs search
+    const autoEnableSearch = (() => {
+      const lastUserMessage = Array.isArray(messages)
+        ? [...messages].reverse().find((m) => m.role === 'user')
+        : undefined
+      return shouldEnableSearchFromQuery(lastUserMessage?.content)
+    })()
+    const wantsSearch = Boolean(useSearch || autoEnableSearch || web_search)
+
+    // Guard: ensure API key present
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY is not set' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    const encoder = new TextEncoder()
+
+    // Prepare Claude Messages payload
+    const payload: any = {
       model: selectedModel,
-      input,
+      max_tokens: (() => {
+        if (typeof max_output_tokens === 'number' && Number.isFinite(max_output_tokens) && max_output_tokens > 0) {
+          const SAFE_MAX_TOKENS = 8192
+          return Math.min(SAFE_MAX_TOKENS, Math.max(1, Math.floor(max_output_tokens)))
+        }
+        return 1024
+      })(),
+      system: (() => wantsSearch ? (INSTRUCTIONS + SEARCH_SOURCES_SUFFIX) : INSTRUCTIONS)(),
+      messages: claudeMessages,
       stream: true,
     }
-    if (typeof max_output_tokens === 'number' && Number.isFinite(max_output_tokens) && max_output_tokens > 0) {
-      requestParams.max_output_tokens = Math.floor(max_output_tokens)
+    // Optional extended thinking per docs
+    if (thinking && thinking.type === 'enabled') {
+      const budget = typeof thinking.budget_tokens === 'number' && Number.isFinite(thinking.budget_tokens)
+        ? Math.max(1024, Math.floor(thinking.budget_tokens))
+        : undefined
+      if (budget !== undefined) {
+        // Ensure budget is < max_tokens per docs; clamp if needed
+        const safeBudget = Math.max(1, Math.min((payload.max_tokens || 1024) - 1, budget))
+        payload.thinking = { type: 'enabled', budget_tokens: safeBudget }
+      } else {
+        payload.thinking = { type: 'enabled' }
+      }
+    }
+    if (wantsSearch) {
+      const tool: any = { type: 'web_search_20250305', name: 'web_search' }
+      // If client provided config, apply it per docs (can't use both allow+block)
+      if (web_search && typeof web_search.max_uses === 'number' && Number.isFinite(web_search.max_uses) && web_search.max_uses > 0) {
+        tool.max_uses = Math.min(10, Math.max(1, Math.floor(web_search.max_uses)))
+      } else {
+        tool.max_uses = 5
+      }
+      if (web_search && Array.isArray(web_search.allowed_domains) && web_search.allowed_domains.length > 0) {
+        tool.allowed_domains = web_search.allowed_domains
+      } else if (web_search && Array.isArray(web_search.blocked_domains) && web_search.blocked_domains.length > 0) {
+        tool.blocked_domains = web_search.blocked_domains
+      }
+      if (web_search && web_search.user_location && web_search.user_location.type === 'approximate') {
+        tool.user_location = web_search.user_location
+      }
+      payload.tools = [tool]
     }
 
-    // Set system-level instructions per OpenAI best practices
-    requestParams.instructions = INSTRUCTIONS
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-    // Decide whether to enable web search tool automatically based on the latest user message
-    const lastUserMessage = Array.isArray(messages)
-      ? [...messages].reverse().find((m) => m.role === 'user')
-      : undefined
-    const autoEnableSearch = shouldEnableSearchFromQuery(lastUserMessage?.content)
-
-    // Add web search tool if explicitly requested or auto-detected
-    if (useSearch || autoEnableSearch) {
-      requestParams.tools = [{ type: 'web_search' }]
-    }
-
-    // Add reasoning parameters only if reasoningEffort is provided (for gpt-5)
-    if (reasoningEffort) {
-      const effort: 'minimal' | 'low' | 'medium' | 'high' =
-        reasoningEffort === 'minimal' || reasoningEffort === 'low' || reasoningEffort === 'medium' || reasoningEffort === 'high'
-          ? reasoningEffort
-          : 'medium'
-
-      const reasoningParams: any = { effort }
-      if (includeReasoningSummary) reasoningParams.summary = 'auto'
-      requestParams.reasoning = reasoningParams
-    }
-
-    console.log('[API] Calling OpenAI with model:', selectedModel, 'tools:', requestParams.tools ? 'enabled' : 'none')
-
-    // Use the streaming helper per OpenAI SDK best practices
-    const stream = await client.responses.stream(requestParams as any)
-
-    const encoder = new TextEncoder()
     const readable = new ReadableStream<Uint8Array>({
       async start(controller) {
         try {
-          for await (const event of stream as any) {
-            const type = String((event as any)?.type || '')
-            if (type === 'response.output_text.delta') {
-              const delta = String((event as any).delta || '')
-              if (delta) controller.enqueue(encoder.encode(delta))
-            }
-            if (type.startsWith('response.reasoning') && (event as any)?.delta) {
-              const thought = String((event as any).delta || '')
-              if (thought) controller.enqueue(encoder.encode(`\n<thinking:${thought}>`))
-            }
+          const stream: any = await anthropic.messages.create({ ...payload, stream: true })
+          for await (const event of stream) {
+            try {
+              const type = String(event?.type || '')
+              if (type === 'content_block_delta') {
+                const delta = (event as any)?.delta
+                if (delta && delta.type === 'text_delta' && typeof delta.text === 'string') {
+                  controller.enqueue(encoder.encode(delta.text))
+                }
+                if (delta && delta.type === 'thinking_delta' && typeof delta.thinking === 'string') {
+                  controller.enqueue(encoder.encode(`<thinking:${delta.thinking}>`))
+                }
+              }
+            } catch {}
           }
         } catch {
           controller.enqueue(encoder.encode(`\n[error] Something went wrong. Please try again.\n`))
         } finally {
-          try {
-            const hasFinal = typeof (stream as any).final === 'function'
-            const finalResponse = hasFinal ? await (stream as any).final() : undefined
-            const outputs = (finalResponse && (finalResponse as any).output) || []
-            for (const out of outputs as any[]) {
-              if (out && out.type === 'reasoning' && Array.isArray(out.summary)) {
-                for (const s of out.summary) {
-                  if (s && s.type === 'summary_text' && typeof s.text === 'string' && s.text) {
-                    controller.enqueue(encoder.encode(`\n<summary_text:${s.text}>\n`))
-                    break
-                  }
-                }
-              }
-            }
-          } catch {}
           controller.close()
         }
       },

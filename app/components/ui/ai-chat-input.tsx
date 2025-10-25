@@ -2,16 +2,34 @@
 
 import * as React from "react"
 import { useState, useEffect, useRef } from "react";
-import { Paperclip, Send, X, FileText, Loader2 } from "lucide-react";
+import { Plus, Send, X, FileText, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 const PLACEHOLDERS = [
-  "Generate website with HextaUI",
-  "Create a new project with Next.js",
-  "What is the meaning of life?",
-  "What is the best way to learn React?",
-  "How to cook a delicious meal?",
-  "Summarize this article",
+  // Web search
+  "latest AI news",
+  "quantum computing explained",
+  "apple vision pro review",
+  // Science
+  "how does photosynthesis work",
+  "what is dark matter",
+  "symptoms of vitamin d deficiency",
+  // History
+  "who built the pyramids",
+  "what started world war 2",
+  "when did humans first use fire",
+  // Tech
+  "react vs vue 2025",
+  "how to center a div",
+  "best laptops under 1000",
+  // Entertainment
+  "movies like inception",
+  "stranger things season 5 release date",
+  "best video games 2025",
+  // Explore
+  "things to do in paris",
+  "best time to visit japan",
+  "cheap flights to europe",
 ];
 
 type AIChatInputProps = {
@@ -31,6 +49,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
   const wrapperRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileInputId = React.useId();
+  
 
   // Cycle placeholder text when input is inactive
   useEffect(() => {
@@ -73,20 +92,22 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
     const imageExts = ["png","jpg","jpeg","webp","gif","bmp","svg","heic","heif","tif","tiff","avif"];
     return imageExts.includes(ext);
   };
-  const isAllowedFile = (file: File) => 
-    isImageFile(file) || file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  const isPdfFile = (file: File) => {
+    if (file.type && file.type === "application/pdf") return true;
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    return ext === 'pdf';
+  };
+  const isAllowedFile = (file: File) => isImageFile(file) || isPdfFile(file);
 
   const processFile = (file: File) => {
     if (!isAllowedFile(file)) {
       console.log("Only images or PDFs are allowed");
       return;
     }
-    // Allow larger files; server and encoder will handle size/resize
-    const maxSizeBytes = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-      ? 45 * 1024 * 1024
-      : 40 * 1024 * 1024
+    // Allow larger images; server and encoder will handle size/resize
+    const maxSizeBytes = 40 * 1024 * 1024
     if (file.size > maxSizeBytes) {
-      console.log("File too large (max ~40MB images, ~45MB PDFs)");
+      console.log("File too large (max ~40MB images)");
       return;
     }
     setFiles((prev) => [...prev, file]);
@@ -94,6 +115,9 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
       const reader = new FileReader();
       reader.onload = (e) => setFilePreviews((prev) => ({ ...prev, [file.name]: (e.target?.result as string) }));
       reader.readAsDataURL(file);
+    } else if (isPdfFile(file)) {
+      // No thumbnail for PDFs; keep a simple marker so we render the generic preview
+      setFilePreviews((prev) => ({ ...prev, [file.name]: '' }));
     }
   };
 
@@ -225,7 +249,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
           )}
         </AnimatePresence>
 
-        <div className="flex items-center gap-2 p-3 rounded-full bg-white dark:bg-[#303030] max-w-3xl w-full">
+        <div className="flex items-center gap-2 p-2.5 rounded-full bg-white dark:bg-[#303030] max-w-3xl w-full">
           <input
             id={fileInputId}
             ref={fileInputRef}
@@ -237,13 +261,13 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
           />
           <button
             type="button"
-            className="p-3 rounded-full text-neutral-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-[#3A3A40] transition cursor-pointer"
+            className="p-2.5 rounded-full text-neutral-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-[#3A3A40] transition cursor-pointer"
             title="Attach file"
             aria-label="Attach file"
             aria-controls={fileInputId}
             onClick={() => fileInputRef.current?.click()}
           >
-            <Paperclip size={20} />
+            <Plus size={19} />
           </button>
 
           {/* Text Input & Placeholder */}
@@ -258,12 +282,12 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
                   handleSend()
                 }
               }}
-              className="flex-1 border-0 outline-0 rounded-md py-2 text-base bg-transparent w-full font-normal text-neutral-900 dark:text-white placeholder:text-neutral-500"
+              className="flex-1 border-0 outline-0 rounded-md py-1.5 text-base bg-transparent w-full font-normal text-neutral-900 dark:text-white placeholder:text-neutral-500"
               style={{ position: "relative", zIndex: 1 }}
               onFocus={handleActivate}
               disabled={isLoading}
             />
-            <div className="absolute left-0 top-0 w-full h-full pointer-events-none flex items-center px-3 py-2">
+            <div className="absolute left-0 top-0 w-full h-full pointer-events-none flex items-center px-3 py-1.5">
               <AnimatePresence mode="wait">
                 {showPlaceholder && !isActive && !inputValue && (
                   <motion.span
@@ -300,7 +324,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
           
 
           <button
-            className="flex items-center gap-1 bg-black hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-900 dark:hover:bg-white/90 p-3 rounded-full font-medium justify-center disabled:opacity-50 cursor-pointer"
+            className="flex items-center gap-1 bg-[#7f91e0] hover:bg-[#6a7dc4] text-white p-2.5 rounded-full font-medium justify-center disabled:opacity-50 cursor-pointer"
             title="Send"
             type="button"
             tabIndex={-1}
@@ -314,6 +338,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
             )}
           </button>
         </div>
+        
       </div>
     </div>
   );
