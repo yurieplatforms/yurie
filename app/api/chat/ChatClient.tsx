@@ -442,6 +442,40 @@ export default function ChatClient() {
           })
         }
 
+        const encodeImageWithResize = async (file: File, maxDimension = 1600, quality = 0.8): Promise<string> => {
+          try {
+            const imgUrl = URL.createObjectURL(file)
+            const img = new Image()
+            img.crossOrigin = 'anonymous'
+            const dataUrl: string = await new Promise((resolve, reject) => {
+              img.onload = () => {
+                try {
+                  const { width, height } = img
+                  const scale = Math.min(1, maxDimension / Math.max(width, height))
+                  const targetW = Math.max(1, Math.round(width * scale))
+                  const targetH = Math.max(1, Math.round(height * scale))
+                  const canvas = document.createElement('canvas')
+                  canvas.width = targetW
+                  canvas.height = targetH
+                  const ctx = canvas.getContext('2d')
+                  if (!ctx) return reject(new Error('Canvas not supported'))
+                  ctx.drawImage(img, 0, 0, targetW, targetH)
+                  const out = canvas.toDataURL('image/jpeg', quality)
+                  resolve(out)
+                } catch (e) {
+                  reject(e)
+                }
+              }
+              img.onerror = reject
+              img.src = imgUrl
+            })
+            URL.revokeObjectURL(imgUrl)
+            return dataUrl
+          } catch {
+            return await fileToBase64(file)
+          }
+        }
+
         const imageFiles = filesToProcess.filter((f) => f.type.startsWith('image/'))
         const pdfFiles = filesToProcess.filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
 
@@ -451,8 +485,8 @@ export default function ChatClient() {
         
         try {
           if (imageFiles.length > 0) {
-            imageDataUrls = await Promise.all(imageFiles.map((f) => fileToBase64(f)))
-            console.log('Encoded images:', imageDataUrls.length, 'files')
+            imageDataUrls = await Promise.all(imageFiles.map((f) => encodeImageWithResize(f)))
+            console.log('Encoded images (resized):', imageDataUrls.length, 'files')
           }
           if (pdfFiles.length > 0) {
             const pdfDataUrls = await Promise.all(pdfFiles.map((f) => fileToBase64(f)))
@@ -464,8 +498,8 @@ export default function ChatClient() {
           throw new Error('Failed to process files. Please try again.')
         }
 
-        // Use vision-capable models for images/PDFs
-        const selectedModel = 'gpt-4.1'
+        // Use a fast vision-capable model to improve reliability on deploy
+        const selectedModel = 'gpt-4.1-mini'
         const stripImageData = (text: string): string => {
           const angleTag = /<image:[^>]+>/gi
           const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
