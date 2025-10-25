@@ -2,7 +2,8 @@
 
 import { memo, useCallback, useContext, useEffect, useMemo, useState, createContext, type ComponentProps } from 'react'
 import { Response } from './response'
-import { CaretDown as ChevronDown, Lightbulb } from '@phosphor-icons/react'
+import { CaretDown as ChevronDown } from '@phosphor-icons/react'
+import { Lightbulb } from 'lucide-react'
 import { cn } from '@/app/lib/utils'
 
 type ReasoningContextValue = {

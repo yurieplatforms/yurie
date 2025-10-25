@@ -1,4 +1,4 @@
-import ChatClient from './api/chat/ChatClient'
+import ChatClient from './components/ChatClient'
 
 export default function Page() {
   return (
