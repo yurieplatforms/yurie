@@ -62,7 +62,6 @@ export default function ChatClient() {
   // local input state moves inside AIChatInput
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
   const [reasoningByMessageIndex, setReasoningByMessageIndex] = useState<Record<number, string>>({})
-  const currentAssistantIndexRef = useRef<number | null>(null)
   const [status, setStatus] = useState<'submitted' | 'streaming' | 'ready' | 'error'>('ready')
   const abortControllerRef = useRef<AbortController | null>(null)
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
@@ -432,14 +431,6 @@ export default function ChatClient() {
 
         // Convert files to base64 (images as data URLs with resize; PDFs as raw base64) for API submission
         // Standard browser FileReader approach for file inputs
-        const fileToBase64 = async (file: File): Promise<string> => {
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader()
-            reader.onload = () => resolve(reader.result as string)
-            reader.onerror = reject
-            reader.readAsDataURL(file)
-          })
-        }
         const fileToBase64RawPdf = async (file: File): Promise<string> => {
           return new Promise((resolve, reject) => {
             const reader = new FileReader()
@@ -487,7 +478,13 @@ export default function ChatClient() {
             URL.revokeObjectURL(imgUrl)
             return dataUrl
           } catch {
-            return await fileToBase64(file)
+            // Fallback to direct FileReader if canvas processing fails
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result as string)
+              reader.onerror = reject
+              reader.readAsDataURL(file)
+            })
           }
         }
 
@@ -548,7 +545,6 @@ export default function ChatClient() {
             } else {
               imageDataUrls = await Promise.all(imageFiles.map((f) => encodeImageWithResize(f)))
             }
-            console.log('Encoded images (resized):', imageDataUrls.length, 'files')
           }
         } catch (encodeError) {
           console.error('File encoding failed:', encodeError)
@@ -661,7 +657,6 @@ export default function ChatClient() {
 
         // Prepare per-message reasoning index for this assistant reply
         const assistantIndex = nextMessages.length
-        currentAssistantIndexRef.current = assistantIndex
         setReasoningByMessageIndex((prev) => ({ ...prev, [assistantIndex]: '' }))
 
         setMessages((prev) => [...prev, { role: 'assistant', content: '' }])
@@ -712,7 +707,6 @@ export default function ChatClient() {
         setStatus('error')
       } finally {
         setStatus('ready')
-        currentAssistantIndexRef.current = null
         abortControllerRef.current = null
         streamBufferRef.current = ''
       }
@@ -778,7 +772,7 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('max-w-3xl mx-auto w-full px-2 sm:px-4', messages.length === 0 ? '-mt-32 sm:-mt-40 md:-mt-48 lg:-mt-56 xl:-mt-64 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+8px)] sm:mb-4')}
+        className={cn('max-w-3xl mx-auto w-full px-2 sm:px-4', messages.length === 0 ? '-mt-48 sm:-mt-40 md:-mt-48 lg:-mt-56 xl:-mt-64 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+8px)] sm:mb-4')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         <AIChatInput
