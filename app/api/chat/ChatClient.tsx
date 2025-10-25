@@ -398,7 +398,6 @@ export default function ChatClient() {
   const handleSendMessage = useCallback((message: string, uploadedFiles?: File[]) => {
     const trimmed = message.trim()
     const filesToProcess = uploadedFiles || []
-    const useThinkMode = false
     const useSearchMode = false
     if ((trimmed.length === 0 && filesToProcess.length === 0) || status === 'submitted' || status === 'streaming') return
     
