@@ -45,7 +45,7 @@ function shouldEnableSearchFromQuery(text: string | undefined | null): boolean {
 }
 export async function POST(request: Request) {
   try {
-    const { messages, model, reasoningEffort, includeReasoningSummary, useSearch, inputImages, inputPdfs, inputImageUrls, inputPdfUrls } = (await request.json()) as {
+    const { messages, model, reasoningEffort, includeReasoningSummary, useSearch, inputImages, inputPdfs, inputImageUrls, inputPdfUrls, max_output_tokens } = (await request.json()) as {
       messages?: ChatMessage[]
       model?: string
       reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
@@ -55,6 +55,7 @@ export async function POST(request: Request) {
       inputPdfs?: { filename: string; dataUrl: string }[]
       inputImageUrls?: string[]
       inputPdfUrls?: string[]
+      max_output_tokens?: number
     }
 
     const client = new OpenAI()
@@ -88,10 +89,10 @@ export async function POST(request: Request) {
 
           if (hasImages || hasImageUrls || hasPdfs || hasPdfUrls) {
             const content: any[] = []
-
-            if (m.content) {
-              content.push({ type: 'input_text', text: m.content })
-            }
+            const textToUse = (typeof m.content === 'string' && m.content.trim().length > 0)
+              ? m.content
+              : 'Please analyze the attached files.'
+            content.push({ type: 'input_text', text: textToUse })
 
             if (hasImages) {
               inputImages!.forEach((imageDataUrl) => {
@@ -141,6 +142,9 @@ export async function POST(request: Request) {
       model: selectedModel,
       input,
       stream: true,
+    }
+    if (typeof max_output_tokens === 'number' && Number.isFinite(max_output_tokens) && max_output_tokens > 0) {
+      requestParams.max_output_tokens = Math.floor(max_output_tokens)
     }
 
     // Set system-level instructions per OpenAI best practices

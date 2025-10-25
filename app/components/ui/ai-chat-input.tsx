@@ -68,14 +68,10 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
 
   // File handling functions
   const isImageFile = (file: File) => {
-    const allowed = [
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-      "image/webp",
-      "image/gif",
-    ];
-    return allowed.includes(file.type);
+    if (file.type && file.type.startsWith("image/")) return true;
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const imageExts = ["png","jpg","jpeg","webp","gif","bmp","svg","heic","heif","tif","tiff","avif"];
+    return imageExts.includes(ext);
   };
   const isAllowedFile = (file: File) => 
     isImageFile(file) || file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
@@ -85,8 +81,12 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
       console.log("Only images or PDFs are allowed");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      console.log("File too large (max 10MB)");
+    // Allow larger files; server and encoder will handle size/resize
+    const maxSizeBytes = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+      ? 45 * 1024 * 1024
+      : 40 * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      console.log("File too large (max ~40MB images, ~45MB PDFs)");
       return;
     }
     setFiles((prev) => [...prev, file]);
@@ -232,21 +232,19 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
             type="file"
             className="sr-only"
             onChange={handleFileSelect}
-            accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
+            accept="image/*,application/pdf"
             multiple
           />
-          <label
-            htmlFor={fileInputId}
+          <button
+            type="button"
             className="p-3 rounded-full text-neutral-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-[#3A3A40] transition cursor-pointer"
             title="Attach file"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Ensure the file dialog opens reliably across browsers
-              fileInputRef.current?.click();
-            }}
+            aria-label="Attach file"
+            aria-controls={fileInputId}
+            onClick={() => fileInputRef.current?.click()}
           >
             <Paperclip size={20} />
-          </label>
+          </button>
 
           {/* Text Input & Placeholder */}
           <div className="relative flex-1">
