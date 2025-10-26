@@ -6,6 +6,7 @@ import { Response as StreamResponse } from './ui/response'
 import { Reasoning, ReasoningContent, ReasoningTrigger } from './ui/reasoning'
 import { AIChatInput } from './ui/ai-chat-input'
 import { cn } from '@/app/lib/utils'
+import { TextShimmer } from './ui/text-shimmer'
 
 // ============ Type Definitions ============
 
@@ -63,6 +64,7 @@ export default function ChatClient() {
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
   const [reasoningByMessageIndex, setReasoningByMessageIndex] = useState<Record<number, string>>({})
   const [status, setStatus] = useState<'submitted' | 'streaming' | 'ready' | 'error'>('ready')
+  const [firstAssistantChunkMs, setFirstAssistantChunkMs] = useState<number | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
   const createdObjectUrlsRef = useRef<string[]>([])
@@ -476,6 +478,7 @@ export default function ChatClient() {
     const nextMessages: ChatMessage[] = [...messages, userMsg]
     setMessages(nextMessages)
     setStatus('submitted')
+    setFirstAssistantChunkMs(null)
 
     async function processMessage() {
       try {
@@ -697,6 +700,9 @@ export default function ChatClient() {
           if (done) break
           const chunk = decoder.decode(value, { stream: true })
           const cleanChunk = processStreamChunk(chunk, assistantIndex)
+          if (cleanChunk && cleanChunk.trim().length > 0) {
+            setFirstAssistantChunkMs((prev) => prev ?? Date.now())
+          }
           assistantText += cleanChunk
           setMessages((prev) => {
             const updated = [...prev]
@@ -760,6 +766,11 @@ export default function ChatClient() {
             const topMarginClass = isFirst ? 'mt-1' : speakerChanged ? 'mt-2' : 'mt-0.5'
             const reasoningText = reasoningByMessageIndex[i] || ''
             const hasReasoning = m.role === 'assistant' && reasoningText.trim().length > 0
+            const isLastAssistant = i === messages.length - 1 && m.role === 'assistant'
+            const graceMs = 350
+            const nowTs = Date.now()
+            const withinGrace = firstAssistantChunkMs !== null && (nowTs - firstAssistantChunkMs) < graceMs
+            const showInlineShimmer = status === 'streaming' && isLastAssistant && (((m.content || '').trim().length === 0) || withinGrace)
             return (
               <div key={i} className={`${topMarginClass} mb-0`}>
                 <div className={cn('w-full flex items-end gap-1', m.role === 'user' ? 'justify-end' : 'justify-start')}>
@@ -788,8 +799,20 @@ export default function ChatClient() {
                           </Reasoning>
                         </div>
                       )}
-                      <div className="min-w-0 w-full">
-                        {renderMessageContent(m.role, m.content)}
+                      <div className="relative min-w-0 w-full">
+                        {showInlineShimmer && (
+                          <div className="absolute inset-0 flex items-center pointer-events-none">
+                            <TextShimmer
+                              duration={1.2}
+                              className="text-base leading-snug font-medium [--base-color:#737373] [--base-gradient-color:#e5e5e5] dark:[--base-color:#a3a3a3] dark:[--base-gradient-color:#f5f5f5]"
+                            >
+                              Thinking...
+                            </TextShimmer>
+                          </div>
+                        )}
+                        <div className={cn(showInlineShimmer ? 'opacity-0' : 'opacity-100', 'transition-opacity duration-150 min-h-6')}>
+                          {renderMessageContent(m.role, m.content)}
+                        </div>
                       </div>
                     </div>
                   )}
