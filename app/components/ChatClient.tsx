@@ -283,7 +283,6 @@ export default function ChatClient() {
       const partialPayload = match[1]
       const finalPayload = match[2]
       const revisedPayload = match[3]
-      const responseIdPayload = match[4]
       const summaryPayload = match[5]
       const incompletePayload = match[6]
       const citationPayload = match[7]
