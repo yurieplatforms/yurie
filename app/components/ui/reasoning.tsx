@@ -154,8 +154,8 @@ export const ReasoningContent = memo(function ReasoningContent({ className, chil
     >
       {isOpen && (
         <div className="mt-2 max-h-64 overflow-auto rounded-none bg-white dark:bg-[#303030] border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
-          <div className="prose prose-neutral dark:prose-invert font-sans text-[13px] leading-5">
-            <Response className="w-full">{children}</Response>
+          <div className="prose prose-neutral dark:prose-invert font-sans text-[13px] leading-[1.6] prose-p:my-0 prose-p:leading-[1.6] prose-li:my-0.5 prose-ul:my-1 prose-ol:my-1 prose-ol:pl-4 prose-strong:font-semibold prose-strong:text-neutral-800 dark:prose-strong:text-neutral-200 prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline">
+            <Response className="w-full" parseIncompleteMarkdown>{children}</Response>
           </div>
         </div>
       )}

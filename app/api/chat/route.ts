@@ -1,300 +1,329 @@
-import Anthropic from '@anthropic-ai/sdk'
-
 export const runtime = 'nodejs'
-export const maxDuration = 60
-export const dynamic = 'force-dynamic'
 
 type ChatMessage = {
-  role: 'system' | 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'system'
   content: string
 }
 
-// Shared streaming response headers
-const STREAM_HEADERS = {
-  'Content-Type': 'text/plain; charset=utf-8',
-  'Cache-Control': 'no-cache',
-  'X-Accel-Buffering': 'no',
-} as const
-const INSTRUCTIONS = 'You are Yurie, a helpful assistant. When up-to-date, real-world, or hard-to-remember facts are needed, and web search is available, use it to gather information before answering. Use web search sparingly and only when it will materially improve accuracy or timeliness. If you do not need it, answer directly.'
-const SEARCH_SOURCES_SUFFIX = '\n\nIf you used web search for this answer, end with a short Sources section listing the 3–5 most relevant links as markdown bullets `[Title](URL)` (avoid duplicates). Do not include a Sources section if you did not use web search.'
-
-// Simple heuristic to decide whether a query likely needs web search
-function shouldEnableSearchFromQuery(text: string | undefined | null): boolean {
-  if (!text) return false
-  const t = text.toLowerCase()
-
-  // Explicit user intent to search/browse
-  const explicitSearchRe = /(search|look up|google|bing|browse|check (?:online|the web|the internet)|find (?:online|on the web)|web results|browse the web)/i
-  if (explicitSearchRe.test(t)) return true
-
-  // Recency-sensitive keywords
-  const recencyRe = /(latest|current|today|now|recent|breaking|news|update|up[- ]to[- ]date|live|this (?:week|month|year))/i
-  if (recencyRe.test(t)) return true
-
-  // Common live/volatile info triggers
-  const volatileRe = /(stock|price|weather|score|earnings|release date|schedule|deadline|launch|trending|trend|ranking|rank)/i
-  if (volatileRe.test(t)) return true
-
-  // Questions about very recent years suggest recency
-  if (/\b202[4-9]\b/.test(t) && /(what|who|when|where|is|are)/i.test(t)) return true
-
-  // Presence of URLs often benefits from web context
-  if (/https?:\/\//i.test(t)) return true
-
-  // Docs/help queries
-  const docsRe = /(docs|documentation|api reference|how to (?:use|install|configure)|error code|stack trace)/i
-  if (docsRe.test(t)) return true
-
-  return false
+type RequestBody = {
+  messages: ChatMessage[]
+  model?: string
+  max_output_tokens?: number
+  reasoning?: unknown
+  useSearch?: boolean
+  searchContextSize?: 'low' | 'medium' | 'high'
+  inputImages?: string[]
+  inputImageUrls?: string[]
+  inputPdfBase64?: string[]
+  inputPdfFilenames?: string[]
+  inputPdfUrls?: string[]
+  previousResponseId?: string | null
+  pdfEngine?: 'pdf-text' | 'mistral-ocr' | 'native'
 }
-export async function POST(request: Request) {
+
+export async function POST(req: Request) {
   try {
-    const { messages, model, useSearch, inputImages, inputImageUrls, inputPdfBase64, inputPdfUrls, max_output_tokens, web_search, search_results, thinking } = (await request.json()) as {
-      messages?: ChatMessage[]
-      model?: string
-      useSearch?: boolean
-      inputImages?: string[]
-      inputImageUrls?: string[]
-      inputPdfBase64?: string[]
-      inputPdfUrls?: string[]
-      max_output_tokens?: number
-      web_search?: {
-        max_uses?: number
-        allowed_domains?: string[]
-        blocked_domains?: string[]
-        user_location?: {
-          type: 'approximate'
-          city?: string
-          region?: string
-          country?: string
-          timezone?: string
+    const apiKey = process.env.OPENROUTER_API_KEY
+    if (!apiKey) {
+      return new Response('Server not configured: missing OPENROUTER_API_KEY', { status: 500 })
+    }
+
+    const body = (await req.json()) as RequestBody
+    const model = body.model || '@preset/yurie-ai'
+
+    // Build multimodal messages according to OpenRouter's format
+    const messages = (body.messages || []).map((msg, index) => {
+      // Only add images/PDFs to the last user message (most recent)
+      const isLastUserMessage = msg.role === 'user' && index === body.messages.length - 1
+      
+      if (isLastUserMessage && (body.inputImages?.length || body.inputImageUrls?.length || body.inputPdfBase64?.length || body.inputPdfUrls?.length)) {
+        // Build content array with text first, then images, then PDFs (as recommended by OpenRouter)
+        const content: Array<
+          | { type: 'text'; text: string }
+          | { type: 'image_url'; image_url: { url: string } }
+          | { type: 'file'; file: { filename: string; file_data: string } }
+        > = []
+        
+        // Add text content first
+        if (msg.content) {
+          content.push({
+            type: 'text',
+            text: msg.content
+          })
+        }
+        
+        // Add base64 images
+        if (body.inputImages?.length) {
+          for (const imageData of body.inputImages) {
+            content.push({
+              type: 'image_url',
+              image_url: {
+                url: imageData
+              }
+            })
+          }
+        }
+        
+        // Add image URLs
+        if (body.inputImageUrls?.length) {
+          for (const imageUrl of body.inputImageUrls) {
+            content.push({
+              type: 'image_url',
+              image_url: {
+                url: imageUrl
+              }
+            })
+          }
+        }
+        
+        // Add base64 PDFs using the 'file' content type
+        if (body.inputPdfBase64?.length) {
+          for (let i = 0; i < body.inputPdfBase64.length; i++) {
+            const pdfData = body.inputPdfBase64[i]
+            // Use actual filename from client or fallback to generic name
+            const filename = body.inputPdfFilenames?.[i] || `document-${i + 1}.pdf`
+            content.push({
+              type: 'file',
+              file: {
+                filename: filename,
+                file_data: `data:application/pdf;base64,${pdfData}`
+              }
+            })
+          }
+        }
+        
+        // Add PDF URLs using the 'file' content type
+        if (body.inputPdfUrls?.length) {
+          for (const pdfUrl of body.inputPdfUrls) {
+            // Extract filename from URL or use default
+            const urlParts = pdfUrl.split('/')
+            const filename = urlParts[urlParts.length - 1] || 'document.pdf'
+            content.push({
+              type: 'file',
+              file: {
+                filename: filename,
+                file_data: pdfUrl
+              }
+            })
+          }
+        }
+        
+        return {
+          role: msg.role,
+          content: content
         }
       }
-      search_results?: Array<{
-        source: string
-        title: string
-        content: Array<{ type?: 'text'; text: string }>
-        citations?: { enabled?: boolean }
-        cache_control?: { type: 'ephemeral' }
-      }>
-      thinking?: {
-        type?: 'enabled'
-        budget_tokens?: number
+      
+      // For all other messages, keep them as simple string content
+      return {
+        role: msg.role,
+        content: msg.content
       }
-    }
+    })
 
-    // Default to Claude Sonnet 4.5
-    const selectedModel = model && typeof model === 'string' && model.trim().length > 0
-      ? model
-      : 'claude-sonnet-4-5'
-
-    // Log incoming file attachments for debugging
-    if (inputImages && inputImages.length > 0) {
-      console.log('[API] Received images (base64):', inputImages.length, 'files')
-    }
-    if (inputImageUrls && inputImageUrls.length > 0) {
-      console.log('[API] Received image URLs:', inputImageUrls.length, 'files')
-    }
-    if (inputPdfBase64 && inputPdfBase64.length > 0) {
-      console.log('[API] Received PDFs (base64):', inputPdfBase64.length, 'files')
-    }
-    if (inputPdfUrls && inputPdfUrls.length > 0) {
-      console.log('[API] Received PDF URLs:', inputPdfUrls.length, 'files')
-    }
-
-    // Build Claude Messages API input (supports mixed text and images on the last user message)
-    const hasClientMessages = Array.isArray(messages) && messages.length > 0
-    const lastUserIndex = hasClientMessages ? [...messages].reverse().findIndex((m) => m.role === 'user') : -1
-    const absoluteLastUserIndex = lastUserIndex === -1 ? -1 : (messages!.length - 1 - lastUserIndex)
-    const anyCitationsEnabled = Array.isArray(search_results) && search_results.some((sr: any) => sr && sr.citations && sr.citations.enabled === true)
-
-    const claudeMessages = hasClientMessages
-      ? messages!.map((m, idx) => {
-          const isLastUser = m.role === 'user' && idx === absoluteLastUserIndex
-          const hasImages = isLastUser && Array.isArray(inputImages) && inputImages.length > 0
-          const hasImageUrls = isLastUser && Array.isArray(inputImageUrls) && inputImageUrls.length > 0
-          const hasSearchResults = isLastUser && Array.isArray(search_results) && search_results.length > 0
-          const hasPdfBase64 = isLastUser && Array.isArray(inputPdfBase64) && inputPdfBase64.length > 0
-          const hasPdfUrls = isLastUser && Array.isArray(inputPdfUrls) && inputPdfUrls.length > 0
-          if (hasImages || hasImageUrls || hasSearchResults || hasPdfBase64 || hasPdfUrls) {
-            const content: any[] = []
-            const textToUse = (typeof m.content === 'string' && m.content.trim().length > 0)
-              ? m.content
-              : 'Please analyze the attached images.'
-            // 1) Optional search results (appear before the user's text)
-            if (hasSearchResults) {
-              const normalized = (search_results || []).map((sr: any) => {
-                const blocks = Array.isArray(sr?.content)
-                  ? sr.content
-                      .map((b: any) => ({ type: 'text', text: String(b?.text || '') }))
-                      .filter((b: any) => b.text && b.text.length > 0)
-                  : []
-                const out: any = {
-                  type: 'search_result',
-                  source: String(sr?.source || ''),
-                  title: String(sr?.title || ''),
-                  content: blocks,
-                }
-                if (anyCitationsEnabled) out.citations = { enabled: true }
-                if (sr?.cache_control && sr.cache_control.type === 'ephemeral') {
-                  out.cache_control = { type: 'ephemeral' }
-                }
-                return out
-              }).filter((sr: any) => sr.source && sr.title && Array.isArray(sr.content) && sr.content.length > 0)
-              content.push(...normalized)
-            }
-            // 2) User text
-            content.push({ type: 'text', text: textToUse })
-            // 3) PDFs (base64)
-            if (hasPdfBase64) {
-              inputPdfBase64!.forEach((b64) => {
-                if (typeof b64 === 'string' && b64.trim().length > 0) {
-                  content.push({
-                    type: 'document',
-                    source: { type: 'base64', media_type: 'application/pdf', data: b64 },
-                  })
-                }
-              })
-            }
-            // 4) PDFs (URLs)
-            if (hasPdfUrls) {
-              inputPdfUrls!.forEach((url) => {
-                if (typeof url === 'string' && url.startsWith('http')) {
-                  content.push({
-                    type: 'document',
-                    source: { type: 'url', url },
-                  })
-                }
-              })
-            }
-            if (hasImages) {
-              inputImages!.forEach((imageDataUrl) => {
-                try { console.log('[API] Adding base64 image to content (length:', imageDataUrl.length, ')') } catch {}
-                try {
-                  const match = imageDataUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.*)$/)
-                  if (match) {
-                    const mediaType = match[1]
-                    const data = match[2]
-                    content.push({
-                      type: 'image',
-                      source: { type: 'base64', media_type: mediaType, data },
-                    })
-                  } else {
-                    // Fallback: if not a data URL, treat as URL
-                    content.push({ type: 'image', source: { type: 'url', url: imageDataUrl } })
-                  }
-                } catch {}
-              })
-            }
-            if (hasImageUrls) {
-              inputImageUrls!.forEach((imageUrl) => {
-                try { console.log('[API] Adding image URL to content:', imageUrl.substring(0, 50) + '...') } catch {}
-                content.push({ type: 'image', source: { type: 'url', url: imageUrl } })
-              })
-            }
-            return { role: m.role, content }
-          }
-          return { role: m.role, content: m.content }
-        })
-      : [{ role: 'user', content: '' }]
-
-    // Auto-detect if the query likely needs search
-    const autoEnableSearch = (() => {
-      const lastUserMessage = Array.isArray(messages)
-        ? [...messages].reverse().find((m) => m.role === 'user')
-        : undefined
-      return shouldEnableSearchFromQuery(lastUserMessage?.content)
-    })()
-    const wantsSearch = Boolean(useSearch || autoEnableSearch || web_search)
-
-    // Guard: ensure API key present
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY is not set' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
+    // Configure plugins (PDF processing and web search)
+    const plugins: Array<Record<string, unknown>> = []
+    
+    // Add PDF processing plugin if PDFs are being sent
+    if (body.inputPdfBase64?.length || body.inputPdfUrls?.length) {
+      plugins.push({
+        id: 'file-parser',
+        pdf: {
+          // Use Mistral OCR for better scanned document support
+          engine: body.pdfEngine || 'mistral-ocr'
+        }
       })
     }
-    const encoder = new TextEncoder()
+    
+    // Add web search plugin if search is enabled
+    if (body.useSearch) {
+      plugins.push({
+        id: 'web',
+        // Use Exa by default (cheaper and works with all models)
+        engine: 'exa',
+        max_results: 10
+      })
+    }
 
-    // Prepare Claude Messages payload
-    const payload: any = {
-      model: selectedModel,
-      max_tokens: (() => {
-        if (typeof max_output_tokens === 'number' && Number.isFinite(max_output_tokens) && max_output_tokens > 0) {
-          const SAFE_MAX_TOKENS = 8192
-          return Math.min(SAFE_MAX_TOKENS, Math.max(1, Math.floor(max_output_tokens)))
-        }
-        return 1024
-      })(),
-      system: (() => wantsSearch ? (INSTRUCTIONS + SEARCH_SOURCES_SUFFIX) : INSTRUCTIONS)(),
-      messages: claudeMessages,
+    const payload: Record<string, unknown> = {
+      model,
+      messages: messages,
       stream: true,
-    }
-    // Optional extended thinking per docs
-    if (thinking && thinking.type === 'enabled') {
-      const budget = typeof thinking.budget_tokens === 'number' && Number.isFinite(thinking.budget_tokens)
-        ? Math.max(1024, Math.floor(thinking.budget_tokens))
-        : undefined
-      if (budget !== undefined) {
-        // Ensure budget is < max_tokens per docs; clamp if needed
-        const safeBudget = Math.max(1, Math.min((payload.max_tokens || 1024) - 1, budget))
-        payload.thinking = { type: 'enabled', budget_tokens: safeBudget }
-      } else {
-        payload.thinking = { type: 'enabled' }
-      }
-    }
-    if (wantsSearch) {
-      const tool: any = { type: 'web_search_20250305', name: 'web_search' }
-      // If client provided config, apply it per docs (can't use both allow+block)
-      if (web_search && typeof web_search.max_uses === 'number' && Number.isFinite(web_search.max_uses) && web_search.max_uses > 0) {
-        tool.max_uses = Math.min(10, Math.max(1, Math.floor(web_search.max_uses)))
-      } else {
-        tool.max_uses = 5
-      }
-      if (web_search && Array.isArray(web_search.allowed_domains) && web_search.allowed_domains.length > 0) {
-        tool.allowed_domains = web_search.allowed_domains
-      } else if (web_search && Array.isArray(web_search.blocked_domains) && web_search.blocked_domains.length > 0) {
-        tool.blocked_domains = web_search.blocked_domains
-      }
-      if (web_search && web_search.user_location && web_search.user_location.type === 'approximate') {
-        tool.user_location = web_search.user_location
-      }
-      payload.tools = [tool]
+      // Provide both for best cross-provider compatibility
+      max_tokens: body.max_output_tokens,
+      max_output_tokens: body.max_output_tokens,
+      reasoning: body.reasoning,
+      plugins: plugins.length > 0 ? plugins : undefined,
+      // For native search models (OpenAI, Anthropic), set search context size
+      web_search_options: body.useSearch ? {
+        search_context_size: body.searchContextSize || 'high'
+      } : undefined,
     }
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const controller = new AbortController()
+    const upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        // These headers help OpenRouter attribute traffic; adjust for your deployment
+        'HTTP-Referer': process.env.OPENROUTER_REFERRER || 'http://localhost:3000',
+        'X-Title': process.env.OPENROUTER_TITLE || 'Yurie',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    })
 
-    const readable = new ReadableStream<Uint8Array>({
-      async start(controller) {
-        try {
-          const stream: any = await anthropic.messages.create({ ...payload, stream: true })
-          for await (const event of stream) {
-            try {
-              const type = String(event?.type || '')
-              if (type === 'content_block_delta') {
-                const delta = (event as any)?.delta
-                if (delta && delta.type === 'text_delta' && typeof delta.text === 'string') {
-                  controller.enqueue(encoder.encode(delta.text))
-                }
-                if (delta && delta.type === 'thinking_delta' && typeof delta.thinking === 'string') {
-                  controller.enqueue(encoder.encode(`<thinking:${delta.thinking}>`))
-                }
-              }
-            } catch {}
-          }
-        } catch {
-          controller.enqueue(encoder.encode(`\n[error] Something went wrong. Please try again.\n`))
-        } finally {
-          controller.close()
+    if (!upstream.ok || !upstream.body) {
+      let detail = ''
+      try { detail = await upstream.text() } catch {}
+      return new Response(detail || `Upstream error: ${upstream.status}`, { status: upstream.status })
+    }
+
+    const encoder = new TextEncoder()
+    const decoder = new TextDecoder()
+
+    const stream = new ReadableStream<Uint8Array>({
+      start(controllerOut) {
+        const reader = upstream.body!.getReader()
+        let buffer = ''
+        let sentResponseId = false
+
+        const sanitizeMeta = (s: unknown): string => {
+          const str = String(s ?? '')
+          // Prevent breaking out of angle-tags
+          return str.replace(/[<>]/g, '')
         }
+
+        const toText = (v: any): string => {
+          if (!v) return ''
+          if (typeof v === 'string') return v
+          if (Array.isArray(v)) return v.map((x) => toText(x)).join('')
+          if (typeof v === 'object') {
+            if (typeof v.content === 'string') return v.content
+            if (Array.isArray(v.content)) return v.content.map((x: any) => toText(x)).join('')
+            if (typeof v.text === 'string') return v.text
+            if (Array.isArray(v.tokens)) return v.tokens.map((x: any) => toText(x)).join('')
+          }
+          return ''
+        }
+
+        const read = async (): Promise<void> => {
+          try {
+            const { done, value } = await reader.read()
+            if (done) {
+              controllerOut.close()
+              return
+            }
+            const chunk = decoder.decode(value, { stream: true })
+            buffer += chunk
+
+            let idx: number
+            while ((idx = buffer.indexOf('\n\n')) !== -1) {
+              const event = buffer.slice(0, idx)
+              buffer = buffer.slice(idx + 2)
+              const lines = event.split('\n')
+              for (const line of lines) {
+                const trimmed = line.trim()
+                if (!trimmed.startsWith('data:')) continue
+                const dataStr = trimmed.slice(5).trim()
+                if (!dataStr || dataStr === '[DONE]') continue
+                try {
+                  const json = JSON.parse(dataStr)
+                  // Emit response id once for client-side tracking
+                  const rid = (json?.id || json?.response_id || json?.choices?.[0]?.id)
+                  if (!sentResponseId && rid) {
+                    sentResponseId = true
+                    controllerOut.enqueue(encoder.encode(`<response_id:${sanitizeMeta(rid)}>`))
+                  }
+
+                  const delta = json?.choices?.[0]?.delta
+                  const contentPiece: string = (delta?.content ?? json?.choices?.[0]?.message?.content ?? '') as string
+
+                  // Handle web search annotations (citations from web plugin)
+                  const message = json?.choices?.[0]?.message
+                  const annotations = message?.annotations
+                  if (Array.isArray(annotations) && annotations.length > 0) {
+                    for (const annotation of annotations) {
+                      if (annotation?.type === 'url_citation') {
+                        const citation = annotation.url_citation
+                        if (citation?.url) {
+                          const citationData = {
+                            url: sanitizeMeta(citation.url),
+                            title: sanitizeMeta(citation.title || ''),
+                            content: sanitizeMeta((citation.content || '').slice(0, 200))
+                          }
+                          controllerOut.enqueue(encoder.encode(`<citation:${JSON.stringify(citationData)}>`))
+                        }
+                      }
+                    }
+                  }
+
+                  // Try to extract reasoning tokens from several possible shapes
+                  // Reasoning (multiple shapes across providers)
+                  const r1 = toText(delta?.reasoning)
+                  const r2 = toText(json?.choices?.[0]?.message?.reasoning)
+                  const r3 = toText(json?.reasoning)
+                  const r4 = toText(json?.x_groq?.reasoning)
+                  let reasoningPiece = (r1 || r2 || r3 || r4)
+
+                  // New: OpenRouter-normalized reasoning_details (recommended)
+                  const rd = (delta?.reasoning_details || json?.choices?.[0]?.message?.reasoning_details) as any[] | undefined
+                  if (Array.isArray(rd)) {
+                    for (const item of rd) {
+                      if (item?.type === 'reasoning.text' && item?.text) {
+                        controllerOut.enqueue(encoder.encode(`<thinking:${sanitizeMeta(item.text)}>`))
+                      } else if (item?.type === 'reasoning.summary' && item?.summary) {
+                        controllerOut.enqueue(encoder.encode(`<summary_text:${sanitizeMeta(item.summary)}>`))
+                      }
+                    }
+                  } else if (reasoningPiece) {
+                    controllerOut.enqueue(encoder.encode(`<thinking:${sanitizeMeta(reasoningPiece)}>`))
+                  }
+
+                  // Optional: legacy summary shapes
+                  const s1 = toText(delta?.reasoning?.summary)
+                  const s2 = toText(json?.choices?.[0]?.message?.reasoning?.summary)
+                  const summaryText = s1 || s2
+                  if (summaryText) {
+                    controllerOut.enqueue(encoder.encode(`<summary_text:${sanitizeMeta(summaryText)}>`))
+                  }
+
+                  if (contentPiece) controllerOut.enqueue(encoder.encode(contentPiece))
+                } catch {}
+              }
+            }
+            read()
+          } catch (e) {
+            try { controllerOut.error(e) } catch {}
+          }
+        }
+
+        // If client aborts, stop upstream too
+        const onAbort = () => {
+          try { controller.abort() } catch {}
+          try { reader.cancel() } catch {}
+          try { controllerOut.close() } catch {}
+        }
+        ;(req.signal as AbortSignal).addEventListener('abort', onAbort)
+
+        read()
       },
     })
 
-    return new Response(readable, { headers: { ...STREAM_HEADERS } })
-  } catch (error) {
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-store',
+      },
     })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown server error'
+    return new Response(`Server error: ${msg}`, { status: 500 })
   }
 }
+
+export function GET() {
+  return new Response('Method Not Allowed', { status: 405 })
+}
+

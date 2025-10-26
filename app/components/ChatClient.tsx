@@ -168,89 +168,110 @@ export default function ChatClient() {
     const lines = normalized.split('\n')
     const result: string[] = []
     let inFence = false
-
-    const isHeadingCandidate = (text: string): boolean => {
-      const trimmed = text.trim()
-      if (trimmed.length < 8 || trimmed.length > 80) return false
-      if (/[.!?;:]\s*$/.test(trimmed)) return false
-      if (/[\-*+]\s+/.test(trimmed)) return false
-      if (/^\d+\.\s+/.test(trimmed)) return false
-      if (/^>\s+/.test(trimmed)) return false
-      if (/^#{1,6}\s/.test(trimmed)) return false
-      return /^[A-Z][A-Za-z0-9''()\[\]\/,&\- ]+$/.test(trimmed)
-    }
+    let prevWasEmpty = false
 
     const boldenLabels = (line: string): string =>
       line.replace(/(^|\n)([A-Z][A-Za-z\- ]{2,40}):\s/g, (_m, p1, p2) => `${p1}**${p2}:** `)
-
-    const promoteInlineHeadings = (line: string): string => {
-      const inlineHeadingRe = /([.!?;:])\s*([A-Z][A-Za-z0-9''()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9''()\[\]\/,&\-]+){2,9})(?=\s|$)/g
-      const dashHeadingRe = /(\s[\-–—]\s)\s*([A-Z][A-Za-z0-9''()\[\]\/,&\-]+(?:\s+[A-Z][A-Za-z0-9''()\[\]\/,&\-]+){2,9})(?=\s|$)/g
-      const gluedHeadingRe = /([a-z])([A-Z][a-zA-Z]+(?:\s+[A-Z][A-Za-z0-9''()\[\]\/,&\-]+){2,9})(?=\s|$)/g
-      let out = line.replace(inlineHeadingRe, (_m, p1, p2) => `${p1}\n\n## ${p2}\n\n`)
-      out = out.replace(dashHeadingRe, (_m, _sep, p2) => `\n\n## ${p2}\n\n`)
-      out = out.replace(gluedHeadingRe, (_m, prev, title) => `${prev}\n\n## ${title}\n\n`)
-      return out
-    }
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
       const trimmed = line.trim()
 
+      // Handle code fences
       if (/^```/.test(trimmed)) {
         inFence = !inFence
         result.push(line)
+        prevWasEmpty = false
         continue
       }
 
-      if (!inFence) {
-        const withInlineHeadings = promoteInlineHeadings(line)
-        if (withInlineHeadings.includes('\n\n## ')) {
-          const chunks = withInlineHeadings.split('\n')
-          for (const chunk of chunks) {
-            const ctrim = chunk.trim()
-            if (ctrim.startsWith('## ')) {
-              if (result.length > 0 && result[result.length - 1].trim() !== '') {
-                result.push('')
-              }
-              result.push(ctrim)
-            } else if (ctrim.length === 0) {
-              result.push(boldenLabels(chunk))
-            } else {
-              result.push(boldenLabels(chunk))
-            }
-          }
-          continue
-        }
-        if (isHeadingCandidate(trimmed)) {
-          if (result.length > 0 && result[result.length - 1].trim() !== '') {
-            result.push('')
-          }
-          result.push(`## ${trimmed}`)
-          continue
-        }
-        result.push(boldenLabels(line))
+      // Inside code blocks, preserve everything
+      if (inFence) {
+        result.push(line)
+        prevWasEmpty = false
         continue
       }
 
-      result.push(line)
+      // Skip empty lines but track them
+      if (trimmed.length === 0) {
+        if (!prevWasEmpty) {
+          result.push('')
+          prevWasEmpty = true
+        }
+        continue
+      }
+
+      // Apply bold labels
+      const processed = boldenLabels(line)
+      result.push(processed)
+      prevWasEmpty = false
     }
 
-    return result.join('\n')
+    // Clean up multiple consecutive empty lines
+    const cleaned: string[] = []
+    let emptyCount = 0
+    for (const line of result) {
+      if (line.trim() === '') {
+        emptyCount++
+        if (emptyCount === 1) cleaned.push('')
+      } else {
+        emptyCount = 0
+        cleaned.push(line)
+      }
+    }
+
+    return cleaned.join('\n').trim()
   }
 
   // sanitizeHtml removed; StreamResponse handles markdown safely
 
+  // Heuristic to decide when to enable web search (model-agnostic grounding)
+  // Inspired by OpenRouter web search best practices: enable only when helpful
+  function shouldEnableSearch(query: string): boolean {
+    const q = (query || '').toLowerCase()
+    // Explicit user controls
+    if (/^(?:\s*\/no\-?search|\s*offline:)/.test(q)) return false
+    if (/^(?:\s*\/search|\s*\/web|\s*online:)/.test(q)) return true
+
+    // Time-sensitive or newsy prompts
+    const timeSignals = [
+      'latest', 'today', 'this week', 'this month', 'this year', 'now', 'breaking', 'news',
+      'rumor', 'announced', 'just released', 'earnings', 'stock price', 'price now', 'release date',
+      'up to date', 'updated', 'recent', 'this quarter', 'this quarter', 'q1', 'q2', 'q3', 'q4',
+      '2023', '2024', '2025', '2026'
+    ]
+    if (timeSignals.some((s) => q.includes(s))) return true
+
+    // Comparative queries that depend on recent benchmarks
+    const recencyTopics = [
+      'best', 'top', 'vs ', 'versus', 'review', 'benchmark', 'specs', 'comparison'
+    ]
+    if (recencyTopics.some((s) => q.includes(s))) return true
+
+    return false
+  }
+
+  function stripSearchControls(query: string): string {
+    const q = query || ''
+    return q
+      .replace(/^\s*\/no\-?search\s*/i, '')
+      .replace(/^\s*offline:\s*/i, '')
+      .replace(/^\s*\/search\s*/i, '')
+      .replace(/^\s*\/web\s*/i, '')
+      .replace(/^\s*online:\s*/i, '')
+  }
+
   function renderMessageContent(role: 'user' | 'assistant', content: string) {
     const legacyBracketPattern = "\\[" + "data:image" + "\\/[a-zA-Z]+;base64,[^\\]]+" + "\\]"
     const pattern = new RegExp(
-      `<image_partial:([^>]+)>|<image:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|${legacyBracketPattern}`,
+      `<image_partial:([^>]+)>|<image:([^>]+)>|<revised_prompt:([^>]+)>|<response_id:([^>]+)>|<summary_text:([^>]+)>|<incomplete:([^>]+)>|<citation:([^>]+)>|${legacyBracketPattern}`,
       'g'
     )
     const parts: Array<
       { type: 'text'; value: string } |
       { type: 'image'; src: string; partial?: boolean } |
-      { type: 'meta'; key: 'revised_prompt' | 'response_id' | 'summary_text' | 'incomplete'; value: string }
+      { type: 'meta'; key: 'revised_prompt' | 'response_id' | 'summary_text' | 'incomplete'; value: string } |
+      { type: 'citation'; url: string; title: string; content: string }
     > = []
     let lastIndex = 0
     let match: RegExpExecArray | null
@@ -265,6 +286,7 @@ export default function ChatClient() {
       const responseIdPayload = match[4]
       const summaryPayload = match[5]
       const incompletePayload = match[6]
+      const citationPayload = match[7]
       const src = partialPayload
         ? partialPayload
         : finalPayload
@@ -279,14 +301,25 @@ export default function ChatClient() {
       if (typeof revisedPayload === 'string' && revisedPayload) {
         parts.push({ type: 'meta', key: 'revised_prompt', value: revisedPayload })
       }
-      if (typeof responseIdPayload === 'string' && responseIdPayload) {
-        parts.push({ type: 'meta', key: 'response_id', value: responseIdPayload })
-      }
+      // Intentionally do not render response_id metadata in the UI
       if (typeof summaryPayload === 'string' && summaryPayload) {
         parts.push({ type: 'meta', key: 'summary_text', value: summaryPayload })
       }
       if (typeof incompletePayload === 'string' && incompletePayload) {
         parts.push({ type: 'meta', key: 'incomplete', value: incompletePayload })
+      }
+      if (citationPayload) {
+        try {
+          const citation = JSON.parse(citationPayload)
+          if (citation.url) {
+            parts.push({ 
+              type: 'citation', 
+              url: citation.url, 
+              title: citation.title || '',
+              content: citation.content || ''
+            })
+          }
+        } catch {}
       }
       lastIndex = match.index + full.length
     }
@@ -338,6 +371,43 @@ export default function ChatClient() {
               />
             )
           }
+          if (p.type === 'citation') {
+            const domain = (() => {
+              try {
+                const url = new URL(p.url)
+                return url.hostname.replace('www.', '')
+              } catch {
+                return p.url
+              }
+            })()
+            return (
+              <div key={i} className="my-2 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                <a 
+                  href={p.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-2 text-sm hover:opacity-80 transition-opacity"
+                >
+                  <svg className="w-4 h-4 mt-0.5 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-blue-700 dark:text-blue-300 truncate">
+                      {p.title || domain}
+                    </div>
+                    {p.content && (
+                      <div className="text-xs text-blue-600 dark:text-blue-400 mt-0.5 line-clamp-2">
+                        {p.content}
+                      </div>
+                    )}
+                    <div className="text-xs text-blue-500 dark:text-blue-500 mt-0.5">
+                      {domain}
+                    </div>
+                  </div>
+                </a>
+              </div>
+            )
+          }
           return null
         })}
         {parts.map((p, i) => {
@@ -372,20 +442,36 @@ export default function ChatClient() {
     let text = streamBufferRef.current ? streamBufferRef.current + raw : raw
     streamBufferRef.current = ''
 
+    // De-duplicate overlapping reasoning tokens by computing the non-overlapping suffix
     let clean = text.replace(thoughtRegex, (_m, delta: string) => {
       if (!delta) return ''
-      setReasoningByMessageIndex((prev) => ({ ...prev, [assistantIndex]: (prev[assistantIndex] || '') + delta }))
+      setReasoningByMessageIndex((prev) => {
+        const prevAll = prev[assistantIndex] || ''
+        // Find the longest suffix of prevAll that is a prefix of delta
+        let overlap = 0
+        const maxOverlap = Math.min(prevAll.length, delta.length)
+        for (let k = maxOverlap; k > 0; k--) {
+          if (prevAll.slice(-k) === delta.slice(0, k)) { overlap = k; break }
+        }
+        const toAppend = delta.slice(overlap)
+        if (!toAppend) return prev
+        return { ...prev, [assistantIndex]: prevAll + toAppend }
+      })
       return ''
     })
 
-    // If a chunk ends with an incomplete `<thinking:` tag (missing closing '>'),
+    // If a chunk ends with an incomplete tag (missing closing '>'),
     // buffer it so it doesn't leak to the UI and will be completed by the next chunk.
-    const lastThinkingStart = clean.lastIndexOf('<thinking:')
-    if (lastThinkingStart !== -1) {
-      const tail = clean.slice(lastThinkingStart)
-      if (!tail.includes('>')) {
-        streamBufferRef.current = tail
-        clean = clean.slice(0, lastThinkingStart)
+    const incompleteTagPatterns = ['<thinking:', '<citation:', '<response_id:', '<summary_text:']
+    for (const pattern of incompleteTagPatterns) {
+      const lastStart = clean.lastIndexOf(pattern)
+      if (lastStart !== -1) {
+        const tail = clean.slice(lastStart)
+        if (!tail.includes('>')) {
+          streamBufferRef.current = tail
+          clean = clean.slice(0, lastStart)
+          break
+        }
       }
     }
 
@@ -397,10 +483,11 @@ export default function ChatClient() {
   const handleSendMessage = useCallback((message: string, uploadedFiles?: File[]) => {
     const trimmed = message.trim()
     const filesToProcess = uploadedFiles || []
-    const useSearchMode = false
+    const useSearchMode = shouldEnableSearch(trimmed)
     if ((trimmed.length === 0 && filesToProcess.length === 0) || status === 'submitted' || status === 'streaming') return
     
-    const userMsg: ChatMessage = { role: 'user', content: trimmed }
+    const sanitizedUser = stripSearchControls(trimmed)
+    const userMsg: ChatMessage = { role: 'user', content: sanitizedUser }
     const nextMessages: ChatMessage[] = [...messages, userMsg]
     setMessages(nextMessages)
     setStatus('submitted')
@@ -517,12 +604,14 @@ export default function ChatClient() {
         // Convert files to base64
         let imageDataUrls: string[] = []
         let pdfBase64s: string[] = []
+        let pdfFilenames: string[] = []
         
         try {
           // Encode PDFs (raw base64, no data URL header)
           if (pdfFiles.length > 0) {
             try {
               pdfBase64s = await Promise.all(pdfFiles.map((f) => fileToBase64RawPdf(f)))
+              pdfFilenames = pdfFiles.map((f) => f.name)
             } catch (e) {
               console.error('PDF encoding failed:', e)
               throw new Error('Failed to process PDFs. Please try again.')
@@ -589,10 +678,10 @@ export default function ChatClient() {
           }
           return { images, pdfs }
         }
-        const urlExtraction = extractUrls(trimmed)
+        const urlExtraction = extractUrls(sanitizedUser)
 
-        // Use Claude Sonnet 4.5 on the server
-        const selectedModel = 'claude-sonnet-4-5'
+        // Use OpenRouter preset (managed through OpenRouter dashboard)
+        const selectedModel = '@preset/yurie-ai'
         const stripImageData = (text: string): string => {
           const angleTag = /<image:[^>]+>/gi
           const bracketDataUrl = /\[data:image\/[a-zA-Z0-9+.-]+;base64,[^\]]+\]/gi
@@ -616,17 +705,25 @@ export default function ChatClient() {
             messages: payloadMessages,
             inputImages: imageDataUrls,
             inputPdfBase64: pdfBase64s,
+            inputPdfFilenames: pdfFilenames,
             inputImageUrls: urlExtraction.images,
             inputPdfUrls: urlExtraction.pdfs,
             previousResponseId: lastResponseId,
             model: selectedModel,
             // Reserve space; adjust as needed for cost control
             max_output_tokens: 30000,
-            // Enable extended thinking so the server streams thinking deltas
-            thinking: { type: 'enabled', budget_tokens: 4000 },
-            includeReasoningSummary: false,
-            includeEncryptedReasoning: false,
+            // Use OpenRouter unified reasoning parameter; client can tune here
+            reasoning: {
+              effort: 'high',
+              // For providers supporting direct caps (e.g., Anthropic), you can swap to max_tokens
+              // max_tokens: 4000,
+              exclude: false,
+            },
             useSearch: useSearchMode,
+            // For native search models (OpenAI, Anthropic), set search context size to high for better results
+            searchContextSize: useSearchMode ? 'high' as const : undefined,
+            // Use Mistral OCR for better scanned document support
+            pdfEngine: 'mistral-ocr',
           }),
           signal: ac.signal,
         })
@@ -642,7 +739,12 @@ export default function ChatClient() {
           let msg = `Request failed: ${res.status}`
           try {
             const json = JSON.parse(detail)
-            if (json && typeof json.error === 'string' && json.error) {
+            const errObj = json?.error
+            if (errObj && typeof errObj === 'object') {
+              const code = typeof errObj.code === 'number' || typeof errObj.code === 'string' ? String(errObj.code) : ''
+              const message = typeof errObj.message === 'string' ? errObj.message : ''
+              msg = `Request failed: ${res.status}${code ? ` (${code})` : ''}${message ? ` - ${message}` : ''}`
+            } else if (typeof json?.error === 'string') {
               msg += ` - ${json.error}`
             }
           } catch {
