@@ -104,12 +104,6 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
       console.log("Only images or PDFs are allowed");
       return;
     }
-    // Allow larger images; server and encoder will handle size/resize
-    const maxSizeBytes = 40 * 1024 * 1024
-    if (file.size > maxSizeBytes) {
-      console.log("File too large (max ~40MB images)");
-      return;
-    }
     setFiles((prev) => [...prev, file]);
     if (isImageFile(file)) {
       const reader = new FileReader();

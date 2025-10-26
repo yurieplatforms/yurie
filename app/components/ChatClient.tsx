@@ -617,50 +617,14 @@ export default function ChatClient() {
             }
           }
           if (imageFiles.length > 0) {
-            const isProduction = process.env.NODE_ENV === 'production'
-            if (isProduction) {
-              const TOTAL_BUDGET_CHARS = 3_200_000 // ~3.2MB JSON body cap (safe under server limits)
-              const OVERHEAD_CHARS = 120_000 // buffer for JSON + text
-              const pdfChars = pdfBase64s.reduce((n, s) => n + (s?.length || 0), 0)
-              const availableForImages = Math.max(0, TOTAL_BUDGET_CHARS - OVERHEAD_CHARS - pdfChars)
-              const perImageBudget = Math.max(120_000, Math.floor(availableForImages / imageFiles.length))
-              const encoded = await Promise.all(imageFiles.map((f) => encodeImageToTarget(f, perImageBudget)))
-              imageDataUrls = (encoded.filter(Boolean) as string[])
-              const dropped = imageFiles.length - imageDataUrls.length
-              if (dropped > 0) {
-                console.warn('Dropped', dropped, 'images due to production size budget')
-              }
-            } else {
-              imageDataUrls = await Promise.all(imageFiles.map((f) => encodeImageWithResize(f)))
-            }
+            imageDataUrls = await Promise.all(imageFiles.map((f) => encodeImageWithResize(f)))
           }
         } catch (encodeError) {
           console.error('File encoding failed:', encodeError)
           throw new Error('Failed to process files. Please try again.')
         }
 
-        // In production (e.g., Vercel), request body size is limited. Block overly large payloads upfront.
-        try {
-          const isProduction = process.env.NODE_ENV === 'production'
-          if (isProduction) {
-            const attachmentsChars = imageDataUrls.reduce((n, s) => n + (s?.length || 0), 0) + pdfBase64s.reduce((n, s) => n + (s?.length || 0), 0)
-            // Add small buffer for JSON overhead and other fields
-            const estimatedTotalChars = attachmentsChars + 64_000
-            // Keep well under common 4.5MB limits; base64 expands ~33%, use ~3.5MB cap
-            const PROD_MAX_PAYLOAD_CHARS = 3_500_000
-            if (estimatedTotalChars > PROD_MAX_PAYLOAD_CHARS) {
-              setMessages((prev) => ([
-                ...prev,
-                {
-                  role: 'assistant',
-                  content: 'Attachments are too large for the hosted server limit. Please send fewer/smaller files (try under ~2MB per file for images, ~2.5MB for PDFs), or reduce image resolution.'
-                },
-              ]))
-              setStatus('ready')
-              return
-            }
-          }
-        } catch {}
+        // No client-side payload cap; allow upstream/server to enforce limits if any.
 
         // Extract image and PDF URLs from the message
         const extractUrls = (text: string): { images: string[]; pdfs: string[] } => {
