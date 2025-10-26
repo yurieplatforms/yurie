@@ -265,7 +265,7 @@ table thead th {
   text-align: left;
   font-size: 0.75rem;
   font-weight: 700;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.05em;
   white-space: normal;
   color: #000000;

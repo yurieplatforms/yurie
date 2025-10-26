@@ -225,30 +225,16 @@ export default function ChatClient() {
 
   // sanitizeHtml removed; StreamResponse handles markdown safely
 
-  // Heuristic to decide when to enable web search (model-agnostic grounding)
-  // Inspired by OpenRouter web search best practices: enable only when helpful
+  // Decide when to enable web search: default ON with explicit opt-out.
+  // Matches OpenRouter docs: using the web plugin or :online is the recommended way
+  // to ground responses with real-time data. Users can opt out with "/no-search" or "offline:".
   function shouldEnableSearch(query: string): boolean {
     const q = (query || '').toLowerCase()
     // Explicit user controls
     if (/^(?:\s*\/no\-?search|\s*offline:)/.test(q)) return false
     if (/^(?:\s*\/search|\s*\/web|\s*online:)/.test(q)) return true
-
-    // Time-sensitive or newsy prompts
-    const timeSignals = [
-      'latest', 'today', 'this week', 'this month', 'this year', 'now', 'breaking', 'news',
-      'rumor', 'announced', 'just released', 'earnings', 'stock price', 'price now', 'release date',
-      'up to date', 'updated', 'recent', 'this quarter', 'this quarter', 'q1', 'q2', 'q3', 'q4',
-      '2023', '2024', '2025', '2026'
-    ]
-    if (timeSignals.some((s) => q.includes(s))) return true
-
-    // Comparative queries that depend on recent benchmarks
-    const recencyTopics = [
-      'best', 'top', 'vs ', 'versus', 'review', 'benchmark', 'specs', 'comparison'
-    ]
-    if (recencyTopics.some((s) => q.includes(s))) return true
-
-    return false
+    // Default to enabling web search automatically
+    return true
   }
 
   function stripSearchControls(query: string): string {

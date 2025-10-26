@@ -139,9 +139,8 @@ export async function POST(req: Request) {
     if (body.useSearch) {
       plugins.push({
         id: 'web',
-        // Use Exa by default (cheaper and works with all models)
-        engine: 'exa',
-        max_results: 10
+        // Follow OpenRouter defaults: do not force engine; provider-native when available, otherwise Exa
+        // Omit engine to allow model-native search; leave max_results undefined to use default (5)
       })
     }
 
