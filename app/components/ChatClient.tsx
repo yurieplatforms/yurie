@@ -574,28 +574,7 @@ export default function ChatClient() {
           }
         }
 
-        const encodeImageToTarget = async (
-          file: File,
-          targetChars: number,
-          dimCandidates = [1200, 1024, 800, 640, 512, 384],
-          qualityCandidates = [0.72, 0.64, 0.56, 0.48, 0.4]
-        ): Promise<string | null> => {
-          for (const d of dimCandidates) {
-            for (const q of qualityCandidates) {
-              try {
-                const s = await encodeImageWithResize(file, d, q)
-                if (s && s.length <= targetChars) return s
-              } catch {}
-            }
-          }
-          // Return smallest we can produce even if above target
-          try {
-            const smallest = await encodeImageWithResize(file, dimCandidates[dimCandidates.length - 1], qualityCandidates[qualityCandidates.length - 1])
-            return smallest || null
-          } catch {
-            return null
-          }
-        }
+        
 
         const imageFiles = filesToProcess.filter((f) => f.type.startsWith('image/'))
         const pdfFiles = filesToProcess.filter((f) => (f.type === 'application/pdf') || (f.name || '').toLowerCase().endsWith('.pdf'))
