@@ -20,8 +20,7 @@ export function TextShimmer({
 }: TextShimmerProps) {
   const MotionComponent: any =
     typeof Component === 'string'
-      ? // @ts-expect-error dynamic intrinsic motion tag
-        (motion as any)[Component] || motion.span
+      ? (motion as any)[Component] || motion.span
       : motion(Component as any)
 
   const dynamicSpread = useMemo(() => {
