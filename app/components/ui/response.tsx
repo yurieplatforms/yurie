@@ -14,6 +14,11 @@ export const Response = memo(
       controls={{ code: false, table: false, mermaid: false }}
       components={{
         ...components,
+        // Map unknown XML-like tags emitted by some models to safe spans
+        // Prevents React warnings like: "The tag <argument> is unrecognized in this browser"
+        argument({ children, ...rest }: any) {
+          return <span {...rest}>{children}</span>
+        },
         pre(preProps: any) {
           const child: any = Array.isArray(preProps.children) ? preProps.children[0] : preProps.children
           const codeClassName = child?.props?.className || ''

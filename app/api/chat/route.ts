@@ -1,25 +1,6 @@
 export const runtime = 'nodejs'
 
-type ChatMessage = {
-  role: 'user' | 'assistant' | 'system'
-  content: string
-}
-
-type RequestBody = {
-  messages: ChatMessage[]
-  model?: string
-  max_output_tokens?: number
-  reasoning?: unknown
-  useSearch?: boolean
-  searchContextSize?: 'low' | 'medium' | 'high'
-  inputImages?: string[]
-  inputImageUrls?: string[]
-  inputPdfBase64?: string[]
-  inputPdfFilenames?: string[]
-  inputPdfUrls?: string[]
-  previousResponseId?: string | null
-  pdfEngine?: 'pdf-text' | 'mistral-ocr' | 'native'
-}
+import type { ApiRequestBody } from '@/app/types/api'
 
 export async function POST(req: Request) {
   try {
@@ -28,13 +9,19 @@ export async function POST(req: Request) {
       return new Response('Server not configured: missing OPENROUTER_API_KEY', { status: 500 })
     }
 
-    const body = (await req.json()) as RequestBody
+    const body = (await req.json()) as ApiRequestBody
     const model = body.model || '@preset/yurie-ai'
 
     // Build multimodal messages according to OpenRouter's format
-    const messages = (body.messages || []).map((msg, index) => {
-      // Only add images/PDFs to the last user message (most recent)
-      const isLastUserMessage = msg.role === 'user' && index === body.messages.length - 1
+    const allMessages = body.messages || []
+    // Find the most recent user message index to attach images/PDFs
+    let lastUserIndex = -1
+    for (let i = allMessages.length - 1; i >= 0; i--) {
+      if (allMessages[i]?.role === 'user') { lastUserIndex = i; break }
+    }
+    const messages = allMessages.map((msg, index) => {
+      // Only add images/PDFs to the most recent user message
+      const isLastUserMessage = msg.role === 'user' && index === lastUserIndex
       
       if (isLastUserMessage && (body.inputImages?.length || body.inputImageUrls?.length || body.inputPdfBase64?.length || body.inputPdfUrls?.length)) {
         // Build content array with text first, then images, then PDFs (as recommended by OpenRouter)

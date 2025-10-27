@@ -243,7 +243,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
           )}
         </AnimatePresence>
 
-        <div className="flex items-center gap-2 p-2.5 rounded-full bg-white dark:bg-[#303030] max-w-3xl w-full">
+        <div className="flex items-center gap-2 p-2.5 rounded-full bg-white dark:bg-[#303030] max-w-[52rem] w-full">
           <input
             id={fileInputId}
             ref={fileInputRef}

@@ -73,7 +73,7 @@ export default function RootLayout({
       <body className="font-sans antialiased overflow-hidden h-screen flex flex-col">
         {/* auto-sync dark mode with system preference (runs before interactive) */}
         <Script id="theme-sync" strategy="beforeInteractive">{`try{var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');var d=document.documentElement;var set=()=>{m.matches?d.classList.add('dark'):d.classList.remove('dark')};set();m&&m.addEventListener&&m.addEventListener('change',set);}catch(e){}`}</Script>
-        <main className="flex-auto min-w-0 flex flex-col overflow-hidden w-full max-w-3xl mx-auto px-2 sm:px-4 mt-2 md:mt-4">
+        <main className="flex-auto min-w-0 flex flex-col overflow-hidden w-full max-w-[52rem] mx-auto px-2 sm:px-4 mt-2 md:mt-4">
           <Navbar />
           {children}
           <Analytics />
