@@ -1,7 +1,8 @@
 import './global.css'
 import type { Metadata, Viewport } from 'next'
-import { GeistSans } from 'geist/font/sans'
-import { GeistMono } from 'geist/font/mono'
+import { Inter, Roboto_Mono } from 'next/font/google'
+const inter = Inter({ subsets: ['latin'], variable: '--font-geist-sans' })
+const mono = Roboto_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
 import { Navbar } from './components/nav/Navbar'
 import { Analytics } from '@vercel/analytics/react'
 import { baseUrl } from './sitemap'
@@ -64,8 +65,8 @@ export default function RootLayout({
       lang="en"
       className={cn(
         'text-black bg-white dark:text-white dark:bg-[#212121]',
-        GeistSans.variable,
-        GeistMono.variable
+        inter.variable,
+        mono.variable
       )}
       suppressHydrationWarning
     >
