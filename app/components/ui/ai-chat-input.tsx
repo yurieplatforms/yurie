@@ -1,9 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { useState, useEffect, useRef } from "react";
-import { Plus, Send, X, FileText, Loader2 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { useState, useEffect, useRef } from "react"
+import { Plus, Send, X, FileText, Loader2 } from "lucide-react"
+import { AnimatePresence, motion } from "motion/react"
+
+type AIChatInputProps = {
+  onSend?: (text: string, files?: File[]) => void
+  isLoading?: boolean
+  className?: string
+}
 
 const PLACEHOLDERS = [
   // Web search
@@ -30,41 +36,34 @@ const PLACEHOLDERS = [
   "things to do in paris",
   "best time to visit japan",
   "cheap flights to europe",
-];
-
-type AIChatInputProps = {
-  onSend?: (text: string, files?: File[]) => void
-  isLoading?: boolean
-  className?: string
-}
+]
 
 const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, className }) => {
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const [showPlaceholder, setShowPlaceholder] = useState(true);
-  const [isActive, setIsActive] = useState(false);
-  const [inputValue, setInputValue] = useState("");
+  const [placeholderIndex, setPlaceholderIndex] = useState(0)
+  const [showPlaceholder, setShowPlaceholder] = useState(true)
+  const [isActive, setIsActive] = useState(false)
+  const [inputValue, setInputValue] = useState("")
   
-  const [files, setFiles] = useState<File[]>([]);
-  const [filePreviews, setFilePreviews] = useState<{ [key: string]: string }>({});
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const fileInputId = React.useId();
+  const [files, setFiles] = useState<File[]>([])
+  const [filePreviews, setFilePreviews] = useState<{ [key: string]: string }>({})
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputId = React.useId()
   
-
   // Cycle placeholder text when input is inactive
   useEffect(() => {
-    if (isActive || inputValue) return;
+    if (isActive || inputValue) return
 
     const interval = setInterval(() => {
-      setShowPlaceholder(false);
+      setShowPlaceholder(false)
       setTimeout(() => {
-        setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length);
-        setShowPlaceholder(true);
-      }, 400);
-    }, 3000);
+        setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length)
+        setShowPlaceholder(true)
+      }, 400)
+    }, 3000)
 
-    return () => clearInterval(interval);
-  }, [isActive, inputValue]);
+    return () => clearInterval(interval)
+  }, [isActive, inputValue])
 
   // Close input when clicking outside
   useEffect(() => {
@@ -73,80 +72,78 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
         wrapperRef.current &&
         !wrapperRef.current.contains(event.target as Node)
       ) {
-        if (!inputValue) setIsActive(false);
+        if (!inputValue) setIsActive(false)
       }
-    };
+    }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [inputValue]);
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [inputValue])
 
-  
-
-  const handleActivate = () => setIsActive(true);
+  const handleActivate = () => setIsActive(true)
 
   // File handling functions
   const isImageFile = (file: File) => {
-    if (file.type && file.type.startsWith("image/")) return true;
-    const ext = (file.name.split('.').pop() || '').toLowerCase();
-    const imageExts = ["png","jpg","jpeg","webp","gif","bmp","svg","heic","heif","tif","tiff","avif"];
-    return imageExts.includes(ext);
-  };
+    if (file.type && file.type.startsWith("image/")) return true
+    const ext = (file.name.split('.').pop() || '').toLowerCase()
+    const imageExts = ["png","jpg","jpeg","webp","gif","bmp","svg","heic","heif","tif","tiff","avif"]
+    return imageExts.includes(ext)
+  }
   const isPdfFile = (file: File) => {
-    if (file.type && file.type === "application/pdf") return true;
-    const ext = (file.name.split('.').pop() || '').toLowerCase();
-    return ext === 'pdf';
-  };
-  const isAllowedFile = (file: File) => isImageFile(file) || isPdfFile(file);
+    if (file.type && file.type === "application/pdf") return true
+    const ext = (file.name.split('.').pop() || '').toLowerCase()
+    return ext === 'pdf'
+  }
+  const isAllowedFile = (file: File) => isImageFile(file) || isPdfFile(file)
 
   const processFile = (file: File) => {
     if (!isAllowedFile(file)) {
-      console.log("Only images or PDFs are allowed");
-      return;
+      console.log("Only images or PDFs are allowed")
+      return
     }
-    setFiles((prev) => [...prev, file]);
+    setFiles((prev) => [...prev, file])
     if (isImageFile(file)) {
-      const reader = new FileReader();
-      reader.onload = (e) => setFilePreviews((prev) => ({ ...prev, [file.name]: (e.target?.result as string) }));
-      reader.readAsDataURL(file);
+      const reader = new FileReader()
+      reader.onload = (e) => setFilePreviews((prev) => ({ ...prev, [file.name]: (e.target?.result as string) }))
+      reader.readAsDataURL(file)
     } else if (isPdfFile(file)) {
       // No thumbnail for PDFs; keep a simple marker so we render the generic preview
-      setFilePreviews((prev) => ({ ...prev, [file.name]: '' }));
+      setFilePreviews((prev) => ({ ...prev, [file.name]: '' }))
     }
-  };
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      Array.from(e.target.files).forEach(processFile);
-      if (e.target) e.target.value = "";
+      Array.from(e.target.files).forEach(processFile)
+      if (e.target) e.target.value = ""
     }
-  };
+  }
 
   const handleRemoveFile = (index: number) => {
-    const fileToRemove = files[index];
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    const fileToRemove = files[index]
+    setFiles((prev) => prev.filter((_, i) => i !== index))
     if (fileToRemove && filePreviews[fileToRemove.name]) {
       setFilePreviews((prev) => {
-        const { [fileToRemove.name]: _removed, ...rest } = prev;
-        return rest;
-      });
+        const { [fileToRemove.name]: _removed, ...rest } = prev
+        return rest
+      })
     }
-  };
+  }
 
   const handleSend = () => {
-    const text = inputValue.trim();
-    if ((!text && files.length === 0) || isLoading) return;
-    onSend?.(text, files);
-    setInputValue("");
-    setFiles([]);
-    setFilePreviews({});
-  };
+    const text = inputValue.trim()
+    if ((!text && files.length === 0) || isLoading) return
+    onSend?.(text, files)
+    setInputValue("")
+    setFiles([])
+    setFilePreviews({})
+  }
 
   const placeholderContainerVariants = {
     initial: {},
     animate: { transition: { staggerChildren: 0.025 } },
     exit: { transition: { staggerChildren: 0.015, staggerDirection: -1 } },
-  } as const;
+  } as const
 
   const letterVariants = {
     initial: {
@@ -174,7 +171,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
         y: { type: "spring", stiffness: 80, damping: 20 },
       },
     },
-  } as const;
+  } as const
 
   return (
     <div className={className ? className : undefined}>
@@ -206,6 +203,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
                   >
                     {file.type.startsWith("image/") && filePreviews[file.name] ? (
                       <div className="relative w-16 h-16 rounded-xl overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={filePreviews[file.name]}
                           alt={file.name}
@@ -213,10 +211,11 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
                         />
                         <button
                           onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveFile(index);
+                            e.stopPropagation()
+                            handleRemoveFile(index)
                           }}
                           className="absolute top-1 right-1 rounded-full bg-gray-700/90 dark:bg-[#444444]/90 hover:bg-gray-800 dark:hover:bg-[#555555] p-0.5 opacity-100 transition-all"
+                          aria-label={`Remove ${file.name}`}
                         >
                           <X className="h-3 w-3 text-white dark:text-gray-200" />
                         </button>
@@ -227,10 +226,11 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
                         <span className="max-w-[10rem] truncate">{file.name}</span>
                         <button
                           onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveFile(index);
+                            e.stopPropagation()
+                            handleRemoveFile(index)
                           }}
                           className="ml-1 rounded-full bg-gray-300/80 dark:bg-[#555555]/80 hover:bg-gray-300 dark:hover:bg-[#666666] p-0.5 transition-all"
+                          aria-label={`Remove ${file.name}`}
                         >
                           <X className="h-3 w-3 text-gray-700 dark:text-white" />
                         </button>
@@ -335,9 +335,9 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
         
       </div>
     </div>
-  );
-};
+  )
+}
 
-export { AIChatInput };
+export { AIChatInput }
 
 

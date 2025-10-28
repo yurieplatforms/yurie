@@ -1,6 +1,6 @@
 "use client"
 
-import { Check as CheckIcon, Copy as CopyIcon } from "@phosphor-icons/react"
+import { Check as CheckIcon, Copy as CopyIcon } from "lucide-react"
 import type { ComponentProps, HTMLAttributes, ReactNode } from "react"
 import { createContext, useContext, useState } from "react"
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
