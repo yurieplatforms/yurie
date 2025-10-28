@@ -28,7 +28,7 @@ export function MessageContent({ role, content }: MessageContentProps) {
               key={i}
               className={cn(
                 role === 'user'
-                  ? 'text-base font-normal text-neutral-900 dark:text-white break-words'
+                  ? 'break-words'
                   : 'prose prose-neutral dark:prose-invert break-words prose-p:leading-snug prose-p:my-0 prose-li:my-0 prose-ul:my-1 prose-ol:my-1 prose-pre:my-2'
               )}>
               <StreamResponse className="w-full" parseIncompleteMarkdown>

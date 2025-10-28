@@ -358,8 +358,8 @@ export default function ChatClient() {
                 {/* User message with tabs container */}
                 {isUserWithAssistantResponse && (
                   <>
-                    <div className="pt-2 pb-5 border-b border-neutral-300 dark:border-neutral-700 mb-2 mt-2">
-                      <div className="mb-3 -mx-2 sm:-mx-4">
+                    <div className="pt-1 mb-2 mt-2">
+                      <div className="mb-3">
                         <MessageBubble 
                           role="user" 
                           content={m.content}
@@ -372,7 +372,10 @@ export default function ChatClient() {
                       />
                     </div>
                     {activeTab !== 'AI Mode' && (
-                      <div className="mt-6 mb-2">
+                      <div className={cn(
+                        "mb-2",
+                        (activeTab === 'Images' || activeTab === 'Videos' || activeTab === 'News') ? "mt-8" : "mt-12"
+                      )}>
                         {isFetchingSearch && i === messages.length - 2 && (
                           <div className="text-sm text-neutral-500">Loading {activeTab.toLowerCase()}...</div>
                         )}
@@ -400,7 +403,7 @@ export default function ChatClient() {
                 {m.role === 'assistant' && (
                   <div className={cn('min-w-0 w-full')}>
                     {(!previousUserHasTabs || previousUserActiveTab === 'AI Mode') && hasReasoning && (
-                      <div className="mt-3 mb-2">
+                      <div className="mt-2 mb-2">
                         <Reasoning className="w-full" isStreaming={status === 'streaming' && i === messages.length - 1}>
                           <ReasoningTrigger />
                           <ReasoningContent>{formatThinkingForMarkdown(reasoningText)}</ReasoningContent>
@@ -408,7 +411,7 @@ export default function ChatClient() {
                       </div>
                     )}
                     {(!previousUserHasTabs || previousUserActiveTab === 'AI Mode') && (
-                      <div className={cn('relative min-w-0 w-full', showInlineShimmer && !hasReasoning && 'mt-6')}>
+                      <div className={cn('relative min-w-0 w-full', showInlineShimmer && !hasReasoning && 'mt-4')}>
                         {showInlineShimmer && (
                           <div className="absolute inset-0 flex items-center pointer-events-none">
                             <TextShimmer
