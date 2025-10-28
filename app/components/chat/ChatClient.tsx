@@ -395,7 +395,6 @@ export default function ChatClient() {
                     role="user" 
                     content={m.content}
                     attachments={sentAttachmentsByMessageIndex[i]}
-                    isStandalone
                   />
                 )}
                 

@@ -7,10 +7,9 @@ type MessageBubbleProps = {
   role: 'user' | 'assistant'
   content: string
   attachments?: AttachmentPreview[]
-  isStandalone?: boolean
 }
 
-export function MessageBubble({ role, content, attachments, isStandalone = false }: MessageBubbleProps) {
+export function MessageBubble({ role, content, attachments }: MessageBubbleProps) {
   if (role === 'user') {
     return (
       <div className="w-full pb-6 border-b border-neutral-200 dark:border-neutral-700">
