@@ -7,20 +7,20 @@ type SearchTabsProps = {
   onTabChange: (tab: SearchTab) => void
 }
 
-const FaviconIcon: React.FC<{ className?: string; size?: number }> = ({ className, size }) => {
+const FaviconIcon: React.FC<{ className?: string; size?: string | number }> = ({ className, size }) => {
   return (
     <img
       src="/favicon.ico"
       alt=""
       aria-hidden="true"
       className={cn('inline-block', className)}
-      width={size ?? 16}
-      height={size ?? 16}
+      width={(typeof size === 'number' ? size : undefined) ?? 16}
+      height={(typeof size === 'number' ? size : undefined) ?? 16}
     />
   )
 }
 
-const TAB_ITEMS: { value: SearchTab; label: string; Icon: React.ComponentType<{ className?: string; size?: number }> }[] = [
+const TAB_ITEMS: { value: SearchTab; label: string; Icon: React.ElementType }[] = [
   { value: 'AI Mode', label: 'AI Mode', Icon: FaviconIcon },
   { value: 'All', label: 'All', Icon: Globe },
   { value: 'Images', label: 'Images', Icon: ImageIcon },
