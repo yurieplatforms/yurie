@@ -16,9 +16,8 @@ import {
   stripImageData,
   extractUrls
 } from '@/app/lib/chat-utils'
-import { processFilesForApi, createAttachmentPreviews } from '@/app/lib/file-utils'
 import { processStreamChunk } from '@/app/lib/stream-utils'
-import type { ChatMessage, AttachmentPreview, ChatStatus } from '@/app/types/chat'
+import type { ChatMessage, ChatStatus } from '@/app/types/chat'
 import type { SearchTab } from '@/app/types/search'
 
 export default function ChatClient() {
@@ -31,8 +30,6 @@ export default function ChatClient() {
   const [reasoningByMessageIndex, setReasoningByMessageIndex] = useState<Record<number, string>>({})
   const [status, setStatus] = useState<ChatStatus>('ready')
   const abortControllerRef = useRef<AbortController | null>(null)
-  const [sentAttachmentsByMessageIndex, setSentAttachmentsByMessageIndex] = useState<Record<number, AttachmentPreview[]>>({})
-  const createdObjectUrlsRef = useRef<string[]>([])
   const pinnedToBottomRef = useRef<boolean>(true)
   const streamBufferRef = useRef<string>('')
 
@@ -41,14 +38,7 @@ export default function ChatClient() {
   const [searchDataByMessageIndex, setSearchDataByMessageIndex] = useState<Record<number, any>>({})
   const [isFetchingSearch, setIsFetchingSearch] = useState<boolean>(false)
 
-  // Cleanup object URLs on unmount
-  useEffect(() => {
-    return () => {
-      try {
-        for (const url of createdObjectUrlsRef.current) URL.revokeObjectURL(url)
-      } catch {}
-    }
-  }, [])
+  // No attachment object URLs to cleanup
 
   // Compute output height based on viewport and input size
   useEffect(() => {
@@ -129,18 +119,16 @@ export default function ChatClient() {
     }
   }, [messages.length])
 
-  const handleSendMessage = useCallback((message: string, uploadedFiles?: File[], options?: { reset?: boolean }) => {
+  const handleSendMessage = useCallback((message: string, options?: { reset?: boolean }) => {
     const trimmed = message.trim()
-    const filesToProcess = uploadedFiles || []
     const useSearchMode = shouldEnableSearch(trimmed)
-    if ((trimmed.length === 0 && filesToProcess.length === 0) || status === 'submitted' || status === 'streaming') return
+    if (trimmed.length === 0 || status === 'submitted' || status === 'streaming') return
     
     const reset = options?.reset === true
     if (reset) {
       try { abortControllerRef.current?.abort() } catch {}
       abortControllerRef.current = null
       setReasoningByMessageIndex({})
-      setSentAttachmentsByMessageIndex({})
       setSearchDataByMessageIndex({})
       setActiveTabByMessageIndex({})
       setLastResponseId(null)
@@ -156,16 +144,6 @@ export default function ChatClient() {
 
     async function processMessage() {
       try {
-        // Create attachment previews for display
-        const attachmentsForPreview = createAttachmentPreviews(filesToProcess)
-        if (attachmentsForPreview.length > 0) {
-          attachmentsForPreview.forEach(att => createdObjectUrlsRef.current.push(att.objectUrl))
-          const indexForThisMessage = nextMessages.length - 2
-          setSentAttachmentsByMessageIndex((prev) => ({ ...prev, [indexForThisMessage]: attachmentsForPreview }))
-        }
-
-        // Process files for API submission
-        const { imageDataUrls, pdfBase64s, pdfFilenames } = await processFilesForApi(filesToProcess)
         const urlExtraction = extractUrls(sanitizedUser)
 
         // Use OpenRouter preset
@@ -196,9 +174,6 @@ export default function ChatClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             messages: payloadMessages,
-            inputImages: imageDataUrls,
-            inputPdfBase64: pdfBase64s,
-            inputPdfFilenames: pdfFilenames,
             inputImageUrls: urlExtraction.images,
             inputPdfUrls: urlExtraction.pdfs,
             previousResponseId: lastResponseId,
@@ -210,14 +185,13 @@ export default function ChatClient() {
             },
             useSearch: useSearchMode,
             searchContextSize: useSearchMode ? 'high' as const : undefined,
-            pdfEngine: 'mistral-ocr',
           }),
           signal: ac.signal,
         })
 
         if (!res.ok || !res.body) {
           if (res.status === 413) {
-            throw new Error('Payload too large for server. Please attach fewer/smaller files.')
+            throw new Error('Payload too large for server.')
           }
           let detail = ''
           try { detail = await res.text() } catch {}
@@ -321,8 +295,43 @@ export default function ChatClient() {
     processMessage()
   }, [messages, status, lastResponseId])
 
+  const handleNewChat = useCallback(() => {
+    try { abortControllerRef.current?.abort() } catch {}
+    abortControllerRef.current = null
+    setMessages([])
+    setReasoningByMessageIndex({})
+    setSearchDataByMessageIndex({})
+    setActiveTabByMessageIndex({})
+    setLastResponseId(null)
+    setStatus('ready')
+    streamBufferRef.current = ''
+  }, [])
+
+  // Fetch search results on-demand when user switches to a search tab
+  const handleTabChange = useCallback(async (msgIndex: number, tab: SearchTab, rawQuery: string) => {
+    setActiveTabByMessageIndex((prev) => ({ ...prev, [msgIndex]: tab }))
+    if (tab === 'AI Mode') return
+    // If we already have results for this message, do not refetch
+    const alreadyLoaded = Boolean(searchDataByMessageIndex[msgIndex])
+    if (alreadyLoaded || isFetchingSearch) return
+    const q = stripSearchControls(rawQuery || '')
+    if (!q) return
+    try {
+      setIsFetchingSearch(true)
+      const usp = new URLSearchParams({ q, hl: 'en', gl: 'us', google_domain: 'google.com', safe: 'active', num: '100' })
+      const resp = await fetch(`/api/search?${usp.toString()}`, { cache: 'no-store' })
+      if (!resp.ok) return
+      const json = await resp.json()
+      setSearchDataByMessageIndex((prev) => ({ ...prev, [msgIndex]: json }))
+    } catch {
+      // ignore
+    } finally {
+      setIsFetchingSearch(false)
+    }
+  }, [searchDataByMessageIndex, isFetchingSearch])
+
   return (
-    <section ref={containerRef} className={cn('w-full h-full min-h-screen flex flex-col', messages.length === 0 && 'justify-center max-w-[52rem] mx-auto')}>
+    <section ref={containerRef} className={cn('w-full h-full min-h-screen flex flex-col', messages.length === 0 && 'justify-center items-center max-w-[52rem] mx-auto')}>
       <div
         ref={outputRef}
         className={cn('rounded-none pt-1 pb-3 overflow-y-auto text-base font-sans w-full max-w-[52rem] mx-auto px-2 sm:px-4', messages.length === 0 && 'hidden')}
@@ -339,8 +348,7 @@ export default function ChatClient() {
             const isLastAssistant = i === messages.length - 1 && m.role === 'assistant'
             const hasVisible = hasVisibleAssistantContent(m.content || '')
             const showInlineShimmer = (
-              (status === 'submitted' && isLastAssistant) ||
-              (status === 'streaming' && isLastAssistant && !hasVisible)
+              status === 'streaming' && isLastAssistant && !hasVisible && !hasReasoning
             )
             
             // Check if this is a user message followed by an assistant message
@@ -363,18 +371,17 @@ export default function ChatClient() {
                         <MessageBubble 
                           role="user" 
                           content={m.content}
-                          attachments={sentAttachmentsByMessageIndex[i]}
                         />
                       </div>
                       <SearchTabs 
                         activeTab={activeTab}
-                        onTabChange={(tab) => setActiveTabByMessageIndex((prev) => ({ ...prev, [i]: tab }))}
+                        onTabChange={(tab) => handleTabChange(i, tab, m.content)}
                       />
                     </div>
                     {activeTab !== 'AI Mode' && (
                       <div className={cn(
-                        "mb-2",
-                        (activeTab === 'Images' || activeTab === 'Videos' || activeTab === 'News') ? "mt-8" : "mt-12"
+                        'mb-2',
+                        activeTab === 'All' ? 'mt-[52px]' : 'mt-8'
                       )}>
                         {isFetchingSearch && i === messages.length - 2 && (
                           <div className="text-sm text-neutral-500">Loading {activeTab.toLowerCase()}...</div>
@@ -382,7 +389,7 @@ export default function ChatClient() {
                         <SearchResults 
                           data={searchData} 
                           section={activeTab as any}
-                          onSwitchSection={(sec) => setActiveTabByMessageIndex((prev) => ({ ...prev, [i]: sec }))}
+                          onSwitchSection={(sec) => handleTabChange(i, sec as SearchTab, m.content)}
                         />
                       </div>
                     )}
@@ -394,15 +401,14 @@ export default function ChatClient() {
                   <MessageBubble 
                     role="user" 
                     content={m.content}
-                    attachments={sentAttachmentsByMessageIndex[i]}
                   />
                 )}
                 
                 {/* Assistant message */}
                 {m.role === 'assistant' && (
-                  <div className={cn('min-w-0 w-full')}>
+                  <div className={cn('min-w-0 w-full', previousUserActiveTab === 'AI Mode' && 'mt-6')}>
                     {(!previousUserHasTabs || previousUserActiveTab === 'AI Mode') && hasReasoning && (
-                      <div className="mt-2 mb-2">
+                      <div className="mt-3 sm:mt-4 mb-2">
                         <Reasoning className="w-full" isStreaming={status === 'streaming' && i === messages.length - 1}>
                           <ReasoningTrigger />
                           <ReasoningContent>{formatThinkingForMarkdown(reasoningText)}</ReasoningContent>
@@ -413,12 +419,14 @@ export default function ChatClient() {
                       <div className={cn('relative min-w-0 w-full', showInlineShimmer && !hasReasoning && 'mt-4')}>
                         {showInlineShimmer && (
                           <div className="absolute inset-0 flex items-center pointer-events-none">
-                            <TextShimmer
-                              duration={1.2}
-                              className="text-base leading-snug font-medium [--base-color:#737373] [--base-gradient-color:#e5e5e5] dark:[--base-color:#a3a3a3] dark:[--base-gradient-color:#f5f5f5]"
-                            >
-                              Thinking...
-                            </TextShimmer>
+                            <div className="inline-flex items-center gap-2 rounded-full border h-9 px-4 text-sm sm:text-[15px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 shadow-sm bg-transparent text-neutral-700 border-neutral-200 dark:text-neutral-300 dark:border-neutral-800">
+                              <TextShimmer
+                                duration={1.2}
+                                className="text-sm sm:text-[15px] leading-none font-medium [--base-color:#737373] [--base-gradient-color:#e5e5e5] dark:[--base-color:#a3a3a3] dark:[--base-gradient-color:#f5f5f5]"
+                              >
+                                Thinking and searching in parallel
+                              </TextShimmer>
+                            </div>
                           </div>
                         )}
                         <div className={cn(showInlineShimmer ? 'opacity-0' : 'opacity-100', 'transition-opacity duration-150 min-h-6')}>
@@ -436,15 +444,16 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('max-w-[52rem] mx-auto w-full px-2 sm:px-4', messages.length === 0 ? '-mt-48 sm:-mt-40 md:-mt-48 lg:-mt-56 xl:-mt-64 mb-0' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+8px)] sm:mb-4')}
+        className={cn('w-full px-2 sm:px-4', messages.length === 0 ? 'max-w-[52rem] -mt-60 sm:-mt-56 md:-mt-52 lg:-mt-48 xl:-mt-44' : 'max-w-[52rem] mx-auto mt-2 mb-[calc(env(safe-area-inset-bottom)+8px)] sm:mb-4')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         <AIChatInput
           isLoading={status === 'streaming' || status === 'submitted'}
           className="max-w-[52rem] mx-auto"
-          onSend={(text, files) => {
-            handleSendMessage(text, files)
+          onSend={(text) => {
+            handleSendMessage(text)
           }}
+          onNewChat={handleNewChat}
         />
       </div>
     </section>

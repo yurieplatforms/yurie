@@ -3,7 +3,6 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Roboto_Mono } from 'next/font/google'
 const inter = Inter({ subsets: ['latin'], variable: '--font-geist-sans' })
 const mono = Roboto_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
-import { Navbar } from './components/nav/Navbar'
 import { Analytics } from '@vercel/analytics/react'
 import { baseUrl } from './sitemap'
 import Script from 'next/script'
@@ -74,7 +73,6 @@ export default function RootLayout({
         {/* auto-sync dark mode with system preference (runs before interactive) */}
         <Script id="theme-sync" strategy="beforeInteractive">{`try{var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');var d=document.documentElement;var set=()=>{m.matches?d.classList.add('dark'):d.classList.remove('dark')};set();m&&m.addEventListener&&m.addEventListener('change',set);}catch(e){}`}</Script>
         <main className="flex-auto min-w-0 flex flex-col overflow-hidden w-full max-w-[52rem] mx-auto px-2 sm:px-4 mt-2 md:mt-4">
-          <Navbar />
           {children}
           <Analytics />
         </main>

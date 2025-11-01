@@ -3,15 +3,6 @@ export type ChatMessage = {
   content: string
 }
 
-export type AttachmentPreview = {
-  id: string
-  name: string
-  size: number
-  mime: string
-  objectUrl: string
-  isImage: boolean
-}
-
 export type ChatStatus = 'submitted' | 'streaming' | 'ready' | 'error'
 
 export type MessagePart = 

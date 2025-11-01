@@ -2,11 +2,12 @@
 
 import * as React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Plus, Send, X, FileText, Loader2 } from "lucide-react"
+import { Plus, Send, Loader2 } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 
 type AIChatInputProps = {
-  onSend?: (text: string, files?: File[]) => void
+  onSend?: (text: string) => void
+  onNewChat?: () => void
   isLoading?: boolean
   className?: string
 }
@@ -38,17 +39,19 @@ const PLACEHOLDERS = [
   "cheap flights to europe",
 ]
 
-const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, className }) => {
+const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading = false, className }) => {
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
   const [showPlaceholder, setShowPlaceholder] = useState(true)
   const [isActive, setIsActive] = useState(false)
   const [inputValue, setInputValue] = useState("")
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState(-1)
+  const [isFetchingSuggest, setIsFetchingSuggest] = useState(false)
+  const suggestAbortRef = useRef<AbortController | null>(null)
   
-  const [files, setFiles] = useState<File[]>([])
-  const [filePreviews, setFilePreviews] = useState<{ [key: string]: string }>({})
   const wrapperRef = useRef<HTMLDivElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const fileInputId = React.useId()
+  
   
   // Cycle placeholder text when input is inactive
   useEffect(() => {
@@ -73,6 +76,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
         !wrapperRef.current.contains(event.target as Node)
       ) {
         if (!inputValue) setIsActive(false)
+        setShowSuggestions(false)
       }
     }
 
@@ -82,61 +86,50 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
 
   const handleActivate = () => setIsActive(true)
 
-  // File handling functions
-  const isImageFile = (file: File) => {
-    if (file.type && file.type.startsWith("image/")) return true
-    const ext = (file.name.split('.').pop() || '').toLowerCase()
-    const imageExts = ["png","jpg","jpeg","webp","gif","bmp","svg","heic","heif","tif","tiff","avif"]
-    return imageExts.includes(ext)
-  }
-  const isPdfFile = (file: File) => {
-    if (file.type && file.type === "application/pdf") return true
-    const ext = (file.name.split('.').pop() || '').toLowerCase()
-    return ext === 'pdf'
-  }
-  const isAllowedFile = (file: File) => isImageFile(file) || isPdfFile(file)
-
-  const processFile = (file: File) => {
-    if (!isAllowedFile(file)) {
-      console.log("Only images or PDFs are allowed")
+  // Debounced autosuggest fetch
+  useEffect(() => {
+    const q = inputValue.trim()
+    if (!q) {
+      setSuggestions([])
+      setShowSuggestions(false)
+      setHighlightedIndex(-1)
+      try { suggestAbortRef.current?.abort() } catch {}
+      suggestAbortRef.current = null
       return
     }
-    setFiles((prev) => [...prev, file])
-    if (isImageFile(file)) {
-      const reader = new FileReader()
-      reader.onload = (e) => setFilePreviews((prev) => ({ ...prev, [file.name]: (e.target?.result as string) }))
-      reader.readAsDataURL(file)
-    } else if (isPdfFile(file)) {
-      // No thumbnail for PDFs; keep a simple marker so we render the generic preview
-      setFilePreviews((prev) => ({ ...prev, [file.name]: '' }))
-    }
-  }
+    const t = setTimeout(async () => {
+      try {
+        try { suggestAbortRef.current?.abort() } catch {}
+        const ac = new AbortController()
+        suggestAbortRef.current = ac
+        setIsFetchingSuggest(true)
+        setShowSuggestions(true)
+        const usp = new URLSearchParams({ q, hl: 'en', gl: 'us', limit: '8' })
+        const resp = await fetch(`/api/suggest?${usp.toString()}`, { signal: ac.signal, cache: 'no-store' })
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+        const json = await resp.json()
+        const list = Array.isArray(json?.suggestions) ? (json.suggestions as string[]) : []
+        setSuggestions(list)
+        setShowSuggestions(list.length > 0)
+        setHighlightedIndex(-1)
+      } catch {
+        // ignore errors (network/abort)
+        setShowSuggestions(false)
+      } finally {
+        setIsFetchingSuggest(false)
+      }
+    }, 200)
+    return () => clearTimeout(t)
+  }, [inputValue])
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      Array.from(e.target.files).forEach(processFile)
-      if (e.target) e.target.value = ""
-    }
-  }
-
-  const handleRemoveFile = (index: number) => {
-    const fileToRemove = files[index]
-    setFiles((prev) => prev.filter((_, i) => i !== index))
-    if (fileToRemove && filePreviews[fileToRemove.name]) {
-      setFilePreviews((prev) => {
-        const { [fileToRemove.name]: _removed, ...rest } = prev
-        return rest
-      })
-    }
-  }
-
-  const handleSend = () => {
-    const text = inputValue.trim()
-    if ((!text && files.length === 0) || isLoading) return
-    onSend?.(text, files)
+  const handleSend = (overrideText?: string) => {
+    const text = (overrideText ?? inputValue).trim()
+    if (!text || isLoading) return
+    onSend?.(text)
     setInputValue("")
-    setFiles([])
-    setFilePreviews({})
+    setSuggestions([])
+    setShowSuggestions(false)
+    setHighlightedIndex(-1)
   }
 
   const placeholderContainerVariants = {
@@ -181,85 +174,18 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
         style={{ borderRadius: 32, boxShadow: "0 2px 8px 0 rgba(0,0,0,0.08)" }}
         onClick={handleActivate}
       >
-        {/* File Previews */}
-        <AnimatePresence>
-          {files.length > 0 && (
-            <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
-            >
-              <div className="flex flex-wrap gap-2 px-4 pt-3 pb-2">
-                {files.map((file, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.15 }}
-                    className="relative group"
-                  >
-                    {file.type.startsWith("image/") && filePreviews[file.name] ? (
-                      <div className="relative w-16 h-16 rounded-xl overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={filePreviews[file.name]}
-                          alt={file.name}
-                          className="h-full w-full object-cover"
-                        />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleRemoveFile(index)
-                          }}
-                          className="absolute top-1 right-1 rounded-full bg-gray-700/90 dark:bg-[#444444]/90 hover:bg-gray-800 dark:hover:bg-[#555555] p-0.5 opacity-100 transition-all"
-                          aria-label={`Remove ${file.name}`}
-                        >
-                          <X className="h-3 w-3 text-white dark:text-gray-200" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 px-2 py-1 rounded-xl bg-gray-200 dark:bg-[#3A3A40] text-xs text-gray-800 dark:text-gray-100 border border-gray-300 dark:border-transparent">
-                        <FileText className="w-4 h-4" />
-                        <span className="max-w-[10rem] truncate">{file.name}</span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleRemoveFile(index)
-                          }}
-                          className="ml-1 rounded-full bg-gray-300/80 dark:bg-[#555555]/80 hover:bg-gray-300 dark:hover:bg-[#666666] p-0.5 transition-all"
-                          aria-label={`Remove ${file.name}`}
-                        >
-                          <X className="h-3 w-3 text-gray-700 dark:text-white" />
-                        </button>
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* No file previews */}
 
-        <div className="flex items-center gap-2 p-2.5 rounded-full bg-white dark:bg-[#303030] max-w-[52rem] w-full">
-          <input
-            id={fileInputId}
-            ref={fileInputRef}
-            type="file"
-            className="sr-only"
-            onChange={handleFileSelect}
-            accept="image/*,application/pdf"
-            multiple
-          />
+        <div className="relative flex items-center gap-2 p-2.5 rounded-full bg-white dark:bg-[#303030] max-w-[52rem] w-full mx-auto">
           <button
             type="button"
             className="p-2.5 rounded-full text-neutral-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-[#3A3A40] transition cursor-pointer"
-            title="Attach file"
-            aria-label="Attach file"
-            aria-controls={fileInputId}
-            onClick={() => fileInputRef.current?.click()}
+            title="New thread"
+            aria-label="New thread"
+            onClick={() => {
+              // Trigger new chat action
+              try { (onNewChat && onNewChat()) } catch {}
+            }}
           >
             <Plus size={19} />
           </button>
@@ -271,7 +197,45 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {
+                const hasSuggestionsOpen = showSuggestions && suggestions.length > 0
+                if (e.key === "ArrowDown" && hasSuggestionsOpen) {
+                  e.preventDefault()
+                  setHighlightedIndex((prev) => (prev + 1) % suggestions.length)
+                  return
+                }
+                if (e.key === "ArrowUp" && hasSuggestionsOpen) {
+                  e.preventDefault()
+                  setHighlightedIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length)
+                  return
+                }
+                if (e.key === "Tab" && hasSuggestionsOpen) {
+                  e.preventDefault()
+                  const idx = highlightedIndex >= 0 ? highlightedIndex : 0
+                  const pick = suggestions[idx]
+                  if (pick) {
+                    setInputValue(pick)
+                    setShowSuggestions(false)
+                    setHighlightedIndex(-1)
+                  }
+                  return
+                }
+                if (e.key === "Escape" && hasSuggestionsOpen) {
+                  e.preventDefault()
+                  setShowSuggestions(false)
+                  setHighlightedIndex(-1)
+                  return
+                }
                 if (e.key === "Enter") {
+                  if (hasSuggestionsOpen && highlightedIndex >= 0) {
+                    e.preventDefault()
+                    const pick = suggestions[highlightedIndex]
+                    if (pick) {
+                      setInputValue(pick)
+                      setShowSuggestions(false)
+                      setHighlightedIndex(-1)
+                    }
+                    return
+                  }
                   e.preventDefault()
                   handleSend()
                 }
@@ -313,6 +277,8 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Autosuggest dropdown moved to row container for full width */}
           </div>
 
           
@@ -323,7 +289,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
             type="button"
             tabIndex={-1}
             onClick={handleSend}
-            disabled={(!inputValue.trim() && files.length === 0) || isLoading}
+            disabled={!inputValue.trim() || isLoading}
           >
             {isLoading ? (
               <Loader2 size={18} className="animate-spin" />
@@ -331,6 +297,43 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, isLoading = false, cl
               <Send size={18} />
             )}
           </button>
+
+          {showSuggestions && (suggestions.length > 0 || isFetchingSuggest) && (
+            <div className="absolute left-0 right-0 top-[calc(100%+24px)] z-50 rounded-2xl border border-gray-200 dark:border-[#444444] bg-white dark:bg-[#232323] shadow-xl overflow-hidden">
+              <ul role="listbox" aria-label="Suggestions" className="max-h-72 overflow-auto py-2">
+                {isFetchingSuggest && suggestions.length === 0 && (
+                  <li className="px-3 py-2 text-sm text-neutral-500">Loading...</li>
+                )}
+                {suggestions.map((s, i) => (
+                  <li key={`${s}-${i}`}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={i === highlightedIndex}
+                      className={`w-full text-left px-3 py-2 text-[15px] transition cursor-pointer ${i === highlightedIndex ? 'bg-gray-100 dark:bg-[#333333]' : 'bg-transparent'} text-neutral-900 dark:text-neutral-100`}
+                      onMouseEnter={() => setHighlightedIndex(i)}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        handleSend(s)
+                      }}
+                    >
+                      {s}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="border-t border-gray-200 dark:border-[#444444] px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 flex items-center justify-between">
+                <span className="truncate">Search web for “{inputValue}”</span>
+                <button
+                  type="button"
+                  className="ml-3 px-2.5 py-1 rounded-md text-white bg-[#7f91e0] hover:bg-[#6a7dc4] text-xs cursor-pointer"
+                  onMouseDown={(e) => { e.preventDefault(); handleSend() }}
+                >
+                  Search
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         
       </div>

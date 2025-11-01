@@ -1,6 +1,7 @@
 "use client"
 
 import { memo, useCallback, useContext, useEffect, useMemo, useState, createContext, type ComponentProps } from 'react'
+import { TextShimmer } from '@/app/components/ui/text-shimmer'
 import { Response } from './response'
 import { ChevronDown, Lightbulb } from 'lucide-react'
 import { cn } from '@/app/lib/utils'
@@ -106,7 +107,7 @@ export type ReasoningTriggerProps = ComponentProps<'button'> & {
 
 const getThinkingMessage = (isStreaming: boolean, duration?: number, title?: string) => {
   if (title) return title
-  if (isStreaming || duration === 0) return 'Thinking...'
+  if (isStreaming || duration === 0) return 'Thinking and searching in parallel'
   if (duration === undefined) return 'Thought for a few seconds'
   return `Thought for ${duration} seconds`
 }
@@ -119,7 +120,10 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({ className, chil
       onClick={() => setIsOpen(!isOpen)}
       aria-expanded={isOpen}
       className={cn(
-        'flex w-full items-center gap-2 text-neutral-600 dark:text-neutral-300 text-sm transition-colors hover:text-neutral-900 dark:hover:text-neutral-50 cursor-pointer',
+        'inline-flex items-center gap-2 rounded-full border h-9 px-4 text-sm sm:text-[15px] font-medium transition-colors duration-150 hover:cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 shadow-sm hover:shadow-md',
+        isOpen
+          ? 'bg-neutral-100 text-neutral-900 border-neutral-300 dark:bg-neutral-800/70 dark:text-neutral-100 dark:border-neutral-700'
+          : 'bg-transparent text-neutral-700 border-neutral-200 hover:bg-neutral-100 hover:text-neutral-900 hover:border-neutral-300 dark:text-neutral-300 dark:border-neutral-800 dark:hover:bg-neutral-800/70 dark:hover:text-neutral-100 dark:hover:border-neutral-700',
         className
       )}
       {...props}
@@ -127,7 +131,16 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({ className, chil
       {children ?? (
         <>
           <Lightbulb className="size-4" aria-hidden="true" />
-          <span>{getThinkingMessage(isStreaming, duration, title)}</span>
+          {isStreaming ? (
+            <TextShimmer
+              duration={1.2}
+              className="[--base-color:#737373] [--base-gradient-color:#e5e5e5] dark:[--base-color:#a3a3a3] dark:[--base-gradient-color:#f5f5f5]"
+            >
+              {getThinkingMessage(isStreaming, duration, title)}
+            </TextShimmer>
+          ) : (
+            <span>{getThinkingMessage(isStreaming, duration, title)}</span>
+          )}
           <ChevronDown className={cn('size-4 transition-transform', isOpen ? 'rotate-180' : 'rotate-0')} aria-hidden="true" />
         </>
       )}
