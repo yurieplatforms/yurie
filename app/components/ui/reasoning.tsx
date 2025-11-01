@@ -125,7 +125,7 @@ export type ReasoningTriggerProps = ComponentProps<'button'> & {
   title?: string
 }
 
-const getThinkingMessage = (isStreaming: boolean, duration?: number, usingSearch?: boolean, title?: string) => {
+const getThinkingMessage = (isStreaming: boolean, duration?: number, title?: string) => {
   if (title) return title
   if (isStreaming) return 'Thinking'
   if (duration === undefined) return 'Thought for a few seconds'
@@ -133,7 +133,7 @@ const getThinkingMessage = (isStreaming: boolean, duration?: number, usingSearch
 }
 
 export const ReasoningTrigger = memo(function ReasoningTrigger({ className, children, title, ...props }: ReasoningTriggerProps) {
-  const { isStreaming, isOpen, setIsOpen, duration, usingSearch } = useReasoning()
+  const { isStreaming, isOpen, setIsOpen, duration } = useReasoning()
   return (
     <button
       type="button"
@@ -156,10 +156,10 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({ className, chil
               duration={1.2}
               className="[--base-color:#737373] [--base-gradient-color:#e5e5e5] dark:[--base-color:#a3a3a3] dark:[--base-gradient-color:#f5f5f5]"
             >
-              {getThinkingMessage(isStreaming, duration, usingSearch, title)}
+              {getThinkingMessage(isStreaming, duration, title)}
             </TextShimmer>
           ) : (
-            <span>{getThinkingMessage(isStreaming, duration, usingSearch, title)}</span>
+            <span>{getThinkingMessage(isStreaming, duration, title)}</span>
           )}
           <ChevronDown className={cn('size-4 transition-transform', isOpen ? 'rotate-180' : 'rotate-0')} aria-hidden="true" />
         </>
