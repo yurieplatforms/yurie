@@ -288,7 +288,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
             title="Send"
             type="button"
             tabIndex={-1}
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!inputValue.trim() || isLoading}
           >
             {isLoading ? (
