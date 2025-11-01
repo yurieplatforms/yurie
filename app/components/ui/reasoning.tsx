@@ -41,7 +41,7 @@ export const Reasoning = memo(function Reasoning({
   isStreaming = false,
   usingSearch = false,
   open,
-  defaultOpen = true,
+  defaultOpen = false,
   onOpenChange,
   duration: durationProp,
   children,
@@ -51,13 +51,25 @@ export const Reasoning = memo(function Reasoning({
     if (open === undefined) return
     setIsOpen(open)
   }, [open])
+  // Track if the panel was auto-opened due to streaming; we only auto-close in that case.
+  const [openedByStreaming, setOpenedByStreaming] = useState(false)
 
-  const handleSetOpen = useCallback(
+  // Internal setter that does not mutate openedByStreaming (used by auto-open/close logic)
+  const setOpenInternal = useCallback(
     (next: boolean) => {
       setIsOpen(next)
       onOpenChange?.(next)
     },
     [onOpenChange]
+  )
+
+  // Setter exposed to children (manual user toggles). Manual toggles should not trigger auto-close.
+  const handleSetOpen = useCallback(
+    (next: boolean) => {
+      setOpenedByStreaming(false)
+      setOpenInternal(next)
+    },
+    [setOpenInternal]
   )
 
   const [duration, setDuration] = useState<number | undefined>(durationProp)
@@ -73,24 +85,29 @@ export const Reasoning = memo(function Reasoning({
   useEffect(() => {
     if (isStreaming) {
       if (startTime === null) setStartTime(Date.now())
-      if (!isOpen) handleSetOpen(true)
+      if (!isOpen) {
+        setOpenedByStreaming(true)
+        setOpenInternal(true)
+      }
     } else if (startTime !== null) {
       setDuration(Math.ceil((Date.now() - startTime) / MS_IN_S))
       setStartTime(null)
     }
-  }, [isStreaming, startTime, isOpen, handleSetOpen])
+  }, [isStreaming, startTime, isOpen, setOpenInternal])
 
   // Auto-close once streaming finishes (with a small delay)
   useEffect(() => {
-    if (!isStreaming && isOpen && !hasAutoClosed) {
+    // Only auto-close if the panel was auto-opened by streaming.
+    if (!isStreaming && isOpen && !hasAutoClosed && openedByStreaming) {
       const t = setTimeout(() => {
-        handleSetOpen(false)
+        setOpenInternal(false)
         setHasAutoClosed(true)
+        setOpenedByStreaming(false)
       }, AUTO_CLOSE_DELAY)
       return () => clearTimeout(t)
     }
     return undefined
-  }, [isStreaming, isOpen, hasAutoClosed, handleSetOpen])
+  }, [isStreaming, isOpen, hasAutoClosed, openedByStreaming, setOpenInternal])
 
   const contextValue = useMemo(
     () => ({ isStreaming, isOpen, setIsOpen: handleSetOpen, duration, usingSearch }),
@@ -110,7 +127,7 @@ export type ReasoningTriggerProps = ComponentProps<'button'> & {
 
 const getThinkingMessage = (isStreaming: boolean, duration?: number, usingSearch?: boolean, title?: string) => {
   if (title) return title
-  if (isStreaming) return usingSearch ? 'Thinking and searching in parallel' : 'Thinking'
+  if (isStreaming) return 'Thinking'
   if (duration === undefined) return 'Thought for a few seconds'
   return `Thought for ${duration} seconds`
 }

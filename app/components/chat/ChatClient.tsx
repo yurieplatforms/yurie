@@ -456,7 +456,7 @@ export default function ChatClient() {
                                 duration={1.2}
                                 className="text-sm sm:text-[15px] leading-none font-medium [--base-color:#737373] [--base-gradient-color:#e5e5e5] dark:[--base-color:#a3a3a3] dark:[--base-gradient-color:#f5f5f5]"
                               >
-                                Thinking and searching in parallel
+                                Thinking
                               </TextShimmer>
                             </div>
                           </div>

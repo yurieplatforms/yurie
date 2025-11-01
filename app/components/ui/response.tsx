@@ -16,6 +16,37 @@ export const Response = memo(
       argument({ children, ...rest }: any) {
         return <span {...rest}>{children}</span>
       },
+      // Common vendor-specific tags observed in model outputs
+      invoke({ children, ...rest }: any) {
+        return <span {...rest}>{children}</span>
+      },
+      tool({ children, ...rest }: any) {
+        return <span {...rest}>{children}</span>
+      },
+      function({ children, ...rest }: any) {
+        return <span {...rest}>{children}</span>
+      },
+      tool_call({ children, ...rest }: any) {
+        return <span {...rest}>{children}</span>
+      },
+      tool_name({ children, ...rest }: any) {
+        return <span {...rest}>{children}</span>
+      },
+      arguments({ children, ...rest }: any) {
+        return <span {...rest}>{children}</span>
+      },
+      thought({ children, ...rest }: any) {
+        return <span {...rest}>{children}</span>
+      },
+      thinking({ children, ...rest }: any) {
+        return <span {...rest}>{children}</span>
+      },
+      output({ children, ...rest }: any) {
+        return <span {...rest}>{children}</span>
+      },
+      result({ children, ...rest }: any) {
+        return <span {...rest}>{children}</span>
+      },
       pre(preProps: any) {
         const child: any = Array.isArray(preProps.children) ? preProps.children[0] : preProps.children
         const codeClassName = child?.props?.className || ''

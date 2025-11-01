@@ -27,6 +27,34 @@ export function SearchResults({ data, className, section, onSwitchSection }: Sea
   const [organicItems, setOrganicItems] = React.useState<any[]>([])
   const [nextAllStart, setNextAllStart] = React.useState<number | null>(null)
   const [loadingMoreAll, setLoadingMoreAll] = React.useState(false)
+  const [currentAllPage, setCurrentAllPage] = React.useState<number>(1)
+  const [allPageMap, setAllPageMap] = React.useState<Record<number, { start: number; num?: number }>>({})
+  const [loadingAllPage, setLoadingAllPage] = React.useState(false)
+
+  const serpAll = all?.serpapi_pagination
+  const allPageNumbers = React.useMemo(() => {
+    const set = new Set<number>()
+    // Always include page 1
+    set.add(1)
+    const other = (serpAll && serpAll.other_pages) || {}
+    for (const k of Object.keys(other)) {
+      const n = Number(k)
+      if (!isNaN(n) && n > 0) set.add(n)
+    }
+    if (typeof currentAllPage === 'number' && currentAllPage > 0) set.add(currentAllPage)
+    return Array.from(set).sort((a, b) => a - b)
+  }, [serpAll, currentAllPage])
+  const displayAllPages = React.useMemo(() => {
+    const maxToShow = 10
+    const pages = allPageNumbers
+    // Always show only the first 10 pages (1..10)
+    return pages.slice(0, maxToShow)
+  }, [allPageNumbers])
+  const canPrevAll = React.useMemo(() => currentAllPage > 1, [currentAllPage])
+  const canNextAll = React.useMemo(() => {
+    const last = displayAllPages.length > 0 ? displayAllPages[displayAllPages.length - 1] : 1
+    return currentAllPage < last
+  }, [currentAllPage, displayAllPages])
   const toText = (val: any): string => {
     if (val == null) return ''
     const t = typeof val
@@ -473,6 +501,25 @@ export function SearchResults({ data, className, section, onSwitchSection }: Sea
     const nextFromSerp = getStartFromUrl(all?.serpapi_pagination?.next_link || all?.serpapi_pagination?.next)
     const nextFromGoogle = getStartFromUrl(all?.pagination?.next)
     setNextAllStart(nextFromSerp ?? nextFromGoogle ?? null)
+    const buildMapFromSerp = (sp: any): Record<number, { start: number; num?: number }> => {
+      const map: Record<number, { start: number; num?: number }> = {}
+      const other = (sp && sp.other_pages) || {}
+      for (const [p, u] of Object.entries(other)) {
+        try {
+          const url = new URL(String(u))
+          const startStr = url.searchParams.get('start')
+          const numStr = url.searchParams.get('num')
+          const pageNum = Number(p)
+          const startNum = startStr ? Number(startStr) : (pageNum - 1) * 10
+          map[pageNum] = { start: startNum, num: numStr ? Number(numStr) : undefined }
+        } catch {}
+      }
+      // Ensure page 1 is always available
+      if (!map[1]) map[1] = { start: 0 }
+      return map
+    }
+    setAllPageMap(buildMapFromSerp(all?.serpapi_pagination))
+    setCurrentAllPage(typeof all?.serpapi_pagination?.current === 'number' ? all.serpapi_pagination.current : 1)
   }, [data])
 
   const handleLoadMoreVideos = async () => {
@@ -546,6 +593,43 @@ export function SearchResults({ data, className, section, onSwitchSection }: Sea
       setNextAllStart(nextFromSerp ?? nextFromGoogle ?? null)
     } finally {
       setLoadingMoreAll(false)
+    }
+  }
+
+  const handleGoToAllPage = async (page: number) => {
+    if (!data?.query) return
+    if (page === currentAllPage) return
+    const lastAllowed = displayAllPages.length > 0 ? displayAllPages[displayAllPages.length - 1] : 1
+    if (page < 1 || page > lastAllowed) return
+    const entry = allPageMap[page]
+    const startVal = entry && typeof entry.start === 'number' ? entry.start : (page - 1) * 10
+    const numVal = entry && typeof entry.num === 'number' ? entry.num : undefined
+    try {
+      setLoadingAllPage(true)
+      const usp = new URLSearchParams({ q: String(data.query), start: String(startVal) })
+      if (typeof numVal === 'number') usp.set('num', String(numVal))
+      const res = await fetch(`/api/search?${usp.toString()}`, { cache: 'no-store' })
+      if (!res.ok) return
+      const json = await res.json()
+      setOrganicItems(Array.isArray(json?.all?.organic_results) ? json.all.organic_results : [])
+      const sp = json?.all?.serpapi_pagination
+      const map: Record<number, { start: number; num?: number }> = {}
+      const other = (sp && sp.other_pages) || {}
+      for (const [p, u] of Object.entries(other)) {
+        try {
+          const url = new URL(String(u))
+          const startStr = url.searchParams.get('start')
+          const numStr = url.searchParams.get('num')
+          const pageNum = Number(p)
+          const startNum = startStr ? Number(startStr) : (pageNum - 1) * 10
+          map[pageNum] = { start: startNum, num: numStr ? Number(numStr) : undefined }
+        } catch {}
+      }
+      if (!map[1]) map[1] = { start: 0 }
+      setAllPageMap(map)
+      setCurrentAllPage(typeof sp?.current === 'number' ? sp.current : page)
+    } finally {
+      setLoadingAllPage(false)
     }
   }
 
@@ -753,63 +837,7 @@ export function SearchResults({ data, className, section, onSwitchSection }: Sea
           </section>
         )
       })()}
-      {showAll && Array.isArray(all.inline_images) && all.inline_images.length > 0 && (
-        <section className="pb-2">
-          <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-            <div className="px-3 py-2.5 bg-neutral-50/60 dark:bg-neutral-900/40 flex items-center justify-between">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 truncate">Images for {queryText}</div>
-                {Array.isArray(all.inline_images_suggested_searches) && all.inline_images_suggested_searches.length > 0 && (
-                  <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    {(all.inline_images_suggested_searches as any[]).slice(0, 6).map((s: any, i: number) => (
-                      <a
-                        key={i}
-                        href={s.link || s.serpapi_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-                        title={toText(s.name) || ''}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        {s.thumbnail && <img src={s.thumbnail} alt="" width={16} height={16} className="rounded-sm" />}
-                        <span className="truncate max-w-[120px]">{toText(s.name) || 'Suggestion'}</span>
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="shrink-0">
-                <button
-                  onClick={() => onSwitchSection && onSwitchSection('Images')}
-                  className="px-3 py-1.5 rounded-full text-[13px] border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer"
-                >
-                  View all →
-                </button>
-              </div>
-            </div>
-
-            <div className="px-3 py-3">
-              <div className="grid grid-cols-5 sm:grid-cols-5 md:grid-cols-5 gap-2">
-                {(all.inline_images as any[]).slice(0, 10).map((img: any, idx: number) => {
-                  const href = img.link || img.original || img.source
-                  return (
-                    <a
-                      key={idx}
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block"
-                      title={toText(img.title) || ''}
-                    >
-                      <ImageResult img={img} />
-                    </a>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+      
 
       {showAll && Array.isArray(organicItems) && organicItems.length > 0 && (
         <section className="pb-16 -mt-4 sm:-mt-5">
@@ -980,16 +1008,38 @@ export function SearchResults({ data, className, section, onSwitchSection }: Sea
               )
             })}
           </ul>
-          {nextAllStart != null && (
-            <div className="mt-4">
+          {displayAllPages.length > 0 && (
+            <nav className="mt-4 flex items-center gap-1 flex-wrap" aria-label="Search results pages">
               <button
-                onClick={handleLoadMoreAll}
-                disabled={loadingMoreAll}
-                className="px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+                onClick={() => handleGoToAllPage(currentAllPage - 1)}
+                disabled={!canPrevAll || loadingAllPage}
+                className="px-2 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
               >
-                {loadingMoreAll ? 'Loading more…' : 'Load more results'}
+                Previous
               </button>
-            </div>
+              {displayAllPages.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => handleGoToAllPage(p)}
+                  disabled={loadingAllPage || p === currentAllPage}
+                  className={cn(
+                    'px-2 py-1.5 rounded-md border text-sm cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed',
+                    p === currentAllPage
+                      ? 'border-neutral-900 dark:border-neutral-100 bg-neutral-900 text-neutral-50 dark:bg-neutral-100 dark:text-neutral-900'
+                      : 'border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                onClick={() => handleGoToAllPage(currentAllPage + 1)}
+                disabled={!canNextAll || loadingAllPage}
+                className="px-2 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </nav>
           )}
         </section>
       )}

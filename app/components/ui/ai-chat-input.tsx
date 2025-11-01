@@ -16,30 +16,58 @@ type AIChatInputProps = {
 }
 
 const PLACEHOLDERS = [
-  // Web search
-  "latest AI news",
-  "quantum computing explained",
-  "apple vision pro review",
-  // Science
-  "how does photosynthesis work",
-  "what is dark matter",
-  "symptoms of vitamin d deficiency",
-  // History
-  "who built the pyramids",
-  "what started world war 2",
-  "when did humans first use fire",
-  // Tech
-  "react vs vue 2025",
-  "how to center a div",
-  "best laptops under 1000",
-  // Entertainment
-  "movies like inception",
-  "stranger things season 5 release date",
-  "best video games 2025",
-  // Explore
-  "things to do in paris",
-  "best time to visit japan",
-  "cheap flights to europe",
+  // AI & Tech
+  "🧠 explain neural networks like I'm five",
+  "💻 best coding practices for beginners",
+  "🚀 upcoming tech trends to watch",
+  // Creative & Lifestyle
+  "🎨 unique weekend project ideas",
+  "☀️ how to start a morning routine",
+  "🎙️ best podcasts about philosophy",
+  // Science & Nature
+  "🐙 fascinating ocean creatures",
+  "🌌 how does gravity actually work",
+  "🌱 ways to live more sustainably",
+  // Learning & Skills
+  "🗣️ fastest way to learn a language",
+  "🧘 meditation techniques for focus",
+  "🎸 guitar chords for beginners",
+  // Culture & Entertainment
+  "🎬 hidden gem movies from 2024",
+  "🎷 history of jazz music",
+  "♟️ best board games for strategy",
+  // Adventure & Travel
+  "✈️ underrated travel destinations",
+  "🥾 hiking trails near me",
+  "🎒 how to plan a solo trip",
+]
+
+// Emoji-free variants used only for the animated placeholder text
+const PLACEHOLDER_TEXTS = [
+  // AI & Tech
+  "explain neural networks like I'm five",
+  "best coding practices for beginners",
+  "upcoming tech trends to watch",
+  // Creative & Lifestyle
+  "unique weekend project ideas",
+  "how to start a morning routine",
+  "best podcasts about philosophy",
+  // Science & Nature
+  "fascinating ocean creatures",
+  "how does gravity actually work",
+  "ways to live more sustainably",
+  // Learning & Skills
+  "fastest way to learn a language",
+  "meditation techniques for focus",
+  "guitar chords for beginners",
+  // Culture & Entertainment
+  "hidden gem movies from 2024",
+  "history of jazz music",
+  "best board games for strategy",
+  // Adventure & Travel
+  "underrated travel destinations",
+  "hiking trails near me",
+  "how to plan a solo trip",
 ]
 
 const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading = false, className, isEmptyLayout = false }) => {
@@ -65,7 +93,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
     const interval = setInterval(() => {
       setShowPlaceholder(false)
       setTimeout(() => {
-        setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDERS.length)
+        setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDER_TEXTS.length)
         setShowPlaceholder(true)
       }, 400)
     }, 3000)
@@ -240,6 +268,17 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
     },
   } as const
 
+  const getGraphemes = (text: string): string[] => {
+    try {
+      const Seg = (Intl as any)?.Segmenter
+      if (typeof Seg === "function") {
+        const segmenter = new Seg(undefined, { granularity: "grapheme" })
+        return Array.from(segmenter.segment(text), (s: any) => s.segment)
+      }
+    } catch {}
+    return Array.from(text)
+  }
+
   return (
     <div className={className ? className : undefined}>
       <div
@@ -262,7 +301,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
             }}
           >
             {isEmptyLayout ? (
-              <img src="/favicon.ico" alt="" width={19} height={19} aria-hidden="true" />
+              <img src="/favicon.ico" alt="" width={24} height={24} aria-hidden="true" />
             ) : (
               <Plus size={19} />
             )}
@@ -355,8 +394,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
                     animate="animate"
                     exit="exit"
                   >
-                    {PLACEHOLDERS[placeholderIndex]
-                      .split("")
+                    {getGraphemes(PLACEHOLDER_TEXTS[placeholderIndex])
                       .map((char, i) => (
                         <motion.span
                           key={i}
