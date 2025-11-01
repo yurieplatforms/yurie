@@ -10,7 +10,7 @@ type SearchResultsProps = {
   onSwitchSection?: (section: 'All' | 'Images' | 'Videos' | 'News') => void
 }
 
-export function SearchResults({ data, className, section, onSwitchSection }: SearchResultsProps) {
+export function SearchResults({ data, className, section }: SearchResultsProps) {
   if (!data) return null
   const all = data.all || {}
   const images = data.images || {}
