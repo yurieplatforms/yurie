@@ -10,6 +10,9 @@ type AIChatInputProps = {
   onNewChat?: () => void
   isLoading?: boolean
   className?: string
+  // When true, the parent layout vertically centers this input (empty state).
+  // We compensate so the input row doesn't jump up when suggestions open.
+  isEmptyLayout?: boolean
 }
 
 const PLACEHOLDERS = [
@@ -39,7 +42,7 @@ const PLACEHOLDERS = [
   "cheap flights to europe",
 ]
 
-const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading = false, className }) => {
+const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading = false, className, isEmptyLayout = false }) => {
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
   const [showPlaceholder, setShowPlaceholder] = useState(true)
   const [isActive, setIsActive] = useState(false)
@@ -49,13 +52,15 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const [isFetchingSuggest, setIsFetchingSuggest] = useState(false)
   const suggestAbortRef = useRef<AbortController | null>(null)
+  const suggestCacheRef = useRef<Map<string, string[]>>(new Map())
   
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
   
   
-  // Cycle placeholder text when input is inactive
+  // Cycle placeholder text when input is inactive (only in empty layout)
   useEffect(() => {
-    if (isActive || inputValue) return
+    if (!isEmptyLayout || isActive || inputValue) return
 
     const interval = setInterval(() => {
       setShowPlaceholder(false)
@@ -66,7 +71,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
     }, 3000)
 
     return () => clearInterval(interval)
-  }, [isActive, inputValue])
+  }, [isActive, inputValue, isEmptyLayout])
 
   // Close input when clicking outside
   useEffect(() => {
@@ -84,12 +89,24 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [inputValue])
 
-  const handleActivate = () => setIsActive(true)
+  const handleActivate = () => {
+    setIsActive(true)
+    if (isEmptyLayout) {
+      const q = inputValue.trim()
+      if (!q) {
+        // Show default suggestions on focus/click when empty
+        setSuggestions(PLACEHOLDERS.slice(0, 8))
+        setShowSuggestions(true)
+        setHighlightedIndex(-1)
+      }
+    }
+  }
 
-  // Debounced autosuggest fetch
+  // Debounced autosuggest fetch with in-memory cache and prefix fallback
   useEffect(() => {
     const q = inputValue.trim()
-    if (!q) {
+    // Disable autosuggest after the first message (i.e., when not in empty layout)
+    if (!isEmptyLayout) {
       setSuggestions([])
       setShowSuggestions(false)
       setHighlightedIndex(-1)
@@ -97,30 +114,87 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
       suggestAbortRef.current = null
       return
     }
+    if (!q) {
+      // When empty and active in empty layout, show default suggestions
+      if (isEmptyLayout && isActive) {
+        setSuggestions(PLACEHOLDERS.slice(0, 8))
+        setShowSuggestions(true)
+        setHighlightedIndex(-1)
+      } else {
+        setSuggestions([])
+        setShowSuggestions(false)
+        setHighlightedIndex(-1)
+      }
+      try { suggestAbortRef.current?.abort() } catch {}
+      suggestAbortRef.current = null
+      return
+    }
+    // Immediately show dropdown while typing (only in empty layout)
+    if (isEmptyLayout) setShowSuggestions(true)
+
+    // Provide instant suggestions from cache (exact or longest prefix)
+    const cache = suggestCacheRef.current
+    let cached: string[] | null = null
+    if (cache.has(q)) {
+      cached = cache.get(q) || null
+    } else {
+      for (let i = q.length - 1; i >= 1; i--) {
+        const prefix = q.slice(0, i)
+        if (cache.has(prefix)) {
+          cached = cache.get(prefix) || null
+          break
+        }
+      }
+    }
+    if (cached && cached.length > 0) {
+      setSuggestions(cached)
+      setHighlightedIndex(-1)
+    }
+
+    const shouldFetch = !cache.has(q)
     const t = setTimeout(async () => {
+      if (!shouldFetch) {
+        setIsFetchingSuggest(false)
+        return
+      }
       try {
         try { suggestAbortRef.current?.abort() } catch {}
         const ac = new AbortController()
         suggestAbortRef.current = ac
         setIsFetchingSuggest(true)
-        setShowSuggestions(true)
         const usp = new URLSearchParams({ q, hl: 'en', gl: 'us', limit: '8' })
         const resp = await fetch(`/api/suggest?${usp.toString()}`, { signal: ac.signal, cache: 'no-store' })
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
         const json = await resp.json()
         const list = Array.isArray(json?.suggestions) ? (json.suggestions as string[]) : []
         setSuggestions(list)
-        setShowSuggestions(list.length > 0)
         setHighlightedIndex(-1)
+        // Update cache with LRU cap
+        try {
+          if (!cache.has(q)) {
+            if (cache.size >= 120) {
+              const firstKey = cache.keys().next().value
+              if (firstKey) cache.delete(firstKey)
+            }
+          } else {
+            // Refresh recency
+            const existing = cache.get(q) || []
+            cache.delete(q)
+            cache.set(q, existing)
+          }
+          cache.set(q, list)
+        } catch {}
       } catch {
-        // ignore errors (network/abort)
-        setShowSuggestions(false)
+        // ignore errors (network/abort), keep dropdown open for CTA
       } finally {
         setIsFetchingSuggest(false)
       }
-    }, 200)
+    }, 100)
     return () => clearTimeout(t)
-  }, [inputValue])
+  }, [inputValue, isEmptyLayout])
+
+  // Removed dropdown compensation: dropdown is now absolutely positioned and
+  // no longer affects layout height.
 
   const handleSend = (overrideText?: string) => {
     const text = (overrideText ?? inputValue).trim()
@@ -170,13 +244,13 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
     <div className={className ? className : undefined}>
       <div
         ref={wrapperRef}
-        className="w-full bg-white dark:bg-[#303030] text-neutral-900 dark:text-white border border-gray-200 dark:border-[#444444]"
-        style={{ borderRadius: 32, boxShadow: "0 2px 8px 0 rgba(0,0,0,0.08)" }}
+        className={`relative w-full bg-white dark:bg-[#303030] text-neutral-900 dark:text-white border border-gray-200 dark:border-[#444444] p-px`}
+        style={{ borderRadius: showSuggestions ? '32px 32px 0 0' : 32, boxShadow: "0 2px 8px 0 rgba(0,0,0,0.08)" }}
         onClick={handleActivate}
       >
         {/* No file previews */}
 
-        <div className="relative flex items-center gap-2 p-2.5 rounded-full bg-white dark:bg-[#303030] max-w-[52rem] w-full mx-auto">
+        <div className="relative flex items-center gap-2 p-2.5 bg-white dark:bg-[#303030] max-w-[52rem] w-full mx-auto rounded-[31px] overflow-hidden">
           <button
             type="button"
             className="p-2.5 rounded-full text-neutral-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-[#3A3A40] transition cursor-pointer"
@@ -195,7 +269,16 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
             <input
               type="text"
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value
+                setInputValue(v)
+                if (isEmptyLayout) {
+                  if (v.trim()) setShowSuggestions(true)
+                  else if (isActive) setShowSuggestions(true)
+                } else {
+                  setShowSuggestions(false)
+                }
+              }}
               onKeyDown={(e) => {
                 const hasSuggestionsOpen = showSuggestions && suggestions.length > 0
                 if (e.key === "ArrowDown" && hasSuggestionsOpen) {
@@ -242,12 +325,18 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
               }}
               className="flex-1 border-0 outline-0 rounded-md py-1.5 text-base bg-transparent w-full font-normal text-neutral-900 dark:text-white placeholder:text-neutral-500"
               style={{ position: "relative", zIndex: 1 }}
-              onFocus={handleActivate}
+              onFocus={() => {
+                handleActivate()
+                if (isEmptyLayout) {
+                  if (inputValue.trim()) setShowSuggestions(true)
+                  else setShowSuggestions(true)
+                }
+              }}
               disabled={isLoading}
             />
             <div className="absolute left-0 top-0 w-full h-full pointer-events-none flex items-center px-3 py-1.5">
               <AnimatePresence mode="wait">
-                {showPlaceholder && !isActive && !inputValue && (
+                {isEmptyLayout && showPlaceholder && !isActive && !inputValue && (
                   <motion.span
                     key={placeholderIndex}
                     className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400 dark:text-neutral-500 select-none pointer-events-none"
@@ -276,6 +365,19 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
                   </motion.span>
                 )}
               </AnimatePresence>
+              {!isEmptyLayout && !isActive && !inputValue && (
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400 dark:text-neutral-500 select-none pointer-events-none"
+                  style={{
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    zIndex: 0,
+                  }}
+                >
+                  Ask a follow-up
+                </span>
+              )}
             </div>
 
             {/* Autosuggest dropdown moved to row container for full width */}
@@ -297,9 +399,20 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
               <Send size={18} />
             )}
           </button>
+          {/* Dropdown rendered absolutely below */}
+        </div>
 
-          {showSuggestions && (suggestions.length > 0 || isFetchingSuggest) && (
-            <div className="absolute left-0 right-0 top-[calc(100%+24px)] z-50 rounded-2xl border border-gray-200 dark:border-[#444444] bg-white dark:bg-[#232323] shadow-xl overflow-hidden">
+        <AnimatePresence>
+          {showSuggestions && (
+            <motion.div
+              ref={suggestionsRef}
+              className="absolute top-full -mt-px left-[-1px] right-[-1px] z-50 w-[calc(100%+2px)] overflow-hidden bg-white dark:bg-[#303030] border border-gray-200 dark:border-[#444444] rounded-b-[32px] shadow-lg"
+              initial={{ opacity: 0, y: -6, scaleY: 0.98 }}
+              animate={{ opacity: 1, y: 0, scaleY: 1 }}
+              exit={{ opacity: 0, y: -6, scaleY: 0.98 }}
+              transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+              style={{ transformOrigin: 'top' }}
+            >
               <ul role="listbox" aria-label="Suggestions" className="max-h-72 overflow-auto py-2">
                 {isFetchingSuggest && suggestions.length === 0 && (
                   <li className="px-3 py-2 text-sm text-neutral-500">Loading...</li>
@@ -310,7 +423,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
                       type="button"
                       role="option"
                       aria-selected={i === highlightedIndex}
-                      className={`w-full text-left px-3 py-2 text-[15px] transition cursor-pointer ${i === highlightedIndex ? 'bg-gray-100 dark:bg-[#333333]' : 'bg-transparent'} text-neutral-900 dark:text-neutral-100`}
+                      className={`w-full text-left px-3 py-2 text-[15px] transition-colors cursor-pointer ${i === highlightedIndex ? 'bg-gray-100 dark:bg-[#333333]' : 'bg-transparent'} text-neutral-900 dark:text-neutral-100`}
                       onMouseEnter={() => setHighlightedIndex(i)}
                       onMouseDown={(e) => {
                         e.preventDefault()
@@ -322,20 +435,21 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
                   </li>
                 ))}
               </ul>
-              <div className="border-t border-gray-200 dark:border-[#444444] px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 flex items-center justify-between">
-                <span className="truncate">Search web for “{inputValue}”</span>
-                <button
-                  type="button"
-                  className="ml-3 px-2.5 py-1 rounded-md text-white bg-[#7f91e0] hover:bg-[#6a7dc4] text-xs cursor-pointer"
-                  onMouseDown={(e) => { e.preventDefault(); handleSend() }}
-                >
-                  Search
-                </button>
-              </div>
-            </div>
+              {inputValue.trim() && (
+                <div className="border-t border-gray-200 dark:border-[#444444] px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 flex items-center justify-between">
+                  <span className="truncate">Search web for “{inputValue}”</span>
+                  <button
+                    type="button"
+                    className="ml-3 px-2.5 py-1 rounded-md text-white bg-[#7f91e0] hover:bg-[#6a7dc4] text-xs cursor-pointer"
+                    onMouseDown={(e) => { e.preventDefault(); handleSend() }}
+                  >
+                    Search
+                  </button>
+                </div>
+              )}
+            </motion.div>
           )}
-        </div>
-        
+        </AnimatePresence>
       </div>
     </div>
   )

@@ -10,7 +10,8 @@ type ReasoningContextValue = {
   isStreaming: boolean
   isOpen: boolean
   setIsOpen: (open: boolean) => void
-  duration: number
+  duration: number | undefined
+  usingSearch: boolean
 }
 
 const ReasoningContext = createContext<ReasoningContextValue | null>(null)
@@ -23,6 +24,7 @@ function useReasoning() {
 
 export type ReasoningProps = {
   isStreaming?: boolean
+  usingSearch?: boolean
   open?: boolean
   defaultOpen?: boolean
   onOpenChange?: (open: boolean) => void
@@ -37,6 +39,7 @@ const MS_IN_S = 1000
 export const Reasoning = memo(function Reasoning({
   className,
   isStreaming = false,
+  usingSearch = false,
   open,
   defaultOpen = true,
   onOpenChange,
@@ -57,7 +60,7 @@ export const Reasoning = memo(function Reasoning({
     [onOpenChange]
   )
 
-  const [duration, setDuration] = useState<number>(durationProp ?? 0)
+  const [duration, setDuration] = useState<number | undefined>(durationProp)
   useEffect(() => {
     if (durationProp === undefined) return
     setDuration(durationProp)
@@ -90,8 +93,8 @@ export const Reasoning = memo(function Reasoning({
   }, [isStreaming, isOpen, hasAutoClosed, handleSetOpen])
 
   const contextValue = useMemo(
-    () => ({ isStreaming, isOpen, setIsOpen: handleSetOpen, duration }),
-    [isStreaming, isOpen, handleSetOpen, duration]
+    () => ({ isStreaming, isOpen, setIsOpen: handleSetOpen, duration, usingSearch }),
+    [isStreaming, isOpen, handleSetOpen, duration, usingSearch]
   )
 
   return (
@@ -105,15 +108,15 @@ export type ReasoningTriggerProps = ComponentProps<'button'> & {
   title?: string
 }
 
-const getThinkingMessage = (isStreaming: boolean, duration?: number, title?: string) => {
+const getThinkingMessage = (isStreaming: boolean, duration?: number, usingSearch?: boolean, title?: string) => {
   if (title) return title
-  if (isStreaming || duration === 0) return 'Thinking and searching in parallel'
+  if (isStreaming) return usingSearch ? 'Thinking and searching in parallel' : 'Thinking'
   if (duration === undefined) return 'Thought for a few seconds'
   return `Thought for ${duration} seconds`
 }
 
 export const ReasoningTrigger = memo(function ReasoningTrigger({ className, children, title, ...props }: ReasoningTriggerProps) {
-  const { isStreaming, isOpen, setIsOpen, duration } = useReasoning()
+  const { isStreaming, isOpen, setIsOpen, duration, usingSearch } = useReasoning()
   return (
     <button
       type="button"
@@ -136,10 +139,10 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({ className, chil
               duration={1.2}
               className="[--base-color:#737373] [--base-gradient-color:#e5e5e5] dark:[--base-color:#a3a3a3] dark:[--base-gradient-color:#f5f5f5]"
             >
-              {getThinkingMessage(isStreaming, duration, title)}
+              {getThinkingMessage(isStreaming, duration, usingSearch, title)}
             </TextShimmer>
           ) : (
-            <span>{getThinkingMessage(isStreaming, duration, title)}</span>
+            <span>{getThinkingMessage(isStreaming, duration, usingSearch, title)}</span>
           )}
           <ChevronDown className={cn('size-4 transition-transform', isOpen ? 'rotate-180' : 'rotate-0')} aria-hidden="true" />
         </>

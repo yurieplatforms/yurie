@@ -28,6 +28,9 @@ export default function ChatClient() {
   const [outputHeight, setOutputHeight] = useState<number>(0)
   const [lastResponseId, setLastResponseId] = useState<string | null>(null)
   const [reasoningByMessageIndex, setReasoningByMessageIndex] = useState<Record<number, string>>({})
+  const [reasoningDurationByMessageIndex, setReasoningDurationByMessageIndex] = useState<Record<number, number>>({})
+  const [finalStartedByMessageIndex, setFinalStartedByMessageIndex] = useState<Record<number, boolean>>({})
+  const [usingSearchByMessageIndex, setUsingSearchByMessageIndex] = useState<Record<number, boolean>>({})
   const [status, setStatus] = useState<ChatStatus>('ready')
   const abortControllerRef = useRef<AbortController | null>(null)
   const pinnedToBottomRef = useRef<boolean>(true)
@@ -129,6 +132,9 @@ export default function ChatClient() {
       try { abortControllerRef.current?.abort() } catch {}
       abortControllerRef.current = null
       setReasoningByMessageIndex({})
+      setReasoningDurationByMessageIndex({})
+      setFinalStartedByMessageIndex({})
+      setUsingSearchByMessageIndex({})
       setSearchDataByMessageIndex({})
       setActiveTabByMessageIndex({})
       setLastResponseId(null)
@@ -217,7 +223,10 @@ export default function ChatClient() {
         let assistantText = ''
 
         const assistantIndex = nextMessages.length - 1
+        const thinkingStartMs = Date.now()
+        let recordedFirstVisible = false
         setReasoningByMessageIndex((prev) => ({ ...prev, [assistantIndex]: '' }))
+        setUsingSearchByMessageIndex((prev) => ({ ...prev, [assistantIndex]: useSearchMode }))
         setStatus('streaming')
 
         // Initialize default tab for this user message
@@ -252,6 +261,13 @@ export default function ChatClient() {
             }
             return updated
           })
+          // As soon as the first visible assistant content appears, record thinking duration
+          if (!recordedFirstVisible && hasVisibleAssistantContent(assistantText)) {
+            const thinkingDurationSec = Math.max(1, Math.ceil((Date.now() - thinkingStartMs) / 1000))
+            setReasoningDurationByMessageIndex((prev) => ({ ...prev, [assistantIndex]: thinkingDurationSec }))
+            setFinalStartedByMessageIndex((prev) => ({ ...prev, [assistantIndex]: true }))
+            recordedFirstVisible = true
+          }
           queueMicrotask(() => {
             if (pinnedToBottomRef.current) {
               outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight })
@@ -278,6 +294,13 @@ export default function ChatClient() {
             return updated
           })
         }
+
+        // If we never recorded at first visible content, record total thinking duration now
+        if (!recordedFirstVisible) {
+          const thinkingDurationSec = Math.max(1, Math.ceil((Date.now() - thinkingStartMs) / 1000))
+          setReasoningDurationByMessageIndex((prev) => ({ ...prev, [assistantIndex]: thinkingDurationSec }))
+          setFinalStartedByMessageIndex((prev) => ({ ...prev, [assistantIndex]: true }))
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error'
         setMessages((prev) => [
@@ -300,6 +323,9 @@ export default function ChatClient() {
     abortControllerRef.current = null
     setMessages([])
     setReasoningByMessageIndex({})
+    setReasoningDurationByMessageIndex({})
+    setFinalStartedByMessageIndex({})
+    setUsingSearchByMessageIndex({})
     setSearchDataByMessageIndex({})
     setActiveTabByMessageIndex({})
     setLastResponseId(null)
@@ -347,6 +373,7 @@ export default function ChatClient() {
             const hasReasoning = m.role === 'assistant' && reasoningText.trim().length > 0
             const isLastAssistant = i === messages.length - 1 && m.role === 'assistant'
             const hasVisible = hasVisibleAssistantContent(m.content || '')
+            const finalStarted = finalStartedByMessageIndex[i] === true
             const showInlineShimmer = (
               status === 'streaming' && isLastAssistant && !hasVisible && !hasReasoning
             )
@@ -407,9 +434,14 @@ export default function ChatClient() {
                 {/* Assistant message */}
                 {m.role === 'assistant' && (
                   <div className={cn('min-w-0 w-full', previousUserActiveTab === 'AI Mode' && 'mt-6')}>
-                    {(!previousUserHasTabs || previousUserActiveTab === 'AI Mode') && hasReasoning && (
+                    {hasReasoning && (!previousUserHasTabs || previousUserActiveTab === 'AI Mode') && (
                       <div className="mt-3 sm:mt-4 mb-2">
-                        <Reasoning className="w-full" isStreaming={status === 'streaming' && i === messages.length - 1}>
+                        <Reasoning 
+                          className="w-full" 
+                          isStreaming={status === 'streaming' && i === messages.length - 1 && !finalStarted}
+                          usingSearch={usingSearchByMessageIndex[i] === true}
+                          duration={reasoningDurationByMessageIndex[i]}
+                        >
                           <ReasoningTrigger />
                           <ReasoningContent>{formatThinkingForMarkdown(reasoningText)}</ReasoningContent>
                         </Reasoning>
@@ -444,12 +476,13 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('w-full px-2 sm:px-4', messages.length === 0 ? 'max-w-[52rem] -mt-60 sm:-mt-56 md:-mt-52 lg:-mt-48 xl:-mt-44' : 'max-w-[52rem] mx-auto mt-2 mb-[calc(env(safe-area-inset-bottom)+8px)] sm:mb-4')}
+        className={cn('w-full px-2 sm:px-4', messages.length === 0 ? 'max-w-[52rem] -mt-56 sm:-mt-56 md:-mt-52 lg:-mt-48 xl:-mt-44' : 'max-w-[52rem] mx-auto mt-2 mb-[calc(env(safe-area-inset-bottom)+4px)] sm:mb-4')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         <AIChatInput
           isLoading={status === 'streaming' || status === 'submitted'}
           className="max-w-[52rem] mx-auto"
+          isEmptyLayout={messages.length === 0}
           onSend={(text) => {
             handleSendMessage(text)
           }}
