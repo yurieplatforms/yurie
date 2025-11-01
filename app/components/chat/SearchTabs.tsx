@@ -21,7 +21,7 @@ const FaviconIcon: React.FC<{ className?: string; size?: string | number }> = ({
 }
 
 const TAB_ITEMS: { value: SearchTab; label: string; Icon: React.ElementType }[] = [
-  { value: 'AI Mode', label: 'AI Mode', Icon: FaviconIcon },
+  { value: 'Yurie', label: 'Yurie', Icon: FaviconIcon },
   { value: 'All', label: 'All', Icon: Globe },
   { value: 'Images', label: 'Images', Icon: ImageIcon },
   { value: 'Videos', label: 'Videos', Icon: Video },

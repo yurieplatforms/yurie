@@ -230,7 +230,7 @@ export default function ChatClient() {
         setStatus('streaming')
 
         // Initialize default tab for this user message
-        setActiveTabByMessageIndex((prev) => ({ ...prev, [userMessageIndex]: 'AI Mode' }))
+        setActiveTabByMessageIndex((prev) => ({ ...prev, [userMessageIndex]: 'Yurie' }))
 
         // Resolve search results without blocking the AI stream
         searchPromise.then((data) => {
@@ -336,7 +336,7 @@ export default function ChatClient() {
   // Fetch search results on-demand when user switches to a search tab
   const handleTabChange = useCallback(async (msgIndex: number, tab: SearchTab, rawQuery: string) => {
     setActiveTabByMessageIndex((prev) => ({ ...prev, [msgIndex]: tab }))
-    if (tab === 'AI Mode') return
+    if (tab === 'Yurie') return
     // If we already have results for this message, do not refetch
     const alreadyLoaded = Boolean(searchDataByMessageIndex[msgIndex])
     if (alreadyLoaded || isFetchingSearch) return
@@ -380,13 +380,13 @@ export default function ChatClient() {
             
             // Check if this is a user message followed by an assistant message
             const isUserWithAssistantResponse = m.role === 'user' && i + 1 < messages.length && messages[i + 1]?.role === 'assistant'
-            const activeTab = activeTabByMessageIndex[i] || 'AI Mode'
+            const activeTab = activeTabByMessageIndex[i] || 'Yurie'
             const searchData = searchDataByMessageIndex[i]
             
             // If this is an assistant message, check if the previous user message has tabs
             const previousUserIndex = m.role === 'assistant' && i > 0 && messages[i - 1]?.role === 'user' ? i - 1 : -1
             const previousUserHasTabs = previousUserIndex >= 0
-            const previousUserActiveTab = previousUserIndex >= 0 ? (activeTabByMessageIndex[previousUserIndex] || 'AI Mode') : 'AI Mode'
+            const previousUserActiveTab = previousUserIndex >= 0 ? (activeTabByMessageIndex[previousUserIndex] || 'Yurie') : 'Yurie'
             
             return (
               <div key={i} className={`${topMarginClass} mb-0`}>
@@ -405,7 +405,7 @@ export default function ChatClient() {
                         onTabChange={(tab) => handleTabChange(i, tab, m.content)}
                       />
                     </div>
-                    {activeTab !== 'AI Mode' && (
+                    {activeTab !== 'Yurie' && (
                       <div className={cn(
                         'mb-2',
                         activeTab === 'All' ? 'mt-[52px]' : 'mt-8'
@@ -433,8 +433,8 @@ export default function ChatClient() {
                 
                 {/* Assistant message */}
                 {m.role === 'assistant' && (
-                  <div className={cn('min-w-0 w-full', previousUserActiveTab === 'AI Mode' && 'mt-6')}>
-                    {hasReasoning && (!previousUserHasTabs || previousUserActiveTab === 'AI Mode') && (
+                  <div className={cn('min-w-0 w-full', previousUserActiveTab === 'Yurie' && 'mt-6')}>
+                    {hasReasoning && (!previousUserHasTabs || previousUserActiveTab === 'Yurie') && (
                       <div className="mt-3 sm:mt-4 mb-2">
                         <Reasoning 
                           className="w-full" 
@@ -447,7 +447,7 @@ export default function ChatClient() {
                         </Reasoning>
                       </div>
                     )}
-                    {(!previousUserHasTabs || previousUserActiveTab === 'AI Mode') && (
+                    {(!previousUserHasTabs || previousUserActiveTab === 'Yurie') && (
                       <div className={cn('relative min-w-0 w-full', showInlineShimmer && !hasReasoning && 'mt-4')}>
                         {showInlineShimmer && (
                           <div className="absolute inset-0 flex items-center pointer-events-none">
@@ -476,7 +476,7 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('w-full px-2 sm:px-4', messages.length === 0 ? 'max-w-[52rem] -mt-56 sm:-mt-56 md:-mt-52 lg:-mt-48 xl:-mt-44' : 'max-w-[52rem] mx-auto mt-2 mb-[calc(env(safe-area-inset-bottom)+4px)] sm:mb-4')}
+        className={cn('w-full px-2 sm:px-4', messages.length === 0 ? 'max-w-[52rem] -mt-52 sm:-mt-56 md:-mt-52 lg:-mt-48 xl:-mt-44' : 'max-w-[52rem] mx-auto mt-2 mb-[calc(env(safe-area-inset-bottom)+4px)] sm:mb-4')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         <AIChatInput

@@ -1,4 +1,4 @@
-export type SearchTab = 'AI Mode' | 'All' | 'Images' | 'Videos' | 'News'
+export type SearchTab = 'Yurie' | 'All' | 'Images' | 'Videos' | 'News'
 
 export type AvailableOnItem = {
   name?: string

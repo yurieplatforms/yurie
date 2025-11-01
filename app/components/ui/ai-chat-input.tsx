@@ -261,7 +261,11 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
               try { (onNewChat && onNewChat()) } catch {}
             }}
           >
-            <Plus size={19} />
+            {isEmptyLayout ? (
+              <img src="/favicon.ico" alt="" width={19} height={19} aria-hidden="true" />
+            ) : (
+              <Plus size={19} />
+            )}
           </button>
 
           {/* Text Input & Placeholder */}
