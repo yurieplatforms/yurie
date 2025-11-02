@@ -24,8 +24,6 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
   const [nextYtToken, setNextYtToken] = React.useState<string | null>(null)
   const [loadingMoreVideos, setLoadingMoreVideos] = React.useState(false)
   const [organicItems, setOrganicItems] = React.useState<any[]>([])
-  const [nextAllStart, setNextAllStart] = React.useState<number | null>(null)
-  const [loadingMoreAll, setLoadingMoreAll] = React.useState(false)
   const [currentAllPage, setCurrentAllPage] = React.useState<number>(1)
   const [allPageMap, setAllPageMap] = React.useState<Record<number, { start: number; num?: number }>>({})
   const [loadingAllPage, setLoadingAllPage] = React.useState(false)
@@ -487,19 +485,6 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
 
     // Initialize All tab organic list and pagination
     setOrganicItems(Array.isArray(all.organic_results) ? all.organic_results : [])
-    const getStartFromUrl = (u: string | undefined | null): number | null => {
-      if (!u || typeof u !== 'string') return null
-      try {
-        const url = new URL(u)
-        const s = url.searchParams.get('start')
-        return s ? Number(s) : null
-      } catch {
-        return null
-      }
-    }
-    const nextFromSerp = getStartFromUrl(all?.serpapi_pagination?.next_link || all?.serpapi_pagination?.next)
-    const nextFromGoogle = getStartFromUrl(all?.pagination?.next)
-    setNextAllStart(nextFromSerp ?? nextFromGoogle ?? null)
     const buildMapFromSerp = (sp: any): Record<number, { start: number; num?: number }> => {
       const map: Record<number, { start: number; num?: number }> = {}
       const other = (sp && sp.other_pages) || {}
@@ -567,33 +552,7 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
     return Array.from(new Set(nonYt))
   }
 
-  const handleLoadMoreAll = async () => {
-    if (nextAllStart == null || !data?.query) return
-    try {
-      setLoadingMoreAll(true)
-      const usp = new URLSearchParams({ q: String(data.query), start: String(nextAllStart) })
-      const res = await fetch(`/api/search?${usp.toString()}`, { cache: 'no-store' })
-      if (!res.ok) return
-      const json = await res.json()
-      const newOrganic = json?.all?.organic_results || []
-      setOrganicItems((prev) => prev.concat(newOrganic))
-      const getStartFromUrl = (u: string | undefined | null): number | null => {
-        if (!u || typeof u !== 'string') return null
-        try {
-          const url = new URL(u)
-          const s = url.searchParams.get('start')
-          return s ? Number(s) : null
-        } catch {
-          return null
-        }
-      }
-      const nextFromSerp = getStartFromUrl(json?.all?.serpapi_pagination?.next_link || json?.all?.serpapi_pagination?.next)
-      const nextFromGoogle = getStartFromUrl(json?.all?.pagination?.next)
-      setNextAllStart(nextFromSerp ?? nextFromGoogle ?? null)
-    } finally {
-      setLoadingMoreAll(false)
-    }
-  }
+  
 
   const handleGoToAllPage = async (page: number) => {
     if (!data?.query) return
