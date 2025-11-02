@@ -476,7 +476,7 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('w-full px-2 sm:px-4', messages.length === 0 ? 'max-w-[52rem] -mt-52 sm:-mt-56 md:-mt-52 lg:-mt-48 xl:-mt-44' : 'max-w-[52rem] mx-auto mt-2 mb-[calc(env(safe-area-inset-bottom)+24px)] sm:mb-4')}
+        className={cn('w-full px-2 sm:px-4', messages.length === 0 ? 'max-w-[52rem] -mt-52 sm:-mt-56 md:-mt-52 lg:-mt-48 xl:-mt-44' : 'max-w-[52rem] mx-auto mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-4')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         <AIChatInput
