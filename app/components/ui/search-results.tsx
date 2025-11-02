@@ -827,7 +827,7 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
                           {title}
                         </a>
                       ) : title ? (
-                        <div className="block mt-1 font-medium text-[18px] sm:text-xl text-neutral-200">{title}</div>
+                        <div className="block mt-1 font-medium text-[18px] sm:text-xl text-neutral-900 dark:text-neutral-100">{title}</div>
                       ) : null}
                       {description && (
                         <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-0.5">{description}</p>
@@ -866,7 +866,7 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
                             {title}
                           </a>
                         ) : (
-                          <div className="block mt-1 font-medium text-[18px] sm:text-xl text-neutral-200">{title}</div>
+                          <div className="block mt-1 font-medium text-[18px] sm:text-xl text-neutral-900 dark:text-neutral-100">{title}</div>
                         )
                       )}
                       {description && (
@@ -914,7 +914,7 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
                           {title}
                         </a>
                       ) : title ? (
-                        <div className="block mt-1 font-medium text-[18px] sm:text-xl text-neutral-200">{title}</div>
+                        <div className="block mt-1 font-medium text-[18px] sm:text-xl text-neutral-900 dark:text-neutral-100">{title}</div>
                       ) : null}
                       {description && (
                         <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-0.5">{description}</p>
