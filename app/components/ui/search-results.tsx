@@ -20,7 +20,6 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
   const showImages = !section || section === 'Images'
   const showVideos = !section || section === 'Videos'
   const showNews = !section || section === 'News'
-  const queryText = String(data?.query || '')
   const [videoItems, setVideoItems] = React.useState<any[]>([])
   const [nextYtToken, setNextYtToken] = React.useState<string | null>(null)
   const [loadingMoreVideos, setLoadingMoreVideos] = React.useState(false)
