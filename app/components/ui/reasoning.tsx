@@ -139,11 +139,12 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({ className, chil
       type="button"
       onClick={() => setIsOpen(!isOpen)}
       aria-expanded={isOpen}
+      aria-pressed={isOpen}
       className={cn(
-        'inline-flex items-center gap-2 rounded-full border h-9 px-4 text-sm sm:text-[15px] font-medium transition-colors duration-150 hover:cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 shadow-sm hover:shadow-md',
+        'inline-flex items-center gap-2 rounded-full h-9 px-4 text-sm sm:text-[15px] font-medium transition-colors duration-150 hover:cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 border border-transparent hover:border-neutral-300 dark:hover:border-neutral-700 active:border-neutral-300 dark:active:border-neutral-700',
         isOpen
-          ? 'bg-neutral-100 text-neutral-900 border-neutral-300 dark:bg-neutral-800/70 dark:text-neutral-100 dark:border-neutral-700'
-          : 'bg-transparent text-neutral-700 border-neutral-200 hover:bg-neutral-100 hover:text-neutral-900 hover:border-neutral-300 dark:text-neutral-300 dark:border-neutral-800 dark:hover:bg-neutral-800/70 dark:hover:text-neutral-100 dark:hover:border-neutral-700',
+          ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-800/70 dark:text-neutral-100 border-neutral-300 dark:border-neutral-700'
+          : 'bg-transparent text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800/70 dark:hover:text-neutral-100',
         className
       )}
       {...props}
@@ -185,7 +186,7 @@ export const ReasoningContent = memo(function ReasoningContent({ className, chil
       {...props}
     >
       {isOpen && (
-        <div className="mt-2 max-h-64 overflow-auto rounded-none bg-white dark:bg-[#303030] border border-neutral-200 dark:border-neutral-800 p-3 shadow-xs">
+        <div className="mt-2 max-h-64 overflow-auto rounded-md bg-neutral-100 dark:bg-neutral-800/70 border border-neutral-300 dark:border-neutral-700 p-3">
           <div className="prose prose-neutral dark:prose-invert font-sans text-[13px] leading-[1.6] prose-p:my-0 prose-p:leading-[1.6] prose-li:my-0.5 prose-ul:my-1 prose-ol:my-1 prose-ol:pl-4 prose-strong:font-semibold prose-strong:text-neutral-800 dark:prose-strong:text-neutral-200 prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline">
             <Response className="w-full" parseIncompleteMarkdown>{children}</Response>
           </div>

@@ -451,7 +451,7 @@ export default function ChatClient() {
                       <div className={cn('relative min-w-0 w-full', showInlineShimmer && !hasReasoning && 'mt-4')}>
                         {showInlineShimmer && (
                           <div className="absolute inset-0 flex items-center pointer-events-none">
-                            <div className="inline-flex items-center gap-2 rounded-full border h-9 px-4 text-sm sm:text-[15px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 shadow-sm bg-transparent text-neutral-700 border-neutral-200 dark:text-neutral-300 dark:border-neutral-800">
+                            <div className="inline-flex items-center gap-2 rounded-full h-9 px-4 text-sm sm:text-[15px] font-medium transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 shadow-sm bg-neutral-100 text-neutral-900 dark:bg-neutral-800/70 dark:text-neutral-100">
                               <TextShimmer
                                 duration={1.2}
                                 className="text-sm sm:text-[15px] leading-none font-medium [--base-color:#737373] [--base-gradient-color:#e5e5e5] dark:[--base-color:#a3a3a3] dark:[--base-gradient-color:#f5f5f5]"
