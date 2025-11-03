@@ -88,7 +88,7 @@ export default function RootLayout({
               
             </SidebarBody>
           </Sidebar>
-          <main className="flex-auto min-w-0 flex flex-col overflow-hidden w-full pt-12 md:pt-0 md:mt-4">
+          <main className="flex-auto min-w-0 flex flex-col overflow-hidden w-full pt-[calc(3rem+env(safe-area-inset-top))] md:pt-0 md:mt-4">
             {children}
             <Analytics />
           </main>
