@@ -249,7 +249,8 @@ export const MobileSidebar = ({
       <div
         id="nav"
         className={cn(
-          "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full"
+          "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full",
+          open && "hidden"
         )}
         {...props}
       >
