@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useSidebar } from "./sidebar"
 import { cn } from "@/app/lib/utils"
-import { Pin, PinOff, PanelLeft } from "lucide-react"
+import { Pin, PinOff } from "lucide-react"
 
 export function SidebarBrand() {
   const { open, pinned, setPinned, setOpen } = useSidebar()
