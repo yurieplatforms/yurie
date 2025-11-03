@@ -51,11 +51,8 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  // Force a desktop-sized layout on all devices
-  width: 1280,
-  // Omit initialScale so iOS Safari auto-fits the layout to the screen
-  userScalable: false,
-  maximumScale: 1,
+  width: 'device-width',
+  initialScale: 1,
   viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
