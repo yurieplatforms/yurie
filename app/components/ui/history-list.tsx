@@ -110,7 +110,7 @@ export function HistoryList() {
   return (
     <div className="flex flex-col gap-2 select-none">
       <div className={cn('flex items-center w-full', open ? 'justify-start' : 'justify-center')}>
-        <div className={cn('inline-flex items-center gap-1', open ? '' : 'w-full justify-center')}>
+        <div className={cn('flex items-center gap-1', open ? 'w-full justify-between' : 'w-full justify-center')}>
           <button
             type="button"
             className={cn(
