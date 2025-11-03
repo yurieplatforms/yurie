@@ -12,7 +12,7 @@ export function SidebarBrand() {
     <div className="relative z-20">
       {/* Mobile layout */}
       <div id="nav" className={cn(
-        "flex items-center justify-between h-12 border-b border-neutral-200 dark:border-neutral-700",
+        "flex items-center justify-between h-12",
         "md:hidden"
       )}>
         <Link
@@ -93,7 +93,7 @@ export function SidebarBrand() {
               }
             }}
             className={cn(
-                "inline-flex items-center justify-center rounded-md text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600",
+                "inline-flex items-center justify-center rounded-md cursor-pointer text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600",
               "h-8 w-8"
             )}
           >

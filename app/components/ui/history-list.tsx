@@ -122,7 +122,6 @@ export function HistoryList() {
             title={!open ? 'New thread' : undefined}
           >
             <SquarePen className="h-4 w-4" strokeWidth={2} />
-            {open && ' New thread'}
           </button>
           {open && items.length > 0 && (
             <button

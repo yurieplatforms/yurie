@@ -245,7 +245,7 @@ export const MobileSidebar = ({
       <div
         id="nav"
         className={cn(
-          "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-neutral-100 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 w-full"
+          "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full"
         )}
         {...props}
       >
@@ -290,7 +290,7 @@ export const MobileSidebar = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[95] bg-black/40 md:hidden"
+              className="fixed inset-0 z-[95] bg-transparent md:hidden"
             />
             {/* Drawer */}
             <motion.aside
@@ -299,7 +299,7 @@ export const MobileSidebar = ({
               exit={{ x: "-100%" }}
               transition={{ duration: 0.28, ease: "easeInOut" }}
               className={cn(
-                "fixed inset-y-0 left-0 z-[100] w-[min(88vw,320px)] max-w-[88vw] bg-neutral-100 dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 shadow-xl overflow-y-auto md:hidden relative",
+                "fixed inset-y-0 left-0 z-[100] w-[min(100vw,420px)] max-w-[100vw] bg-white dark:bg-[#212121] overflow-y-auto md:hidden relative",
                 // safe-area paddings
                 "pt-[max(env(safe-area-inset-top),0)] pb-[max(env(safe-area-inset-bottom),1rem)] pl-[max(env(safe-area-inset-left),0.75rem)] pr-[max(env(safe-area-inset-right),0.75rem)]",
                 className
