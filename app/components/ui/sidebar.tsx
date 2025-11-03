@@ -222,6 +222,7 @@ export const MobileSidebar = ({
   const { open, setOpen } = useSidebar();
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const pathname = usePathname();
+  const [hasHistory, setHasHistory] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -242,6 +243,19 @@ export const MobileSidebar = ({
       if (!isDesktop) setOpen(false);
     } catch {}
   }, [pathname, setOpen]);
+
+  // Track whether there are any conversations to decide showing Clear button in header
+  useEffect(() => {
+    try {
+      const { loadHistory } = require("@/app/lib/history");
+      const update = () => {
+        try { setHasHistory((loadHistory() || []).length > 0); } catch {}
+      };
+      update();
+      window.addEventListener("history:updated" as any, update as any);
+      return () => window.removeEventListener("history:updated" as any, update as any);
+    } catch {}
+  }, []);
   return (
     <>
       <div
@@ -311,7 +325,47 @@ export const MobileSidebar = ({
               aria-label="Mobile sidebar"
               id="mobile-sidebar"
             >
-              {/* Close button moved into brand header on mobile for alignment */}
+              {/* Drawer header */}
+              <div className="sticky top-0 z-[101] -mx-[max(env(safe-area-inset-left),0.75rem)] -mt-[max(env(safe-area-inset-top),0)] px-[max(env(safe-area-inset-left),0.75rem)] pt-[max(env(safe-area-inset-top),0.5rem)] pb-2 bg-white/90 dark:bg-[#212121]/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-[#212121]/70">
+                <div className="flex items-center justify-between h-10">
+                  <Link href="/" className="flex items-center space-x-2 !text-black dark:!text-white">
+                    <Image src="/favicon.ico?v=3" alt="Yurie" width={20} height={20} className="h-5 w-5" />
+                    <span className="font-medium">Yurie</span>
+                  </Link>
+                  <div className="flex items-center gap-2">
+                    {hasHistory && (
+                      <button
+                        type="button"
+                        className="rounded-md h-8 px-3 text-xs font-medium bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-neutral-900 dark:text-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600"
+                        onClick={() => {
+                          try {
+                            const { clearHistory } = require("@/app/lib/history");
+                            const ok = window.confirm("Clear all conversations?");
+                            if (!ok) return;
+                            clearHistory();
+                            window.dispatchEvent(new Event("history:updated" as any));
+                          } catch {}
+                        }}
+                        aria-label="Clear all conversations"
+                        title="Clear all"
+                      >
+                        Clear
+                      </button>
+                    )}
+                    <button
+                      ref={closeBtnRef}
+                      type="button"
+                      aria-label="Close sidebar"
+                      onClick={() => setOpen(false)}
+                      className="inline-flex items-center justify-center rounded-md cursor-pointer text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 h-8 w-8"
+                    >
+                      <PanelLeft className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Drawer content */}
               <div className="mt-0 flex flex-col gap-6">
               {children}
               </div>
