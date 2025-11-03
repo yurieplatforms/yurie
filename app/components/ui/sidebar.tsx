@@ -246,6 +246,7 @@ export const MobileSidebar = ({
 
   // Track whether there are any conversations to decide showing Clear button in header
   useEffect(() => {
+    let cleanup: (() => void) | undefined;
     try {
       const { loadHistory } = require("@/app/lib/history");
       const update = () => {
@@ -253,8 +254,9 @@ export const MobileSidebar = ({
       };
       update();
       window.addEventListener("history:updated" as any, update as any);
-      return () => window.removeEventListener("history:updated" as any, update as any);
+      cleanup = () => window.removeEventListener("history:updated" as any, update as any);
     } catch {}
+    return cleanup;
   }, []);
   return (
     <>
