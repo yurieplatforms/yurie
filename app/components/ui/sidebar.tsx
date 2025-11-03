@@ -312,7 +312,7 @@ export const MobileSidebar = ({
               id="mobile-sidebar"
             >
               {/* Close button moved into brand header on mobile for alignment */}
-              <div className="mt-0 flex flex-col gap-6">
+              <div className="mt-[max(env(safe-area-inset-top),0)] flex flex-col gap-6">
               {children}
               </div>
             </motion.aside>
