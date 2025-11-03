@@ -332,3 +332,9 @@ table tbody td:first-child {
 .title {
   text-wrap: balance;
 }
+
+@supports (-webkit-touch-callout: none) {
+  #nav {
+    top: calc(max(env(safe-area-inset-top), 0) + 32px) !important;
+  }
+}
