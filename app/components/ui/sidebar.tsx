@@ -242,14 +242,13 @@ export const MobileSidebar = ({
   }, [pathname, setOpen]);
   return (
     <>
-      {!open && (
-        <div
-          id="nav"
-          className={cn(
-            "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full"
-          )}
-          {...props}
-        >
+      <div
+        id="nav"
+        className={cn(
+          "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full"
+        )}
+        {...props}
+      >
           <button
             type="button"
             aria-label="Toggle sidebar"
@@ -279,9 +278,8 @@ export const MobileSidebar = ({
             </span>
           </Link>
         </div>
-      )}
-      <AnimatePresence>
-        {open && (
+        <AnimatePresence>
+          {open && (
           <>
             {/* Scrim */}
             <motion.button
@@ -301,7 +299,7 @@ export const MobileSidebar = ({
               exit={{ x: "-100%" }}
               transition={{ duration: 0.28, ease: "easeInOut" }}
               className={cn(
-                "fixed inset-y-0 left-0 z-[100] w-[min(100vw,420px)] max-w-[100vw] bg-white dark:bg-[#212121] overflow-y-auto md:hidden",
+                "fixed inset-y-0 left-0 z-[100] w-[min(100vw,420px)] max-w-[100vw] bg-white dark:bg-[#212121] overflow-y-auto md:hidden relative",
                 // safe-area paddings
                 "pt-[max(env(safe-area-inset-top),0)] pb-[max(env(safe-area-inset-bottom),1rem)] pl-[max(env(safe-area-inset-left),0.75rem)] pr-[max(env(safe-area-inset-right),0.75rem)]",
                 className
@@ -317,8 +315,8 @@ export const MobileSidebar = ({
               </div>
             </motion.aside>
           </>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
     </>
   );
 };
