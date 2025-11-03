@@ -55,9 +55,9 @@ export function SidebarBrand() {
           <Image
             src="/favicon.ico?v=3"
             alt="Yurie"
-            width={20}
-            height={20}
-            className="h-5 w-5"
+            width={open ? 20 : 28}
+            height={open ? 20 : 28}
+            className={cn(open ? "h-5 w-5" : "h-7 w-7")}
           />
         </div>
         <span
