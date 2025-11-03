@@ -312,9 +312,37 @@ export const MobileSidebar = ({
               aria-label="Mobile sidebar"
               id="mobile-sidebar"
             >
-              {/* Close button moved into brand header on mobile for alignment */}
-              <div className="flex flex-col gap-6" style={{ marginTop: 'calc(max(env(safe-area-inset-top), constant(safe-area-inset-top), 0px) + 16px)' }}>
-              {children}
+              {/* Inline mobile header (mirrors outer nav for perfect alignment) */}
+              <div className="flex h-12 items-center px-3">
+                <button
+                  ref={closeBtnRef as any}
+                  type="button"
+                  aria-label="Close sidebar"
+                  className="rounded-md p-2 cursor-pointer hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 text-neutral-800 dark:text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600"
+                  onClick={() => setOpen(false)}
+                >
+                  <PanelLeft className="h-4 w-4" />
+                </button>
+                <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700 mx-3" />
+                <Link
+                  href="/"
+                  className="flex items-center space-x-2 font-normal text-sm !text-black dark:!text-white"
+                  onClick={() => setOpen(false)}
+                >
+                  <div className="flex-shrink-0">
+                    <Image
+                      src="/favicon.ico?v=3"
+                      alt="Yurie"
+                      width={20}
+                      height={20}
+                      className="h-5 w-5"
+                    />
+                  </div>
+                  <span className="font-medium">Yurie</span>
+                </Link>
+              </div>
+              <div className="mt-3 flex flex-col gap-6">
+                {children}
               </div>
             </motion.aside>
           </>

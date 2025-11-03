@@ -10,40 +10,8 @@ export function SidebarBrand() {
   const { open, pinned, setPinned, setOpen } = useSidebar()
   return (
     <div className="relative z-20">
-      {/* Mobile layout */}
-      <div id="nav" className={cn(
-        "flex items-center justify-between h-12",
-        "md:hidden"
-      )}>
-        <Link
-          href="/"
-          className="flex items-center space-x-2 font-normal text-sm !text-black dark:!text-white"
-        >
-          <div className="flex-shrink-0">
-            <Image
-              src="/favicon.ico?v=3"
-              alt="Yurie"
-              width={20}
-              height={20}
-              className="h-5 w-5"
-            />
-          </div>
-          <span className="font-medium">
-            Yurie
-          </span>
-        </Link>
-        <button
-          type="button"
-          className={cn(
-            "inline-flex items-center justify-center rounded-md cursor-pointer text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600",
-            "h-8 w-8"
-          )}
-          aria-label="Close sidebar"
-          onClick={() => setOpen(false)}
-        >
-          <PanelLeft className="h-4 w-4" />
-        </button>
-      </div>
+      {/* Mobile layout is handled by MobileSidebar header; hide here to avoid duplication */}
+      <div id="nav" className="hidden md:hidden" />
 
       {/* Desktop layout */}
       <div className={cn(
