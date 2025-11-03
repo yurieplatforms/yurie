@@ -4,12 +4,41 @@ import Link from "next/link"
 import Image from "next/image"
 import { useSidebar } from "./sidebar"
 import { cn } from "@/app/lib/utils"
-import { Pin, PinOff } from "lucide-react"
+import { Pin, PinOff, PanelLeft } from "lucide-react"
 
 export function SidebarBrand() {
-  const { open, pinned, setPinned } = useSidebar()
+  const { open, pinned, setPinned, setOpen } = useSidebar()
   return (
     <div className="relative z-20">
+      {/* Mobile layout */}
+      <div className="flex md:hidden items-center justify-between w-full h-12 -ml-3 -mr-3 px-3 mb-2">
+        <Link
+          href="/"
+          className="flex items-center space-x-2 font-normal text-sm !text-black dark:!text-white"
+        >
+          <div className="flex-shrink-0">
+            <Image
+              src="/favicon.ico?v=3"
+              alt="Yurie"
+              width={20}
+              height={20}
+              className="h-5 w-5"
+            />
+          </div>
+          <span className="font-medium">
+            Yurie
+          </span>
+        </Link>
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setOpen(false)}
+          className="rounded-md p-2 cursor-pointer hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 text-neutral-800 dark:text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600"
+        >
+          <PanelLeft className="h-4 w-4" />
+        </button>
+      </div>
+
       {/* Desktop layout */}
       <div className={cn(
         "hidden md:flex items-center w-full",

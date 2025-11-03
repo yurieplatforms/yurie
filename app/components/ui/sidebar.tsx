@@ -136,9 +136,7 @@ export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
       <DesktopSidebar {...(rest as Omit<React.ComponentProps<typeof motion.div>, 'children'>)}>
         {children as React.ReactNode}
       </DesktopSidebar>
-      <MobileSidebar {...(props as React.ComponentProps<"div">)}>
-        {children as React.ReactNode}
-      </MobileSidebar>
+      <MobileSidebar {...(props as React.ComponentProps<"div">)} />
     </>
   );
 };
@@ -242,15 +240,12 @@ export const MobileSidebar = ({
       if (!isDesktop) setOpen(false);
     } catch {}
   }, [pathname, setOpen]);
-
-  // (removed) header history clear button state
   return (
     <>
       <div
         id="nav"
         className={cn(
-          "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full",
-          open && "hidden"
+          "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full"
         )}
         {...props}
       >
@@ -314,28 +309,7 @@ export const MobileSidebar = ({
               aria-label="Mobile sidebar"
               id="mobile-sidebar"
             >
-              {/* Drawer header */}
-              <div className="sticky top-0 z-[101] -mx-[max(env(safe-area-inset-left),0.75rem)] -mt-[max(env(safe-area-inset-top),0)] px-[max(env(safe-area-inset-left),0.75rem)] pt-[max(env(safe-area-inset-top),0.5rem)] pb-2 bg-white/90 dark:bg-[#212121]/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-[#212121]/70">
-                <div className="flex items-center justify-between h-10">
-                  <Link href="/" className="flex items-center space-x-2 font-normal text-sm !text-black dark:!text-white">
-                    <Image src="/favicon.ico?v=3" alt="Yurie" width={20} height={20} className="h-5 w-5" />
-                    <span className="font-medium">Yurie</span>
-                  </Link>
-                  <div className="flex items-center gap-2">
-                    <button
-                      ref={closeBtnRef}
-                      type="button"
-                      aria-label="Close sidebar"
-                      onClick={() => setOpen(false)}
-                      className="inline-flex items-center justify-center rounded-md cursor-pointer text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 h-8 w-8"
-                    >
-                      <PanelLeft className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Drawer content */}
+              {/* Close button moved into brand header on mobile for alignment */}
               <div className="mt-0 flex flex-col gap-6">
               {children}
               </div>
@@ -396,4 +370,5 @@ export const SidebarLink = ({
     </Link>
   );
 };
+
 

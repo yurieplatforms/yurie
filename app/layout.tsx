@@ -51,9 +51,6 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#212121' },
@@ -91,7 +88,7 @@ export default function RootLayout({
               
             </SidebarBody>
           </Sidebar>
-          <main className="flex-auto min-w-0 flex flex-col overflow-hidden w-full pt-[calc(3rem+env(safe-area-inset-top)+16px)] md:pt-0 md:mt-4">
+          <main className="flex-auto min-w-0 flex flex-col overflow-hidden w-full pt-12 md:pt-0 md:mt-4">
             {children}
             <Analytics />
           </main>
