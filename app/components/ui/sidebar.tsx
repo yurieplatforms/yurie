@@ -6,6 +6,7 @@ import React, { useState, useEffect, useRef, createContext, useContext } from "r
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { PanelLeft } from "lucide-react";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 interface Links {
   label: string;
@@ -242,14 +243,15 @@ export const MobileSidebar = ({
   return (
     <>
       <div
+        id="nav"
         className={cn(
-          "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center justify-between px-3 bg-neutral-100 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 w-full"
+          "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-neutral-100 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 w-full"
         )}
         {...props}
       >
           <button
             type="button"
-            aria-label="Open sidebar"
+            aria-label="Toggle sidebar"
             aria-controls="mobile-sidebar"
             aria-expanded={open}
           className="rounded-md p-2 cursor-pointer hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 text-neutral-800 dark:text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600"
@@ -257,6 +259,24 @@ export const MobileSidebar = ({
           >
           <PanelLeft className="h-4 w-4" />
           </button>
+          <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700 mx-3" />
+          <Link
+            href="/"
+            className="flex items-center space-x-2 font-normal text-sm !text-black dark:!text-white"
+          >
+            <div className="flex-shrink-0">
+              <Image
+                src="/favicon.ico?v=3"
+                alt="Yurie"
+                width={20}
+                height={20}
+                className="h-5 w-5"
+              />
+            </div>
+            <span className="font-medium">
+              Yurie
+            </span>
+          </Link>
         </div>
         <AnimatePresence>
           {open && (
@@ -281,7 +301,7 @@ export const MobileSidebar = ({
               className={cn(
                 "fixed inset-y-0 left-0 z-[100] w-[min(88vw,320px)] max-w-[88vw] bg-neutral-100 dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 shadow-xl overflow-y-auto md:hidden relative",
                 // safe-area paddings
-                "pt-[max(env(safe-area-inset-top),0)] pb-[max(env(safe-area-inset-bottom),1rem)] pl-[max(env(safe-area-inset-left),1rem)] pr-[max(env(safe-area-inset-right),1rem)]",
+                "pt-[max(env(safe-area-inset-top),0)] pb-[max(env(safe-area-inset-bottom),1rem)] pl-[max(env(safe-area-inset-left),0.75rem)] pr-[max(env(safe-area-inset-right),0.75rem)]",
                 className
               )}
               role="dialog"
@@ -290,7 +310,7 @@ export const MobileSidebar = ({
               id="mobile-sidebar"
             >
               {/* Close button moved into brand header on mobile for alignment */}
-              <div className="mt-1 flex flex-col gap-6">
+              <div className="mt-0 flex flex-col gap-6">
               {children}
               </div>
             </motion.aside>

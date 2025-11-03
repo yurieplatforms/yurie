@@ -80,7 +80,7 @@ export default function RootLayout({
             <SidebarBody className="justify-between gap-10">
               <div className="flex flex-col flex-1 overflow-y-auto">
                 <SidebarBrand />
-                <div className="mt-3 border-t border-neutral-200 dark:border-neutral-700" />
+                <div className="mt-3 border-t border-neutral-200 dark:border-neutral-700 hidden md:block" />
                 <div className="mt-4 flex flex-col gap-2">
                   <HistoryList />
                 </div>

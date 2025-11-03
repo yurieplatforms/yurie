@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSidebar } from './sidebar'
 import { cn } from '@/app/lib/utils'
 import { loadHistory, removeConversation, clearHistory, type Conversation } from '@/app/lib/history'
-import { Plus, Trash2, Trash } from 'lucide-react'
+import { SquarePen, X } from 'lucide-react'
 
 function formatTime(ts: number): string {
   try {
@@ -109,8 +109,7 @@ export function HistoryList() {
 
   return (
     <div className="flex flex-col gap-2 select-none">
-      <div className={cn('flex items-center w-full', open ? 'justify-between' : 'justify-center')}>
-        <span className={cn('text-xs font-medium text-neutral-600 dark:text-neutral-300 uppercase tracking-wide', open ? 'inline-block' : 'sr-only')}>History</span>
+      <div className={cn('flex items-center w-full', open ? 'justify-start' : 'justify-center')}>
         <div className={cn('inline-flex items-center gap-1', open ? '' : 'w-full justify-center')}>
           <button
             type="button"
@@ -119,21 +118,21 @@ export function HistoryList() {
               open ? 'h-8 px-3' : 'h-9 w-9 justify-center p-0 md:translate-x-[1px] transform'
             )}
             onClick={handleNew}
-            aria-label="New conversation"
-            title={!open ? 'New conversation' : undefined}
+            aria-label="New thread"
+            title={!open ? 'New thread' : undefined}
           >
-            <Plus className="h-4 w-4" strokeWidth={2.5} />
-            {open && ' New'}
+            <SquarePen className="h-4 w-4" strokeWidth={2} />
+            {open && ' New thread'}
           </button>
           {open && items.length > 0 && (
             <button
               type="button"
-              className="h-8 w-8 inline-flex items-center justify-center rounded-full text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 cursor-pointer"
+              className="inline-flex items-center gap-1 rounded-full text-xs font-medium cursor-pointer bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-neutral-900 dark:text-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 flex-shrink-0 h-8 px-3"
               aria-label="Clear all conversations"
               title="Clear all"
               onClick={handleClearAll}
             >
-              <Trash className="h-4 w-4" />
+              <span>Clear</span>
             </button>
           )}
         </div>
@@ -177,7 +176,7 @@ export function HistoryList() {
                 className="opacity-0 group-hover/history:opacity-100 transition-opacity text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-200 p-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 my-1 cursor-pointer"
                 onClick={() => handleDelete(c.id)}
               >
-                <Trash2 className="h-4 w-4" />
+                <X className="h-4 w-4" />
               </button>
             </li>
           )

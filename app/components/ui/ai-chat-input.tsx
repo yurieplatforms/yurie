@@ -224,7 +224,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
             }}
           >
             {isEmptyLayout ? (
-              <img src="/favicon.ico" alt="" width={24} height={24} aria-hidden="true" />
+              <Plus size={19} />
             ) : (
               <Plus size={19} />
             )}
