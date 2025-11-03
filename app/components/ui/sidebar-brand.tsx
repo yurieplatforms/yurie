@@ -4,47 +4,12 @@ import Link from "next/link"
 import Image from "next/image"
 import { useSidebar } from "./sidebar"
 import { cn } from "@/app/lib/utils"
-import { Pin, PinOff, PanelLeft } from "lucide-react"
+import { Pin, PinOff } from "lucide-react"
 
 export function SidebarBrand() {
-  const { open, pinned, setPinned, setOpen } = useSidebar()
+  const { open, pinned, setPinned } = useSidebar()
   return (
     <div className="relative z-20">
-      {/* Mobile layout */}
-      <div id="nav" className={cn(
-        "flex items-center justify-between h-12",
-        "md:hidden"
-      )}>
-        <Link
-          href="/"
-          className="flex items-center space-x-2 font-normal text-sm !text-black dark:!text-white"
-        >
-          <div className="flex-shrink-0">
-            <Image
-              src="/favicon.ico?v=3"
-              alt="Yurie"
-              width={20}
-              height={20}
-              className="h-5 w-5"
-            />
-          </div>
-          <span className="font-medium">
-            Yurie
-          </span>
-        </Link>
-        <button
-          type="button"
-          className={cn(
-            "inline-flex items-center justify-center rounded-md cursor-pointer text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600",
-            "h-8 w-8"
-          )}
-          aria-label="Close sidebar"
-          onClick={() => setOpen(false)}
-        >
-          <PanelLeft className="h-4 w-4" />
-        </button>
-      </div>
-
       {/* Desktop layout */}
       <div className={cn(
         "hidden md:flex items-center w-full",
@@ -57,13 +22,13 @@ export function SidebarBrand() {
           open ? "space-x-2" : "h-10 w-10 justify-center items-center"
         )}
       >
-          <div className="flex-shrink-0">
+        <div className="flex-shrink-0">
           <Image
             src="/favicon.ico?v=3"
             alt="Yurie"
             width={20}
             height={20}
-            className={cn(open ? "h-5 w-5" : "h-7 w-7")}
+            className="h-5 w-5"
           />
         </div>
         <span
@@ -89,7 +54,6 @@ export function SidebarBrand() {
                 setPinned(false)
               } else {
                 setPinned(true)
-                setOpen(true)
               }
             }}
             className={cn(
@@ -106,5 +70,4 @@ export function SidebarBrand() {
     </div>
   )
 }
-
 

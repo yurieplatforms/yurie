@@ -136,7 +136,9 @@ export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
       <DesktopSidebar {...(rest as Omit<React.ComponentProps<typeof motion.div>, 'children'>)}>
         {children as React.ReactNode}
       </DesktopSidebar>
-      <MobileSidebar {...(props as React.ComponentProps<"div">)} />
+      <MobileSidebar {...(props as React.ComponentProps<"div">)}>
+        {children as React.ReactNode}
+      </MobileSidebar>
     </>
   );
 };
@@ -151,13 +153,6 @@ export const DesktopSidebar = ({
   const { open, setOpen, animate, width, setWidth, pinned } = useSidebar();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const collapsedWidth = 60;
-
-  const isDesktop = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
-  const isMobileSafari = typeof navigator !== "undefined" &&
-    /iP(ad|od|hone)/i.test(navigator.userAgent) &&
-    /AppleWebKit/i.test(navigator.userAgent) &&
-    !(/Chrome/i.test(navigator.userAgent) || /CriOS/i.test(navigator.userAgent));
-  const show = isDesktop || isMobileSafari;
 
   const startResize = (clientX: number) => {
     if (!containerRef.current) return;
@@ -196,9 +191,8 @@ export const DesktopSidebar = ({
     <motion.div
       ref={containerRef as any}
       className={cn(
-        "relative h-full pt-4 pb-4 bg-neutral-100 dark:bg-neutral-800 w-[300px] flex-shrink-0 border-r border-neutral-200 dark:border-neutral-700 shadow-sm",
+        "relative h-full pt-4 pb-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] flex-shrink-0 border-r border-neutral-200 dark:border-neutral-700 shadow-sm",
         open ? "px-4" : "px-2",
-        show ? "flex flex-col" : "hidden",
         className
       )}
       animate={{
@@ -229,15 +223,6 @@ export const MobileSidebar = ({
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const pathname = usePathname();
 
-  const isDesktop = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
-  const isMobileSafari = typeof navigator !== "undefined" &&
-    /iP(ad|od|hone)/i.test(navigator.userAgent) &&
-    /AppleWebKit/i.test(navigator.userAgent) &&
-    !(/Chrome/i.test(navigator.userAgent) || /CriOS/i.test(navigator.userAgent));
-  const showMobile = !isDesktop && !isMobileSafari;
-
-  if (!showMobile) return null;
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -257,13 +242,14 @@ export const MobileSidebar = ({
       if (!isDesktop) setOpen(false);
     } catch {}
   }, [pathname, setOpen]);
+
+  // (removed) header history clear button state
   return (
     <>
-      {!open && (
       <div
         id="nav"
         className={cn(
-          "md:hidden fixed top-[calc(max(env(safe-area-inset-top),0)+16px)] inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full"
+          "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full"
         )}
         {...props}
       >
@@ -296,7 +282,6 @@ export const MobileSidebar = ({
             </span>
           </Link>
         </div>
-      )}
         <AnimatePresence>
           {open && (
           <>
@@ -323,14 +308,34 @@ export const MobileSidebar = ({
                 "pt-[max(env(safe-area-inset-top),0)] pb-[max(env(safe-area-inset-bottom),1rem)] pl-[max(env(safe-area-inset-left),0.75rem)] pr-[max(env(safe-area-inset-right),0.75rem)]",
                 className
               )}
-              style={{ paddingTop: "max(env(safe-area-inset-top), constant(safe-area-inset-top), 0px)" }}
               role="dialog"
               aria-modal="true"
               aria-label="Mobile sidebar"
               id="mobile-sidebar"
             >
-              {/* Close button moved into brand header on mobile for alignment */}
-              <div className="flex flex-col gap-6" style={{ marginTop: 'calc(max(env(safe-area-inset-top), constant(safe-area-inset-top), 0px) + 16px)' }}>
+              {/* Drawer header */}
+              <div className="sticky top-0 z-[101] -mx-[max(env(safe-area-inset-left),0.75rem)] -mt-[max(env(safe-area-inset-top),0)] px-[max(env(safe-area-inset-left),0.75rem)] pt-[max(env(safe-area-inset-top),0.5rem)] pb-2 bg-white/90 dark:bg-[#212121]/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-[#212121]/70">
+                <div className="flex items-center justify-between h-10">
+                  <Link href="/" className="flex items-center space-x-2 font-normal text-sm !text-black dark:!text-white">
+                    <Image src="/favicon.ico?v=3" alt="Yurie" width={20} height={20} className="h-5 w-5" />
+                    <span className="font-medium">Yurie</span>
+                  </Link>
+                  <div className="flex items-center gap-2">
+                    <button
+                      ref={closeBtnRef}
+                      type="button"
+                      aria-label="Close sidebar"
+                      onClick={() => setOpen(false)}
+                      className="inline-flex items-center justify-center rounded-md cursor-pointer text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600 h-8 w-8"
+                    >
+                      <PanelLeft className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Drawer content */}
+              <div className="mt-0 flex flex-col gap-6">
               {children}
               </div>
             </motion.aside>
@@ -390,5 +395,4 @@ export const SidebarLink = ({
     </Link>
   );
 };
-
 
