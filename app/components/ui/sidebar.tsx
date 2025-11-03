@@ -306,13 +306,14 @@ export const MobileSidebar = ({
                 "pt-[max(env(safe-area-inset-top),0)] pb-[max(env(safe-area-inset-bottom),1rem)] pl-[max(env(safe-area-inset-left),0.75rem)] pr-[max(env(safe-area-inset-right),0.75rem)]",
                 className
               )}
+              style={{ paddingTop: "max(env(safe-area-inset-top), constant(safe-area-inset-top), 0px)" }}
               role="dialog"
               aria-modal="true"
               aria-label="Mobile sidebar"
               id="mobile-sidebar"
             >
               {/* Close button moved into brand header on mobile for alignment */}
-              <div className="flex flex-col gap-6" style={{ marginTop: 'calc(max(env(safe-area-inset-top), 0px) + 16px)' }}>
+              <div className="flex flex-col gap-6" style={{ marginTop: 'calc(max(env(safe-area-inset-top), constant(safe-area-inset-top), 0px) + 16px)' }}>
               {children}
               </div>
             </motion.aside>
