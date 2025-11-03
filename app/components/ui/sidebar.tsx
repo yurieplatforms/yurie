@@ -281,7 +281,7 @@ export const MobileSidebar = ({
               className={cn(
                 "fixed inset-y-0 left-0 z-[100] w-[min(88vw,320px)] max-w-[88vw] bg-neutral-100 dark:bg-neutral-800 border-r border-neutral-200 dark:border-neutral-700 shadow-xl overflow-y-auto md:hidden relative",
                 // safe-area paddings
-                "pt-[max(env(safe-area-inset-top),0.5rem)] pb-[max(env(safe-area-inset-bottom),1rem)] pl-[max(env(safe-area-inset-left),1rem)] pr-[max(env(safe-area-inset-right),1rem)]",
+                "pt-[max(env(safe-area-inset-top),0)] pb-[max(env(safe-area-inset-bottom),1rem)] pl-[max(env(safe-area-inset-left),1rem)] pr-[max(env(safe-area-inset-right),1rem)]",
                 className
               )}
               role="dialog"
