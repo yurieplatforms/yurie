@@ -23,4 +23,3 @@ export function MessageBubble({ role, content }: MessageBubbleProps) {
     </div>
   )
 }
-

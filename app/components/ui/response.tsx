@@ -82,5 +82,3 @@ export const Response = memo(
 )
 
 Response.displayName = 'Response'
-
-

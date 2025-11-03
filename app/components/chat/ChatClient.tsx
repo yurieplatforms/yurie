@@ -10,38 +10,32 @@ import { MessageBubble } from './MessageBubble'
 import { SearchTabs } from './SearchTabs'
 import { 
   formatThinkingForMarkdown,
-  hasVisibleAssistantContent,
-  shouldEnableSearch,
-  stripSearchControls,
-  stripImageData,
-  extractUrls
+  hasVisibleAssistantContent
 } from '@/app/lib/chat-utils'
-import { processStreamChunk } from '@/app/lib/stream-utils'
-import type { ChatMessage, ChatStatus } from '@/app/types/chat'
+import { useChatStream } from '@/app/hooks/useChatStream'
+import { upsertFromMessages, getConversation } from '@/app/lib/history'
 import type { SearchTab } from '@/app/types/search'
 
 export default function ChatClient() {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
   const outputRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputWrapperRef = useRef<HTMLDivElement>(null)
   const [outputHeight, setOutputHeight] = useState<number>(0)
-  const [lastResponseId, setLastResponseId] = useState<string | null>(null)
-  const [reasoningByMessageIndex, setReasoningByMessageIndex] = useState<Record<number, string>>({})
-  const [reasoningDurationByMessageIndex, setReasoningDurationByMessageIndex] = useState<Record<number, number>>({})
-  const [finalStartedByMessageIndex, setFinalStartedByMessageIndex] = useState<Record<number, boolean>>({})
-  const [usingSearchByMessageIndex, setUsingSearchByMessageIndex] = useState<Record<number, boolean>>({})
-  const [status, setStatus] = useState<ChatStatus>('ready')
-  const abortControllerRef = useRef<AbortController | null>(null)
   const pinnedToBottomRef = useRef<boolean>(true)
-  const streamBufferRef = useRef<string>('')
 
-  // Search Integration State
-  const [activeTabByMessageIndex, setActiveTabByMessageIndex] = useState<Record<number, SearchTab>>({})
-  const [searchDataByMessageIndex, setSearchDataByMessageIndex] = useState<Record<number, any>>({})
-  const [isFetchingSearch, setIsFetchingSearch] = useState<boolean>(false)
-
-  // No attachment object URLs to cleanup
+  const { state, sendMessage, newChat, replaceMessages, changeTab } = useChatStream()
+  const {
+    messages,
+    status,
+    reasoningByMessageIndex,
+    reasoningDurationByMessageIndex,
+    finalStartedByMessageIndex,
+    usingSearchByMessageIndex,
+    activeTabByMessageIndex,
+    searchDataByMessageIndex,
+    isFetchingSearch,
+    animateTabsByMessageIndex,
+  } = state
 
   // Compute output height based on viewport and input size
   useEffect(() => {
@@ -123,248 +117,95 @@ export default function ChatClient() {
   }, [messages.length])
 
   const handleSendMessage = useCallback((message: string, options?: { reset?: boolean }) => {
-    const trimmed = message.trim()
-    const useSearchMode = shouldEnableSearch(trimmed)
-    if (trimmed.length === 0 || status === 'submitted' || status === 'streaming') return
-    
-    const reset = options?.reset === true
-    if (reset) {
-      try { abortControllerRef.current?.abort() } catch {}
-      abortControllerRef.current = null
-      setReasoningByMessageIndex({})
-      setReasoningDurationByMessageIndex({})
-      setFinalStartedByMessageIndex({})
-      setUsingSearchByMessageIndex({})
-      setSearchDataByMessageIndex({})
-      setActiveTabByMessageIndex({})
-      setLastResponseId(null)
-    }
+    sendMessage(message, options)
+  }, [sendMessage])
 
-    const sanitizedUser = stripSearchControls(trimmed)
-    const userMsg: ChatMessage = { role: 'user', content: sanitizedUser }
-    const assistantMsg: ChatMessage = { role: 'assistant', content: '' }
-    const baseMessages = reset ? [] : messages
-    const nextMessages: ChatMessage[] = [...baseMessages, userMsg, assistantMsg]
-    setMessages(nextMessages)
-    setStatus('submitted')
+  const currentConvIdRef = useRef<string | null>(null)
+  const suppressNextSaveRef = useRef<boolean>(false)
 
-    async function processMessage() {
-      try {
-        const urlExtraction = extractUrls(sanitizedUser)
-
-        // Use OpenRouter preset
-        const selectedModel = '@preset/yurie-ai'
-        const payloadMessages = nextMessages.map((m) => ({ ...m, content: stripImageData(m.content) }))
-        const ac = new AbortController()
-        abortControllerRef.current = ac
-        
-        // Trigger SerpApi search in parallel if enabled
-        const userMessageIndex = nextMessages.length - 2
-        const searchPromise: Promise<any | null> = (async () => {
-          if (!useSearchMode) return null
-          try {
-            setIsFetchingSearch(true)
-            const usp = new URLSearchParams({ q: sanitizedUser, hl: 'en', gl: 'us', google_domain: 'google.com', safe: 'active', num: '100' })
-            const resp = await fetch(`/api/search?${usp.toString()}`, { cache: 'no-store' })
-            if (!resp.ok) return null
-            return await resp.json()
-          } catch {
-            return null
-          } finally {
-            setIsFetchingSearch(false)
-          }
-        })()
-
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: payloadMessages,
-            inputImageUrls: urlExtraction.images,
-            inputPdfUrls: urlExtraction.pdfs,
-            previousResponseId: lastResponseId,
-            model: selectedModel,
-            max_output_tokens: 30000,
-            reasoning: {
-              effort: 'high',
-              exclude: false,
-            },
-            useSearch: useSearchMode,
-            searchContextSize: useSearchMode ? 'high' as const : undefined,
-          }),
-          signal: ac.signal,
-        })
-
-        if (!res.ok || !res.body) {
-          if (res.status === 413) {
-            throw new Error('Payload too large for server.')
-          }
-          let detail = ''
-          try { detail = await res.text() } catch {}
-          let msg = `Request failed: ${res.status}`
-          try {
-            const json = JSON.parse(detail)
-            const errObj = json?.error
-            if (errObj && typeof errObj === 'object') {
-              const code = typeof errObj.code === 'number' || typeof errObj.code === 'string' ? String(errObj.code) : ''
-              const message = typeof errObj.message === 'string' ? errObj.message : ''
-              msg = `Request failed: ${res.status}${code ? ` (${code})` : ''}${message ? ` - ${message}` : ''}`
-            } else if (typeof json?.error === 'string') {
-              msg += ` - ${json.error}`
-            }
-          } catch {
-            if (detail) msg += ` - ${detail.slice(0, 200)}`
-          }
-          throw new Error(msg)
+  // Restore last conversation on mount
+  useEffect(() => {
+    try {
+      const lastId = sessionStorage.getItem('chat:currentId')
+      if (lastId) {
+        const convo = getConversation(lastId)
+        if (convo && Array.isArray(convo.messages) && convo.messages.length > 0) {
+          currentConvIdRef.current = convo.id
+          suppressNextSaveRef.current = true
+          replaceMessages(convo.messages)
         }
-
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let assistantText = ''
-
-        const assistantIndex = nextMessages.length - 1
-        const thinkingStartMs = Date.now()
-        let recordedFirstVisible = false
-        setReasoningByMessageIndex((prev) => ({ ...prev, [assistantIndex]: '' }))
-        setUsingSearchByMessageIndex((prev) => ({ ...prev, [assistantIndex]: useSearchMode }))
-        setStatus('streaming')
-
-        // Initialize default tab for this user message
-        setActiveTabByMessageIndex((prev) => ({ ...prev, [userMessageIndex]: 'Yurie' }))
-
-        // Resolve search results without blocking the AI stream
-        searchPromise.then((data) => {
-          if (data) {
-            setSearchDataByMessageIndex((prev) => ({ ...prev, [userMessageIndex]: data }))
-          }
-        })
-
-        while (true) {
-          const { value, done } = await reader.read()
-          if (done) break
-          const chunk = decoder.decode(value, { stream: true })
-          const cleanChunk = processStreamChunk(
-            chunk,
-            assistantIndex,
-            streamBufferRef,
-            setReasoningByMessageIndex,
-            setLastResponseId
-          )
-          assistantText += cleanChunk
-          setMessages((prev) => {
-            const updated = [...prev]
-            const lastIndex = updated.length - 1
-            if (lastIndex >= 0 && updated[lastIndex].role === 'assistant') {
-              updated[lastIndex] = { role: 'assistant', content: assistantText }
-            } else {
-              updated.push({ role: 'assistant', content: assistantText })
-            }
-            return updated
-          })
-          // As soon as the first visible assistant content appears, record thinking duration
-          if (!recordedFirstVisible && hasVisibleAssistantContent(assistantText)) {
-            const thinkingDurationSec = Math.max(1, Math.ceil((Date.now() - thinkingStartMs) / 1000))
-            setReasoningDurationByMessageIndex((prev) => ({ ...prev, [assistantIndex]: thinkingDurationSec }))
-            setFinalStartedByMessageIndex((prev) => ({ ...prev, [assistantIndex]: true }))
-            recordedFirstVisible = true
-          }
-          queueMicrotask(() => {
-            if (pinnedToBottomRef.current) {
-              outputRef.current?.scrollTo({ top: outputRef.current.scrollHeight })
-            }
-          })
-        }
-
-        const finalChunk = decoder.decode()
-        if (finalChunk) {
-          const cleanFinal = processStreamChunk(
-            finalChunk,
-            assistantIndex,
-            streamBufferRef,
-            setReasoningByMessageIndex,
-            setLastResponseId
-          )
-          assistantText += cleanFinal
-          setMessages((prev) => {
-            const updated = [...prev]
-            const lastIndex = updated.length - 1
-            if (lastIndex >= 0 && updated[lastIndex].role === 'assistant') {
-              updated[lastIndex] = { role: 'assistant', content: assistantText }
-            }
-            return updated
-          })
-        }
-
-        // If we never recorded at first visible content, record total thinking duration now
-        if (!recordedFirstVisible) {
-          const thinkingDurationSec = Math.max(1, Math.ceil((Date.now() - thinkingStartMs) / 1000))
-          setReasoningDurationByMessageIndex((prev) => ({ ...prev, [assistantIndex]: thinkingDurationSec }))
-          setFinalStartedByMessageIndex((prev) => ({ ...prev, [assistantIndex]: true }))
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error'
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: `There was an error: ${message}` },
-        ])
-        setStatus('error')
-      } finally {
-        setStatus('ready')
-        abortControllerRef.current = null
-        streamBufferRef.current = ''
       }
-    }
-    
-    processMessage()
-  }, [messages, status, lastResponseId])
-
-  const handleNewChat = useCallback(() => {
-    try { abortControllerRef.current?.abort() } catch {}
-    abortControllerRef.current = null
-    setMessages([])
-    setReasoningByMessageIndex({})
-    setReasoningDurationByMessageIndex({})
-    setFinalStartedByMessageIndex({})
-    setUsingSearchByMessageIndex({})
-    setSearchDataByMessageIndex({})
-    setActiveTabByMessageIndex({})
-    setLastResponseId(null)
-    setStatus('ready')
-    streamBufferRef.current = ''
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Save conversation snapshot whenever messages change
+  useEffect(() => {
+    if (!messages || messages.length === 0) return
+    if (suppressNextSaveRef.current) {
+      suppressNextSaveRef.current = false
+      return
+    }
+    try {
+      const { id } = upsertFromMessages(messages, currentConvIdRef.current || undefined)
+      if (id) {
+        currentConvIdRef.current = id
+        sessionStorage.setItem('chat:currentId', id)
+      }
+    } catch {}
+  }, [messages])
+
+  // Listen for sidebar events to load or start chats
+  useEffect(() => {
+    const onLoad = (e: Event) => {
+      const ce = e as CustomEvent<{ id: string }>
+      const id = ce?.detail?.id
+      if (!id) return
+      const convo = getConversation(id)
+      if (!convo) return
+      currentConvIdRef.current = id
+      sessionStorage.setItem('chat:currentId', id)
+      suppressNextSaveRef.current = true
+      replaceMessages(convo.messages || [])
+    }
+    const onNew = () => {
+      try { sessionStorage.removeItem('chat:currentId') } catch {}
+      currentConvIdRef.current = null
+      newChat()
+    }
+    window.addEventListener('chat:load' as any, onLoad as any)
+    window.addEventListener('chat:new' as any, onNew as any)
+    return () => {
+      window.removeEventListener('chat:load' as any, onLoad as any)
+      window.removeEventListener('chat:new' as any, onNew as any)
+    }
+  }, [newChat, replaceMessages])
+
+  const handleNewChat = useCallback(() => { 
+    try { sessionStorage.removeItem('chat:currentId') } catch {}
+    currentConvIdRef.current = null
+    newChat()
+    try { window.dispatchEvent(new CustomEvent('chat:new')) } catch {}
+  }, [newChat])
 
   // Fetch search results on-demand when user switches to a search tab
   const handleTabChange = useCallback(async (msgIndex: number, tab: SearchTab, rawQuery: string) => {
-    setActiveTabByMessageIndex((prev) => ({ ...prev, [msgIndex]: tab }))
-    if (tab === 'Yurie') return
-    // If we already have results for this message, do not refetch
-    const alreadyLoaded = Boolean(searchDataByMessageIndex[msgIndex])
-    if (alreadyLoaded || isFetchingSearch) return
-    const q = stripSearchControls(rawQuery || '')
-    if (!q) return
-    try {
-      setIsFetchingSearch(true)
-      const usp = new URLSearchParams({ q, hl: 'en', gl: 'us', google_domain: 'google.com', safe: 'active', num: '100' })
-      const resp = await fetch(`/api/search?${usp.toString()}`, { cache: 'no-store' })
-      if (!resp.ok) return
-      const json = await resp.json()
-      setSearchDataByMessageIndex((prev) => ({ ...prev, [msgIndex]: json }))
-    } catch {
-      // ignore
-    } finally {
-      setIsFetchingSearch(false)
-    }
-  }, [searchDataByMessageIndex, isFetchingSearch])
+    await changeTab(msgIndex, tab, rawQuery)
+  }, [changeTab])
 
   return (
     <section ref={containerRef} className={cn('w-full h-full min-h-screen flex flex-col', messages.length === 0 && 'justify-center items-center max-w-[52rem] mx-auto')}>
       <div
         ref={outputRef}
-        className={cn('rounded-none pt-1 pb-3 overflow-y-auto text-base font-sans w-full max-w-[52rem] mx-auto px-2 sm:px-4', messages.length === 0 && 'hidden')}
+        className={cn(
+          // full-width scroll area; hide accidental horizontal overflow from full-width sections
+          'rounded-none pt-1 pb-3 overflow-y-auto overflow-x-hidden text-base font-sans w-full',
+          messages.length === 0 && 'hidden'
+        )}
         style={{ height: outputHeight ? `${outputHeight}px` : undefined }}
       >
         {messages.length === 0 ? null : (
-          <div className="w-full">
+          <div className="w-full max-w-[52rem] mx-auto px-2 sm:px-4">
           {messages.map((m, i) => {
             const isFirst = i === 0
             const speakerChanged = !isFirst && messages[i - 1].role !== m.role
@@ -402,6 +243,8 @@ export default function ChatClient() {
                       </div>
                       <SearchTabs 
                         activeTab={activeTab}
+                        disableYurieAnimation={i === 0}
+                        animateOnChange={animateTabsByMessageIndex[i] === true}
                         onTabChange={(tab) => handleTabChange(i, tab, m.content)}
                       />
                     </div>
@@ -414,6 +257,7 @@ export default function ChatClient() {
                           <div className="text-sm text-neutral-500">Loading {activeTab.toLowerCase()}...</div>
                         )}
                         <SearchResults 
+                          key={`${i}-${activeTab}-${searchData?.query || ''}`}
                           data={searchData} 
                           section={activeTab as any}
                           onSwitchSection={(sec) => handleTabChange(i, sec as SearchTab, m.content)}
@@ -476,7 +320,7 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('w-full px-2 sm:px-4', messages.length === 0 ? 'max-w-[52rem] -mt-52 sm:-mt-56 md:-mt-52 lg:-mt-48 xl:-mt-44' : 'max-w-[52rem] mx-auto mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-4')}
+        className={cn('w-full px-2 sm:px-4', messages.length === 0 ? 'max-w-[52rem] -mt-52 sm:-mt-56 md:-mt-52 lg:-mt-48 xl:-mt-44' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-4')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         <AIChatInput
@@ -492,4 +336,3 @@ export default function ChatClient() {
     </section>
   )
 }
-

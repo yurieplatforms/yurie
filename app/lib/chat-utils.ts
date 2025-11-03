@@ -224,4 +224,3 @@ export function extractUrls(text: string): { images: string[]; pdfs: string[] } 
   }
   return { images, pdfs }
 }
-

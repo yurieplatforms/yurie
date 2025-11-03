@@ -10,4 +10,3 @@ export type MessagePart =
   | { type: 'image'; src: string; partial?: boolean }
   | { type: 'meta'; key: 'revised_prompt' | 'response_id' | 'summary_text' | 'incomplete'; value: string }
   | { type: 'citation'; url: string; title: string; content: string }
-

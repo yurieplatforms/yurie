@@ -47,4 +47,3 @@ export type SerpApiCommonParams = {
   tbm?: string
   kgmid?: string
 }
-

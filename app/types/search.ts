@@ -61,4 +61,3 @@ export type SearchData = {
   }
   sources?: Record<string, string>
 }
-

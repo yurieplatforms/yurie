@@ -199,5 +199,3 @@ export const ReasoningContent = memo(function ReasoningContent({ className, chil
 Reasoning.displayName = 'Reasoning'
 ReasoningTrigger.displayName = 'ReasoningTrigger'
 ReasoningContent.displayName = 'ReasoningContent'
-
-

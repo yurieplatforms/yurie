@@ -7,6 +7,9 @@ import { Analytics } from '@vercel/analytics/react'
 import { baseUrl } from './sitemap'
 import Script from 'next/script'
 import { cn } from './lib/utils'
+import { Sidebar, SidebarBody } from './components/ui/sidebar'
+import { HistoryList } from './components/ui/history-list'
+import { SidebarBrand } from './components/ui/sidebar-brand'
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -69,13 +72,27 @@ export default function RootLayout({
       )}
       suppressHydrationWarning
     >
-      <body className="font-sans antialiased overflow-hidden h-screen flex flex-col">
+      <body className="font-sans antialiased overflow-hidden h-screen flex">
         {/* auto-sync dark mode with system preference (runs before interactive) */}
         <Script id="theme-sync" strategy="beforeInteractive">{`try{var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');var d=document.documentElement;var set=()=>{m.matches?d.classList.add('dark'):d.classList.remove('dark')};set();m&&m.addEventListener&&m.addEventListener('change',set);}catch(e){}`}</Script>
-        <main className="flex-auto min-w-0 flex flex-col overflow-hidden w-full max-w-[52rem] mx-auto px-2 sm:px-4 mt-2 md:mt-4">
-          {children}
-          <Analytics />
-        </main>
+        <div className="flex flex-1 w-full">
+          <Sidebar>
+            <SidebarBody className="justify-between gap-10">
+              <div className="flex flex-col flex-1 overflow-y-auto">
+                <SidebarBrand />
+                <div className="mt-3 border-t border-neutral-200 dark:border-neutral-700" />
+                <div className="mt-4 flex flex-col gap-2">
+                  <HistoryList />
+                </div>
+              </div>
+              
+            </SidebarBody>
+          </Sidebar>
+          <main className="flex-auto min-w-0 flex flex-col overflow-hidden w-full pt-12 md:pt-0 md:mt-4">
+            {children}
+            <Analytics />
+          </main>
+        </div>
       </body>
     </html>
   )

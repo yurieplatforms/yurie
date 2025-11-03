@@ -56,4 +56,3 @@ export function processStreamChunk(
   if (idMatch && idMatch[1]) setLastResponseId(idMatch[1])
   return clean
 }
-

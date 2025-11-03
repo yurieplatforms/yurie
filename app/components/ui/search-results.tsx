@@ -128,7 +128,7 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
     const extDuration = (ext || []).find((e: any) => typeof e === 'string' && /\d{1,2}:\d{2}/.test(e))
     return v?.duration || v?.length || extDuration || ''
   }
-
+  
   const isRenderableVideo = (v: any): boolean => {
     const href = v?.link || v?.url || ''
     const title = v?.title || v?.video_title || v?.name || ''
@@ -474,10 +474,11 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
     return ''
   }
 
-  
-
   React.useEffect(() => {
-    const initialAll = Array.isArray(videos.videos_results) ? videos.videos_results.filter(isRenderableVideo) : []
+    // Only include YouTube videos for the Videos tab
+    const initialAll = Array.isArray(videos.videos_results)
+      ? videos.videos_results.filter((v: any) => isYouTubeVideo(v) && isRenderableVideo(v))
+      : []
     const initialSorted = sortVideosYouTubeFirst(dedupeVideos(initialAll))
     setVideoItems(initialSorted)
     const token = videos?.serpapi_pagination?.next_page_token || null
@@ -514,7 +515,8 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
       const res = await fetch(`/api/search?${usp.toString()}`, { cache: 'no-store' })
       if (!res.ok) return
       const json = await res.json()
-      const newVideosAll = (json?.videos?.videos_results || []).filter((v: any) => isRenderableVideo(v))
+      // Only append YouTube videos
+      const newVideosAll = (json?.videos?.videos_results || []).filter((v: any) => isYouTubeVideo(v) && isRenderableVideo(v))
       setVideoItems((prev) => {
         const merged = prev.concat(newVideosAll)
         return sortVideosYouTubeFirst(dedupeVideos(merged))
@@ -551,8 +553,6 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
     })
     return Array.from(new Set(nonYt))
   }
-
-  
 
   const handleGoToAllPage = async (page: number) => {
     if (!data?.query) return
@@ -599,7 +599,7 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
     return { w: isNaN(w) ? null : w, h: isNaN(h) ? null : h }
   }
 
-  const ImageResult: React.FC<{ img: any; fit?: 'cover' | 'contain' }> = ({ img, fit }) => {
+  const ImageResult: React.FC<{ img: any; fit?: 'cover' | 'contain'; forceAspect?: string }> = ({ img, fit, forceAspect }) => {
     const [src, setSrc] = React.useState<string>(getImageSrc(img))
     const [srcSet, setSrcSet] = React.useState<string>(getImageSrcSet(img))
     const candidates = React.useMemo(() => getImageCandidates(img), [img])
@@ -607,9 +607,10 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
     const [hidden, setHidden] = React.useState<boolean>(false)
     const dims = React.useMemo(() => getImageDimensions(img), [img])
     const aspect = React.useMemo(() => {
+      if (forceAspect) return forceAspect
       if (dims.w && dims.h) return `${dims.w} / ${dims.h}`
       return undefined
-    }, [dims])
+    }, [dims, forceAspect])
 
     const onError = () => {
       if (srcSet) {
@@ -682,7 +683,10 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
     if (hidden || !src) return null
 
     return (
-      <div className="relative">
+      <div
+        className="relative overflow-hidden rounded border border-neutral-200 dark:border-neutral-800"
+        style={{ aspectRatio: '16 / 9' }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
@@ -702,7 +706,7 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
             }
             setLoaded(true)
           }}
-          className="w-full h-28 object-cover rounded border border-neutral-200 dark:border-neutral-800"
+          className="absolute inset-0 w-full h-full object-cover"
         />
         {loaded && duration && (
           <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-black/70 text-white">
@@ -712,6 +716,39 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
       </div>
     )
   }
+  
+  // Utility wrapper to expand children to the full width of the <main> content area
+  const FullWidthContent: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const ref = React.useRef<HTMLDivElement>(null)
+    const [style, setStyle] = React.useState<React.CSSProperties | undefined>(undefined)
+
+    React.useLayoutEffect(() => {
+      const update = () => {
+        try {
+          const main = document.querySelector('main') as HTMLElement | null
+          const el = ref.current
+          if (!main || !el || !el.parentElement) return
+          const mainRect = main.getBoundingClientRect()
+          const parentRect = el.parentElement.getBoundingClientRect()
+          // Align left edge with <main>, and match its width (avoids overlapping under the sidebar)
+          setStyle({
+            position: 'relative',
+            left: `${mainRect.left - parentRect.left}px`,
+            width: `${mainRect.width}px`,
+          })
+        } catch {}
+      }
+      update()
+      window.addEventListener('resize', update)
+      return () => window.removeEventListener('resize', update)
+    }, [])
+    return (
+      <div ref={ref} style={style}>
+        {children}
+      </div>
+    )
+  }
+
   return (
     <div className={cn('w-full flex flex-col gap-10', className)}>
       {showAll && Array.isArray(all.available_on) && all.available_on.length > 0 && (() => {
@@ -795,7 +832,6 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
           </section>
         )
       })()}
-      
 
       {showAll && Array.isArray(organicItems) && organicItems.length > 0 && (
         <section className="pb-16 -mt-4 sm:-mt-5">
@@ -1078,68 +1114,70 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
         </section>
       )}
 
-      
-
       {showImages && Array.isArray(images.images_results) && images.images_results.length > 0 && (
         <section className="pb-16">
-          <div className="columns-2 sm:columns-3 md:columns-4 gap-2">
-            {images.images_results.map((img: any, idx: number) => (
-              <a
-                key={idx}
-                href={img.link || img.original || img.source}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block break-inside-avoid mb-2"
-                title={img.title || ''}
-              >
-                <ImageResult img={img} fit="contain" />
-              </a>
-            ))}
-          </div>
+          <FullWidthContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 px-2 sm:px-4">
+              {images.images_results.map((img: any, idx: number) => (
+                <a
+                  key={idx}
+                  href={img.link || img.original || img.source}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                  title={img.title || ''}
+                >
+                  <ImageResult img={img} fit="cover" forceAspect="16 / 9" />
+                </a>
+              ))}
+            </div>
+          </FullWidthContent>
         </section>
       )}
 
       {showVideos && Array.isArray(videoItems) && videoItems.length > 0 && (
         <section className="pb-16">
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 gap-2">
-            {videoItems.map((v: any, idx: number) => {
-              const href = v.link || v.url
-              const title = v.title || v.video_title || ''
-              const channel = toText(v.channel) || toText(v.platform) || toText(v.source)
-              const duration = getVideoDuration(v)
-              return (
-                <a
-                  key={idx}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group block"
-                  title={title}
-                >
-                  <VideoThumb v={v} title={title} duration={duration} />
-                  <div className="mt-1">
-                    <div className="text-[13px] leading-snug font-medium text-neutral-900 dark:text-neutral-100 line-clamp-2 group-hover:underline">
-                      {title}
+          <FullWidthContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 px-2 sm:px-4">
+              {videoItems.map((v: any, idx: number) => {
+                const href = v.link || v.url
+                const title = v.title || v.video_title || ''
+                const channel = toText(v.channel) || toText(v.platform) || toText(v.source)
+                const duration = getVideoDuration(v)
+                return (
+                  <a
+                    key={idx}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                    title={title}
+                  >
+                    <VideoThumb v={v} title={title} duration={duration} />
+                    <div className="mt-1">
+                      <div className="text-[13px] leading-snug font-medium text-neutral-900 dark:text-neutral-100 line-clamp-2 group-hover:underline">
+                        {title}
+                      </div>
+                      {channel && (
+                        <div className="text-[11px] text-neutral-500 mt-0.5 truncate">{channel}</div>
+                      )}
                     </div>
-                    {channel && (
-                      <div className="text-[11px] text-neutral-500 mt-0.5 truncate">{channel}</div>
-                    )}
-                  </div>
-                </a>
-              )
-            })}
-          </div>
-          {nextYtToken && (
-            <div className="mt-3">
-              <button
-                onClick={handleLoadMoreVideos}
-                disabled={loadingMoreVideos}
-                className="px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
-              >
-                {loadingMoreVideos ? 'Loading more…' : 'Load more from YouTube'}
-              </button>
+                  </a>
+                )
+              })}
             </div>
-          )}
+            {nextYtToken && (
+              <div className="mt-3 px-2 sm:px-4">
+                <button
+                  onClick={handleLoadMoreVideos}
+                  disabled={loadingMoreVideos}
+                  className="px-3 py-1.5 rounded-md border border-neutral-300 dark:border-neutral-700 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-60 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {loadingMoreVideos ? 'Loading more…' : 'Load more from YouTube'}
+                </button>
+              </div>
+            )}
+          </FullWidthContent>
         </section>
       )}
 
@@ -1268,5 +1306,3 @@ export function SearchResults({ data, className, section }: SearchResultsProps) 
     </div>
   )
 }
-
-

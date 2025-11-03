@@ -116,4 +116,3 @@ export function MessageContent({ role, content }: MessageContentProps) {
     </>
   )
 }
-

@@ -1,22 +1,9 @@
 export const runtime = 'nodejs'
 
 import type { SerpApiCommonParams } from '@/app/types/api'
-
-async function fetchSerp<T>(params: SerpApiCommonParams): Promise<T> {
-  const usp = new URLSearchParams()
-  for (const [k, v] of Object.entries(params)) {
-    if (v === undefined || v === null || v === '') continue
-    usp.set(k, String(v))
-  }
-  const url = `https://serpapi.com/search.json?${usp.toString()}`
-  const res = await fetch(url, { method: 'GET' })
-  if (!res.ok) {
-    let detail = ''
-    try { detail = await res.text() } catch {}
-    throw new Error(detail || `SerpApi error: ${res.status}`)
-  }
-  return (await res.json()) as T
-}
+import { getSerpConfig } from '@/app/lib/env'
+import { json, jsonError } from '@/app/lib/http'
+import { fetchSerp } from '@/app/services/serp'
 
 async function fetchGoogleChromeSuggest(q: string, hl: string, gl: string): Promise<string[]> {
   const usp = new URLSearchParams({ client: 'chrome', q, hl, gl })
@@ -39,7 +26,7 @@ export async function GET(req: Request) {
     const gl = searchParams.get('gl') || 'us'
     const limit = Math.max(1, Math.min(10, Number(searchParams.get('limit')) || 8))
 
-    const apiKey = process.env.SERPAPI_API_KEY || process.env.NEXT_PUBLIC_SERPAPI_API_KEY
+    const { apiKey } = getSerpConfig()
 
     let raw: any[] = []
     if (apiKey) {
@@ -88,14 +75,9 @@ export async function GET(req: Request) {
       if (deduped.length >= limit) break
     }
 
-    return new Response(JSON.stringify({ query: q, suggestions: deduped }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-    })
+    return json({ query: q, suggestions: deduped }, 200)
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown server error'
-    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { 'Content-Type': 'application/json' } })
+    return jsonError(500, 'server_error', msg)
   }
 }
-
-
