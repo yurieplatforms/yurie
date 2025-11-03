@@ -152,6 +152,13 @@ export const DesktopSidebar = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const collapsedWidth = 60;
 
+  const isDesktop = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+  const isMobileSafari = typeof navigator !== "undefined" &&
+    /iP(ad|od|hone)/i.test(navigator.userAgent) &&
+    /AppleWebKit/i.test(navigator.userAgent) &&
+    !(/Chrome/i.test(navigator.userAgent) || /CriOS/i.test(navigator.userAgent));
+  const show = isDesktop || isMobileSafari;
+
   const startResize = (clientX: number) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
@@ -189,8 +196,9 @@ export const DesktopSidebar = ({
     <motion.div
       ref={containerRef as any}
       className={cn(
-        "relative h-full pt-4 pb-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] flex-shrink-0 border-r border-neutral-200 dark:border-neutral-700 shadow-sm",
+        "relative h-full pt-4 pb-4 bg-neutral-100 dark:bg-neutral-800 w-[300px] flex-shrink-0 border-r border-neutral-200 dark:border-neutral-700 shadow-sm",
         open ? "px-4" : "px-2",
+        show ? "flex flex-col" : "hidden",
         className
       )}
       animate={{
@@ -220,6 +228,15 @@ export const MobileSidebar = ({
   const { open, setOpen } = useSidebar();
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const pathname = usePathname();
+
+  const isDesktop = typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
+  const isMobileSafari = typeof navigator !== "undefined" &&
+    /iP(ad|od|hone)/i.test(navigator.userAgent) &&
+    /AppleWebKit/i.test(navigator.userAgent) &&
+    !(/Chrome/i.test(navigator.userAgent) || /CriOS/i.test(navigator.userAgent));
+  const showMobile = !isDesktop && !isMobileSafari;
+
+  if (!showMobile) return null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
