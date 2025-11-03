@@ -243,13 +243,13 @@ export const MobileSidebar = ({
   return (
     <>
       {!open && (
-        <div
-          id="nav"
-          className={cn(
-            "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full"
-          )}
-          {...props}
-        >
+      <div
+        id="nav"
+        className={cn(
+          "md:hidden fixed top-0 inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full"
+        )}
+        {...props}
+      >
           <button
             type="button"
             aria-label="Toggle sidebar"
@@ -280,45 +280,45 @@ export const MobileSidebar = ({
           </Link>
         </div>
       )}
-      <AnimatePresence>
-        {open && (
-        <>
-          {/* Scrim */}
-          <motion.button
-            type="button"
-            aria-label="Close sidebar"
-            onClick={() => setOpen(false)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[95] bg-transparent md:hidden"
-          />
-          {/* Drawer */}
-          <motion.aside
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ duration: 0.28, ease: "easeInOut" }}
-            className={cn(
-              "fixed inset-y-0 left-0 z-[100] w-[min(100vw,420px)] max-w-[100vw] bg-white dark:bg-[#212121] overflow-y-auto md:hidden relative",
-              // safe-area paddings
-              "pt-[max(env(safe-area-inset-top),0)] pb-[max(env(safe-area-inset-bottom),1rem)] pl-[max(env(safe-area-inset-left),0.75rem)] pr-[max(env(safe-area-inset-right),0.75rem)]",
-              className
-            )}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Mobile sidebar"
-            id="mobile-sidebar"
-          >
-            {/* Close button moved into brand header on mobile for alignment */}
-            <div className="mt-0 flex flex-col gap-6">
-            {children}
-            </div>
-          </motion.aside>
-        </>
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {open && (
+          <>
+            {/* Scrim */}
+            <motion.button
+              type="button"
+              aria-label="Close sidebar"
+              onClick={() => setOpen(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[95] bg-transparent md:hidden"
+            />
+            {/* Drawer */}
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ duration: 0.28, ease: "easeInOut" }}
+              className={cn(
+                "fixed inset-y-0 left-0 z-[100] w-[min(100vw,420px)] max-w-[100vw] bg-white dark:bg-[#212121] overflow-y-auto md:hidden relative",
+                // safe-area paddings
+                "pt-[max(env(safe-area-inset-top),0)] pb-[max(env(safe-area-inset-bottom),1rem)] pl-[max(env(safe-area-inset-left),0.75rem)] pr-[max(env(safe-area-inset-right),0.75rem)]",
+                className
+              )}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Mobile sidebar"
+              id="mobile-sidebar"
+            >
+              {/* Close button moved into brand header on mobile for alignment */}
+              <div className="mt-0 flex flex-col gap-6">
+              {children}
+              </div>
+            </motion.aside>
+          </>
+          )}
+        </AnimatePresence>
     </>
   );
 };
