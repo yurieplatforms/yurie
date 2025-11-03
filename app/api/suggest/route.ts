@@ -1,6 +1,4 @@
 export const runtime = 'nodejs'
-
-import type { SerpApiCommonParams } from '@/app/types/api'
 import { getSerpConfig } from '@/app/lib/env'
 import { json, jsonError } from '@/app/lib/http'
 import { fetchSerp } from '@/app/services/serp'

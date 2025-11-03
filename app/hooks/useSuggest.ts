@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 
 export type UseSuggestState = {
   suggestions: string[]
@@ -11,7 +11,7 @@ export type UseSuggestState = {
 
 export type UseSuggestApi = UseSuggestState & {
   setShowSuggestions: (show: boolean) => void
-  setHighlightedIndex: (i: number) => void
+  setHighlightedIndex: Dispatch<SetStateAction<number>>
   updateQuery: (q: string, isEmptyLayout: boolean, isActive: boolean) => void
   pickFromCache: (q: string) => string[] | null
   reset: () => void

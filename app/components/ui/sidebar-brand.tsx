@@ -7,7 +7,7 @@ import { cn } from "@/app/lib/utils"
 import { Pin, PinOff, PanelLeft } from "lucide-react"
 
 export function SidebarBrand() {
-  const { open, animate, pinned, setPinned, setOpen } = useSidebar()
+  const { open, pinned, setPinned, setOpen } = useSidebar()
   return (
     <div className={cn("flex items-center w-full", open ? "justify-between" : "justify-center")}> 
       <Link

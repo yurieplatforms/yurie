@@ -23,7 +23,7 @@ function formatTime(ts: number): string {
 }
 
 export function HistoryList() {
-  const { open, animate } = useSidebar()
+  const { open } = useSidebar()
   const [items, setItems] = useState<Conversation[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)

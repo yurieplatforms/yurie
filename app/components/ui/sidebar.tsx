@@ -4,7 +4,7 @@ import { cn } from "@/app/lib/utils";
 import Link, { LinkProps } from "next/link";
 import React, { useState, useEffect, useRef, createContext, useContext } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { PanelLeft, X } from "lucide-react";
+import { PanelLeft } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 interface Links {
@@ -129,19 +129,24 @@ export const Sidebar = ({
 };
 
 export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
+  const { children, ...rest } = props;
   return (
     <>
-      <DesktopSidebar {...props} />
+      <DesktopSidebar {...(rest as Omit<React.ComponentProps<typeof motion.div>, 'children'>)}>
+        {children as React.ReactNode}
+      </DesktopSidebar>
       <MobileSidebar {...(props as React.ComponentProps<"div">)} />
     </>
   );
 };
 
+type DesktopSidebarProps = Omit<React.ComponentProps<typeof motion.div>, 'children'> & { children?: React.ReactNode };
+
 export const DesktopSidebar = ({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof motion.div>) => {
+}: DesktopSidebarProps) => {
   const { open, setOpen, animate, width, setWidth, pinned } = useSidebar();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const collapsedWidth = 60;
@@ -166,7 +171,7 @@ export const DesktopSidebar = ({
     window.addEventListener("mouseup", onUp);
   };
 
-  const onTouchStartResize = (e: React.TouchEvent) => {
+  const onTouchStartResize = (_e: React.TouchEvent) => {
     const move = (ev: TouchEvent) => {
       if (ev.touches && ev.touches[0]) startResize(ev.touches[0].clientX);
     };
