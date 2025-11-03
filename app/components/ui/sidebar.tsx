@@ -246,7 +246,7 @@ export const MobileSidebar = ({
       <div
         id="nav"
         className={cn(
-          "md:hidden fixed top-[max(env(safe-area-inset-top),0)] inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full"
+          "md:hidden fixed top-[calc(max(env(safe-area-inset-top),0)+16px)] inset-x-0 z-20 flex h-12 items-center px-3 bg-white dark:bg-[#212121] w-full"
         )}
         {...props}
       >
@@ -312,7 +312,7 @@ export const MobileSidebar = ({
               id="mobile-sidebar"
             >
               {/* Close button moved into brand header on mobile for alignment */}
-              <div className="flex flex-col gap-6" style={{ marginTop: 'calc(max(env(safe-area-inset-top), 0px) + 8px)' }}>
+              <div className="flex flex-col gap-6" style={{ marginTop: 'calc(max(env(safe-area-inset-top), 0px) + 16px)' }}>
               {children}
               </div>
             </motion.aside>
