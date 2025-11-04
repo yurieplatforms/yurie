@@ -1,6 +1,14 @@
 "use client"
 
 import type { ChatMessage } from '@/app/types/chat'
+import { getSupabaseClient } from '@/app/lib/supabase/client'
+import { 
+  fetchHistoryRemote, 
+  getConversationByIdRemote, 
+  upsertConversationFromMessagesRemote, 
+  deleteConversationRemote, 
+  clearAllConversationsRemote 
+} from '@/app/lib/history-remote'
 
 export type Conversation = {
   id: string
@@ -87,4 +95,65 @@ export function upsertFromMessages(messages: ChatMessage[], existingId?: string)
   return { id, conversations: finalList }
 }
 
+
+// Async, remote-first wrappers with guest fallback
+export async function loadHistoryAsync(): Promise<Conversation[]> {
+  try {
+    const supabase = getSupabaseClient()
+    const { data } = await supabase.auth.getUser()
+    if (data?.user) {
+      return await fetchHistoryRemote()
+    }
+  } catch {}
+  return loadHistory().sort((a, b) => b.updatedAt - a.updatedAt)
+}
+
+export async function getConversationAsync(id: string): Promise<Conversation | null> {
+  try {
+    const supabase = getSupabaseClient()
+    const { data } = await supabase.auth.getUser()
+    if (data?.user) {
+      return await getConversationByIdRemote(id)
+    }
+  } catch {}
+  return getConversation(id) || null
+}
+
+export async function upsertFromMessagesAsync(messages: ChatMessage[], existingId?: string): Promise<{ id: string; conversations?: Conversation[] }> {
+  try {
+    const supabase = getSupabaseClient()
+    const { data } = await supabase.auth.getUser()
+    if (data?.user) {
+      const res = await upsertConversationFromMessagesRemote(messages, existingId)
+      return { id: res.id }
+    }
+  } catch {}
+  const res = upsertFromMessages(messages, existingId)
+  return { id: res.id, conversations: res.conversations }
+}
+
+export async function removeConversationAsync(id: string): Promise<void> {
+  try {
+    const supabase = getSupabaseClient()
+    const { data } = await supabase.auth.getUser()
+    if (data?.user) {
+      await deleteConversationRemote(id)
+      return
+    }
+  } catch {}
+  removeConversation(id)
+}
+
+export async function clearHistoryAsync(): Promise<void> {
+  try {
+    const supabase = getSupabaseClient()
+    const { data } = await supabase.auth.getUser()
+    if (data?.user) {
+      await clearAllConversationsRemote()
+      try { sessionStorage.removeItem('chat:currentId') } catch {}
+      return
+    }
+  } catch {}
+  clearHistory()
+}
 

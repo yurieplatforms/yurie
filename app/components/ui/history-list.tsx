@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSidebar } from './sidebar'
 import { cn } from '@/app/lib/utils'
-import { loadHistory, removeConversation, clearHistory, type Conversation } from '@/app/lib/history'
+import { loadHistoryAsync, removeConversationAsync, clearHistoryAsync, type Conversation } from '@/app/lib/history'
 import { SquarePen, X } from 'lucide-react'
 
 function formatTime(ts: number): string {
@@ -29,9 +29,11 @@ export function HistoryList() {
   const listRef = useRef<HTMLUListElement | null>(null)
 
   const refresh = useCallback(() => {
-    const list = loadHistory().sort((a, b) => b.updatedAt - a.updatedAt)
-    setItems(list)
-    try { setActiveId(sessionStorage.getItem('chat:currentId')) } catch {}
+    ;(async () => {
+      const list = await loadHistoryAsync()
+      setItems(Array.isArray(list) ? list : [])
+      try { setActiveId(sessionStorage.getItem('chat:currentId')) } catch {}
+    })()
   }, [])
 
   useEffect(() => {
@@ -63,22 +65,26 @@ export function HistoryList() {
   const handleDelete = useCallback((id: string) => {
     const confirmDelete = window.confirm('Delete this conversation?')
     if (!confirmDelete) return
-    removeConversation(id)
-    try {
-      const curr = sessionStorage.getItem('chat:currentId')
-      if (curr === id) {
-        sessionStorage.removeItem('chat:currentId')
-        window.dispatchEvent(new CustomEvent('chat:new'))
-      }
-    } catch {}
+    ;(async () => {
+      await removeConversationAsync(id)
+      try {
+        const curr = sessionStorage.getItem('chat:currentId')
+        if (curr === id) {
+          sessionStorage.removeItem('chat:currentId')
+          window.dispatchEvent(new CustomEvent('chat:new'))
+        }
+      } catch {}
+    })()
   }, [])
 
   const handleClearAll = useCallback(() => {
     if (items.length === 0) return
     const confirmDelete = window.confirm('Clear all conversations?')
     if (!confirmDelete) return
-    clearHistory()
-    refresh()
+    ;(async () => {
+      await clearHistoryAsync()
+      refresh()
+    })()
   }, [items.length, refresh])
 
   const ListEmpty = useMemo(() => (

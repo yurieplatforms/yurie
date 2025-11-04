@@ -10,6 +10,7 @@ import { cn } from './lib/utils'
 import { Sidebar, SidebarBody } from './components/ui/sidebar'
 import { HistoryList } from './components/ui/history-list'
 import { SidebarBrand } from './components/ui/sidebar-brand'
+import { SidebarAccount } from './components/ui/sidebar-account'
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -86,6 +87,9 @@ export default function RootLayout({
                 </div>
               </div>
               
+              <div className="block">
+                <SidebarAccount />
+              </div>
             </SidebarBody>
           </Sidebar>
           <main className="flex-auto min-w-0 flex flex-col overflow-hidden w-full pt-12 md:pt-0 md:mt-4">

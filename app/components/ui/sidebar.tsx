@@ -310,7 +310,7 @@ export const MobileSidebar = ({
               id="mobile-sidebar"
             >
               {/* Close button moved into brand header on mobile for alignment */}
-              <div className="mt-0 flex flex-col gap-6">
+              <div className="mt-0 flex flex-col min-h-full justify-between gap-6">
               {children}
               </div>
             </motion.aside>

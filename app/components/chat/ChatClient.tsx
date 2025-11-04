@@ -13,7 +13,7 @@ import {
   hasVisibleAssistantContent
 } from '@/app/lib/chat-utils'
 import { useChatStream } from '@/app/hooks/useChatStream'
-import { upsertFromMessages, getConversation } from '@/app/lib/history'
+import { upsertFromMessagesAsync, getConversationAsync } from '@/app/lib/history'
 import type { SearchTab } from '@/app/types/search'
 
 export default function ChatClient() {
@@ -125,17 +125,19 @@ export default function ChatClient() {
 
   // Restore last conversation on mount
   useEffect(() => {
-    try {
-      const lastId = sessionStorage.getItem('chat:currentId')
-      if (lastId) {
-        const convo = getConversation(lastId)
-        if (convo && Array.isArray(convo.messages) && convo.messages.length > 0) {
-          currentConvIdRef.current = convo.id
-          suppressNextSaveRef.current = true
-          replaceMessages(convo.messages)
+    (async () => {
+      try {
+        const lastId = sessionStorage.getItem('chat:currentId')
+        if (lastId) {
+          const convo = await getConversationAsync(lastId)
+          if (convo && Array.isArray(convo.messages) && convo.messages.length > 0) {
+            currentConvIdRef.current = convo.id
+            suppressNextSaveRef.current = true
+            replaceMessages(convo.messages)
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -146,13 +148,15 @@ export default function ChatClient() {
       suppressNextSaveRef.current = false
       return
     }
-    try {
-      const { id } = upsertFromMessages(messages, currentConvIdRef.current || undefined)
-      if (id) {
-        currentConvIdRef.current = id
-        sessionStorage.setItem('chat:currentId', id)
-      }
-    } catch {}
+    ;(async () => {
+      try {
+        const { id } = await upsertFromMessagesAsync(messages, currentConvIdRef.current || undefined)
+        if (id) {
+          currentConvIdRef.current = id
+          sessionStorage.setItem('chat:currentId', id)
+        }
+      } catch {}
+    })()
   }, [messages])
 
   // Listen for sidebar events to load or start chats
@@ -161,12 +165,14 @@ export default function ChatClient() {
       const ce = e as CustomEvent<{ id: string }>
       const id = ce?.detail?.id
       if (!id) return
-      const convo = getConversation(id)
-      if (!convo) return
-      currentConvIdRef.current = id
-      sessionStorage.setItem('chat:currentId', id)
-      suppressNextSaveRef.current = true
-      replaceMessages(convo.messages || [])
+      ;(async () => {
+        const convo = await getConversationAsync(id)
+        if (!convo) return
+        currentConvIdRef.current = id
+        sessionStorage.setItem('chat:currentId', id)
+        suppressNextSaveRef.current = true
+        replaceMessages(convo.messages || [])
+      })()
     }
     const onNew = () => {
       try { sessionStorage.removeItem('chat:currentId') } catch {}
