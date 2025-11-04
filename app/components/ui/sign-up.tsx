@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/app/lib/utils";
-import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback, createContext, Children } from "react";
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback, Children } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { ArrowRight, Mail, Gem, Lock, Eye, EyeOff, ArrowLeft, X, AlertCircle, PartyPopper, Loader } from "lucide-react";
 import { AnimatePresence, motion, useInView, type Variants, type Transition } from "framer-motion";
@@ -11,7 +11,7 @@ import confetti from "canvas-confetti";
 // --- CONFETTI LOGIC ---
 type Api = { fire: (options?: ConfettiOptions) => void }
 export type ConfettiRef = Api | null
-const ConfettiContext = createContext<Api>({} as Api)
+
 
 const Confetti = forwardRef<ConfettiRef, React.ComponentPropsWithRef<"canvas"> & { options?: ConfettiOptions; globalOptions?: ConfettiGlobalOptions; manualstart?: boolean }>((props, ref) => {
   const { options, globalOptions = { resize: true, useWorker: true }, manualstart = false, ...rest } = props
