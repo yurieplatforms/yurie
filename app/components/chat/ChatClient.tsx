@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/app/components/ui/reasoning'
 import { AIChatInput } from '@/app/components/ui/ai-chat-input'
 import { cn } from '@/app/lib/utils'
@@ -22,6 +22,15 @@ export default function ChatClient() {
   const inputWrapperRef = useRef<HTMLDivElement>(null)
   const [outputHeight, setOutputHeight] = useState<number>(0)
   const pinnedToBottomRef = useRef<boolean>(true)
+  const [isInitializing, setIsInitializing] = useState<boolean>(false)
+
+  // Before first paint on the client, detect if we should suppress empty layout to avoid flicker
+  useLayoutEffect(() => {
+    try {
+      const hasId = !!sessionStorage.getItem('chat:currentId')
+      if (hasId) setIsInitializing(true)
+    } catch {}
+  }, [])
 
   const { state, sendMessage, newChat, replaceMessages, changeTab } = useChatStream()
   const {
@@ -125,7 +134,8 @@ export default function ChatClient() {
 
   // Restore last conversation on mount
   useEffect(() => {
-    (async () => {
+    let cancelled = false
+    ;(async () => {
       try {
         const lastId = sessionStorage.getItem('chat:currentId')
         if (lastId) {
@@ -137,7 +147,9 @@ export default function ChatClient() {
           }
         }
       } catch {}
+      if (!cancelled) setIsInitializing(false)
     })()
+    return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -198,6 +210,8 @@ export default function ChatClient() {
   const handleTabChange = useCallback(async (msgIndex: number, tab: SearchTab, rawQuery: string) => {
     await changeTab(msgIndex, tab, rawQuery)
   }, [changeTab])
+
+  const isEmptyLayout = messages.length === 0 && !isInitializing
 
   return (
     <section ref={containerRef} className={cn('w-full h-full min-h-screen flex flex-col', messages.length === 0 && 'justify-center items-center max-w-[52rem] mx-auto')}>
@@ -326,13 +340,13 @@ export default function ChatClient() {
       </div>
       <div
         ref={inputWrapperRef}
-        className={cn('w-full px-2 sm:px-4', messages.length === 0 ? 'max-w-[52rem] -mt-52 sm:-mt-56 md:-mt-52 lg:-mt-48 xl:-mt-44' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-4')}
+        className={cn('w-full px-2 sm:px-4', isEmptyLayout ? 'max-w-[52rem] -mt-52 sm:-mt-56 md:-mt-52 lg:-mt-48 xl:-mt-44' : 'mt-2 mb-[calc(env(safe-area-inset-bottom)+12px)] sm:mb-4')}
         aria-busy={status === 'submitted' || status === 'streaming'}
       >
         <AIChatInput
           isLoading={status === 'streaming' || status === 'submitted'}
           className="max-w-[52rem] mx-auto"
-          isEmptyLayout={messages.length === 0}
+          isEmptyLayout={isEmptyLayout}
           onSend={(text) => {
             handleSendMessage(text)
           }}

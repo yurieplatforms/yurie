@@ -1,9 +1,10 @@
 "use client"
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { useSidebar } from './sidebar'
 import { cn } from '@/app/lib/utils'
-import { loadHistoryAsync, removeConversationAsync, clearHistoryAsync, type Conversation } from '@/app/lib/history'
+import { loadHistoryPageAsync, removeConversationAsync, clearHistoryAsync, type Conversation } from '@/app/lib/history'
 import { SquarePen, X } from 'lucide-react'
 
 function formatTime(ts: number): string {
@@ -25,20 +26,39 @@ function formatTime(ts: number): string {
 export function HistoryList() {
   const { open } = useSidebar()
   const [items, setItems] = useState<Conversation[]>([])
+  const [hasMore, setHasMore] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [offset, setOffset] = useState<number>(0)
   const [activeId, setActiveId] = useState<string | null>(null)
   const listRef = useRef<HTMLUListElement | null>(null)
+  const router = useRouter()
+  const pathname = usePathname()
+  const PAGE_SIZE = 50
+
+  const loadPage = useCallback(async (start: number) => {
+    setIsLoading(true)
+    try {
+      const { items: pageItems, hasMore } = await loadHistoryPageAsync(start, PAGE_SIZE)
+      setItems((prev) => start === 0 ? pageItems : [...prev, ...pageItems])
+      setHasMore(hasMore)
+      setOffset(start + pageItems.length)
+    } finally {
+      setIsLoading(false)
+      try { setActiveId(sessionStorage.getItem('chat:currentId')) } catch {}
+    }
+  }, [])
 
   const refresh = useCallback(() => {
-    ;(async () => {
-      const list = await loadHistoryAsync()
-      setItems(Array.isArray(list) ? list : [])
-      try { setActiveId(sessionStorage.getItem('chat:currentId')) } catch {}
-    })()
-  }, [])
+    loadPage(0)
+  }, [loadPage])
 
   useEffect(() => {
     refresh()
-    const onHist = () => refresh()
+    let refreshTimer: number | null = null
+    const onHist = () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer)
+      refreshTimer = window.setTimeout(() => refresh(), 120)
+    }
     const onLoad = (e: Event) => {
       const ce = e as CustomEvent<{ id: string }>
       setActiveId(ce?.detail?.id || null)
@@ -51,16 +71,27 @@ export function HistoryList() {
       window.removeEventListener('history:updated' as any, onHist as any)
       window.removeEventListener('chat:load' as any, onLoad as any)
       window.removeEventListener('chat:new' as any, onNew as any)
+      if (refreshTimer) window.clearTimeout(refreshTimer)
     }
   }, [refresh])
 
   const handleNew = useCallback(() => {
-    window.dispatchEvent(new CustomEvent('chat:new'))
-  }, [])
+    try { sessionStorage.removeItem('chat:currentId') } catch {}
+    if (pathname !== '/') {
+      router.push('/')
+    } else {
+      window.dispatchEvent(new CustomEvent('chat:new'))
+    }
+  }, [pathname, router])
 
   const handleOpen = useCallback((id: string) => {
-    window.dispatchEvent(new CustomEvent('chat:load', { detail: { id } }))
-  }, [])
+    try { sessionStorage.setItem('chat:currentId', id) } catch {}
+    if (pathname !== '/') {
+      router.push('/')
+    } else {
+      window.dispatchEvent(new CustomEvent('chat:load', { detail: { id } }))
+    }
+  }, [pathname, router])
 
   const handleDelete = useCallback((id: string) => {
     const confirmDelete = window.confirm('Delete this conversation?')
@@ -150,7 +181,9 @@ export function HistoryList() {
         className="flex flex-col gap-1 mt-1"
         onKeyDown={onKeyDown}
       >
-        {open && (items.length === 0 ? ListEmpty : items.map((c) => {
+        {open && (isLoading && items.length === 0 ? (
+          <div className="text-sm text-neutral-500 dark:text-neutral-400 px-1 py-2">Loading…</div>
+        ) : (items.length === 0 ? ListEmpty : items.map((c) => {
           const isActive = activeId === c.id
           return (
             <li
@@ -185,8 +218,20 @@ export function HistoryList() {
               </button>
             </li>
           )
-        }))}
+        })))}
       </ul>
+      {open && hasMore && (
+        <div className="mt-1">
+          <button
+            type="button"
+            className="w-full text-center rounded-md text-xs font-medium cursor-pointer bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-600 text-neutral-900 dark:text-neutral-100 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600"
+            onClick={() => loadPage(offset)}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Loading…' : 'Load more'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

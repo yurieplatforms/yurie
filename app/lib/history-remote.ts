@@ -8,7 +8,7 @@ type RemoteConversationRow = {
   id: string
   user_id: string
   title: string
-  messages: ChatMessage[]
+  messages?: ChatMessage[]
   created_at: string
   updated_at: string
 }
@@ -39,10 +39,14 @@ export async function fetchHistoryRemote(): Promise<Conversation[]> {
   if (!userData?.user) return []
   const { data, error } = await supabase
     .from('conversations')
-    .select('id,user_id,title,messages,created_at,updated_at')
+    .select('id,user_id,title,created_at,updated_at')
     .order('updated_at', { ascending: false })
   if (error) return []
-  return (data as RemoteConversationRow[] | null | undefined)?.map(toConversation) || []
+  // No messages selected for list view to minimize payload
+  return (data as RemoteConversationRow[] | null | undefined)?.map((row) => ({
+    ...toConversation(row),
+    messages: [],
+  })) || []
 }
 
 export async function getConversationByIdRemote(id: string): Promise<Conversation | null> {
@@ -56,6 +60,30 @@ export async function getConversationByIdRemote(id: string): Promise<Conversatio
     .maybeSingle()
   if (error || !data) return null
   return toConversation(data as RemoteConversationRow)
+}
+
+// Lightweight, paginated fetch for sidebar (summaries only, no messages)
+export async function fetchHistoryRemoteSummaries(offset: number, limit: number): Promise<{ items: Conversation[]; hasMore: boolean }>{
+  const supabase = getSupabaseClient()
+  const { data: userData } = await supabase.auth.getUser()
+  if (!userData?.user) return { items: [], hasMore: false }
+  const fetchCount = Math.max(1, limit + 1)
+  const from = Math.max(0, offset)
+  const to = from + fetchCount - 1
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('id,user_id,title,created_at,updated_at')
+    .order('updated_at', { ascending: false })
+    .range(from, to)
+  if (error) return { items: [], hasMore: false }
+  const rows = (data as RemoteConversationRow[] | null | undefined) || []
+  const hasMore = rows.length > limit
+  const sliced = hasMore ? rows.slice(0, limit) : rows
+  const items = sliced.map((row) => ({
+    ...toConversation(row),
+    messages: [],
+  }))
+  return { items, hasMore }
 }
 
 export async function upsertConversationFromMessagesRemote(messages: ChatMessage[], existingId?: string): Promise<{ id: string }> {

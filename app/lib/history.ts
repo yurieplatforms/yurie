@@ -7,7 +7,8 @@ import {
   getConversationByIdRemote, 
   upsertConversationFromMessagesRemote, 
   deleteConversationRemote, 
-  clearAllConversationsRemote 
+  clearAllConversationsRemote,
+  fetchHistoryRemoteSummaries
 } from '@/app/lib/history-remote'
 
 export type Conversation = {
@@ -106,6 +107,21 @@ export async function loadHistoryAsync(): Promise<Conversation[]> {
     }
   } catch {}
   return loadHistory().sort((a, b) => b.updatedAt - a.updatedAt)
+}
+
+// Paginated summaries for sidebar (remote-first). Messages are omitted to reduce payload.
+export async function loadHistoryPageAsync(offset: number, limit: number): Promise<{ items: Conversation[]; hasMore: boolean }>{
+  try {
+    const supabase = getSupabaseClient()
+    const { data } = await supabase.auth.getUser()
+    if (data?.user) {
+      return await fetchHistoryRemoteSummaries(offset, limit)
+    }
+  } catch {}
+  const all = loadHistory().sort((a, b) => b.updatedAt - a.updatedAt)
+  const items = all.slice(offset, offset + limit).map((c) => ({ ...c, messages: [] }))
+  const hasMore = all.length > offset + limit
+  return { items, hasMore }
 }
 
 export async function getConversationAsync(id: string): Promise<Conversation | null> {
