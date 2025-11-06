@@ -7,7 +7,6 @@ import { cn } from '@/app/lib/utils'
 export type SuggestionsListProps = {
   suggestions: string[]
   isFetching: boolean
-  inputValue: string
   highlightedIndex: number
   onHighlight: (index: number) => void
   onPick: (value: string) => void
@@ -16,7 +15,6 @@ export type SuggestionsListProps = {
 export const SuggestionsList: React.FC<SuggestionsListProps> = ({
   suggestions,
   isFetching,
-  inputValue,
   highlightedIndex,
   onHighlight,
   onPick,

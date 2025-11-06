@@ -341,7 +341,6 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
               <SuggestionsList
                 suggestions={inputValue.trim() ? suggestions : PLACEHOLDERS.slice(0, 8)}
                 isFetching={isFetchingSuggest}
-                inputValue={inputValue}
                 highlightedIndex={highlightedIndex}
                 onHighlight={(i) => setHighlightedIndex(i)}
                 onPick={(s) => handleSend(s)}
