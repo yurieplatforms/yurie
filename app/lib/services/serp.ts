@@ -42,5 +42,3 @@ export function mergeAndFilterVideos(googleVideos: any, yt: any): any[] {
   }
   return out
 }
-
-

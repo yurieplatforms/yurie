@@ -6,6 +6,7 @@ import { Plus, Send, Loader2 } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 import { useSuggest } from '@/app/hooks/useSuggest'
 import { SuggestionsList } from '@/app/components/ui/ai-chat-input/SuggestionsList'
+import { getRandomSuggestions, getRandomPlaceholderTexts, getFreshSuggestions } from '@/app/lib/suggestion-prompts'
 
 type AIChatInputProps = {
   onSend?: (text: string) => void
@@ -17,66 +18,20 @@ type AIChatInputProps = {
   isEmptyLayout?: boolean
 }
 
-const PLACEHOLDERS = [
-  // AI & Tech
-  "🧠 explain neural networks like I'm five",
-  "💻 best coding practices for beginners",
-  "🚀 upcoming tech trends to watch",
-  // Creative & Lifestyle
-  "🎨 unique weekend project ideas",
-  "☀️ how to start a morning routine",
-  "🎙️ best podcasts about philosophy",
-  // Science & Nature
-  "🐙 fascinating ocean creatures",
-  "🌌 how does gravity actually work",
-  "🌱 ways to live more sustainably",
-  // Learning & Skills
-  "🗣️ fastest way to learn a language",
-  "🧘 meditation techniques for focus",
-  "🎸 guitar chords for beginners",
-  // Culture & Entertainment
-  "🎬 hidden gem movies from 2024",
-  "🎷 history of jazz music",
-  "♟️ best board games for strategy",
-  // Adventure & Travel
-  "✈️ underrated travel destinations",
-  "🥾 hiking trails near me",
-  "🎒 how to plan a solo trip",
-]
-
-// Emoji-free variants used only for the animated placeholder text
-const PLACEHOLDER_TEXTS = [
-  // AI & Tech
-  "explain neural networks like I'm five",
-  "best coding practices for beginners",
-  "upcoming tech trends to watch",
-  // Creative & Lifestyle
-  "unique weekend project ideas",
-  "how to start a morning routine",
-  "best podcasts about philosophy",
-  // Science & Nature
-  "fascinating ocean creatures",
-  "how does gravity actually work",
-  "ways to live more sustainably",
-  // Learning & Skills
-  "fastest way to learn a language",
-  "meditation techniques for focus",
-  "guitar chords for beginners",
-  // Culture & Entertainment
-  "hidden gem movies from 2024",
-  "history of jazz music",
-  "best board games for strategy",
-  // Adventure & Travel
-  "underrated travel destinations",
-  "hiking trails near me",
-  "how to plan a solo trip",
-]
-
 const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading = false, className, isEmptyLayout = false }) => {
+  // Generate random suggestions once per component mount (client-side only)
+  const [PLACEHOLDERS, setPLACEHOLDERS] = useState<string[]>([])
+  const [PLACEHOLDER_TEXTS, setPLACEHOLDER_TEXTS] = useState<string[]>([])
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
   const [showPlaceholder, setShowPlaceholder] = useState(true)
   const [isActive, setIsActive] = useState(false)
   const [inputValue, setInputValue] = useState("")
+  
+  // Initialize suggestions after mount to avoid hydration mismatch
+  useEffect(() => {
+    setPLACEHOLDERS(getRandomSuggestions(8))
+    setPLACEHOLDER_TEXTS(getRandomPlaceholderTexts(18))
+  }, [])
   const {
     suggestions,
     highlightedIndex,
@@ -99,13 +54,14 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
     const interval = setInterval(() => {
       setShowPlaceholder(false)
       setTimeout(() => {
-        setPlaceholderIndex((prev) => (prev + 1) % PLACEHOLDER_TEXTS.length)
+        const len = Math.max(1, PLACEHOLDER_TEXTS.length)
+        setPlaceholderIndex((prev) => (prev + 1) % len)
         setShowPlaceholder(true)
       }, 400)
     }, 3000)
 
     return () => clearInterval(interval)
-  }, [isActive, inputValue, isEmptyLayout])
+  }, [isActive, inputValue, isEmptyLayout, PLACEHOLDER_TEXTS.length])
 
   // Close input when clicking outside
   useEffect(() => {
@@ -131,6 +87,8 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
         // Show default suggestions on focus/click when empty
         setShowSuggestions(true)
         setHighlightedIndex(-1)
+        // Refresh randomized defaults every time suggestions open
+        setPLACEHOLDERS(getFreshSuggestions(8))
       }
     }
   }
@@ -150,6 +108,13 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
     setShowSuggestions(true)
     updateQuery(q, isEmptyLayout, isActive)
   }, [inputValue, isEmptyLayout, isActive, resetSuggest, setShowSuggestions, setHighlightedIndex, updateQuery])
+
+  // Refresh defaults whenever the dropdown opens with an empty query
+  useEffect(() => {
+    if (showSuggestions && isEmptyLayout && !inputValue.trim()) {
+      setPLACEHOLDERS(getFreshSuggestions(8))
+    }
+  }, [showSuggestions, isEmptyLayout, inputValue])
 
   const handleSend = (overrideText?: string) => {
     const text = (overrideText ?? inputValue).trim()
@@ -216,8 +181,8 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
           <button
             type="button"
             className="p-2.5 rounded-full text-neutral-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-[#3A3A40] transition cursor-pointer"
-            title={isLoading ? 'Stop and start new chat' : 'New thread'}
-            aria-label={isLoading ? 'Stop and start new chat' : 'New thread'}
+            title={!isEmptyLayout ? "Start a new thread" : undefined}
+            aria-label={!isEmptyLayout ? "Start a new thread" : undefined}
             onClick={() => {
               // Trigger new chat action
               try { (onNewChat && onNewChat()) } catch {}
@@ -302,7 +267,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
             />
             <div className="absolute left-0 top-0 w-full h-full pointer-events-none flex items-center px-3 py-1.5">
               <AnimatePresence mode="wait">
-                {isEmptyLayout && showPlaceholder && !isActive && !inputValue && (
+                {isEmptyLayout && showPlaceholder && !isActive && !inputValue && PLACEHOLDER_TEXTS.length > 0 && (
                   <motion.span
                     key={placeholderIndex}
                     className="absolute left-0 top-1/2 -translate-y-1/2 text-gray-400 dark:text-neutral-500 select-none pointer-events-none"
@@ -317,7 +282,7 @@ const AIChatInput: React.FC<AIChatInputProps> = ({ onSend, onNewChat, isLoading 
                     animate="animate"
                     exit="exit"
                   >
-                    {getGraphemes(PLACEHOLDER_TEXTS[placeholderIndex])
+                    {getGraphemes(PLACEHOLDER_TEXTS[placeholderIndex] ?? "")
                       .map((char, i) => (
                         <motion.span
                           key={i}

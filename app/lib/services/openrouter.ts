@@ -1,7 +1,6 @@
 import type { ApiRequestBody } from '@/app/types/api'
 import type { OpenRouterConfig } from '@/app/lib/env'
 
-/** Convert a variety of delta shapes into text content. */
 export function toText(v: any): string {
   if (!v) return ''
   if (typeof v === 'string') return v
@@ -20,7 +19,6 @@ const sanitizeMeta = (s: unknown): string => {
   return str.replace(/[<>]/g, '')
 }
 
-/** Build multimodal messages according to OpenRouter's format. */
 export function buildOpenRouterMessages(body: ApiRequestBody): Array<any> {
   const allMessages = body.messages || []
   let lastUserIndex = -1
@@ -65,7 +63,6 @@ export function buildOpenRouterMessages(body: ApiRequestBody): Array<any> {
   })
 }
 
-/** Optional OpenRouter plugins based on request body. */
 export function buildPlugins(body: ApiRequestBody): Array<Record<string, unknown>> {
   const plugins: Array<Record<string, unknown>> = []
   if (body.inputPdfBase64?.length || body.inputPdfUrls?.length) {
@@ -77,7 +74,6 @@ export function buildPlugins(body: ApiRequestBody): Array<Record<string, unknown
   return plugins
 }
 
-/** Final OpenRouter payload for chat completions. */
 export function buildOpenRouterPayload(body: ApiRequestBody): Record<string, unknown> {
   const model = body.model || '@preset/yurie-ai'
   return {
@@ -92,10 +88,6 @@ export function buildOpenRouterPayload(body: ApiRequestBody): Record<string, unk
   }
 }
 
-/**
- * Fetch OpenRouter and transform SSE into a text stream for the client.
- * Emits custom tags: <response_id:...>, <thinking:...>, <summary_text:...>, <citation:{...}>{content}
- */
 export async function fetchOpenRouterStream(
   payload: Record<string, unknown>,
   cfg: OpenRouterConfig,
@@ -217,6 +209,4 @@ export async function fetchOpenRouterStream(
     },
   })
 }
-
-
 

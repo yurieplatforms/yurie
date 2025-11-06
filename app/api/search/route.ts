@@ -3,7 +3,8 @@ export const runtime = 'nodejs'
 import type { SearchRequest, SerpApiCommonParams } from '@/app/types/api'
 import { getSerpConfig } from '@/app/lib/env'
 import { json, jsonError } from '@/app/lib/http'
-import { fetchSerp, mergeAndFilterVideos, extractYouTubeIdFromUrl, normalizeLinkForKey, hasAnyVideoThumbCandidate } from '@/app/services/serp'
+import { fetchSerp, mergeAndFilterVideos } from '@/app/lib/services/serp'
+import { extractYouTubeIdFromUrl, normalizeLinkForKey, hasAnyVideoThumbCandidate } from '@/app/lib/serp-utils'
 
 export async function GET(req: Request) {
   try {
@@ -43,7 +44,6 @@ export async function GET(req: Request) {
       fetchSerp<any>({ engine: 'google', ...common }),
       fetchSerp<any>({ engine: 'google_images', ...common }),
       fetchSerp<any>({ engine: 'google_videos', ...common }),
-      // Per SerpApi docs, use tbm=nws for Google News to unlock clusters
       fetchSerp<any>({ engine: 'google', tbm: 'nws', ...common, kgmid }),
       fetchSerp<any>({ engine: 'youtube', search_query: q, api_key: apiKey, hl, gl, sp: yt_sp }),
     ])

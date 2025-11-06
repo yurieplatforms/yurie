@@ -3,7 +3,7 @@ export const runtime = 'nodejs'
 import type { ApiRequestBody } from '@/app/types/api'
 import { getOpenRouterConfig } from '@/app/lib/env'
 import { jsonError, methodNotAllowed } from '@/app/lib/http'
-import { buildOpenRouterPayload, fetchOpenRouterStream } from '@/app/services/openrouter'
+import { buildOpenRouterPayload, fetchOpenRouterStream } from '@/app/lib/services/openrouter'
 
 export async function POST(req: Request) {
   try {

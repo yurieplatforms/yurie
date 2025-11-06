@@ -74,7 +74,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="font-sans antialiased overflow-hidden h-screen flex">
-        {/* auto-sync dark mode with system preference (runs before interactive) */}
         <Script id="theme-sync" strategy="beforeInteractive">{`try{var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');var d=document.documentElement;var set=()=>{m.matches?d.classList.add('dark'):d.classList.remove('dark')};set();m&&m.addEventListener&&m.addEventListener('change',set);}catch(e){}`}</Script>
         <div className="flex flex-1 w-full">
           <Sidebar>

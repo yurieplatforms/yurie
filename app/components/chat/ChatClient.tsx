@@ -24,7 +24,6 @@ export default function ChatClient() {
   const pinnedToBottomRef = useRef<boolean>(true)
   const [isInitializing, setIsInitializing] = useState<boolean>(false)
 
-  // Before first paint on the client, detect if we should suppress empty layout to avoid flicker
   useLayoutEffect(() => {
     try {
       const hasId = !!sessionStorage.getItem('chat:currentId')
@@ -46,7 +45,6 @@ export default function ChatClient() {
     animateTabsByMessageIndex,
   } = state
 
-  // Compute output height based on viewport and input size
   useEffect(() => {
     const recompute = () => {
       try {

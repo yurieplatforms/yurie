@@ -3,7 +3,7 @@
 import { cn } from "@/app/lib/utils";
 import Link, { LinkProps } from "next/link";
 import React, { useState, useEffect, useRef, createContext, useContext } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { PanelLeft } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -197,8 +197,6 @@ export const DesktopSidebar = ({
         width: animate ? (open ? Math.round(width) : collapsedWidth) : Math.round(width),
       }}
       style={{ width: open ? Math.round(width) : collapsedWidth }}
-      onMouseEnter={() => { if (!pinned) setOpen(true); }}
-      onMouseLeave={() => { if (!pinned) setOpen(false); }}
       {...props}
     >
       <div
@@ -254,15 +252,15 @@ export const MobileSidebar = ({
             aria-label="Toggle sidebar"
             aria-controls="mobile-sidebar"
             aria-expanded={open}
-          className="rounded-md p-2 cursor-pointer hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 text-neutral-800 dark:text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600"
+            className="rounded-md p-2 cursor-pointer hover:bg-neutral-200/60 dark:hover:bg-neutral-700/60 text-neutral-800 dark:text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 dark:focus-visible:ring-neutral-600"
             onClick={() => setOpen(!open)}
           >
-          <PanelLeft className="h-4 w-4" />
+            <PanelLeft className="h-4 w-4" />
           </button>
           <div className="w-px h-6 bg-neutral-200 dark:bg-neutral-700 mx-3" />
           <Link
             href="/"
-            className="flex items-center space-x-2 font-normal text-sm !text-black dark:!text-white"
+            className="flex items-center gap-1.5 font-normal text-sm !text-black dark:!text-white"
           >
             <div className="flex-shrink-0">
               <Image

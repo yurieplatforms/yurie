@@ -81,7 +81,7 @@ export default function SettingsPage() {
       e.target.value = "";
       return;
     }
-    const maxBytes = 5 * 1024 * 1024; // 5MB
+    const maxBytes = 5 * 1024 * 1024;
     if (file.size > maxBytes) {
       setError("Image must be 5MB or smaller.");
       e.target.value = "";
@@ -162,7 +162,6 @@ export default function SettingsPage() {
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-full ring-1 ring-white/10 bg-gradient-to-br from-fuchsia-500 via-violet-500 to-blue-500 overflow-hidden">
                 {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                 ) : null}
               </div>
@@ -254,5 +253,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-

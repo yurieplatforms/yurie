@@ -13,9 +13,7 @@ export async function migrateLocalHistoryToSupabaseOnce(): Promise<boolean> {
     const flagKey = `chat:migrated:v1:${user.id}`
     try {
       if (localStorage.getItem(flagKey)) return false
-    } catch {
-      // ignore storage errors
-    }
+    } catch {}
 
     const { data: existing, error: existingErr } = await supabase
       .from('conversations')
@@ -53,5 +51,3 @@ export async function migrateLocalHistoryToSupabaseOnce(): Promise<boolean> {
     return false
   }
 }
-
-
