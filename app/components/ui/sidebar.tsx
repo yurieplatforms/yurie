@@ -148,7 +148,7 @@ export const DesktopSidebar = ({
   children,
   ...props
 }: DesktopSidebarProps) => {
-  const { open, setOpen, animate, width, setWidth, pinned } = useSidebar();
+  const { open, setOpen, animate, width, setWidth } = useSidebar();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const collapsedWidth = 60;
 
