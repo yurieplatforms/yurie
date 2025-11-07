@@ -79,7 +79,9 @@ export function useChatStream(): UseChatStreamApi {
       try {
         const urlExtraction = extractUrls(sanitizedUser)
         const selectedModel = '@preset/yurie-ai'
-        const payloadMessages = nextMessages.map((m) => ({ ...m, content: stripImageData(m.content) }))
+        const payloadMessages = nextMessages
+          .filter((m) => !(m.role === 'assistant' && (!m.content || (typeof m.content === 'string' && m.content.trim() === ''))))
+          .map((m) => ({ ...m, content: stripImageData(m.content) }))
         const ac = new AbortController()
         abortControllerRef.current = ac
 

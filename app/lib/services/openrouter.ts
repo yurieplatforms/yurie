@@ -21,11 +21,19 @@ const sanitizeMeta = (s: unknown): string => {
 
 export function buildOpenRouterMessages(body: ApiRequestBody): Array<any> {
   const allMessages = body.messages || []
+  // Defensive: drop any assistant messages with empty content
+  const filteredMessages = allMessages.filter((msg: any) => {
+    if (msg?.role !== 'assistant') return true
+    const c = msg?.content
+    if (typeof c === 'string') return c.trim().length > 0
+    return Boolean(c)
+  })
+
   let lastUserIndex = -1
-  for (let i = allMessages.length - 1; i >= 0; i--) {
-    if ((allMessages[i] as any)?.role === 'user') { lastUserIndex = i; break }
+  for (let i = filteredMessages.length - 1; i >= 0; i--) {
+    if ((filteredMessages[i] as any)?.role === 'user') { lastUserIndex = i; break }
   }
-  return allMessages.map((msg, index) => {
+  return filteredMessages.map((msg, index) => {
     const isLastUserMessage = msg.role === 'user' && index === lastUserIndex
     if (
       isLastUserMessage &&
