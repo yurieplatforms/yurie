@@ -17,7 +17,7 @@ import {
   MessageResponse,
 } from '@/components/ai-elements/message'
 import { ArrowUp, CheckIcon, CopyIcon, Paperclip, Square, X } from 'lucide-react'
-import { Spotlight } from '@/components/ui/spotlight'
+import { AnimatedBackground } from '@/components/ui/animated-background'
 
 type Role = UIMessage['role']
 
@@ -33,25 +33,44 @@ const initialMessages: ChatMessage[] = []
 
 const promptSuggestions = [
   {
-    title: 'History',
+    title: 'Chat about my layout idea',
     prompt:
-      'Explain a fascinating moment in history that changed the world.',
+      'Can you look at my product page idea and tell me what feels off or confusing?',
   },
   {
-    title: 'Quantum computing',
-    prompt: 'What are the latest breakthroughs in quantum computing?',
+    title: 'Turn a project into a story',
+    prompt:
+      'Help me turn one of my recent projects into a simple, readable case study.',
   },
   {
-    title: 'Hidden gem movies',
-    prompt: "Recommend hidden gem movies I probably haven't seen.",
+    title: 'Make my UI feel alive',
+    prompt:
+      'I want my app to feel more alive—what subtle animations or micro-interactions would you add?',
   },
   {
-    title: 'Deep ocean mysteries',
-    prompt: 'Tell me about unexplored mysteries of the deep ocean.',
+    title: 'Work smarter with AI',
+    prompt:
+      'Can you walk me through ways I could use AI to speed up my design and front-end work?',
   },
   {
-    title: 'Two-sun worlds',
-    prompt: 'What would life look like on a planet with two suns?',
+    title: 'Polish my landing page',
+    prompt:
+      'Here’s my landing page idea—help me write clearer, more convincing copy.',
+  },
+  {
+    title: 'Plan my next career moves',
+    prompt:
+      'I’m trying to grow as a design engineer at the intersection of design and AI—what should I focus on next?',
+  },
+  {
+    title: 'Think of things to write about',
+    prompt:
+      'Can you brainstorm a few blog post ideas I’d actually get excited to write?',
+  },
+  {
+    title: 'Clean up this React code',
+    prompt:
+      'I have a React component that feels messy—can you help me refactor it and explain your changes?',
   },
 ]
 
@@ -293,34 +312,37 @@ export function AgentChat() {
               <p className="mb-5 text-lg font-medium">
                 How can I help you?
               </p>
-              <div className="flex flex-col space-y-2">
-                {promptSuggestions.map((suggestion) => (
-                  <button
-                    key={suggestion.prompt}
-                    type="button"
-                    onClick={() => handleSuggestionClick(suggestion.prompt)}
-                    className="group relative w-full text-left cursor-pointer"
-                  >
-                    <div className="relative overflow-hidden rounded-2xl bg-zinc-300/30 p-[1px] dark:bg-zinc-600/30">
-                      <Spotlight
-                        className="from-zinc-900 via-zinc-800 to-zinc-700 blur-2xl dark:from-zinc-100 dark:via-zinc-200 dark:to-zinc-50"
-                        size={64}
-                      />
-                      <div className="relative h-full w-full rounded-[15px] bg-white p-4 dark:bg-zinc-950">
-                        <div className="relative flex w-full flex-row justify-between">
-                          <div>
-                            <h4 className="font-normal dark:text-zinc-100">
-                              {suggestion.title}
-                            </h4>
-                            <p className="text-zinc-500 dark:text-zinc-400">
-                              {suggestion.prompt}
-                            </p>
-                          </div>
-                        </div>
+              <div className="flex flex-col space-y-0">
+                <AnimatedBackground
+                  enableHover
+                  className="h-full w-full rounded-lg bg-zinc-100 dark:bg-zinc-900/80"
+                  transition={{
+                    type: 'spring',
+                    bounce: 0,
+                    duration: 0.2,
+                  }}
+                >
+                  {promptSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.prompt}
+                      type="button"
+                      onClick={() =>
+                        handleSuggestionClick(suggestion.prompt)
+                      }
+                      className="-mx-3 w-full cursor-pointer rounded-xl px-3 py-3 text-left"
+                      data-id={suggestion.title}
+                    >
+                      <div className="flex flex-col space-y-1">
+                        <h4 className="font-normal dark:text-zinc-100">
+                          {suggestion.title}
+                        </h4>
+                        <p className="text-zinc-500 dark:text-zinc-400">
+                          {suggestion.prompt}
+                        </p>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  ))}
+                </AnimatedBackground>
               </div>
             </div>
           )}

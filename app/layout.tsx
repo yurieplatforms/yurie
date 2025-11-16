@@ -18,11 +18,11 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   title: {
-    default: 'Yurie - Personal website template',
-    template: '%s | Yurie',
+    default: 'Yurie Platforms',
+    template: '%s | Yurie Platforms',
   },
   description:
-    'Yurie is a free and open-source personal website template built with Next.js 15, React 19 and Motion-Primitives.',
+    'Yurie Platforms is a free and open-source personal website template built with Next.js 15, React 19 and Motion-Primitives.',
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',

@@ -2,10 +2,10 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Yurie',
-    short_name: 'Yurie',
+    name: 'Yurie Platforms',
+    short_name: 'Yurie Platforms',
     description:
-      'Yurie is a personal website template focused on intuitive, performant web experiences.',
+      'Yurie Platforms is a personal website template focused on intuitive, performant web experiences.',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
