@@ -9,6 +9,7 @@ type ChatMessage = {
 
 type AgentRequestBody = {
   messages: ChatMessage[]
+  useWebSearch?: boolean
 }
 
 const OPENROUTER_API_URL =
@@ -32,6 +33,8 @@ export async function POST(request: Request) {
       { status: 400 },
     )
   }
+
+  const { messages, useWebSearch } = body
 
   const apiKey = process.env.OPENROUTER_API_KEY
 
@@ -60,7 +63,16 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model: 'openai/gpt-5.1',
         stream: true,
-        messages: body.messages,
+        messages,
+        ...(useWebSearch
+          ? {
+              plugins: [
+                {
+                  id: 'web',
+                },
+              ],
+            }
+          : {}),
       }),
     })
 

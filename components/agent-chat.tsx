@@ -16,7 +16,15 @@ import {
   MessageContent,
   MessageResponse,
 } from '@/components/ai-elements/message'
-import { ArrowUp, CheckIcon, CopyIcon, Paperclip, Square, X } from 'lucide-react'
+import {
+  ArrowUp,
+  CheckIcon,
+  CopyIcon,
+  Paperclip,
+  Globe,
+  Square,
+  X,
+} from 'lucide-react'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 
 type Role = UIMessage['role']
@@ -33,44 +41,44 @@ const initialMessages: ChatMessage[] = []
 
 const promptSuggestions = [
   {
-    title: 'Chat about my layout idea',
+    title: 'Explore a moment in history',
     prompt:
-      'Can you look at my product page idea and tell me what feels off or confusing?',
+      'Tell me an interesting story about a lesser-known historical event and why it mattered.',
   },
   {
-    title: 'Turn a project into a story',
+    title: 'Break down a science concept',
     prompt:
-      'Help me turn one of my recent projects into a simple, readable case study.',
+      'Explain a complex science idea in simple terms, using real-world analogies so I can truly understand it.',
   },
   {
-    title: 'Make my UI feel alive',
+    title: 'Unpack a myth or legend',
     prompt:
-      'I want my app to feel more alive—what subtle animations or micro-interactions would you add?',
+      'Pick a famous myth or legend and walk me through its origins, symbols, and possible meanings.',
   },
   {
-    title: 'Work smarter with AI',
+    title: 'Fun facts about the universe',
     prompt:
-      'Can you walk me through ways I could use AI to speed up my design and front-end work?',
+      'Share a few surprising facts about space, time, or the universe that will blow my mind.',
   },
   {
-    title: 'Polish my landing page',
+    title: 'Debunk a common misconception',
     prompt:
-      'Here’s my landing page idea—help me write clearer, more convincing copy.',
+      'Take a popular misconception from history or science and correct it for me with clear evidence.',
   },
   {
-    title: 'Plan my next career moves',
+    title: 'Create a legendary character',
     prompt:
-      'I’m trying to grow as a design engineer at the intersection of design and AI—what should I focus on next?',
+      'Help me invent a legendary hero or villain, including their backstory, abilities, and flaws.',
   },
   {
-    title: 'Think of things to write about',
+    title: 'Recommend something to watch',
     prompt:
-      'Can you brainstorm a few blog post ideas I’d actually get excited to write?',
+      'Recommend a movie or series based on my mood and explain why it is a great fit.',
   },
   {
-    title: 'Clean up this React code',
+    title: 'Plan an entertaining trivia night',
     prompt:
-      'I have a React component that feels messy—can you help me refactor it and explain your changes?',
+      'Help me create trivia questions that mix history, science, legends, and entertainment.',
   },
 ]
 
@@ -81,6 +89,7 @@ export function AgentChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [files, setFiles] = useState<File[]>([])
+  const [useWebSearch, setUseWebSearch] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
   const [hasJustCopied, setHasJustCopied] = useState(false)
 
@@ -134,6 +143,7 @@ export function AgentChat() {
             role,
             content,
           })),
+          useWebSearch,
         }),
       })
 
@@ -390,41 +400,65 @@ export function AgentChat() {
               )}
 
               <PromptInputTextarea placeholder="Ask me anything..." />
-              <PromptInputActions>
-                <PromptInputAction tooltip="Attach files">
-                  <label
-                    htmlFor="file-upload"
-                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-2xl hover:bg-zinc-900/5 dark:hover:bg-zinc-50/10"
-                  >
-                    <input
-                      ref={uploadInputRef}
-                      type="file"
-                      multiple
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="file-upload"
-                    />
-                    <Paperclip className="h-4 w-4 text-zinc-400" />
-                  </label>
-                </PromptInputAction>
+              <PromptInputActions className="justify-between">
+                <div className="-ml-2 flex items-center gap-2">
+                  <PromptInputAction>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        setUseWebSearch((prev) => !prev)
+                      }}
+                      className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-2xl px-3 text-xs font-medium transition-colors ${
+                        useWebSearch
+                          ? 'bg-zinc-900/5 text-zinc-900 dark:bg-zinc-50/10 dark:text-zinc-50'
+                          : 'text-zinc-500 hover:bg-zinc-900/5 dark:text-zinc-400 dark:hover:bg-zinc-50/10'
+                      }`}
+                      aria-pressed={useWebSearch}
+                      aria-label="Toggle web search"
+                    >
+                      <Globe className="h-4 w-4" />
+                      <span>Web Search</span>
+                    </button>
+                  </PromptInputAction>
+                </div>
 
-                <PromptInputAction
-                  tooltip={isLoading ? 'Stop generation' : 'Send message'}
-                >
-                  <Button
-                    variant="default"
-                    size="icon"
-                    className="h-8 w-8 rounded-full bg-zinc-300 text-zinc-900 hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-800"
-                    onClick={handleSubmit}
-                    disabled={isLoading && input.trim().length === 0}
+                <div className="flex items-center gap-2">
+                  <PromptInputAction tooltip="Attach files">
+                    <label
+                      htmlFor="file-upload"
+                      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-2xl hover:bg-zinc-900/5 dark:hover:bg-zinc-50/10"
+                    >
+                      <input
+                        ref={uploadInputRef}
+                        type="file"
+                        multiple
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="file-upload"
+                      />
+                      <Paperclip className="h-4 w-4 text-zinc-400" />
+                    </label>
+                  </PromptInputAction>
+
+                  <PromptInputAction
+                    tooltip={isLoading ? 'Stop generation' : 'Send message'}
                   >
-                    {isLoading ? (
-                      <Square className="h-4 w-4 fill-current" />
-                    ) : (
-                      <ArrowUp className="h-4 w-4" />
-                    )}
-                  </Button>
-                </PromptInputAction>
+                    <Button
+                      variant="default"
+                      size="icon"
+                      className="h-8 w-8 cursor-pointer rounded-full bg-zinc-900/5 text-zinc-900 hover:bg-zinc-900/10 dark:bg-zinc-50/10 dark:text-zinc-50 dark:hover:bg-zinc-50/20"
+                      onClick={handleSubmit}
+                      disabled={isLoading && input.trim().length === 0}
+                    >
+                      {isLoading ? (
+                        <Square className="h-4 w-4 fill-current" />
+                      ) : (
+                        <ArrowUp className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </PromptInputAction>
+                </div>
               </PromptInputActions>
             </PromptInput>
           </div>
