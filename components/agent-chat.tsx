@@ -293,15 +293,15 @@ export function AgentChat() {
         )}
       </div>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 w-full px-4">
-        <div className="pointer-events-auto mx-auto w-full max-w-screen-sm">
-          <div className="bg-white px-4 pb-4 pt-3 dark:bg-zinc-950 sm:pb-5">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 w-full">
+        <div className="pointer-events-auto mx-auto w-full max-w-screen-sm px-4">
+          <div className="bg-white pb-4 pt-3 dark:bg-zinc-950 sm:pb-5">
             <PromptInput
               isLoading={isLoading}
               value={input}
               onValueChange={setInput}
               onSubmit={handleSubmit}
-              className="w-full max-w-(--breakpoint-md)"
+              className="w-full"
             >
               {files.length > 0 && (
                 <div className="-ml-2 flex flex-wrap gap-2 pb-2">
