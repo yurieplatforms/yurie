@@ -49,7 +49,10 @@ export default function RootLayout({
           storageKey="theme"
           defaultTheme="system"
         >
-          <div className="flex min-h-screen w-full flex-col font-[family-name:var(--font-inter-tight)]">
+          <div
+            className="flex min-h-screen w-full flex-col font-[family-name:var(--font-inter-tight)]"
+            style={{ minHeight: '100svh' }}
+          >
             <div className="relative mx-auto w-full max-w-screen-sm flex-1 px-4 pt-20">
               <Header />
               {children}
