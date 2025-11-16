@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { UIMessage } from 'ai'
 import {
   PromptInput,
@@ -48,39 +48,6 @@ export function AgentChat() {
   const [files, setFiles] = useState<File[]>([])
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
   const [hasJustCopied, setHasJustCopied] = useState(false)
-
-  // On mobile, lock page scrolling by default on the agent page and
-  // only enable it once the AI starts generating a response.
-  const [hasEnabledScroll, setHasEnabledScroll] = useState(false)
-
-  // Apply the scroll lock on first render for mobile viewports.
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const isMobile = window.matchMedia('(max-width: 640px)').matches
-    if (!isMobile || hasEnabledScroll) return
-
-    const root = document.documentElement
-    root.classList.add('agent-scroll-locked')
-
-    return () => {
-      root.classList.remove('agent-scroll-locked')
-    }
-  }, [hasEnabledScroll])
-
-  // As soon as the AI starts generating (isLoading becomes true),
-  // remove the scroll lock and keep scrolling enabled afterwards.
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (!isLoading || hasEnabledScroll) return
-
-    const isMobile = window.matchMedia('(max-width: 640px)').matches
-    if (!isMobile) return
-
-    const root = document.documentElement
-    root.classList.remove('agent-scroll-locked')
-    setHasEnabledScroll(true)
-  }, [isLoading, hasEnabledScroll])
 
   const sendMessage = async (rawContent?: string) => {
     const source = rawContent ?? input
