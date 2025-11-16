@@ -295,7 +295,7 @@ export function AgentChat() {
         </div>
       </div>
 
-      <div className="sticky bottom-0 z-30 -mx-4 border-t border-zinc-100 bg-white/95 px-4 pb-[env(safe-area-inset-bottom)] pt-2 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/95">
+      <div className="sticky bottom-0 z-30 -mx-4 bg-white/95 px-4 pb-1 pt-2 sm:pb-2 backdrop-blur-sm dark:bg-zinc-950/95">
         <PromptInput
           isLoading={isLoading}
           value={input}
