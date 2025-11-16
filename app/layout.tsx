@@ -15,14 +15,20 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://yurie-fawn.vercel.app/'),
   alternates: {
-    canonical: '/'
+    canonical: '/',
   },
   title: {
     default: 'Yurie - Personal website template',
-    template: '%s | Yurie'
+    template: '%s | Yurie',
   },
-  description:  'Yurie is a free and open-source personal website template built with Next.js 15, React 19 and Motion-Primitives.',
-};
+  description:
+    'Yurie is a free and open-source personal website template built with Next.js 15, React 19 and Motion-Primitives.',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
+}
 
 const geist = Geist({
   variable: '--font-geist',
