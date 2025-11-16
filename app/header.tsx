@@ -13,22 +13,25 @@ export function Header() {
 
   return (
     <header className="mb-8 flex items-center justify-between">
-      <div>
-        <Link href="/" className="font-medium text-black dark:text-white">
+      <div className="flex items-center gap-1.5">
+        <Link
+          href="/"
+          className="text-lg font-medium text-black dark:text-white"
+        >
           Yurie
         </Link>
         <TextEffect
-          as="p"
+          as="span"
           preset="fade"
           per="char"
-          className="text-zinc-600 dark:text-zinc-500"
+          className="text-lg text-zinc-600 dark:text-zinc-500"
           delay={0.5}
         >
-          Technologies
+          Platforms
         </TextEffect>
       </div>
 
-      <nav className="flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
+      <nav className="flex items-center gap-4 text-base text-zinc-500 dark:text-zinc-400">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href
           return (

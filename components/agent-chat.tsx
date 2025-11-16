@@ -243,10 +243,10 @@ export function AgentChat() {
                   <MessageContent from={message.role}>
                     {isStreamingPlaceholder ? (
                       <p className="whitespace-pre-wrap">
-                        <span className="inline-flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                        <span className="inline-flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
                           <Loader
                             variant="text-shimmer"
-                            size="sm"
+                            size="lg"
                             text="Thinking…"
                           />
                         </span>

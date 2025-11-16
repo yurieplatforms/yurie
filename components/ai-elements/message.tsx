@@ -52,13 +52,15 @@ export const MessageContent = ({
 }: MessageContentProps) => (
   <div
     className={cn(
-      "flex max-w-full flex-col gap-2 overflow-hidden text-sm",
+      // Match assistant text size (blog-style prose)
+      "flex max-w-full flex-col gap-2 overflow-hidden text-base",
       from === "user"
         ? [
             // User bubble: align with blog card surfaces
             "w-fit ml-auto rounded-2xl border px-4 py-3 text-zinc-900 shadow-sm",
             "border-zinc-200 bg-zinc-100/90",
-            "dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-50",
+            // Dark mode bubble color override
+            "dark:border-zinc-800 dark:bg-[#202020] dark:text-zinc-50",
           ]
         : "w-full text-zinc-900 dark:text-zinc-100",
       className

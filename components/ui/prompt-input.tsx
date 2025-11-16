@@ -57,8 +57,8 @@ export function PromptInput({
           'rounded-3xl border pl-5 pr-2 py-3',
           // Light theme — align with blog card surfaces
           'border-zinc-200 bg-zinc-100/90 text-zinc-900',
-          // Dark theme — align with blog card surfaces
-          'dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-50',
+          // Dark theme — align with user bubble color
+          'dark:border-zinc-800 dark:bg-[#202020] dark:text-zinc-50',
           // Subtle shadow, slightly softer
           'shadow-sm shadow-black/10 dark:shadow-black/40',
           className,
@@ -127,7 +127,8 @@ export function PromptInputTextarea({
       style={{ maxHeight, ...(props.style ?? {}) }}
       rows={rows}
       className={cn(
-        'flex-1 w-full resize-none bg-transparent text-[16px] text-zinc-900 outline-none ring-0 transition sm:text-sm',
+        // Match chat message text size
+        'flex-1 w-full resize-none bg-transparent text-base text-zinc-900 outline-none ring-0 transition',
         'placeholder:text-zinc-400',
         'focus:border-none focus:ring-0 focus:outline-none',
         'dark:text-zinc-50 dark:placeholder:text-zinc-500',

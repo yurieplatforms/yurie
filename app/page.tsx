@@ -37,8 +37,11 @@ export default function Personal() {
       >
         <div className="flex-1">
           <p className="text-zinc-600 dark:text-zinc-400">
-            Focused on creating intuitive and performant web experiences.
-            Bridging the gap between design and development.
+            Yurie Platforms is a minimal, opinionated starting point for modern
+            product sites and personal hubs. It focuses on clean typography,
+            responsive motion, and AI-native workflows so you can tell your
+            story clearly without fighting the front-end stack. Built to stay
+            fast, accessible, and easy to extend as your ideas grow.
           </p>
         </div>
       </motion.section>
