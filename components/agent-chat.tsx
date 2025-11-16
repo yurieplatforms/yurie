@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { UIMessage } from 'ai'
 import {
   PromptInput,
@@ -32,9 +32,11 @@ const createId = () => Math.random().toString(36).slice(2)
 const initialMessages: ChatMessage[] = []
 
 const promptSuggestions = [
-  'Help me break down a complex task into clear steps.',
-  'Debug this code and explain what was wrong.',
-  'Brainstorm ideas for improving this product experience.',
+  'Explain a fascinating moment in history that changed the world.',
+  'What are the latest breakthroughs in quantum computing?',
+  'Recommend hidden gem movies I probably haven\'t seen.',
+  'Tell me about unexplored mysteries of the deep ocean.',
+  'What would life look like on a planet with two suns?',
 ]
 
 export function AgentChat() {
@@ -46,6 +48,45 @@ export function AgentChat() {
   const [files, setFiles] = useState<File[]>([])
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
   const [hasJustCopied, setHasJustCopied] = useState(false)
+
+  const [hasAssistantResponse, setHasAssistantResponse] =
+    useState(false)
+  const originalOverflowRef = useRef<string | null>(null)
+
+  // Enable page scrolling only after the agent has produced
+  // at least one non-empty assistant message.
+  useEffect(() => {
+    if (
+      !hasAssistantResponse &&
+      messages.some(
+        (message) =>
+          message.role === 'assistant' &&
+          message.content.trim().length > 0,
+      )
+    ) {
+      setHasAssistantResponse(true)
+    }
+  }, [messages, hasAssistantResponse])
+
+  // Lock body scroll on the agent page by default and restore it
+  // once an assistant response has been generated (or on unmount).
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    if (originalOverflowRef.current === null) {
+      originalOverflowRef.current = document.body.style.overflow
+    }
+
+    document.body.style.overflow = hasAssistantResponse
+      ? originalOverflowRef.current ?? ''
+      : 'hidden'
+
+    return () => {
+      if (typeof document === 'undefined') return
+      document.body.style.overflow =
+        originalOverflowRef.current ?? ''
+    }
+  }, [hasAssistantResponse])
 
   const sendMessage = async (rawContent?: string) => {
     const source = rawContent ?? input
@@ -276,7 +317,7 @@ export function AgentChat() {
                     key={suggestion}
                     type="button"
                     onClick={() => handleSuggestionClick(suggestion)}
-                    className="group relative inline-flex shrink-0 items-center gap-[1px] rounded-full bg-zinc-100 px-2.5 py-1 text-sm text-black transition-colors duration-200 hover:bg-zinc-950 hover:text-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+                    className="group relative inline-flex shrink-0 items-center gap-[1px] rounded-full bg-zinc-100 px-2.5 py-1 text-sm text-black transition-colors duration-200 hover:bg-zinc-950 hover:text-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700 cursor-pointer"
                   >
                     {suggestion}
                   </button>

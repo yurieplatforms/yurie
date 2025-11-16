@@ -1,6 +1,7 @@
 'use client'
 import { TextEffect } from '@/components/ui/text-effect'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 const NAV_ITEMS = [
   { href: '/', label: 'Home' },
@@ -8,6 +9,8 @@ const NAV_ITEMS = [
 ] as const
 
 export function Header() {
+  const pathname = usePathname()
+
   return (
     <header className="mb-8 flex items-center justify-between">
       <div>
@@ -26,15 +29,22 @@ export function Header() {
       </div>
 
       <nav className="flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
-        {NAV_ITEMS.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="transition-colors hover:text-zinc-950 dark:hover:text-zinc-50"
-          >
-            {item.label}
-          </Link>
-        ))}
+        {NAV_ITEMS.map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`transition-colors ${
+                isActive
+                  ? 'text-white dark:text-white'
+                  : 'hover:text-zinc-950 dark:hover:text-zinc-50'
+              }`}
+            >
+              {item.label}
+            </Link>
+          )
+        })}
       </nav>
     </header>
   )
