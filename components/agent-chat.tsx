@@ -13,11 +13,10 @@ import { Loader } from '@/components/prompt-kit/loader'
 import {
   Message,
   MessageActions,
-  MessageAction,
   MessageContent,
   MessageResponse,
 } from '@/components/ai-elements/message'
-import { ArrowUp, CopyIcon, Paperclip, Square, X } from 'lucide-react'
+import { ArrowUp, CheckIcon, CopyIcon, Paperclip, Square, X } from 'lucide-react'
 import { Spotlight } from '@/components/ui/spotlight'
 
 type Role = UIMessage['role']
@@ -221,7 +220,7 @@ export function AgentChat() {
       .writeText(content)
       .then(() => {
         setHasJustCopied(true)
-        setTimeout(() => setHasJustCopied(false), 300)
+        setTimeout(() => setHasJustCopied(false), 2000)
       })
       .catch(() => {
         // ignore clipboard errors
@@ -268,17 +267,21 @@ export function AgentChat() {
                   isLastMessage &&
                   message.content.trim().length > 0 && (
                     <MessageActions>
-                      <MessageAction
-                        label="Copy message"
+                      <button
+                        type="button"
                         onClick={() => handleCopyMessage(message.content)}
-                        className={
-                          hasJustCopied
-                            ? 'scale-90 bg-zinc-900/5 dark:bg-zinc-50/10'
-                            : ''
-                        }
+                        className={`cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 ${
+                          hasJustCopied ? 'scale-95' : ''
+                        }`}
+                        aria-label="Copy message"
+                        title="Copy message"
                       >
-                        <CopyIcon className="h-3 w-3" />
-                      </MessageAction>
+                        {hasJustCopied ? (
+                          <CheckIcon size={14} />
+                        ) : (
+                          <CopyIcon size={14} />
+                        )}
+                      </button>
                     </MessageActions>
                   )}
               </div>
