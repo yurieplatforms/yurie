@@ -320,7 +320,7 @@ export const MessageBranchPage = ({
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
+  ({ className, components, ...props }: MessageResponseProps) => (
     <Streamdown
       className={cn(
         // Match blog typography (see blog layout) for AI-generated content
@@ -333,6 +333,35 @@ export const MessageResponse = memo(
         "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className
       )}
+      // Keep Streamdown's rich code block UI (header, controls), but make
+      // structural elements match blog-style prose.
+      components={{
+        blockquote({ children, ...rest }: any) {
+          return <blockquote {...rest}>{children}</blockquote>;
+        },
+        hr(rest: any) {
+          return <hr {...rest} />;
+        },
+        table({ children, ...rest }: any) {
+          return <table {...rest}>{children}</table>;
+        },
+        thead({ children, ...rest }: any) {
+          return <thead {...rest}>{children}</thead>;
+        },
+        tbody({ children, ...rest }: any) {
+          return <tbody {...rest}>{children}</tbody>;
+        },
+        tr({ children, ...rest }: any) {
+          return <tr {...rest}>{children}</tr>;
+        },
+        th({ children, ...rest }: any) {
+          return <th {...rest}>{children}</th>;
+        },
+        td({ children, ...rest }: any) {
+          return <td {...rest}>{children}</td>;
+        },
+        ...components,
+      }}
       {...props}
     />
   ),
