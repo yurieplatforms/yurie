@@ -5,15 +5,16 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Yurie',
     short_name: 'Yurie',
     description:
-      'Yurie is a free and open-source personal website template built with Next.js 15, React 19 and Motion-Primitives.',
+      'Yurie is a personal website template focused on intuitive, performant web experiences.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#020617',
+    background_color: '#ffffff',
     theme_color: '#ffffff',
+    orientation: 'portrait-primary',
     icons: [
       {
         src: '/favicon.ico',
-        sizes: 'any',
+        sizes: '48x48',
         type: 'image/x-icon',
       },
     ],

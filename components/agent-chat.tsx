@@ -210,161 +210,163 @@ export function AgentChat() {
   }
 
   return (
-    <div className="relative flex flex-col">
-      <div className="flex-1">
-        <div className="flex flex-col gap-4 pb-4">
-          <div className="space-y-3">
-            {messages.map((message, index) => {
-              const isAssistant = message.role === 'assistant'
-              const isStreamingPlaceholder =
-                isAssistant && isLoading && message.content.length === 0
-              const isLastMessage = index === messages.length - 1
+    <div className="relative">
+      <div className="flex flex-col gap-4 pb-32">
+        <div className="space-y-3">
+          {messages.map((message, index) => {
+            const isAssistant = message.role === 'assistant'
+            const isStreamingPlaceholder =
+              isAssistant && isLoading && message.content.length === 0
+            const isLastMessage = index === messages.length - 1
 
-              return (
-                <div key={message.id} className="flex flex-col gap-1">
-                  <Message from={message.role}>
-                    <MessageContent from={message.role}>
-                      {isStreamingPlaceholder ? (
-                        <p className="whitespace-pre-wrap">
-                          <span className="inline-flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                            <Loader
-                              variant="text-shimmer"
-                              size="sm"
-                              text="Thinking…"
-                            />
-                          </span>
-                        </p>
-                      ) : message.role === 'assistant' ? (
-                        <MessageResponse>{message.content}</MessageResponse>
-                      ) : (
-                        <p className="whitespace-pre-wrap">
-                          {message.content}
-                        </p>
-                      )}
-                    </MessageContent>
-                  </Message>
-
-                  {message.role === 'assistant' &&
-                    !isStreamingPlaceholder &&
-                    isLastMessage &&
-                    message.content.trim().length > 0 && (
-                      <MessageActions>
-                        <MessageAction
-                          label="Copy message"
-                          onClick={() => handleCopyMessage(message.content)}
-                          className={
-                            hasJustCopied
-                              ? 'scale-90 bg-zinc-900/5 dark:bg-zinc-50/10'
-                              : ''
-                          }
-                        >
-                          <CopyIcon className="h-3 w-3" />
-                        </MessageAction>
-                      </MessageActions>
+            return (
+              <div key={message.id} className="flex flex-col gap-1">
+                <Message from={message.role}>
+                  <MessageContent from={message.role}>
+                    {isStreamingPlaceholder ? (
+                      <p className="whitespace-pre-wrap">
+                        <span className="inline-flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                          <Loader
+                            variant="text-shimmer"
+                            size="sm"
+                            text="Thinking…"
+                          />
+                        </span>
+                      </p>
+                    ) : message.role === 'assistant' ? (
+                      <MessageResponse>{message.content}</MessageResponse>
+                    ) : (
+                      <p className="whitespace-pre-wrap">
+                        {message.content}
+                      </p>
                     )}
-                </div>
-              )
-            })}
+                  </MessageContent>
+                </Message>
 
-            {!isLoading && messages.length === 0 && (
-              <div className="space-y-2 text-sm text-zinc-500 dark:text-zinc-400">
-                <p className="font-medium text-zinc-600 dark:text-zinc-300">
-                  Try one of these prompts:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {promptSuggestions.map((suggestion) => (
-                    <button
-                      key={suggestion}
-                      type="button"
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className="group relative inline-flex shrink-0 items-center gap-[1px] rounded-full bg-zinc-100 px-2.5 py-1 text-sm text-black transition-colors duration-200 hover:bg-zinc-950 hover:text-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
+                {message.role === 'assistant' &&
+                  !isStreamingPlaceholder &&
+                  isLastMessage &&
+                  message.content.trim().length > 0 && (
+                    <MessageActions>
+                      <MessageAction
+                        label="Copy message"
+                        onClick={() => handleCopyMessage(message.content)}
+                        className={
+                          hasJustCopied
+                            ? 'scale-90 bg-zinc-900/5 dark:bg-zinc-50/10'
+                            : ''
+                        }
+                      >
+                        <CopyIcon className="h-3 w-3" />
+                      </MessageAction>
+                    </MessageActions>
+                  )}
               </div>
-            )}
-          </div>
+            )
+          })}
 
-          {error && (
-            <p className="text-xs text-red-500 dark:text-red-400">
-              {error}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="sticky bottom-0 z-30 -mx-4 bg-white/95 px-4 pb-1 pt-2 sm:pb-2 backdrop-blur-sm dark:bg-zinc-950/95">
-        <PromptInput
-          isLoading={isLoading}
-          value={input}
-          onValueChange={setInput}
-          onSubmit={handleSubmit}
-          className="w-full"
-        >
-          {files.length > 0 && (
-            <div className="-ml-2 flex flex-wrap gap-2 pb-2">
-              {files.map((file, index) => (
-                <div
-                  key={`${file.name}-${index}`}
-                  className="flex items-center gap-2 rounded-3xl bg-zinc-900/5 px-3 py-2 text-xs text-zinc-700 dark:bg-zinc-50/10 dark:text-zinc-200"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <Paperclip className="h-3.5 w-3.5" />
-                  <span className="max-w-[140px] truncate">
-                    {file.name}
-                  </span>
+          {!isLoading && messages.length === 0 && (
+            <div className="space-y-2 text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="font-medium text-zinc-600 dark:text-zinc-300">
+                Try one of these prompts:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {promptSuggestions.map((suggestion) => (
                   <button
+                    key={suggestion}
                     type="button"
-                    onClick={() => handleRemoveFile(index)}
-                    className="rounded-full p-1 hover:bg-zinc-900/5 dark:hover:bg-zinc-50/10"
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="group relative inline-flex shrink-0 items-center gap-[1px] rounded-full bg-zinc-100 px-2.5 py-1 text-sm text-black transition-colors duration-200 hover:bg-zinc-950 hover:text-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    {suggestion}
                   </button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
+        </div>
 
-          <PromptInputTextarea placeholder="Ask me anything..." />
-          <PromptInputActions>
-            <PromptInputAction tooltip="Attach files">
-              <label
-                htmlFor="file-upload"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-2xl hover:bg-zinc-900/5 dark:hover:bg-zinc-50/10"
-              >
-                <input
-                  ref={uploadInputRef}
-                  type="file"
-                  multiple
-                  onChange={handleFileChange}
-                  className="hidden"
-                  id="file-upload"
-                />
-                <Paperclip className="h-4 w-4 text-zinc-400" />
-              </label>
-            </PromptInputAction>
+        {error && (
+          <p className="text-xs text-red-500 dark:text-red-400">
+            {error}
+          </p>
+        )}
+      </div>
 
-            <PromptInputAction
-              tooltip={isLoading ? 'Stop generation' : 'Send message'}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 w-full px-4">
+        <div className="pointer-events-auto mx-auto w-full max-w-screen-sm">
+          <div className="bg-white px-4 pb-4 pt-3 dark:bg-zinc-950 sm:pb-5">
+            <PromptInput
+              isLoading={isLoading}
+              value={input}
+              onValueChange={setInput}
+              onSubmit={handleSubmit}
+              className="w-full max-w-(--breakpoint-md)"
             >
-              <Button
-                variant="default"
-                size="icon"
-                className="h-8 w-8 rounded-full bg-zinc-300 text-zinc-900 hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-800"
-                onClick={handleSubmit}
-                disabled={isLoading && input.trim().length === 0}
-              >
-                {isLoading ? (
-                  <Square className="h-4 w-4 fill-current" />
-                ) : (
-                  <ArrowUp className="h-4 w-4" />
-                )}
-              </Button>
-            </PromptInputAction>
-          </PromptInputActions>
-        </PromptInput>
+              {files.length > 0 && (
+                <div className="-ml-2 flex flex-wrap gap-2 pb-2">
+                  {files.map((file, index) => (
+                    <div
+                      key={`${file.name}-${index}`}
+                      className="flex items-center gap-2 rounded-3xl bg-zinc-900/5 px-3 py-2 text-xs text-zinc-700 dark:bg-zinc-50/10 dark:text-zinc-200"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <Paperclip className="h-3.5 w-3.5" />
+                      <span className="max-w-[140px] truncate">
+                        {file.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(index)}
+                        className="rounded-full p-1 hover:bg-zinc-900/5 dark:hover:bg-zinc-50/10"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <PromptInputTextarea placeholder="Ask me anything..." />
+              <PromptInputActions>
+                <PromptInputAction tooltip="Attach files">
+                  <label
+                    htmlFor="file-upload"
+                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-2xl hover:bg-zinc-900/5 dark:hover:bg-zinc-50/10"
+                  >
+                    <input
+                      ref={uploadInputRef}
+                      type="file"
+                      multiple
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <Paperclip className="h-4 w-4 text-zinc-400" />
+                  </label>
+                </PromptInputAction>
+
+                <PromptInputAction
+                  tooltip={isLoading ? 'Stop generation' : 'Send message'}
+                >
+                  <Button
+                    variant="default"
+                    size="icon"
+                    className="h-8 w-8 rounded-full bg-zinc-300 text-zinc-900 hover:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-800"
+                    onClick={handleSubmit}
+                    disabled={isLoading && input.trim().length === 0}
+                  >
+                    {isLoading ? (
+                      <Square className="h-4 w-4 fill-current" />
+                    ) : (
+                      <ArrowUp className="h-4 w-4" />
+                    )}
+                  </Button>
+                </PromptInputAction>
+              </PromptInputActions>
+            </PromptInput>
+          </div>
+        </div>
       </div>
     </div>
   )

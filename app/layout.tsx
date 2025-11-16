@@ -15,25 +15,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://yurie-fawn.vercel.app/'),
   alternates: {
-    canonical: '/',
+    canonical: '/'
   },
   title: {
     default: 'Yurie - Personal website template',
-    template: '%s | Yurie',
+    template: '%s | Yurie'
   },
-  description:
-    'Yurie is a free and open-source personal website template built with Next.js 15, React 19 and Motion-Primitives.',
-  applicationName: 'Yurie',
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-  },
-  appleWebApp: {
-    capable: true,
-    title: 'Yurie',
-    statusBarStyle: 'default',
-  },
-}
+  description:  'Yurie is a free and open-source personal website template built with Next.js 15, React 19 and Motion-Primitives.',
+};
 
 const geist = Geist({
   variable: '--font-geist',
@@ -61,8 +50,8 @@ export default function RootLayout({
           storageKey="theme"
           defaultTheme="system"
         >
-          <div className="flex min-h-[100dvh] w-full flex-col font-[family-name:var(--font-inter-tight)]">
-            <div className="relative mx-auto flex w-full max-w-screen-sm flex-1 flex-col px-4 pt-16 sm:pt-20">
+          <div className="flex min-h-screen w-full flex-col font-[family-name:var(--font-inter-tight)]">
+            <div className="relative mx-auto w-full max-w-screen-sm flex-1 px-4 pt-20">
               <Header />
               {children}
               <FooterWrapper />
