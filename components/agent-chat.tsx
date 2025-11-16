@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import type { UIMessage } from 'ai'
 import {
   PromptInput,
@@ -48,45 +48,30 @@ export function AgentChat() {
   const [files, setFiles] = useState<File[]>([])
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
   const [hasJustCopied, setHasJustCopied] = useState(false)
-
-  const [hasAssistantResponse, setHasAssistantResponse] =
-    useState(false)
-  const originalOverflowRef = useRef<string | null>(null)
-
-  // Enable page scrolling only after the agent has produced
-  // at least one non-empty assistant message.
+  
+  const [isMobile, setIsMobile] = useState(false);
+  
   useEffect(() => {
-    if (
-      !hasAssistantResponse &&
-      messages.some(
-        (message) =>
-          message.role === 'assistant' &&
-          message.content.trim().length > 0,
-      )
-    ) {
-      setHasAssistantResponse(true)
-    }
-  }, [messages, hasAssistantResponse])
-
-  // Lock body scroll on the agent page by default and restore it
-  // once an assistant response has been generated (or on unmount).
+    const mediaQuery = window.matchMedia('(max-width: 640px)');
+    setIsMobile(mediaQuery.matches);
+    const handleChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+  
+  const hasResponse = messages.some(m => m.role === 'assistant' && m.content.length > 0);
+  
   useEffect(() => {
-    if (typeof document === 'undefined') return
-
-    if (originalOverflowRef.current === null) {
-      originalOverflowRef.current = document.body.style.overflow
+    if (isMobile && !hasResponse) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
     }
-
-    document.body.style.overflow = hasAssistantResponse
-      ? originalOverflowRef.current ?? ''
-      : 'hidden'
-
+    // Cleanup on unmount
     return () => {
-      if (typeof document === 'undefined') return
-      document.body.style.overflow =
-        originalOverflowRef.current ?? ''
-    }
-  }, [hasAssistantResponse])
+      document.body.style.overflow = '';
+    };
+  }, [isMobile, hasResponse]);
 
   const sendMessage = async (rawContent?: string) => {
     const source = rawContent ?? input
