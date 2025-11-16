@@ -58,7 +58,7 @@ export const WORK_EXPERIENCE: WorkExperience[] = [
   },
   {
     company: 'Freelance',
-    title: 'Design Engineer',
+    title: 'Technologies',
     start: '2022',
     end: '2024',
     link: 'https://ibelick.com',

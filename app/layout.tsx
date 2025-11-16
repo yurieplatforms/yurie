@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { Header } from './header'
-import { Footer } from './footer'
+import { FooterWrapper } from './footer-wrapper'
 import { ThemeProvider } from 'next-themes'
 
 export const viewport: Viewport = {
@@ -12,15 +12,15 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://nim-fawn.vercel.app/'),
+  metadataBase: new URL('https://yurie-fawn.vercel.app/'),
   alternates: {
     canonical: '/'
   },
   title: {
-    default: 'Nim - Personal website template',
-    template: '%s | Nim'
+    default: 'Yurie - Personal website template',
+    template: '%s | Yurie'
   },
-  description:  'Nim is a free and open-source personal website template built with Next.js 15, React 19 and Motion-Primitives.',
+  description:  'Yurie is a free and open-source personal website template built with Next.js 15, React 19 and Motion-Primitives.',
 };
 
 const geist = Geist({
@@ -53,7 +53,7 @@ export default function RootLayout({
             <div className="relative mx-auto w-full max-w-screen-sm flex-1 px-4 pt-20">
               <Header />
               {children}
-              <Footer />
+              <FooterWrapper />
             </div>
           </div>
         </ThemeProvider>
