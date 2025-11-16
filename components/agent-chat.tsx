@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import type { UIMessage } from 'ai'
 import {
   PromptInput,
   PromptInputAction,
@@ -18,7 +19,7 @@ import {
 } from '@/components/ai-elements/message'
 import { ArrowUp, CopyIcon, Paperclip, Square, X } from 'lucide-react'
 
-type Role = 'system' | 'user' | 'assistant' | 'tool'
+type Role = UIMessage['role']
 
 type ChatMessage = {
   id: string
