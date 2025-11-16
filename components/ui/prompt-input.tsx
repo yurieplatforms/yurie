@@ -127,7 +127,7 @@ export function PromptInputTextarea({
       style={{ maxHeight, ...(props.style ?? {}) }}
       rows={rows}
       className={cn(
-        'flex-1 w-full resize-none bg-transparent text-sm text-zinc-900 outline-none ring-0 transition',
+        'flex-1 w-full resize-none bg-transparent text-[16px] md:text-sm text-zinc-900 outline-none ring-0 transition',
         'placeholder:text-zinc-400',
         'focus:border-none focus:ring-0 focus:outline-none',
         'dark:text-zinc-50 dark:placeholder:text-zinc-500',
