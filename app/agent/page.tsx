@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function AgentPage() {
   return (
-    <main className="flex min-h-[60vh] flex-col space-y-6">
+    <main className="flex flex-1 flex-col space-y-6">
       <section className="space-y-2">
         <h1 className="text-xl font-medium text-zinc-900 dark:text-zinc-50">
           Agent
