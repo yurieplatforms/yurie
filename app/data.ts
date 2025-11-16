@@ -22,6 +22,13 @@ type BlogPost = {
   uid: string
 }
 
+type ResearchItem = {
+  title: string
+  description: string
+  link: string
+  uid: string
+}
+
 type SocialLink = {
   label: string
   link: string
@@ -100,6 +107,37 @@ export const BLOG_POSTS: BlogPost[] = [
     description: 'A guide on exporting metadata from MDX files to leverage Next.js SEO features.',
     link: '/blog/example-mdx-metadata',
     uid: 'blog-4',
+  },
+]
+
+export const RESEARCH_ITEMS: ResearchItem[] = [
+  {
+    title: 'Agent Playground',
+    description:
+      'Experiment with an interactive AI agent and explore research ideas.',
+    link: '/agent',
+    uid: 'research-1',
+  },
+  {
+    title: 'Interface Patterns for AI Agents',
+    description:
+      'Exploring UI patterns for human-in-the-loop control of autonomous agents.',
+    link: '#',
+    uid: 'research-2',
+  },
+  {
+    title: 'Prompt-Kit Experiments',
+    description:
+      'Designing reusable prompt building blocks for multi-step workflows.',
+    link: '#',
+    uid: 'research-3',
+  },
+  {
+    title: 'Evaluating Agent UX',
+    description:
+      'Early frameworks for measuring trust, latency, and control in agent interfaces.',
+    link: '#',
+    uid: 'research-4',
   },
 ]
 

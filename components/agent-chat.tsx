@@ -376,11 +376,11 @@ export function AgentChat() {
               className="w-full min-h-[96px]"
             >
               {files.length > 0 && (
-                <div className="-ml-2 flex flex-wrap gap-2 pb-2">
+                <div className="-ml-2 flex flex-wrap gap-2">
                   {files.map((file, index) => (
                     <div
                       key={`${file.name}-${index}`}
-                      className="flex items-center gap-2 rounded-3xl bg-zinc-900/5 px-3 py-2 text-xs text-zinc-700 dark:bg-zinc-50/10 dark:text-zinc-200"
+                      className="flex h-8 items-center gap-2 rounded-2xl bg-zinc-900/5 px-3 text-xs text-zinc-700 dark:bg-zinc-50/10 dark:text-zinc-200"
                       onClick={(event) => event.stopPropagation()}
                     >
                       <Paperclip className="h-3.5 w-3.5" />
@@ -399,7 +399,10 @@ export function AgentChat() {
                 </div>
               )}
 
-              <PromptInputTextarea placeholder="Ask me anything..." />
+              <PromptInputTextarea
+                placeholder="Ask me anything..."
+                className={files.length > 0 ? 'mt-1 mb-1' : undefined}
+              />
               <PromptInputActions className="justify-between">
                 <div className="-ml-2 flex items-center gap-2">
                   <PromptInputAction>
