@@ -55,12 +55,12 @@ export function PromptInput({
           'flex flex-col gap-1',
           // Shape & border
           'rounded-3xl border pl-5 pr-2 py-3',
-          // Light theme (fully opaque)
-          'border-zinc-300 bg-zinc-50 text-zinc-900',
-          // Dark theme (fully opaque)
-          'dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50',
-          // Subtle shadow
-          'shadow-sm shadow-black/20',
+          // Light theme — align with blog card surfaces
+          'border-zinc-200 bg-zinc-100/90 text-zinc-900',
+          // Dark theme — align with blog card surfaces
+          'dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-50',
+          // Subtle shadow, slightly softer
+          'shadow-sm shadow-black/10 dark:shadow-black/40',
           className,
         )}
         {...props}

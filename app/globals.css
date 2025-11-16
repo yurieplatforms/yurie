@@ -92,32 +92,38 @@
     display: inline-block;
     background-image: linear-gradient(
       90deg,
-      rgb(161 161 170 / 0.6),
-      rgb(250 250 250 / 1),
-      rgb(161 161 170 / 0.6)
+      rgb(161 161 170 / 0.15) 0%,
+      rgb(161 161 170 / 0.4) 25%,
+      rgb(250 250 250 / 1) 50%,
+      rgb(161 161 170 / 0.4) 75%,
+      rgb(161 161 170 / 0.15) 100%
     );
     background-size: 200% 100%;
+    background-position: 100% 0;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    animation: loader-text-shimmer 5s ease-in-out infinite;
+    animation: loader-text-shimmer 3s linear infinite;
+    will-change: background-position;
   }
 
   .dark .loader-text-shimmer {
     background-image: linear-gradient(
       90deg,
-      rgb(113 113 122 / 0.7),
-      rgb(250 250 250 / 1),
-      rgb(113 113 122 / 0.7)
+      rgb(113 113 122 / 0.2) 0%,
+      rgb(113 113 122 / 0.7) 25%,
+      rgb(250 250 250 / 1) 50%,
+      rgb(113 113 122 / 0.7) 75%,
+      rgb(113 113 122 / 0.2) 100%
     );
   }
 
   @keyframes loader-text-shimmer {
     0% {
-      background-position: 200% 0;
+      background-position: 100% 0;
     }
     100% {
-      background-position: -200% 0;
+      background-position: -100% 0;
     }
   }
 

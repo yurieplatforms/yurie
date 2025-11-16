@@ -54,7 +54,12 @@ export const MessageContent = ({
     className={cn(
       "flex max-w-full flex-col gap-2 overflow-hidden text-sm",
       from === "user"
-        ? "w-fit ml-auto rounded-2xl bg-zinc-100 px-4 py-3 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100"
+        ? [
+            // User bubble: align with blog card surfaces
+            "w-fit ml-auto rounded-2xl border px-4 py-3 text-zinc-900 shadow-sm",
+            "border-zinc-200 bg-zinc-100/90",
+            "dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-50",
+          ]
         : "w-full text-zinc-900 dark:text-zinc-100",
       className
     )}
@@ -316,6 +321,13 @@ export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
     <Streamdown
       className={cn(
+        // Match blog typography (see blog layout) for AI-generated content
+        "prose prose-gray dark:prose-invert",
+        "prose-h4:prose-base prose-h1:text-xl prose-h1:font-medium",
+        "prose-h2:mt-12 prose-h2:scroll-m-20 prose-h2:text-lg prose-h2:font-medium",
+        "prose-h3:text-base prose-h3:font-medium prose-h4:font-medium",
+        "prose-h5:text-base prose-h5:font-medium prose-h6:text-base prose-h6:font-medium prose-strong:font-medium",
+        // Keep chat-specific layout tweaks
         "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className
       )}

@@ -18,6 +18,7 @@ import {
   MessageResponse,
 } from '@/components/ai-elements/message'
 import { ArrowUp, CopyIcon, Paperclip, Square, X } from 'lucide-react'
+import { Spotlight } from '@/components/ui/spotlight'
 
 type Role = UIMessage['role']
 
@@ -32,11 +33,27 @@ const createId = () => Math.random().toString(36).slice(2)
 const initialMessages: ChatMessage[] = []
 
 const promptSuggestions = [
-  'Explain a fascinating moment in history that changed the world.',
-  'What are the latest breakthroughs in quantum computing?',
-  'Recommend hidden gem movies I probably haven\'t seen.',
-  'Tell me about unexplored mysteries of the deep ocean.',
-  'What would life look like on a planet with two suns?',
+  {
+    title: 'History',
+    prompt:
+      'Explain a fascinating moment in history that changed the world.',
+  },
+  {
+    title: 'Quantum computing',
+    prompt: 'What are the latest breakthroughs in quantum computing?',
+  },
+  {
+    title: 'Hidden gem movies',
+    prompt: "Recommend hidden gem movies I probably haven't seen.",
+  },
+  {
+    title: 'Deep ocean mysteries',
+    prompt: 'Tell me about unexplored mysteries of the deep ocean.',
+  },
+  {
+    title: 'Two-sun worlds',
+    prompt: 'What would life look like on a planet with two suns?',
+  },
 ]
 
 export function AgentChat() {
@@ -247,6 +264,7 @@ export function AgentChat() {
 
                 {message.role === 'assistant' &&
                   !isStreamingPlaceholder &&
+                  !isLoading &&
                   isLastMessage &&
                   message.content.trim().length > 0 && (
                     <MessageActions>
@@ -268,19 +286,36 @@ export function AgentChat() {
           })}
 
           {!isLoading && messages.length === 0 && (
-            <div className="space-y-2 text-sm text-zinc-500 dark:text-zinc-400">
-              <p className="font-medium text-zinc-600 dark:text-zinc-300">
-                Try one of these prompts:
+            <div className="space-y-3">
+              <p className="mb-5 text-lg font-medium">
+                How can I help you?
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col space-y-2">
                 {promptSuggestions.map((suggestion) => (
                   <button
-                    key={suggestion}
+                    key={suggestion.prompt}
                     type="button"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="group relative inline-flex shrink-0 items-center gap-[1px] rounded-full bg-zinc-100 px-2.5 py-1 text-sm text-black transition-colors duration-200 hover:bg-zinc-950 hover:text-zinc-50 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700 cursor-pointer"
+                    onClick={() => handleSuggestionClick(suggestion.prompt)}
+                    className="group relative w-full text-left cursor-pointer"
                   >
-                    {suggestion}
+                    <div className="relative overflow-hidden rounded-2xl bg-zinc-300/30 p-[1px] dark:bg-zinc-600/30">
+                      <Spotlight
+                        className="from-zinc-900 via-zinc-800 to-zinc-700 blur-2xl dark:from-zinc-100 dark:via-zinc-200 dark:to-zinc-50"
+                        size={64}
+                      />
+                      <div className="relative h-full w-full rounded-[15px] bg-white p-4 dark:bg-zinc-950">
+                        <div className="relative flex w-full flex-row justify-between">
+                          <div>
+                            <h4 className="font-normal dark:text-zinc-100">
+                              {suggestion.title}
+                            </h4>
+                            <p className="text-zinc-500 dark:text-zinc-400">
+                              {suggestion.prompt}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -303,7 +338,7 @@ export function AgentChat() {
               value={input}
               onValueChange={setInput}
               onSubmit={handleSubmit}
-              className="w-full"
+              className="w-full min-h-[96px]"
             >
               {files.length > 0 && (
                 <div className="-ml-2 flex flex-wrap gap-2 pb-2">
