@@ -28,6 +28,16 @@
   }
 }
 
+/* Agent page: lock scrolling on mobile by default.
+   The lock is applied by adding the `agent-scroll-locked` class
+   to the <html> element from the Agent chat component, and it is
+   removed once the AI starts generating a response. */
+@media (max-width: 640px) {
+  html.agent-scroll-locked {
+    overflow-y: hidden;
+  }
+}
+
 :root {
   --sh-class: #7aa2f7;
   --sh-sign: #89ddff;
