@@ -35,10 +35,10 @@ export default function Personal() {
         variants={VARIANTS_SECTION}
         transition={TRANSITION_SECTION}
       >
-        <h2 className="mb-2 text-xl font-semibold">Welcome</h2>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          I&apos;m exploring how AI agents, design, and engineering come together.
-          Below you&apos;ll find articles and research experiments that document that journey.
+        <h2 className="mb-2 text-lg font-medium">Welcome</h2>
+        <p className="text-zinc-600 dark:text-zinc-400">
+          Exploring how AI agents are designed, built, and experienced.
+          Research and experiments at the intersection of interaction design, autonomy, and engineering.
         </p>
       </motion.section>
       <motion.section
