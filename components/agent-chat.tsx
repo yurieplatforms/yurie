@@ -29,11 +29,64 @@ import { AnimatedBackground } from '@/components/ui/animated-background'
 
 type Role = UIMessage['role']
 
+type TextContentSegment = {
+  type: 'text'
+  text: string
+}
+
+type ImageContentSegment = {
+  type: 'image_url'
+  image_url: {
+    url: string
+  }
+}
+
+type FileContentSegment = {
+  type: 'file'
+  file: {
+    filename: string
+    file_data: string
+  }
+}
+
+type MessageContentSegment =
+  | TextContentSegment
+  | ImageContentSegment
+  | FileContentSegment
+
 type ChatMessage = {
   id: string
   role: Role
   content: string
+  richContent?: MessageContentSegment[]
 }
+
+const readFileAsDataURL = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result === 'string') {
+        resolve(result)
+        return
+      }
+      reject(new Error('Failed to read file as data URL'))
+    }
+    reader.onerror = () => {
+      reject(
+        reader.error ?? new Error('An unknown error occurred while reading'),
+      )
+    }
+    reader.readAsDataURL(file)
+  })
+
+const isImageFile = (file: File) => file.type?.startsWith('image/')
+
+const isPdfFile = (file: File) =>
+  file.type === 'application/pdf' ||
+  file.name.toLowerCase().endsWith('.pdf')
+
+const isSupportedFile = (file: File) => isImageFile(file) || isPdfFile(file)
 
 const createId = () => Math.random().toString(36).slice(2)
 
@@ -41,44 +94,29 @@ const initialMessages: ChatMessage[] = []
 
 const promptSuggestions = [
   {
-    title: 'Explore a moment in history',
+    title: 'Reconstruct a forgotten turning point',
     prompt:
-      'Tell me an interesting story about a lesser-known historical event and why it mattered.',
+      'Choose a seemingly minor historical decision and argue how it quietly redirected technology, culture, or geopolitics.',
   },
   {
-    title: 'Break down a science concept',
+    title: 'Audit the science behind a legend',
     prompt:
-      'Explain a complex science idea in simple terms, using real-world analogies so I can truly understand it.',
+      'Take any mythic ability or artifact and outline what physics, biology, or engineering breakthroughs it would really demand.',
   },
   {
-    title: 'Unpack a myth or legend',
+    title: 'Storyboard an unlikely collab',
     prompt:
-      'Pick a famous myth or legend and walk me through its origins, symbols, and possible meanings.',
+      'Pair two entertainers from different eras or genres and sketch the performance they’d co-create, including cultural context.',
   },
   {
-    title: 'Fun facts about the universe',
+    title: 'Decode hidden math in pop culture',
     prompt:
-      'Share a few surprising facts about space, time, or the universe that will blow my mind.',
+      'Spot a film, song, or game that secretly leans on math or science ideas and unpack how those concepts drive the story.',
   },
   {
-    title: 'Debunk a common misconception',
+    title: 'Spec tomorrow’s museum exhibit',
     prompt:
-      'Take a popular misconception from history or science and correct it for me with clear evidence.',
-  },
-  {
-    title: 'Create a legendary character',
-    prompt:
-      'Help me invent a legendary hero or villain, including their backstory, abilities, and flaws.',
-  },
-  {
-    title: 'Recommend something to watch',
-    prompt:
-      'Recommend a movie or series based on my mood and explain why it is a great fit.',
-  },
-  {
-    title: 'Plan an entertaining trivia night',
-    prompt:
-      'Help me create trivia questions that mix history, science, legends, and entertainment.',
+      'Design an immersive exhibit that lets visitors feel one pivotal discovery through artifacts, experiments, and media.',
   },
 ]
 
@@ -95,16 +133,17 @@ export function AgentChat() {
 
   const sendMessage = async (rawContent?: string) => {
     const source = rawContent ?? input
+    const filesToSend = files
     const trimmed = source.trim()
-    if ((trimmed.length === 0 && files.length === 0) || isLoading) {
+    if ((trimmed.length === 0 && filesToSend.length === 0) || isLoading) {
       return
     }
 
     setError(null)
 
     const attachmentSummary =
-      files.length > 0
-        ? `\n\n[Attached files: ${files
+      filesToSend.length > 0
+        ? `\n\n[Attached files: ${filesToSend
             .map((file) => file.name)
             .join(', ')}]`
         : ''
@@ -112,10 +151,64 @@ export function AgentChat() {
     const contentBase =
       trimmed || 'I have attached some files for you to review.'
 
+    const textSegment: TextContentSegment = {
+      type: 'text',
+      text: `${contentBase}${attachmentSummary}`,
+    }
+
+    const imageFiles = filesToSend.filter(isImageFile)
+
+    let imageSegments: ImageContentSegment[] = []
+
+    if (imageFiles.length > 0) {
+      try {
+        imageSegments = await Promise.all(
+          imageFiles.map(async (file) => ({
+            type: 'image_url',
+            image_url: {
+              url: await readFileAsDataURL(file),
+            },
+          })),
+        )
+      } catch (imageError) {
+        console.error(imageError)
+        setError('Unable to read one of the attached images.')
+        return
+      }
+    }
+
+    const pdfFiles = filesToSend.filter(isPdfFile)
+
+    let fileSegments: FileContentSegment[] = []
+
+    if (pdfFiles.length > 0) {
+      try {
+        fileSegments = await Promise.all(
+          pdfFiles.map(async (file) => ({
+            type: 'file' as const,
+            file: {
+              filename: file.name,
+              file_data: await readFileAsDataURL(file),
+            },
+          })),
+        )
+      } catch (fileError) {
+        console.error(fileError)
+        setError('Unable to read one of the attached PDFs.')
+        return
+      }
+    }
+
+    const richContentSegments =
+      imageSegments.length > 0 || fileSegments.length > 0
+        ? [textSegment, ...imageSegments, ...fileSegments]
+        : undefined
+
     const userMessage: ChatMessage = {
       id: createId(),
       role: 'user',
-      content: `${contentBase}${attachmentSummary}`,
+      content: textSegment.text,
+      richContent: richContentSegments,
     }
 
     const assistantMessageId = createId()
@@ -139,10 +232,12 @@ export function AgentChat() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: nextMessages.map(({ role, content }) => ({
-            role,
-            content,
-          })),
+          messages: nextMessages.map(
+            ({ role, content, richContent }) => ({
+              role,
+              content: richContent ?? content,
+            }),
+          ),
           useWebSearch,
         }),
       })
@@ -233,7 +328,17 @@ export function AgentChat() {
   ) => {
     if (event.target.files) {
       const newFiles = Array.from(event.target.files)
-      setFiles((prev) => [...prev, ...newFiles])
+      const allowedFiles = newFiles.filter(isSupportedFile)
+
+      if (allowedFiles.length !== newFiles.length) {
+        setError('Only image and PDF files are supported.')
+      }
+
+      if (allowedFiles.length > 0) {
+        setFiles((prev) => [...prev, ...allowedFiles])
+      }
+
+      event.target.value = ''
     }
   }
 
@@ -436,6 +541,7 @@ export function AgentChat() {
                         ref={uploadInputRef}
                         type="file"
                         multiple
+                        accept="image/*,.pdf"
                         onChange={handleFileChange}
                         className="hidden"
                         id="file-upload"

@@ -2,9 +2,28 @@ import { NextResponse } from 'next/server'
 
 type Role = 'system' | 'user' | 'assistant' | 'tool'
 
+type MessageContentSegment =
+  | {
+      type: 'text'
+      text: string
+    }
+  | {
+      type: 'image_url'
+      image_url: {
+        url: string
+      }
+    }
+  | {
+      type: 'file'
+      file: {
+        filename: string
+        file_data: string
+      }
+    }
+
 type ChatMessage = {
   role: Role
-  content: string
+  content: string | MessageContentSegment[]
 }
 
 type AgentRequestBody = {

@@ -28,6 +28,18 @@
   }
 }
 
+@layer base {
+  :root {
+    --color-background: rgb(250 250 250 / 1);
+    --color-muted-foreground: rgb(161 161 170 / 1);
+  }
+
+  .dark {
+    --color-background: rgb(250 250 250 / 1);
+    --color-muted-foreground: rgb(113 113 122 / 1);
+  }
+}
+
 :root {
   --sh-class: #7aa2f7;
   --sh-sign: #89ddff;
@@ -119,47 +131,7 @@
     border-color: rgb(39 39 42 / 1); /* zinc-800 */
   }
 
-  /* PromptKit-style text loaders (text-blink, text-shimmer, loading-dots) */
-  .loader-text-shimmer {
-    position: relative;
-    display: inline-block;
-    background-image: linear-gradient(
-      90deg,
-      rgb(161 161 170 / 0.15) 0%,
-      rgb(161 161 170 / 0.4) 25%,
-      rgb(250 250 250 / 1) 50%,
-      rgb(161 161 170 / 0.4) 75%,
-      rgb(161 161 170 / 0.15) 100%
-    );
-    background-size: 200% 100%;
-    background-position: 100% 0;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: loader-text-shimmer 3s linear infinite;
-    will-change: background-position;
-  }
-
-  .dark .loader-text-shimmer {
-    background-image: linear-gradient(
-      90deg,
-      rgb(113 113 122 / 0.2) 0%,
-      rgb(113 113 122 / 0.7) 25%,
-      rgb(250 250 250 / 1) 50%,
-      rgb(113 113 122 / 0.7) 75%,
-      rgb(113 113 122 / 0.2) 100%
-    );
-  }
-
-  @keyframes loader-text-shimmer {
-    0% {
-      background-position: 100% 0;
-    }
-    100% {
-      background-position: -100% 0;
-    }
-  }
-
+  /* PromptKit-style text loaders (text-blink, loading-dots) */
   .loader-text-blink {
     animation: loader-text-blink 1.1s ease-in-out infinite;
   }

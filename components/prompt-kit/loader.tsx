@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { Shimmer } from '@/components/ai-elements/shimmer'
 
 export type LoaderVariant =
   | 'circular'
@@ -59,16 +60,16 @@ export function Loader({
   if (variant === 'text-shimmer') {
     return (
       <span
-        className={cn(
-          'inline-flex items-center',
-          textSizeBySize[size],
-          className,
-        )}
+        className={cn('inline-flex items-center', className)}
         {...props}
       >
-        <span className="loader-text-shimmer">
+        <Shimmer
+          as="span"
+          className={cn(textSizeBySize[size])}
+          duration={2.5}
+        >
           {resolvedText}
-        </span>
+        </Shimmer>
       </span>
     )
   }
