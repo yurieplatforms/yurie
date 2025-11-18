@@ -94,15 +94,35 @@ export const BLOG_POSTS: BlogPost[] = [
     link: '/blog/example-mdx-metadata',
     uid: 'blog-4',
   },
+  {
+    title: 'Blog Post Template',
+    description: 'A starter structure for writing new blog posts in MDX.',
+    link: '/blog/blog-post-template',
+    uid: 'blog-post-template',
+  },
 ]
 
 export const RESEARCH_ITEMS: ResearchItem[] = [
   {
-    title: 'Agent Playground',
+    title: 'Research Log Template',
     description:
-      'Experiment with an interactive AI agent and explore research ideas.',
-    link: '/agent',
-    uid: 'research-1',
+      'A simple structure for tracking ongoing research progress and ideas.',
+    link: '/research/research-log-template',
+    uid: 'research-log-template',
+  },
+  {
+    title: 'Experiment Report Template',
+    description:
+      'Outline for documenting experiments, hypotheses, methods, and results.',
+    link: '/research/experiment-report-template',
+    uid: 'experiment-report-template',
+  },
+  {
+    title: 'Design RFC Template',
+    description:
+      'Template for proposing and evaluating new agent or product design changes.',
+    link: '/research/design-rfc-template',
+    uid: 'design-rfc-template',
   },
 ]
 
