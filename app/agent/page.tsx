@@ -7,8 +7,8 @@ export const metadata: Metadata = {
 
 export default function AgentPage() {
   return (
-    <main className="flex min-h-[60vh] flex-col space-y-6">
-      <div className="flex-1">
+    <main className="flex flex-1 flex-col min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <AgentChat />
       </div>
     </main>
