@@ -21,14 +21,6 @@ type BlogPost = {
   link: string
   uid: string
 }
-
-type ResearchItem = {
-  title: string
-  description: string
-  link: string
-  uid: string
-}
-
 type SocialLink = {
   label: string
   link: string
@@ -95,34 +87,25 @@ export const BLOG_POSTS: BlogPost[] = [
     uid: 'blog-4',
   },
   {
-    title: 'Blog Post Template',
-    description: 'A starter structure for writing new blog posts in MDX.',
-    link: '/blog/blog-post-template',
-    uid: 'blog-post-template',
-  },
-]
-
-export const RESEARCH_ITEMS: ResearchItem[] = [
-  {
-    title: 'Research Log Template',
+    title: 'Building Your First AI Agent',
     description:
-      'A simple structure for tracking ongoing research progress and ideas.',
-    link: '/research/research-log-template',
-    uid: 'research-log-template',
+      'A practical walkthrough for going from a blank repo to a working agent in this starter.',
+    link: '/blog/building-your-first-ai-agent',
+    uid: 'blog-2',
   },
   {
-    title: 'Experiment Report Template',
+    title: 'Designing Better Agent Conversations',
     description:
-      'Outline for documenting experiments, hypotheses, methods, and results.',
-    link: '/research/experiment-report-template',
-    uid: 'experiment-report-template',
+      'Patterns for prompts, memory, and UX that make agents feel more helpful and coherent.',
+    link: '/blog/designing-better-agent-conversations',
+    uid: 'blog-3',
   },
   {
-    title: 'Design RFC Template',
+    title: 'Shipping Agent Features Safely',
     description:
-      'Template for proposing and evaluating new agent or product design changes.',
-    link: '/research/design-rfc-template',
-    uid: 'design-rfc-template',
+      'A checklist for taking experimental agent behavior into production without breaking everything.',
+    link: '/blog/shipping-agent-features-safely',
+    uid: 'blog-5',
   },
 ]
 

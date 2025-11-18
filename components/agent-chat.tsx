@@ -94,29 +94,29 @@ const initialMessages: ChatMessage[] = []
 
 const promptSuggestions = [
   {
-    title: 'Reconstruct a forgotten turning point',
+    title: 'Unearth a cosmic riddle in science',
     prompt:
-      'Choose a seemingly minor historical decision and argue how it quietly redirected technology, culture, or geopolitics.',
+      'Dive into a baffling astronomical phenomenon that defies current theories and propose wild yet plausible explanations.',
   },
   {
-    title: 'Audit the science behind a legend',
+    title: 'Resurrect a ghost from history\'s shadows',
     prompt:
-      'Take any mythic ability or artifact and outline what physics, biology, or engineering breakthroughs it would really demand.',
+      'Bring to life an enigmatic historical enigma, like a lost civilization\'s secret, and speculate on its hidden impacts.',
   },
   {
-    title: 'Storyboard an unlikely collab',
+    title: 'Conjure a mind-bending entertainment fusion',
     prompt:
-      'Pair two entertainers from different eras or genres and sketch the performance they’d co-create, including cultural context.',
+      'Fuse two wildly incompatible movie tropes into a thrilling narrative that twists expectations and explores deeper themes.',
   },
   {
-    title: 'Decode hidden math in pop culture',
+    title: 'Decrypt ancient lore with cutting-edge science',
     prompt:
-      'Spot a film, song, or game that secretly leans on math or science ideas and unpack how those concepts drive the story.',
+      'Apply quantum physics or neuroscience to demystify an age-old legend, revealing astonishing real-world parallels.',
   },
   {
-    title: 'Spec tomorrow’s museum exhibit',
+    title: 'Orchestrate a time-warped spectacle',
     prompt:
-      'Design an immersive exhibit that lets visitors feel one pivotal discovery through artifacts, experiments, and media.',
+      'Envision a legendary battle or invention reenacted with futuristic tech and pop culture flair, altering its legacy forever.',
   },
 ]
 
@@ -381,7 +381,7 @@ export function AgentChat() {
                           <Loader
                             variant="text-shimmer"
                             size="lg"
-                            text="Thinking…"
+                            text="Thinking"
                           />
                         </span>
                       </p>

@@ -1,8 +1,9 @@
 'use client'
+import { useEffect, useState } from 'react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { AnimatedBackground } from '@/components/ui/animated-background'
-import { BLOG_POSTS, RESEARCH_ITEMS } from './data'
+import { BLOG_POSTS } from './data'
 
 const VARIANTS_CONTAINER = {
   hidden: { opacity: 0 },
@@ -21,6 +22,16 @@ const VARIANTS_SECTION = {
 
 const TRANSITION_SECTION = {
   duration: 0.3,
+}
+
+function getGreetingByHour(hour: number) {
+  if (hour >= 5 && hour < 12) {
+    return 'Good morning!'
+  }
+  if (hour >= 12 && hour < 18) {
+    return 'Good afternoon!'
+  }
+  return 'Good evening!'
 }
 
 type ContentItem = {
@@ -77,6 +88,14 @@ function ContentSection({
 }
 
 export default function Personal() {
+  const [greeting, setGreeting] = useState('Welcome')
+
+  useEffect(() => {
+    const now = new Date()
+    const hour = now.getHours()
+    setGreeting(getGreetingByHour(hour))
+  }, [])
+
   return (
     <motion.main
       className="space-y-12"
@@ -88,14 +107,13 @@ export default function Personal() {
         variants={VARIANTS_SECTION}
         transition={TRANSITION_SECTION}
       >
-        <h2 className="mb-2 text-lg font-medium">Welcome</h2>
+        <h2 className="mb-2 text-lg font-medium">{greeting}</h2>
         <p className="text-zinc-600 dark:text-zinc-400">
           Exploring how AI agents are designed, built, and experienced.
           Research and experiments at the intersection of interaction design, autonomy, and engineering.
         </p>
       </motion.section>
       <ContentSection title="Blog" items={BLOG_POSTS} />
-      <ContentSection title="Research" items={RESEARCH_ITEMS} />
     </motion.main>
   )
 }

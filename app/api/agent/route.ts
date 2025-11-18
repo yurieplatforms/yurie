@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         'X-Title': 'Yurie Agent',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-5.1',
+        model: '@preset/yurie-ai',
         stream: true,
         messages,
         ...(useWebSearch
