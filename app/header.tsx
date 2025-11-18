@@ -40,7 +40,7 @@ export function Header() {
               href={item.href}
               className={`transition-colors ${
                 isActive
-                  ? 'text-white dark:text-white'
+                  ? 'text-zinc-950 dark:text-zinc-50'
                   : 'hover:text-zinc-950 dark:hover:text-zinc-50'
               }`}
             >
