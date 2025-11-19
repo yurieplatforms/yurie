@@ -83,6 +83,9 @@ export async function POST(request: Request) {
         model: '@preset/yurie-ai',
         stream: true,
         messages,
+        reasoning: {
+          effort: 'high',
+        },
         ...(useWebSearch
           ? {
               plugins: [
@@ -130,5 +133,3 @@ export async function POST(request: Request) {
     )
   }
 }
-
-

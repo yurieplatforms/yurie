@@ -7,15 +7,20 @@ import {
   PromptInputAction,
   PromptInputActions,
   PromptInputTextarea,
-} from '@/components/ui/prompt-input'
+} from '@/components/ai/prompt-input'
 import { Button } from '@/components/ui/button'
-import { Loader } from '@/components/prompt-kit/loader'
+import { Loader } from '@/components/ai/loader'
 import {
   Message,
   MessageActions,
   MessageContent,
   MessageResponse,
-} from '@/components/ai-elements/message'
+} from '@/components/ai/message'
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from '@/components/ai/reasoning'
 import {
   ArrowUp,
   CheckIcon,
@@ -26,6 +31,13 @@ import {
   X,
 } from 'lucide-react'
 import { AnimatedBackground } from '@/components/ui/animated-background'
+import { PROMPT_SUGGESTIONS } from '@/lib/constants'
+import {
+  readFileAsDataURL,
+  isImageFile,
+  isPdfFile,
+  isSupportedFile,
+} from '@/lib/utils'
 
 type Role = UIMessage['role']
 
@@ -59,66 +71,11 @@ type ChatMessage = {
   role: Role
   content: string
   richContent?: MessageContentSegment[]
+  reasoning?: string
+  thinkingDurationSeconds?: number
 }
 
-const readFileAsDataURL = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result
-      if (typeof result === 'string') {
-        resolve(result)
-        return
-      }
-      reject(new Error('Failed to read file as data URL'))
-    }
-    reader.onerror = () => {
-      reject(
-        reader.error ?? new Error('An unknown error occurred while reading'),
-      )
-    }
-    reader.readAsDataURL(file)
-  })
-
-const isImageFile = (file: File) => file.type?.startsWith('image/')
-
-const isPdfFile = (file: File) =>
-  file.type === 'application/pdf' ||
-  file.name.toLowerCase().endsWith('.pdf')
-
-const isSupportedFile = (file: File) => isImageFile(file) || isPdfFile(file)
-
-const createId = () => Math.random().toString(36).slice(2)
-
 const initialMessages: ChatMessage[] = []
-
-const promptSuggestions = [
-  {
-    title: 'Unearth a cosmic riddle in science',
-    prompt:
-      'Dive into a baffling astronomical phenomenon that defies current theories and propose wild yet plausible explanations.',
-  },
-  {
-    title: 'Resurrect a ghost from history\'s shadows',
-    prompt:
-      'Bring to life an enigmatic historical enigma, like a lost civilization\'s secret, and speculate on its hidden impacts.',
-  },
-  {
-    title: 'Conjure a mind-bending entertainment fusion',
-    prompt:
-      'Fuse two wildly incompatible movie tropes into a thrilling narrative that twists expectations and explores deeper themes.',
-  },
-  {
-    title: 'Decrypt ancient lore with cutting-edge science',
-    prompt:
-      'Apply quantum physics or neuroscience to demystify an age-old legend, revealing astonishing real-world parallels.',
-  },
-  {
-    title: 'Orchestrate a time-warped spectacle',
-    prompt:
-      'Envision a legendary battle or invention reenacted with futuristic tech and pop culture flair, altering its legacy forever.',
-  },
-]
 
 export function AgentChat() {
   const [messages, setMessages] =
@@ -130,6 +87,11 @@ export function AgentChat() {
   const [useWebSearch, setUseWebSearch] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
   const [hasJustCopied, setHasJustCopied] = useState(false)
+
+  // Track when the current assistant response started "thinking"
+  // so we can freeze a per-message "Thought for Xs" duration once
+  // the final answer begins streaming.
+  const thinkingStartRef = useRef<number | null>(null)
 
   const sendMessage = async (rawContent?: string) => {
     const source = rawContent ?? input
@@ -205,13 +167,16 @@ export function AgentChat() {
         : undefined
 
     const userMessage: ChatMessage = {
-      id: createId(),
+      id: crypto.randomUUID(),
       role: 'user',
       content: textSegment.text,
       richContent: richContentSegments,
     }
 
-    const assistantMessageId = createId()
+    const assistantMessageId = crypto.randomUUID()
+
+    // Start timing the assistant's "thinking" phase for this message.
+    thinkingStartRef.current = Date.now()
 
     const assistantPlaceholder: ChatMessage = {
       id: assistantMessageId,
@@ -245,8 +210,8 @@ export function AgentChat() {
       if (!response.ok || !response.body) {
         let message = 'Something went wrong talking to the agent.'
         try {
-          const data = await response.json()
-          message = (data as any)?.error ?? message
+          const data = (await response.json()) as { error?: string }
+          message = data.error ?? message
         } catch {
           // ignore
         }
@@ -283,24 +248,87 @@ export function AgentChat() {
 
           try {
             const json = JSON.parse(dataPart)
-            const delta =
-              json.choices?.[0]?.delta?.content ??
-              json.choices?.[0]?.message?.content ??
-              ''
+            const choice = json.choices?.[0]
 
-            if (typeof delta !== 'string' || delta.length === 0) {
+            const deltaContent =
+              choice?.delta?.content ?? choice?.message?.content ?? ''
+
+            let deltaReasoning = ''
+
+            // Unified OpenRouter reasoning fields:
+            // - `reasoning` plain-text field
+            // - `reasoning_details` structured reasoning blocks
+            const directReasoning = choice?.delta?.reasoning
+            if (
+              typeof directReasoning === 'string' &&
+              directReasoning.length > 0
+            ) {
+              deltaReasoning += directReasoning
+            } else {
+              const reasoningDetails = choice?.delta?.reasoning_details
+              if (Array.isArray(reasoningDetails)) {
+                for (const detail of reasoningDetails) {
+                  if (
+                    detail?.type === 'reasoning.text' &&
+                    typeof detail.text === 'string'
+                  ) {
+                    deltaReasoning += detail.text
+                  } else if (
+                    detail?.type === 'reasoning.summary' &&
+                    typeof detail.summary === 'string'
+                  ) {
+                    deltaReasoning += detail.summary
+                  }
+                }
+              }
+            }
+
+            const hasContentDelta =
+              typeof deltaContent === 'string' && deltaContent.length > 0
+            const hasReasoningDelta =
+              typeof deltaReasoning === 'string' && deltaReasoning.length > 0
+
+            if (!hasContentDelta && !hasReasoningDelta) {
               continue
             }
 
             setMessages((prev) =>
-              prev.map((message) =>
-                message.id === assistantMessageId
-                  ? {
-                      ...message,
-                      content: message.content + delta,
-                    }
-                  : message,
-              ),
+              prev.map((message) => {
+                if (message.id !== assistantMessageId) {
+                  return message
+                }
+
+                const hadAnswerBefore = message.content.length > 0
+                const nextContent = hasContentDelta
+                  ? message.content + (deltaContent as string)
+                  : message.content
+
+                let thinkingDurationSeconds = message.thinkingDurationSeconds
+
+                // When the very first answer tokens arrive for this
+                // assistant message, freeze how long we spent in the
+                // "thinking" phase.
+                if (
+                  !hadAnswerBefore &&
+                  hasContentDelta &&
+                  thinkingStartRef.current !== null &&
+                  thinkingDurationSeconds == null
+                ) {
+                  const elapsed = Math.floor(
+                    (Date.now() - thinkingStartRef.current) / 1000,
+                  )
+                  thinkingDurationSeconds = Math.max(0, elapsed)
+                }
+
+                return {
+                  ...message,
+                  content: nextContent,
+                  reasoning: hasReasoningDelta
+                    ? (message.reasoning ?? '') + deltaReasoning
+                    : message.reasoning,
+                  thinkingDurationSeconds,
+                }
+              }),
             )
           } catch {
             // ignore malformed chunks
@@ -367,26 +395,72 @@ export function AgentChat() {
         <div className="space-y-3">
           {messages.map((message, index) => {
             const isAssistant = message.role === 'assistant'
+            const isLastMessage = index === messages.length - 1
+            const isActiveAssistant = isAssistant && isLastMessage
+            const hasReasoning =
+              typeof message.reasoning === 'string' &&
+              message.reasoning.trim().length > 0
+            const thoughtSeconds = message.thinkingDurationSeconds
+            const hasAnswerStarted = message.content.length > 0
+            const isReasoningStreaming = isActiveAssistant && isLoading
+            const isThinkingStage = isReasoningStreaming && !hasAnswerStarted
             const isStreamingPlaceholder =
               isAssistant && isLoading && message.content.length === 0
-            const isLastMessage = index === messages.length - 1
 
             return (
               <div key={message.id} className="flex flex-col gap-1">
                 <Message from={message.role}>
                   <MessageContent from={message.role}>
-                    {isStreamingPlaceholder ? (
-                      <p className="whitespace-pre-wrap">
-                        <span className="inline-flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
-                          <Loader
-                            variant="text-shimmer"
-                            size="lg"
-                            text="Thinking"
-                          />
-                        </span>
-                      </p>
-                    ) : message.role === 'assistant' ? (
-                      <MessageResponse>{message.content}</MessageResponse>
+                    {message.role === 'assistant' ? (
+                      <>
+                        {(hasReasoning || isThinkingStage) && (
+                          <div className="mb-2">
+                            <Reasoning
+                              className="w-full"
+                              isStreaming={isReasoningStreaming && hasReasoning}
+                            >
+                              <ReasoningTrigger
+                                label={
+                                  isThinkingStage ? (
+                                    <Loader
+                                      variant="text-shimmer"
+                                      size="lg"
+                                      text="Thinking"
+                                    />
+                                  ) : typeof thoughtSeconds === 'number' ? (
+                                    <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">
+                                      Thought for {thoughtSeconds}s
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs">Thought</span>
+                                  )
+                                }
+                              />
+                              <ReasoningContent>
+                                {hasReasoning ? (
+                                  <MessageResponse className="italic">
+                                    {message.reasoning}
+                                  </MessageResponse>
+                                ) : (
+                                  isThinkingStage && (
+                                      <span className="inline-flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+                                        <Loader
+                                          variant="text-shimmer"
+                                          size="sm"
+                                          text=""
+                                        />
+                                      </span>
+                                    )
+                                )}
+                              </ReasoningContent>
+                            </Reasoning>
+                          </div>
+                        )}
+
+                        {message.content && !isStreamingPlaceholder && (
+                          <MessageResponse>{message.content}</MessageResponse>
+                        )}
+                      </>
                     ) : (
                       <p className="whitespace-pre-wrap">
                         {message.content}
@@ -437,7 +511,7 @@ export function AgentChat() {
                     duration: 0.2,
                   }}
                 >
-                  {promptSuggestions.map((suggestion) => (
+                  {PROMPT_SUGGESTIONS.map((suggestion) => (
                     <button
                       key={suggestion.prompt}
                       type="button"
@@ -578,5 +652,3 @@ export function AgentChat() {
 }
 
 export default AgentChat
-
-

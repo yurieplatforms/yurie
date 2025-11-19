@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { cn } from '@/lib/utils'
-import { Shimmer } from '@/components/ai-elements/shimmer'
+import { Shimmer } from '@/components/ai/shimmer'
 
 export type LoaderVariant =
   | 'circular'

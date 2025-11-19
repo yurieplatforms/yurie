@@ -1,5 +1,4 @@
 'use client'
-import { TextMorph } from '@/components/ui/text-morph'
 import { ScrollProgress } from '@/components/ui/scroll-progress'
 
 export default function LayoutBlogPost({
