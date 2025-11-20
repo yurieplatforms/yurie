@@ -1,9 +1,8 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import type { UIMessage } from 'ai'
-import { SavedChat, getChat, saveChat, createChat } from '@/lib/history'
+import { getChat, saveChat, createChat } from '@/lib/history'
 import type {
   ChatMessage,
   FileContentSegment,
@@ -51,7 +50,6 @@ import {
 const initialMessages: ChatMessage[] = []
 
 export function AgentChat({ chatId }: { chatId?: string }) {
-  const router = useRouter()
   const [id, setId] = useState<string | undefined>(chatId)
   const [messages, setMessages] =
     useState<ChatMessage[]>(initialMessages)
@@ -74,7 +72,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       setId(undefined)
       setMessages([])
     }
-  }, [chatId])
+  }, [chatId, setId, setMessages])
 
   // Track when the current assistant response started "thinking"
   // so we can freeze a per-message "Thought for Xs" duration once
