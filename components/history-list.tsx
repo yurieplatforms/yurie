@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Trash2, MessageSquare } from 'lucide-react'
-import { SavedChat, getChats, deleteChat, clearHistory } from '@/lib/history'
+import { getChats, deleteChat, clearHistory } from '@/lib/history'
+import type { SavedChat } from '@/lib/types'
 import { Button } from '@/components/ui/button'
-import { useRouter } from 'next/navigation'
 import { motion } from 'motion/react'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 
@@ -31,7 +31,6 @@ const TRANSITION_SECTION = {
 export function HistoryList() {
   const [chats, setChats] = useState<SavedChat[]>([])
   const [mounted, setMounted] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
     setMounted(true)
