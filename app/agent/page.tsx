@@ -5,14 +5,17 @@ export const metadata: Metadata = {
   title: 'Agent',
 }
 
-export default function AgentPage() {
+export default async function AgentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string }>
+}) {
+  const { id } = await searchParams
   return (
     <main className="flex min-h-[60vh] flex-col space-y-6">
       <div className="flex-1">
-        <AgentChat />
+        <AgentChat chatId={id} />
       </div>
     </main>
   )
 }
-
-

@@ -1,0 +1,162 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { Trash2, MessageSquare } from 'lucide-react'
+import { SavedChat, getChats, deleteChat, clearHistory } from '@/lib/history'
+import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
+import { motion } from 'motion/react'
+import { AnimatedBackground } from '@/components/ui/animated-background'
+
+const VARIANTS_CONTAINER = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+    },
+  },
+}
+
+const VARIANTS_SECTION = {
+  hidden: { opacity: 0, y: 20, filter: 'blur(8px)' },
+  visible: { opacity: 1, y: 0, filter: 'blur(0px)' },
+}
+
+const TRANSITION_SECTION = {
+  duration: 0.3,
+}
+
+export function HistoryList() {
+  const [chats, setChats] = useState<SavedChat[]>([])
+  const [mounted, setMounted] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    setMounted(true)
+    setChats(getChats())
+
+    const handleHistoryUpdate = () => {
+      setChats(getChats())
+    }
+
+    window.addEventListener('history-updated', handleHistoryUpdate)
+    return () => {
+      window.removeEventListener('history-updated', handleHistoryUpdate)
+    }
+  }, [])
+
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (window.confirm('Are you sure you want to delete this chat?')) {
+      deleteChat(id)
+      setChats(getChats())
+    }
+  }
+
+  const handleClearHistory = () => {
+    if (
+      window.confirm(
+        'Are you sure you want to clear all history? This cannot be undone.',
+      )
+    ) {
+      clearHistory()
+      setChats([])
+    }
+  }
+
+  if (!mounted) {
+    return (
+      <div className="p-4 text-center text-zinc-500">Loading history...</div>
+    )
+  }
+
+  if (chats.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="mb-4 rounded-full bg-zinc-100 p-4 dark:bg-zinc-900">
+          <MessageSquare className="h-8 w-8 text-zinc-400" />
+        </div>
+        <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
+          No chat history
+        </h3>
+        <p className="mt-1 mb-6 max-w-sm text-zinc-500 dark:text-zinc-400">
+          Conversations you have with the agent will appear here.
+        </p>
+        <Link href="/agent">
+          <Button>Start a New Chat</Button>
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <motion.main
+      className="space-y-12"
+      variants={VARIANTS_CONTAINER}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.section
+        variants={VARIANTS_SECTION}
+        transition={TRANSITION_SECTION}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium">Your conversations</h2>
+          <button
+            onClick={handleClearHistory}
+            className="cursor-pointer text-sm text-zinc-500 transition-colors hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50"
+          >
+            Clear all
+          </button>
+        </div>
+        
+        <div className="flex flex-col space-y-0">
+          <AnimatedBackground
+            enableHover
+            className="h-full w-full rounded-lg bg-zinc-100 dark:bg-zinc-900/80"
+            transition={{
+              type: 'spring',
+              bounce: 0,
+              duration: 0.2,
+            }}
+          >
+            {chats.map((chat) => (
+              <div
+                key={chat.id}
+                data-id={chat.id}
+                className="-mx-3 rounded-xl px-3 py-3 relative group"
+              >
+                  <Link
+                    href={`/agent?id=${chat.id}`}
+                    className="absolute inset-0 z-0"
+                  />
+                  <div className="relative z-10 pointer-events-none flex flex-col space-y-1 pr-8">
+                    <div className="flex items-start justify-between">
+                      <h4 className="font-normal dark:text-zinc-100 truncate">
+                        {chat.title}
+                      </h4>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                      <span>{new Date(chat.updatedAt).toLocaleDateString()}</span>
+                      <span>•</span>
+                      <span>{chat.messages.length} messages</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => handleDelete(e, chat.id)}
+                    className="cursor-pointer absolute right-3 top-3 z-20 pointer-events-auto p-1 text-zinc-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title="Delete chat"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+              </div>
+            ))}
+          </AnimatedBackground>
+        </div>
+      </motion.section>
+    </motion.main>
+  )
+}

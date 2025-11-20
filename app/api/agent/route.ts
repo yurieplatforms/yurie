@@ -82,7 +82,14 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model: '@preset/yurie-ai',
         stream: true,
-        messages,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'At the end of your response, please provide 3 short follow-up questions that the user might ask. Format them exactly like this:\n\nSUGGESTIONS:\n- Question 1\n- Question 2\n- Question 3',
+          },
+          ...messages,
+        ],
         reasoning: {
           effort: 'high',
         },

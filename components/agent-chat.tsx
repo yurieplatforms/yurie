@@ -1,7 +1,15 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import type { UIMessage } from 'ai'
+import { SavedChat, getChat, saveChat, createChat } from '@/lib/history'
+import type {
+  ChatMessage,
+  FileContentSegment,
+  ImageContentSegment,
+  TextContentSegment,
+} from '@/lib/types'
 import {
   PromptInput,
   PromptInputAction,
@@ -23,6 +31,7 @@ import {
 } from '@/components/ai/reasoning'
 import {
   ArrowUp,
+  CornerDownRight,
   CheckIcon,
   CopyIcon,
   Paperclip,
@@ -39,45 +48,11 @@ import {
   isSupportedFile,
 } from '@/lib/utils'
 
-type Role = UIMessage['role']
-
-type TextContentSegment = {
-  type: 'text'
-  text: string
-}
-
-type ImageContentSegment = {
-  type: 'image_url'
-  image_url: {
-    url: string
-  }
-}
-
-type FileContentSegment = {
-  type: 'file'
-  file: {
-    filename: string
-    file_data: string
-  }
-}
-
-type MessageContentSegment =
-  | TextContentSegment
-  | ImageContentSegment
-  | FileContentSegment
-
-type ChatMessage = {
-  id: string
-  role: Role
-  content: string
-  richContent?: MessageContentSegment[]
-  reasoning?: string
-  thinkingDurationSeconds?: number
-}
-
 const initialMessages: ChatMessage[] = []
 
-export function AgentChat() {
+export function AgentChat({ chatId }: { chatId?: string }) {
+  const router = useRouter()
+  const [id, setId] = useState<string | undefined>(chatId)
   const [messages, setMessages] =
     useState<ChatMessage[]>(initialMessages)
   const [input, setInput] = useState('')
@@ -87,6 +62,19 @@ export function AgentChat() {
   const [useWebSearch, setUseWebSearch] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
   const [hasJustCopied, setHasJustCopied] = useState(false)
+
+  useEffect(() => {
+    if (chatId) {
+      const chat = getChat(chatId)
+      if (chat) {
+        setId(chatId)
+        setMessages(chat.messages)
+      }
+    } else {
+      setId(undefined)
+      setMessages([])
+    }
+  }, [chatId])
 
   // Track when the current assistant response started "thinking"
   // so we can freeze a per-message "Thought for Xs" duration once
@@ -190,6 +178,46 @@ export function AgentChat() {
     setFiles([])
     setIsLoading(true)
 
+    // Initialize chat if needed
+    let currentId = id
+    if (!currentId) {
+      const newChat = createChat(nextMessages)
+      currentId = newChat.id
+      setId(currentId)
+      saveChat(newChat)
+      window.history.replaceState(null, '', `/agent?id=${currentId}`)
+
+      // Generate title immediately
+      void fetch('/api/agent/title', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [userMessage] }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.title) {
+            const latestChat = getChat(currentId!)
+            if (latestChat) {
+              latestChat.title = data.title
+              saveChat(latestChat)
+            }
+          }
+        })
+        .catch((err) => console.error('Failed to generate title', err))
+    } else {
+      const chat = getChat(currentId)
+      if (chat) {
+        chat.messages = nextMessages
+        chat.updatedAt = Date.now()
+        saveChat(chat)
+      }
+    }
+
+    // Track accumulated response for final save
+    let accumulatedContent = ''
+    let accumulatedReasoning = ''
+    let accumulatedThinkingTime: number | undefined
+
     try {
       const response = await fetch('/api/agent', {
         method: 'POST',
@@ -292,44 +320,61 @@ export function AgentChat() {
               continue
             }
 
-            setMessages((prev) =>
-              prev.map((message) => {
+            // Update accumulated values
+            const hadAnswerBefore = accumulatedContent.length > 0
+            if (hasContentDelta) {
+              accumulatedContent += deltaContent as string
+            }
+            if (hasReasoningDelta) {
+              accumulatedReasoning += deltaReasoning
+            }
+
+            // Thinking time logic
+            if (
+              !hadAnswerBefore &&
+              hasContentDelta &&
+              thinkingStartRef.current !== null &&
+              accumulatedThinkingTime == null
+            ) {
+              const elapsed = Math.floor(
+                (Date.now() - thinkingStartRef.current) / 1000,
+              )
+              accumulatedThinkingTime = Math.max(0, elapsed)
+            }
+
+            setMessages((prev) => {
+              const next = prev.map((message) => {
                 if (message.id !== assistantMessageId) {
                   return message
                 }
 
-                const hadAnswerBefore = message.content.length > 0
-                const nextContent = hasContentDelta
-                  ? message.content + (deltaContent as string)
-                  : message.content
+                let content = accumulatedContent
+                let suggestions: string[] | undefined
 
-                let thinkingDurationSeconds = message.thinkingDurationSeconds
-
-                // When the very first answer tokens arrive for this
-                // assistant message, freeze how long we spent in the
-                // "thinking" phase.
-                if (
-                  !hadAnswerBefore &&
-                  hasContentDelta &&
-                  thinkingStartRef.current !== null &&
-                  thinkingDurationSeconds == null
-                ) {
-                  const elapsed = Math.floor(
-                    (Date.now() - thinkingStartRef.current) / 1000,
-                  )
-                  thinkingDurationSeconds = Math.max(0, elapsed)
+                if (accumulatedContent.includes('SUGGESTIONS:')) {
+                  const parts = accumulatedContent.split('SUGGESTIONS:')
+                  content = parts[0].trim()
+                  suggestions = parts[1]
+                    .split('\n')
+                    .map((line) => line.trim())
+                    .filter((line) => line.startsWith('-'))
+                    .map((line) => line.slice(1).trim())
                 }
 
                 return {
                   ...message,
-                  content: nextContent,
-                  reasoning: hasReasoningDelta
-                    ? (message.reasoning ?? '') + deltaReasoning
-                    : message.reasoning,
-                  thinkingDurationSeconds,
+                  content,
+                  suggestions,
+                  reasoning:
+                    accumulatedReasoning.length > 0
+                      ? accumulatedReasoning
+                      : message.reasoning,
+                  thinkingDurationSeconds:
+                    accumulatedThinkingTime ?? message.thinkingDurationSeconds,
                 }
-              }),
-            )
+              })
+              return next
+            })
           } catch {
             // ignore malformed chunks
           }
@@ -340,6 +385,46 @@ export function AgentChat() {
       setError('Network error while contacting the agent.')
     } finally {
       setIsLoading(false)
+
+      // Final save and title generation
+      if (currentId) {
+        const chat = getChat(currentId)
+        if (chat) {
+          // Construct the final messages array
+          const finalMessages = nextMessages.map((msg) => {
+            if (msg.id === assistantMessageId) {
+              let content = accumulatedContent
+              let suggestions: string[] | undefined
+
+              if (accumulatedContent.includes('SUGGESTIONS:')) {
+                const parts = accumulatedContent.split('SUGGESTIONS:')
+                content = parts[0].trim()
+                suggestions = parts[1]
+                  .split('\n')
+                  .map((line) => line.trim())
+                  .filter((line) => line.startsWith('-'))
+                  .map((line) => line.slice(1).trim())
+              }
+
+              return {
+                ...msg,
+                content,
+                suggestions,
+                reasoning:
+                  accumulatedReasoning.length > 0
+                    ? accumulatedReasoning
+                    : undefined,
+                thinkingDurationSeconds: accumulatedThinkingTime,
+              }
+            }
+            return msg
+          })
+
+          chat.messages = finalMessages
+          chat.updatedAt = Date.now()
+          saveChat(chat)
+        }
+      }
     }
   }
 
@@ -491,6 +576,40 @@ export function AgentChat() {
                         )}
                       </button>
                     </MessageActions>
+                  )}
+
+                {message.role === 'assistant' &&
+                  message.suggestions &&
+                  message.suggestions.length > 0 &&
+                  !isLoading && (
+                    <div className="mt-2 flex flex-col space-y-0">
+                      <AnimatedBackground
+                        enableHover
+                        className="h-full w-full rounded-lg bg-zinc-100 dark:bg-zinc-900/80"
+                        transition={{
+                          type: 'spring',
+                          bounce: 0,
+                          duration: 0.2,
+                        }}
+                      >
+                        {message.suggestions.map((suggestion, i) => (
+                          <button
+                            key={`${suggestion}-${i}`}
+                            type="button"
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            className="-mx-3 w-full cursor-pointer rounded-xl px-3 py-3 text-left group"
+                            data-id={`${suggestion}-${i}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <CornerDownRight className="h-4 w-4 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
+                              <span className="text-base font-normal text-zinc-700 dark:text-zinc-300">
+                                {suggestion}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </AnimatedBackground>
+                    </div>
                   )}
               </div>
             )
