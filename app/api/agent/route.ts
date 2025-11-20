@@ -74,10 +74,10 @@ export async function POST(request: Request) {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         // Optional attribution headers per OpenRouter docs:
-        // https://openrouter.ai/docs/quickstart
+        // https://openrouter.ai/docs/app-attribution
         'HTTP-Referer':
-          process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
-        'X-Title': 'Yurie Agent',
+          process.env.NEXT_PUBLIC_APP_URL ?? '',
+        'X-Title': process.env.NEXT_PUBLIC_APP_TITLE ?? '',
       },
       body: JSON.stringify({
         model: '@preset/yurie-ai',
