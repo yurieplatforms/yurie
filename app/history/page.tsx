@@ -2,7 +2,7 @@ import { HistoryList } from '@/components/history-list'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'History',
+  title: 'Threads',
 }
 
 export default function HistoryPage() {

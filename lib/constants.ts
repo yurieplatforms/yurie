@@ -2,28 +2,28 @@ export const WEBSITE_URL = 'https://yurie-fawn.vercel.app'
 
 export const PROMPT_SUGGESTIONS = [
   {
-    title: 'Unearth a cosmic riddle in science',
+    title: 'Ramsay at Hogwarts',
     prompt:
-      'Dive into a baffling astronomical phenomenon that defies current theories and propose wild yet plausible explanations.',
+      'Write a script where Gordon Ramsay is the new Potions Master at Hogwarts. Have him critique Harry Potter\'s Draught of Living Death for being "raw" and "pathetic."',
   },
   {
-    title: "Resurrect a ghost from history's shadows",
+    title: 'The Cadaver Synod',
     prompt:
-      "Bring to life an enigmatic historical enigma, like a lost civilization's secret, and speculate on its hidden impacts.",
+      'Tell the macabre story of Pope Formosus, whose corpse was dug up, dressed in vestments, and put on trial by his successor. What was the verdict?',
   },
   {
-    title: 'Conjure a mind-bending entertainment fusion',
+    title: 'Vacuum Decay',
     prompt:
-      'Fuse two wildly incompatible movie tropes into a thrilling narrative that twists expectations and explores deeper themes.',
+      'Explain the terrifying concept of "False Vacuum Decay." Is it true that the universe could instantly end at the speed of light because a bubble of "true vacuum" formed?',
   },
   {
-    title: 'Decrypt ancient lore with cutting-edge science',
+    title: 'Octopus Intelligence',
     prompt:
-      'Apply quantum physics or neuroscience to demystify an age-old legend, revealing astonishing real-world parallels.',
+      'Octopuses have nine brains and blue blood. Explore their alien-like consciousness and how their decentralized nervous system challenges our definition of "intelligence."',
   },
   {
-    title: 'Orchestrate a time-warped spectacle',
+    title: 'Last Thursdayism',
     prompt:
-      'Envision a legendary battle or invention reenacted with futuristic tech and pop culture flair, altering its legacy forever.',
+      'Argue for "Last Thursdayism"—the satirical theory that the universe was created last Thursday, complete with all your memories and false physical evidence of the past.',
   },
 ]

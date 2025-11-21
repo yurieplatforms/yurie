@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 const NAV_ITEMS = [
   { href: '/', label: 'Home' },
   { href: '/agent', label: 'Agent' },
-  { href: '/history', label: 'History' },
+  { href: '/history', label: 'Threads' },
 ] as const
 
 export function Header() {
@@ -21,15 +21,17 @@ export function Header() {
         >
           Yurie
         </Link>
-        <TextEffect
-          as="span"
-          preset="fade"
-          per="char"
-          className="text-lg text-zinc-600 dark:text-zinc-500"
-          delay={0.5}
-        >
-          Platforms
-        </TextEffect>
+        <Link href="/">
+          <TextEffect
+            as="span"
+            preset="fade"
+            per="char"
+            className="text-lg text-zinc-600 dark:text-zinc-500"
+            delay={0.5}
+          >
+            Platforms
+          </TextEffect>
+        </Link>
       </div>
 
       <nav className="flex items-center gap-4 text-base text-zinc-500 dark:text-zinc-400">

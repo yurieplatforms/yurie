@@ -140,7 +140,15 @@ export function HistoryList() {
                         {chat.title}
                       </h4>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    {chat.messages.length > 0 && (
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2">
+                        {chat.messages[chat.messages.length - 1].content.replace(
+                          /[#*`_~-]/g,
+                          '',
+                        )}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 pt-1">
                       <span>{new Date(chat.updatedAt).toLocaleDateString()}</span>
                       <span>•</span>
                       <span>{chat.messages.length} messages</span>
@@ -148,7 +156,7 @@ export function HistoryList() {
                   </div>
                   <button
                     onClick={(e) => handleDelete(e, chat.id)}
-                    className="cursor-pointer absolute right-3 top-3 z-20 pointer-events-auto p-1 text-zinc-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-all hover:bg-zinc-200 hover:text-red-500 opacity-0 group-hover:opacity-100 focus:opacity-100 dark:hover:bg-zinc-800"
                     title="Delete chat"
                   >
                     <Trash2 className="w-4 h-4" />
