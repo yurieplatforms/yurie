@@ -2,28 +2,28 @@ export const WEBSITE_URL = 'https://yurie-fawn.vercel.app'
 
 export const PROMPT_SUGGESTIONS = [
   {
-    title: 'Dancing Plague of 1518',
+    title: 'Mars Vacation',
     prompt:
-      'Tell me about the bizarre dancing plague that struck Strasbourg in 1518. What caused hundreds of people to dance uncontrollably for days?',
+      'Plan a luxury weekend getaway to Mars. Include a visit to Olympus Mons, a spacewalk, and the best dining spots for freeze-dried ice cream.',
   },
   {
-    title: 'Octopus Intelligence',
+    title: 'Pirate Physics',
     prompt:
-      'Explore how octopuses demonstrate intelligence, like solving puzzles and escaping enclosures. Could they take over the world someday?',
+      'Explain the theory of relativity to me like I\'m a pirate captain. Use metaphors about sailing speeds and time on the open ocean.',
   },
   {
-    title: 'Voynich Manuscript',
+    title: 'Code Noir',
     prompt:
-      'Discuss the Voynich Manuscript, the mysterious book no one can decode. What wild theories exist about its contents?',
+      'I have a bug in my code. Narrate the debugging process like a gritty 1940s detective novel. The bug is the suspect.',
   },
   {
-    title: 'Weird Inventions',
+    title: 'Epic Rap Battle',
     prompt:
-      'Describe some of the strangest inventions in history, like the baby cage or the anti-eating face mask. Which one would you use?',
+      'Write a rap battle between a Coffee machine and a Tea kettle. Who has the better brew?',
   },
   {
-    title: 'Dragons in Modern Times',
+    title: 'Movie Pitch',
     prompt:
-      'If dragons existed today, how would they fit into modern society? What jobs would they have?',
+      'Pitch a movie about a sentient toaster that saves the world. Give me the logline, the main character\'s arc, and the plot twist ending.',
   },
 ]

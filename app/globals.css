@@ -94,7 +94,7 @@
   [data-code-block] {
     border-top-width: 0 !important; /* remove separator line under header */
     border-color: rgb(212 212 216 / 1); /* zinc-300 */
-    background-color: #202020; /* unified dark background */
+    background-color: rgb(244 244 245 / 0.9); /* match PromptInput bg-zinc-100/90 */
   }
 
   .dark [data-code-block] {
@@ -107,18 +107,25 @@
   [data-code-block] pre code {
     margin-top: 0;
     margin-bottom: 0;
+    background-color: rgb(244 244 245 / 0.9) !important; /* override Shiki inline bg */
+  }
+
+  .dark [data-code-block] pre,
+  .dark [data-code-block] pre code {
     background-color: #202020 !important; /* override Shiki inline bg */
   }
 
-  /* Code block header surface + text (match #202020 code background) */
+  /* Code block header surface + text (match code background) */
   [data-code-block-header] {
-    background-color: #202020 !important;
-    color: rgb(228 228 231 / 1); /* zinc-200 */
+    background-color: rgb(244 244 245 / 0.9) !important;
+    color: rgb(24 24 27 / 1); /* zinc-900 */
+    border-bottom: 1px solid rgb(228 228 231 / 1); /* zinc-200 */
   }
 
   .dark [data-code-block-header] {
     background-color: #202020 !important;
     color: rgb(228 228 231 / 1); /* zinc-200 */
+    border-bottom: 1px solid rgb(39 39 42 / 1); /* zinc-800, subtle separator */
   }
 
   /* Match AI-generated horizontal rule separators to PromptInput outline color */
