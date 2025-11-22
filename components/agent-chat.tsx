@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react'
 import type { UIMessage } from 'ai'
+import { useRouter } from 'next/navigation'
 import { getChat, saveChat, createChat } from '@/lib/history'
 import type {
   ChatMessage,
@@ -50,6 +51,7 @@ import {
 const initialMessages: ChatMessage[] = []
 
 export function AgentChat({ chatId }: { chatId?: string }) {
+  const router = useRouter()
   const [id, setId] = useState<string | undefined>(chatId)
   const [messages, setMessages] =
     useState<ChatMessage[]>(initialMessages)
@@ -61,6 +63,16 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
   const [hasJustCopied, setHasJustCopied] = useState(false)
 
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
+
   useEffect(() => {
     if (chatId) {
       const chat = getChat(chatId)
@@ -69,6 +81,10 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         setMessages(chat.messages)
       }
     } else {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
       setId(undefined)
       setMessages([])
     }
@@ -183,7 +199,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       currentId = newChat.id
       setId(currentId)
       saveChat(newChat)
-      window.history.replaceState(null, '', `/agent?id=${currentId}`)
+      router.replace(`/agent?id=${currentId}`)
 
       // Generate title immediately
       void fetch('/api/agent/title', {
@@ -216,12 +232,15 @@ export function AgentChat({ chatId }: { chatId?: string }) {
     let accumulatedReasoning = ''
     let accumulatedThinkingTime: number | undefined
 
+    abortControllerRef.current = new AbortController()
+
     try {
       const response = await fetch('/api/agent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           messages: nextMessages.map(
             ({ role, content, richContent }) => ({
@@ -379,10 +398,15 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         }
       }
     } catch (err) {
+      if ((err as Error).name === 'AbortError') {
+        // Request was aborted, do nothing
+        return
+      }
       console.error(err)
       setError('Network error while contacting the agent.')
     } finally {
       setIsLoading(false)
+      abortControllerRef.current = null
 
       // Final save and title generation
       if (currentId) {
@@ -427,6 +451,13 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   }
 
   const handleSubmit = () => {
+    if (isLoading) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
+      return
+    }
     void sendMessage()
   }
 
@@ -515,7 +546,9 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                                       Thought for {thoughtSeconds}s
                                     </span>
                                   ) : (
-                                    <span className="text-xs">Thought</span>
+                                    <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">
+                                      Thought
+                                    </span>
                                   )
                                 }
                               />
@@ -696,7 +729,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
               )}
 
               <PromptInputTextarea
-                placeholder="Ask me anything..."
+                placeholder="Ask anything"
                 className={files.length > 0 ? 'mt-1 mb-1' : undefined}
               />
               <PromptInputActions className="justify-between">
@@ -749,7 +782,11 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                       size="icon"
                       className="h-8 w-8 cursor-pointer rounded-full bg-zinc-900/5 text-zinc-900 hover:bg-zinc-900/10 dark:bg-zinc-50/10 dark:text-zinc-50 dark:hover:bg-zinc-50/20"
                       onClick={handleSubmit}
-                      disabled={isLoading && input.trim().length === 0}
+                      disabled={
+                        isLoading
+                          ? false
+                          : input.trim().length === 0 && files.length === 0
+                      }
                     >
                       {isLoading ? (
                         <Square className="h-4 w-4 fill-current" />

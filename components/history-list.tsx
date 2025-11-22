@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Trash2 } from 'lucide-react'
+import { Trash2, MessageSquareDashed } from 'lucide-react'
 import { getChats, deleteChat, clearHistory } from '@/lib/history'
 import type { SavedChat } from '@/lib/types'
 import { Button } from '@/components/ui/button'
@@ -75,20 +75,39 @@ export function HistoryList() {
   if (chats.length === 0) {
     return (
       <motion.div
-        className="flex min-h-[50vh] flex-col items-center justify-center text-center"
+        className="flex min-h-[50vh] flex-col items-center justify-center p-4"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          No chat history
-        </h3>
-        <p className="mt-2 mb-8 max-w-sm text-sm text-zinc-500 dark:text-zinc-400">
-          Conversations you have with the agent will appear here. Start a new chat to begin.
-        </p>
-        <Link href="/agent">
-          <Button className="rounded-full px-6">Start a New Chat</Button>
-        </Link>
+        <div className="flex w-full max-w-sm flex-col items-center justify-center text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900">
+            <img src="/favicon.ico" alt="Yurie" className="h-8 w-8 opacity-50 grayscale" />
+          </div>
+          <h3 className="mb-2 text-lg font-medium text-zinc-900 dark:text-zinc-100">
+            Nothing here yet
+          </h3>
+          <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
+            Start a conversation to see your threads here.
+          </p>
+          <AnimatedBackground
+            enableHover
+            className="h-full w-full rounded-lg bg-zinc-100 dark:bg-zinc-900/80"
+            transition={{
+              type: 'spring',
+              bounce: 0,
+              duration: 0.2,
+            }}
+          >
+            <Link
+              href="/agent"
+              className="relative -mx-3 inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium text-zinc-950 dark:text-zinc-50 transition-colors hover:text-zinc-950"
+              data-id="start-chat"
+            >
+              Message Yurie
+            </Link>
+          </AnimatedBackground>
+        </div>
       </motion.div>
     )
   }
@@ -106,12 +125,21 @@ export function HistoryList() {
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium">Your conversations</h2>
-          <button
-            onClick={handleClearHistory}
-            className="cursor-pointer text-sm text-zinc-500 transition-colors hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50"
-          >
-            Clear all
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/agent"
+              className="cursor-pointer text-sm text-zinc-500 transition-colors hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50 flex items-center gap-2"
+            >
+              New thread
+            </Link>
+            <div className="h-4 w-[1px] bg-zinc-300 dark:bg-zinc-700" />
+            <button
+              onClick={handleClearHistory}
+              className="cursor-pointer text-sm text-zinc-500 transition-colors hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50"
+            >
+              Clear all
+            </button>
+          </div>
         </div>
         
         <div className="flex flex-col space-y-0">

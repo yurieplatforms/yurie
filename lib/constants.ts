@@ -2,28 +2,28 @@ export const WEBSITE_URL = 'https://yurie-fawn.vercel.app'
 
 export const PROMPT_SUGGESTIONS = [
   {
-    title: 'Ramsay at Hogwarts',
+    title: 'Dancing Plague of 1518',
     prompt:
-      'Write a script where Gordon Ramsay is the new Potions Master at Hogwarts. Have him critique Harry Potter\'s Draught of Living Death for being "raw" and "pathetic."',
-  },
-  {
-    title: 'The Cadaver Synod',
-    prompt:
-      'Tell the macabre story of Pope Formosus, whose corpse was dug up, dressed in vestments, and put on trial by his successor. What was the verdict?',
-  },
-  {
-    title: 'Vacuum Decay',
-    prompt:
-      'Explain the terrifying concept of "False Vacuum Decay." Is it true that the universe could instantly end at the speed of light because a bubble of "true vacuum" formed?',
+      'Tell me about the bizarre dancing plague that struck Strasbourg in 1518. What caused hundreds of people to dance uncontrollably for days?',
   },
   {
     title: 'Octopus Intelligence',
     prompt:
-      'Octopuses have nine brains and blue blood. Explore their alien-like consciousness and how their decentralized nervous system challenges our definition of "intelligence."',
+      'Explore how octopuses demonstrate intelligence, like solving puzzles and escaping enclosures. Could they take over the world someday?',
   },
   {
-    title: 'Last Thursdayism',
+    title: 'Voynich Manuscript',
     prompt:
-      'Argue for "Last Thursdayism"—the satirical theory that the universe was created last Thursday, complete with all your memories and false physical evidence of the past.',
+      'Discuss the Voynich Manuscript, the mysterious book no one can decode. What wild theories exist about its contents?',
+  },
+  {
+    title: 'Weird Inventions',
+    prompt:
+      'Describe some of the strangest inventions in history, like the baby cage or the anti-eating face mask. Which one would you use?',
+  },
+  {
+    title: 'Dragons in Modern Times',
+    prompt:
+      'If dragons existed today, how would they fit into modern society? What jobs would they have?',
   },
 ]
