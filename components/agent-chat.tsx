@@ -1,9 +1,9 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
-import type { UIMessage } from 'ai'
 import { useRouter } from 'next/navigation'
 import { getChat, saveChat, createChat } from '@/lib/history'
+import { useAuth } from '@/components/auth-provider'
 import type {
   ChatMessage,
   FileContentSegment,
@@ -52,6 +52,7 @@ const initialMessages: ChatMessage[] = []
 
 export function AgentChat({ chatId }: { chatId?: string }) {
   const router = useRouter()
+  const { user } = useAuth()
   const [id, setId] = useState<string | undefined>(chatId)
   const [messages, setMessages] =
     useState<ChatMessage[]>(initialMessages)
@@ -74,21 +75,24 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   }, [])
 
   useEffect(() => {
-    if (chatId) {
-      const chat = getChat(chatId)
-      if (chat) {
-        setId(chatId)
-        setMessages(chat.messages)
+    async function loadChat() {
+      if (chatId) {
+        const chat = await getChat(chatId, user?.id)
+        if (chat) {
+          setId(chatId)
+          setMessages(chat.messages)
+        }
+      } else {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort()
+          abortControllerRef.current = null
+        }
+        setId(undefined)
+        setMessages([])
       }
-    } else {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-        abortControllerRef.current = null
-      }
-      setId(undefined)
-      setMessages([])
     }
-  }, [chatId, setId, setMessages])
+    loadChat()
+  }, [chatId, user])
 
   // Track when the current assistant response started "thinking"
   // so we can freeze a per-message "Thought for Xs" duration once
@@ -173,6 +177,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       role: 'user',
       content: textSegment.text,
       richContent: richContentSegments,
+      name: user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? 'User',
     }
 
     const assistantMessageId = crypto.randomUUID()
@@ -184,6 +189,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       id: assistantMessageId,
       role: 'assistant',
       content: '',
+      name: 'Yurie',
     }
 
     const nextMessages = [...messages, userMessage, assistantPlaceholder]
@@ -198,7 +204,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       const newChat = createChat(nextMessages)
       currentId = newChat.id
       setId(currentId)
-      saveChat(newChat)
+      await saveChat(newChat, user?.id)
       router.replace(`/agent?id=${currentId}`)
 
       // Generate title immediately
@@ -208,22 +214,22 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         body: JSON.stringify({ messages: [userMessage] }),
       })
         .then((res) => res.json())
-        .then((data) => {
+        .then(async (data) => {
           if (data.title) {
-            const latestChat = getChat(currentId!)
+            const latestChat = await getChat(currentId!, user?.id)
             if (latestChat) {
               latestChat.title = data.title
-              saveChat(latestChat)
+              await saveChat(latestChat, user?.id)
             }
           }
         })
         .catch((err) => console.error('Failed to generate title', err))
     } else {
-      const chat = getChat(currentId)
+      const chat = await getChat(currentId, user?.id)
       if (chat) {
         chat.messages = nextMessages
         chat.updatedAt = Date.now()
-        saveChat(chat)
+        await saveChat(chat, user?.id)
       }
     }
 
@@ -410,7 +416,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
       // Final save and title generation
       if (currentId) {
-        const chat = getChat(currentId)
+        const chat = await getChat(currentId, user?.id)
         if (chat) {
           // Construct the final messages array
           const finalMessages = nextMessages.map((msg) => {
@@ -444,7 +450,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
           chat.messages = finalMessages
           chat.updatedAt = Date.now()
-          saveChat(chat)
+          await saveChat(chat, user?.id)
         }
       }
     }
@@ -543,7 +549,10 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                                     />
                                   ) : typeof thoughtSeconds === 'number' ? (
                                     <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">
-                                      Thought for {thoughtSeconds}s
+                                      Thought for{' '}
+                                      {thoughtSeconds >= 60
+                                        ? `${Math.floor(thoughtSeconds / 60)}m ${thoughtSeconds % 60}s`
+                                        : `${thoughtSeconds}s`}
                                     </span>
                                   ) : (
                                     <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">

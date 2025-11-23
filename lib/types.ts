@@ -35,6 +35,7 @@ export type ChatMessage = {
   reasoning?: string
   thinkingDurationSeconds?: number
   suggestions?: string[]
+  name?: string
 }
 
 export type SavedChat = {

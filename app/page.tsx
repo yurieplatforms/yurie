@@ -4,6 +4,8 @@ import { motion } from 'motion/react'
 import Link from 'next/link'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 import { BLOG_POSTS } from './data'
+import { Footer } from '@/app/footer'
+import { useAuth } from '@/components/auth-provider'
 
 const VARIANTS_CONTAINER = {
   hidden: { opacity: 0 },
@@ -89,12 +91,24 @@ function ContentSection({
 
 export default function Personal() {
   const [greeting, setGreeting] = useState('Welcome')
+  const { user } = useAuth()
 
   useEffect(() => {
     const now = new Date()
     const hour = now.getHours()
-    setGreeting(getGreetingByHour(hour))
-  }, [])
+    const baseGreeting = getGreetingByHour(hour)
+
+    if (user?.user_metadata?.full_name) {
+      const firstName = user.user_metadata.full_name.split(' ')[0]
+      if (firstName) {
+        setGreeting(`${baseGreeting.slice(0, -1)}, ${firstName}!`)
+      } else {
+        setGreeting(baseGreeting)
+      }
+    } else {
+      setGreeting(baseGreeting)
+    }
+  }, [user])
 
   return (
     <motion.main
@@ -109,11 +123,19 @@ export default function Personal() {
       >
         <h2 className="mb-2 text-lg font-medium">{greeting}</h2>
         <p className="text-zinc-600 dark:text-zinc-400">
-          Exploring how AI agents are designed, built, and experienced.
-          Research and experiments at the intersection of interaction design, autonomy, and engineering.
+          Welcome to my digital garden. Here, I share my journey exploring AI agents, 
+          design patterns, and the future of human-computer interaction.
         </p>
       </motion.section>
       <ContentSection title="Blog" items={BLOG_POSTS} />
+
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 w-full">
+        <div className="pointer-events-auto mx-auto w-full max-w-screen-sm px-4">
+           <div className="bg-white dark:bg-zinc-950">
+             <Footer className="mt-0" />
+           </div>
+        </div>
+      </div>
     </motion.main>
   )
 }

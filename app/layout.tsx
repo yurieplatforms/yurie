@@ -5,6 +5,7 @@ import './globals.css'
 import { Header } from './header'
 import { FooterWrapper } from './footer-wrapper'
 import { ThemeProvider } from 'next-themes'
+import { AuthProvider } from '@/components/auth-provider'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -65,13 +66,15 @@ export default function RootLayout({
           storageKey="theme"
           defaultTheme="system"
         >
-          <div className="flex min-h-screen w-full flex-col font-[family-name:var(--font-inter-tight)]">
-            <div className="relative mx-auto w-full max-w-screen-sm flex-1 px-4 pt-8">
-              <Header />
-              {children}
-              <FooterWrapper />
+          <AuthProvider>
+            <div className="flex min-h-screen w-full flex-col font-[family-name:var(--font-inter-tight)]">
+              <div className="relative mx-auto w-full max-w-screen-sm flex-1 px-4 pt-8">
+                <Header />
+                {children}
+                <FooterWrapper />
+              </div>
             </div>
-          </div>
+          </AuthProvider>
         </ThemeProvider>
         <Analytics />
       </body>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Trash2, MessageSquareDashed } from 'lucide-react'
 import { getChats, deleteChat, clearHistory } from '@/lib/history'
+import { useAuth } from '@/components/auth-provider'
 import type { SavedChat } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { motion } from 'motion/react'
@@ -29,39 +30,46 @@ const TRANSITION_SECTION = {
 }
 
 export function HistoryList() {
+  const { user } = useAuth()
   const [chats, setChats] = useState<SavedChat[]>([])
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    setChats(getChats())
+    
+    async function fetchChats() {
+      const data = await getChats(user?.id)
+      setChats(data)
+    }
+    fetchChats()
 
     const handleHistoryUpdate = () => {
-      setChats(getChats())
+      fetchChats()
     }
 
     window.addEventListener('history-updated', handleHistoryUpdate)
     return () => {
       window.removeEventListener('history-updated', handleHistoryUpdate)
     }
-  }, [])
+  }, [user])
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault()
     e.stopPropagation()
     if (window.confirm('Are you sure you want to delete this chat?')) {
-      deleteChat(id)
-      setChats(getChats())
+      await deleteChat(id, user?.id)
+      const data = await getChats(user?.id)
+      setChats(data)
     }
   }
 
-  const handleClearHistory = () => {
+  const handleClearHistory = async () => {
     if (
       window.confirm(
         'Are you sure you want to clear all history? This cannot be undone.',
       )
     ) {
-      clearHistory()
+      await clearHistory(user?.id)
       setChats([])
     }
   }
