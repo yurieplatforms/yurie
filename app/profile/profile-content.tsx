@@ -41,7 +41,6 @@ export function ProfileContent({
   const [avatarUrl, setAvatarUrl] = useState(user.user_metadata?.avatar_url || null)
   const [isUploading, setIsUploading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return

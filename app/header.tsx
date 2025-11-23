@@ -3,7 +3,6 @@ import { TextEffect } from '@/components/ui/text-effect'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/auth-provider'
-import { Button } from '@/components/ui/button'
 
 const NAV_ITEMS = [
   { href: '/agent', label: 'Agent' },

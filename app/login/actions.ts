@@ -17,7 +17,7 @@ export async function login(formData: FormData) {
   const validated = authSchema.safeParse(data)
 
   if (!validated.success) {
-    return { error: validated.error.errors[0].message }
+    return { error: validated.error.issues[0].message }
   }
 
   const { error } = await supabase.auth.signInWithPassword(data)
@@ -41,7 +41,7 @@ export async function signup(formData: FormData) {
   const validated = authSchema.safeParse(data)
 
   if (!validated.success) {
-    return { error: validated.error.errors[0].message }
+    return { error: validated.error.issues[0].message }
   }
 
   const { error } = await supabase.auth.signUp(data)

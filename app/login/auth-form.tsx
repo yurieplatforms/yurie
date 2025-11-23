@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import { signup } from './actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

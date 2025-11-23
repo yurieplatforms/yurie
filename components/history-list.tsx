@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Trash2, MessageSquareDashed } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { getChats, deleteChat, clearHistory } from '@/lib/history'
 import { useAuth } from '@/components/auth-provider'
 import type { SavedChat } from '@/lib/types'
-import { Button } from '@/components/ui/button'
 import { motion } from 'motion/react'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 
