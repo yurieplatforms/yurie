@@ -37,7 +37,7 @@ export function AuthForm({
         
         const validated = authSchema.safeParse(data)
         if (!validated.success) {
-          setLocalError(validated.error.errors[0].message)
+          setLocalError(validated.error.issues[0].message)
           return
         }
 

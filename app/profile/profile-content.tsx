@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { motion } from 'motion/react'
 import { User } from '@supabase/supabase-js'
 import { Input } from '@/components/ui/input'
