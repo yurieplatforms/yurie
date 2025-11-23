@@ -2,6 +2,7 @@ import { HistoryList } from '@/components/history-list'
 import { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { getUserChats } from '@/lib/history'
+import { SavedChat } from '@/lib/types'
 
 export const metadata: Metadata = {
   title: 'Threads',
@@ -13,7 +14,7 @@ export default async function HistoryPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  let initialChats = []
+  let initialChats: SavedChat[] = []
   if (user) {
     initialChats = await getUserChats(user.id, supabase)
   }

@@ -19,7 +19,7 @@ import {
   PaperclipIcon,
   XIcon,
 } from "lucide-react";
-import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
+import type { ComponentProps, HTMLAttributes, ReactElement, ComponentPropsWithoutRef } from "react";
 import { createContext, memo, useContext, useEffect, useState, useMemo } from "react";
 import { Streamdown } from "streamdown";
 
@@ -278,7 +278,6 @@ export type MessageBranchNextProps = ComponentProps<typeof Button>;
 
 export const MessageBranchNext = ({
   children,
-  className: _className,
   ...props
 }: MessageBranchNextProps) => {
   const { goToNext, totalBranches } = useMessageBranch();
@@ -341,28 +340,28 @@ export const MessageResponse = memo(
       // Keep Streamdown's rich code block UI (header, controls), but make
       // structural elements match blog-style prose.
       components={{
-        blockquote({ children, ...rest }: any) {
+        blockquote({ children, ...rest }: React.ComponentPropsWithoutRef<'blockquote'>) {
           return <blockquote {...rest}>{children}</blockquote>;
         },
-        hr(rest: any) {
+        hr(rest: React.ComponentPropsWithoutRef<'hr'>) {
           return <hr {...rest} />;
         },
-        table({ children, ...rest }: any) {
+        table({ children, ...rest }: React.ComponentPropsWithoutRef<'table'>) {
           return <table {...rest}>{children}</table>;
         },
-        thead({ children, ...rest }: any) {
+        thead({ children, ...rest }: React.ComponentPropsWithoutRef<'thead'>) {
           return <thead {...rest}>{children}</thead>;
         },
-        tbody({ children, ...rest }: any) {
+        tbody({ children, ...rest }: React.ComponentPropsWithoutRef<'tbody'>) {
           return <tbody {...rest}>{children}</tbody>;
         },
-        tr({ children, ...rest }: any) {
+        tr({ children, ...rest }: React.ComponentPropsWithoutRef<'tr'>) {
           return <tr {...rest}>{children}</tr>;
         },
-        th({ children, ...rest }: any) {
+        th({ children, ...rest }: React.ComponentPropsWithoutRef<'th'>) {
           return <th {...rest}>{children}</th>;
         },
-        td({ children, ...rest }: any) {
+        td({ children, ...rest }: React.ComponentPropsWithoutRef<'td'>) {
           return <td {...rest}>{children}</td>;
         },
         ...components,

@@ -77,7 +77,6 @@ interface PromptInputTextareaProps
 export function PromptInputTextarea({
   className,
   rows = 1,
-  disableAutosize: _disableAutosize,
   onKeyDown,
   disabled,
   ...props
