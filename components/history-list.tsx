@@ -28,19 +28,32 @@ const TRANSITION_SECTION = {
   duration: 0.3,
 }
 
-export function HistoryList() {
+interface HistoryListProps {
+  initialChats?: SavedChat[]
+}
+
+export function HistoryList({ initialChats = [] }: HistoryListProps) {
   const { user } = useAuth()
-  const [chats, setChats] = useState<SavedChat[]>([])
+  const [chats, setChats] = useState<SavedChat[]>(initialChats)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
     
     async function fetchChats() {
+      // If we have initial server data and a user, we might want to skip the immediate fetch
+      // or fetch in background to ensure consistency without clearing state.
       const data = await getChats(user?.id)
-      setChats(data)
+      // Only update if we have data or if we didn't have initial data
+      if (data.length > 0 || initialChats.length === 0) {
+        setChats(data)
+      }
     }
-    fetchChats()
+    
+    // Only fetch if we don't have initial chats, or if user state changed/settled
+    if (initialChats.length === 0 || user?.id) {
+       fetchChats()
+    }
 
     const handleHistoryUpdate = () => {
       fetchChats()
@@ -50,7 +63,7 @@ export function HistoryList() {
     return () => {
       window.removeEventListener('history-updated', handleHistoryUpdate)
     }
-  }, [user])
+  }, [user, initialChats.length])
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault()
@@ -73,7 +86,9 @@ export function HistoryList() {
     }
   }
 
-  if (!mounted) {
+  // Show loading state only if we have no data and are not mounted (for client-side only fallback)
+  // For server-side provided data, we render immediately.
+  if (!mounted && initialChats.length === 0) {
     return (
       <div className="p-4 text-center text-zinc-500">Loading history...</div>
     )
@@ -184,7 +199,7 @@ export function HistoryList() {
                       </p>
                     )}
                     <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 pt-1">
-                      <span>{new Date(chat.updatedAt).toLocaleDateString()}</span>
+                      <span suppressHydrationWarning>{new Date(chat.updatedAt).toLocaleDateString()}</span>
                       <span>•</span>
                       <span>{chat.messages.length} messages</span>
                     </div>

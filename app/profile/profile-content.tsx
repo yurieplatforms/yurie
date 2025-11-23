@@ -5,7 +5,7 @@ import { motion } from 'motion/react'
 import { User } from '@supabase/supabase-js'
 import { Input } from '@/components/ui/input'
 import { updateProfile } from './actions'
-import { LogOut, Edit2, Upload, Loader2, Check, X } from 'lucide-react'
+import { LogOut, Edit2, Upload, Loader2, Check, X, Camera, Image as ImageIcon } from 'lucide-react'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 import { createClient } from '@/lib/supabase/client'
 import { Footer } from '@/app/footer'
@@ -90,7 +90,7 @@ export function ProfileContent({
       <motion.section
         variants={VARIANTS_SECTION}
         transition={TRANSITION_SECTION}
-        className="flex flex-col items-center space-y-4 text-center sm:items-start sm:text-left"
+        className="flex flex-col items-start space-y-4 text-left"
       >
         <div className="flex items-center gap-6 w-full">
           <div className="relative group">
@@ -102,7 +102,7 @@ export function ProfileContent({
               )}
             </div>
             
-            {isEditing && (
+            {isEditing ? (
               <>
                 <label 
                   htmlFor="avatar-upload" 
@@ -111,10 +111,31 @@ export function ProfileContent({
                   {isUploading ? (
                     <Loader2 className="h-6 w-6 animate-spin text-white" />
                   ) : (
-                    <Upload className="h-6 w-6 text-white" />
+                    <ImageIcon className="h-6 w-6 text-white" />
                   )}
                 </label>
                 <input 
+                  id="avatar-upload" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleFileChange}
+                  disabled={isUploading}
+                />
+              </>
+            ) : (
+              <>
+                <label 
+                  htmlFor="avatar-upload" 
+                  className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-white" />
+                  )}
+                </label>
+                 <input 
                   id="avatar-upload" 
                   type="file" 
                   accept="image/*" 
@@ -182,7 +203,7 @@ export function ProfileContent({
                 </div>
                </div>
             ) : (
-              <div className="flex flex-col sm:items-start items-center">
+              <div className="flex flex-col items-start">
                 <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                   {user.user_metadata?.full_name || user.email}
                   <button 

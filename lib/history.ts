@@ -1,48 +1,52 @@
 import { createClient } from '@/lib/supabase/client'
 import { SavedChat, ChatMessage } from './types'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 const STORAGE_KEY = 'yurie-chat-history'
 
 const getSupabase = () => createClient()
 
+export async function getUserChats(
+  userId: string,
+  supabase: SupabaseClient
+): Promise<SavedChat[]> {
+  const { data, error } = await supabase
+    .from('chats')
+    .select('*, chat_messages:messages(id, role, content, created_at)')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+
+  if (error) {
+    console.error('Failed to fetch chats', error)
+    return []
+  }
+
+  return data.map((chat) => {
+    // Sort messages by created_at to ensure correct order
+    const sortedMessages = (chat.chat_messages || []).sort(
+      (a: any, b: any) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    )
+
+    return {
+      id: chat.id,
+      title: chat.title,
+      createdAt: new Date(chat.created_at).getTime(),
+      updatedAt: new Date(chat.updated_at).getTime(),
+      messages: sortedMessages.map((m: any) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        // Only include minimal fields for list view
+      })),
+    }
+  })
+}
+
 export async function getChats(userId?: string): Promise<SavedChat[]> {
   if (userId) {
     const supabase = getSupabase()
-    const { data, error } = await supabase
-      .from('chats')
-      .select('*, chat_messages:messages(*)')
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false })
-
-    if (error) {
-      console.error('Failed to fetch chats', error)
-      return []
-    }
-
-    return data.map((chat) => {
-      // Sort messages by created_at to ensure correct order
-      const sortedMessages = (chat.chat_messages || []).sort(
-        (a: any, b: any) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      )
-
-      return {
-        id: chat.id,
-        title: chat.title,
-        createdAt: new Date(chat.created_at).getTime(),
-        updatedAt: new Date(chat.updated_at).getTime(),
-        messages: sortedMessages.map((m: any) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          richContent: m.rich_content,
-          reasoning: m.reasoning,
-          thinkingDurationSeconds: m.thinking_duration_seconds,
-          suggestions: m.suggestions,
-          name: m.name,
-        })),
-      }
-    })
+    return getUserChats(userId, supabase)
   }
 
   if (typeof window === 'undefined') return []
@@ -175,7 +179,9 @@ export async function saveChat(chat: SavedChat, userId?: string) {
   }
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(chats))
-  window.dispatchEvent(new Event('history-updated'))
+  if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(new Event('history-updated'))
+  }
 }
 
 export async function deleteChat(id: string, userId?: string) {
@@ -192,7 +198,9 @@ export async function deleteChat(id: string, userId?: string) {
   const chats: SavedChat[] = JSON.parse(stored)
   const newChats = chats.filter((c) => c.id !== id)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(newChats))
-  window.dispatchEvent(new Event('history-updated'))
+  if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(new Event('history-updated'))
+  }
 }
 
 export async function clearHistory(userId?: string) {
@@ -205,7 +213,9 @@ export async function clearHistory(userId?: string) {
 
   if (typeof window === 'undefined') return
   localStorage.removeItem(STORAGE_KEY)
-  window.dispatchEvent(new Event('history-updated'))
+  if (typeof window !== 'undefined' && window.dispatchEvent) {
+    window.dispatchEvent(new Event('history-updated'))
+  }
 }
 
 export function createChat(messages: ChatMessage[] = []): SavedChat {

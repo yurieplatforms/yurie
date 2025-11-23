@@ -2,28 +2,28 @@ export const WEBSITE_URL = 'https://yurie-fawn.vercel.app'
 
 export const PROMPT_SUGGESTIONS = [
   {
-    title: 'Mars Vacation',
+    title: 'Science of Taste',
     prompt:
-      'Plan a luxury weekend getaway to Mars. Include a visit to Olympus Mons, a spacewalk, and the best dining spots for freeze-dried ice cream.',
+      'If we could taste the periodic table elements, describe the flavor profile of the Noble Gases compared to the Alkaline Earth Metals. Which one would be spicy?',
   },
   {
-    title: 'Pirate Physics',
+    title: 'Jester\'s History',
     prompt:
-      'Explain the theory of relativity to me like I\'m a pirate captain. Use metaphors about sailing speeds and time on the open ocean.',
+      'Reconstruct the diary entry of a court jester who just witnessed the signing of the Magna Carta but is more concerned about his missing hat than the politics.',
   },
   {
-    title: 'Code Noir',
+    title: 'Cosmic Travel',
     prompt:
-      'I have a bug in my code. Narrate the debugging process like a gritty 1940s detective novel. The bug is the suspect.',
+      'You are a travel agent for interdimensional beings. Pitch a vacation package to the Event Horizon of a Black Hole, highlighting the "time-dilation" spa treatments.',
   },
   {
-    title: 'Epic Rap Battle',
+    title: 'Ethical Sandwich',
     prompt:
-      'Write a rap battle between a Coffee machine and a Tea kettle. Who has the better brew?',
+      'Debate the moral implications of a sentient sandwich that begs to be eaten versus one that begs NOT to be eaten. Who is the true villain in this lunch scenario?',
   },
   {
-    title: 'Movie Pitch',
+    title: 'History Pizza',
     prompt:
-      'Pitch a movie about a sentient toaster that saves the world. Give me the logline, the main character\'s arc, and the plot twist ending.',
+      'Create a synopsis for a reality TV show where historical figures have to run a modern-day pizzeria. Who is the head chef, who is delivery, and who gets fired first?',
   },
 ]

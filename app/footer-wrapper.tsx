@@ -6,10 +6,11 @@ import { Footer } from './footer'
 export function FooterWrapper() {
   const pathname = usePathname()
 
-  // Hide the global footer on the Agent, Profile, and Home pages
+  // Hide the global footer on the Agent, Profile, Threads, and Home pages
   if (
     pathname?.startsWith('/agent') ||
     pathname?.startsWith('/profile') ||
+    pathname?.startsWith('/history') ||
     pathname === '/' ||
     pathname === '/login'
   ) {

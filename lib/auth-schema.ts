@@ -7,3 +7,4 @@ export const authSchema = z.object({
 
 export type AuthFormData = z.infer<typeof authSchema>
 
+
