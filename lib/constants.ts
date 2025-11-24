@@ -2,28 +2,28 @@ export const WEBSITE_URL = 'https://yurie-fawn.vercel.app'
 
 export const PROMPT_SUGGESTIONS = [
   {
-    title: 'Science of Taste',
+    title: 'Quantum Pharaoh\'s Curse',
     prompt:
-      'If we could taste the periodic table elements, describe the flavor profile of the Noble Gases compared to the Alkaline Earth Metals. Which one would be spicy?',
+      'In a world where ancient Egyptian pharaohs harness quantum superposition, describe a "cursed" tomb that exists in multiple states. How would archaeologists solve the puzzle, and what hilarious paradoxes ensue?',
   },
   {
-    title: 'Jester\'s History',
+    title: 'Darwin\'s Dino Debate',
     prompt:
-      'Reconstruct the diary entry of a court jester who just witnessed the signing of the Magna Carta but is more concerned about his missing hat than the politics.',
+      'Charles Darwin debates evolution with a sentient dinosaur who claims to have witnessed the asteroid impact. Incorporate real scientific facts with absurd arguments, like why feathers are overrated.',
   },
   {
-    title: 'Cosmic Travel',
+    title: 'Black Hole History Heist',
     prompt:
-      'You are a travel agent for interdimensional beings. Pitch a vacation package to the Event Horizon of a Black Hole, highlighting the "time-dilation" spa treatments.',
+      'Plan a heist to steal historical artifacts from inside a black hole, using time dilation. Which figures from history join the team, and how does gravity mess up their plans in funny ways?',
   },
   {
-    title: 'Ethical Sandwich',
+    title: 'Medieval Microbe Mayhem',
     prompt:
-      'Debate the moral implications of a sentient sandwich that begs to be eaten versus one that begs NOT to be eaten. Who is the true villain in this lunch scenario?',
+      'Knights discover microbiology during the plague and embark on a quest to "slay the invisible beasts." Mix medieval lore with bacterial science, including a wizard who invents antibiotics from potions.',
   },
   {
-    title: 'History Pizza',
+    title: 'Einstein\'s Paradox Party',
     prompt:
-      'Create a synopsis for a reality TV show where historical figures have to run a modern-day pizzeria. Who is the head chef, who is delivery, and who gets fired first?',
+      'Albert Einstein hosts a party with time-traveling guests from different eras. Explain relativity through party games that cause paradoxes, like dancing with your future self.',
   },
 ]

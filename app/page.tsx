@@ -12,7 +12,7 @@ export default async function Page({
 }) {
   const { id } = await searchParams
   return (
-    <main className="flex min-h-[60vh] flex-col space-y-6">
+    <main className="flex min-h-[calc(100vh-6rem)] flex-col space-y-6">
       <div className="flex-1">
         <AgentChat chatId={id} />
       </div>

@@ -9,7 +9,7 @@ import { LogOut, Edit2, Loader2, Check, X, Image as ImageIcon } from 'lucide-rea
 import { AnimatedBackground } from '@/components/ui/animated-background'
 import { createClient } from '@/app/supabase/client'
 import { Footer } from '@/components/layout/footer'
-import { useAuth } from '@/components/auth-provider'
+import { useAuth } from '@/components/providers/auth-provider'
 
 const VARIANTS_CONTAINER = {
   hidden: { opacity: 0 },

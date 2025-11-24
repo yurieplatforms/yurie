@@ -515,8 +515,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   }
 
   return (
-    <div className="relative">
-      <div className="flex flex-col gap-4 pb-40">
+    <div className="relative h-full">
+      <div className="flex h-full flex-col gap-4 pb-24">
         <div className="space-y-3">
           {messages.map((message, index) => {
             const isAssistant = message.role === 'assistant'
@@ -680,7 +680,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
           })}
 
           {!isLoading && messages.length === 0 && (
-            <div className="space-y-3">
+            <div className="mt-auto space-y-3">
               <p className="mb-5 text-lg font-medium">
                 {greeting}
                 {user?.user_metadata?.full_name
