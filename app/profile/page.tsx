@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/app/supabase/server'
 import { redirect } from 'next/navigation'
 import { Metadata } from 'next'
 import { ProfileContent } from './profile-content'

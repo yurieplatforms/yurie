@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ai/loader'
 import { cn } from '@/lib/utils'
 import { Eye, EyeOff } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/app/supabase/client'
 import { authSchema } from '@/lib/auth-schema'
 
 export function AuthForm({

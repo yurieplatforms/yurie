@@ -122,7 +122,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
             }}
           >
             <Link
-              href="/agent"
+              href="/"
               className="relative -mx-3 inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium text-zinc-950 dark:text-zinc-50 transition-colors hover:text-zinc-950"
               data-id="start-chat"
             >
@@ -149,7 +149,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
           <h2 className="text-lg font-medium">Your conversations</h2>
           <div className="flex items-center gap-2">
             <Link
-              href="/agent"
+              href="/"
               className="cursor-pointer text-sm text-zinc-500 transition-colors hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50 flex items-center gap-2"
             >
               New thread
@@ -181,7 +181,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
                 className="-mx-3 rounded-xl px-3 py-3 relative group"
               >
                   <Link
-                    href={`/agent?id=${chat.id}`}
+                    href={`/?id=${chat.id}`}
                     className="absolute inset-0 z-0"
                   />
                   <div className="relative z-10 pointer-events-none flex flex-col space-y-1 pr-8">

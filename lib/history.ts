@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/app/supabase/client'
 import { SavedChat, ChatMessage } from './types'
 import { SupabaseClient } from '@supabase/supabase-js'
 

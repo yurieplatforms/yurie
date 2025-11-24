@@ -188,7 +188,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       currentId = newChat.id
       setId(currentId)
       await saveChat(newChat, user?.id)
-      router.replace(`/agent?id=${currentId}`)
+      router.replace(`/?id=${currentId}`)
 
       // Generate title immediately
       void fetch('/api/agent/title', {

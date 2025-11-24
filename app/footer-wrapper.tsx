@@ -8,7 +8,6 @@ export function FooterWrapper() {
 
   // Hide the global footer on the Agent, Profile, Threads, and Home pages
   if (
-    pathname?.startsWith('/agent') ||
     pathname?.startsWith('/profile') ||
     pathname?.startsWith('/history') ||
     pathname === '/' ||
