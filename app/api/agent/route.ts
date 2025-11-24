@@ -80,8 +80,9 @@ export async function POST(request: Request) {
         'X-Title': process.env.NEXT_PUBLIC_APP_TITLE ?? '',
       },
       body: JSON.stringify({
-        model: '@preset/yurie-ai',
+        model: 'google/gemini-3-pro-image-preview',
         stream: true,
+        n: 1,
         messages: [
           {
             role: 'system',
@@ -90,9 +91,7 @@ export async function POST(request: Request) {
           },
           ...messages,
         ],
-        reasoning: {
-          effort: 'high',
-        },
+        modalities: ['image', 'text'],
         ...(useWebSearch
           ? {
               plugins: [

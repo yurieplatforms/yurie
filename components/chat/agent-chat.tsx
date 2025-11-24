@@ -219,6 +219,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
     // Track accumulated response for final save
     let accumulatedContent = ''
     let accumulatedReasoning = ''
+    let accumulatedImages: ImageContentSegment[] = []
     let accumulatedThinkingTime: number | undefined
 
     abortControllerRef.current = new AbortController()
@@ -321,8 +322,11 @@ export function AgentChat({ chatId }: { chatId?: string }) {
               typeof deltaContent === 'string' && deltaContent.length > 0
             const hasReasoningDelta =
               typeof deltaReasoning === 'string' && deltaReasoning.length > 0
+            
+            const deltaImages = choice?.delta?.images
+            const hasImageDelta = Array.isArray(deltaImages) && deltaImages.length > 0
 
-            if (!hasContentDelta && !hasReasoningDelta) {
+            if (!hasContentDelta && !hasReasoningDelta && !hasImageDelta) {
               continue
             }
 
@@ -333,6 +337,23 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             }
             if (hasReasoningDelta) {
               accumulatedReasoning += deltaReasoning
+            }
+            if (hasImageDelta) {
+              deltaImages.forEach((img: { image_url: { url: string } }) => {
+                const exists = accumulatedImages.some(
+                  (existing) => existing.image_url.url === img.image_url.url,
+                )
+                if (!exists) {
+                  accumulatedImages.push({
+                    type: 'image_url',
+                    image_url: { url: img.image_url.url },
+                  })
+                }
+              })
+              // Enforce single image limit as per user requirement
+              if (accumulatedImages.length > 1) {
+                accumulatedImages = [accumulatedImages[0]]
+              }
             }
 
             // Thinking time logic
@@ -375,6 +396,10 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                     accumulatedReasoning.length > 0
                       ? accumulatedReasoning
                       : message.reasoning,
+                  richContent:
+                    accumulatedImages.length > 0
+                      ? [...accumulatedImages]
+                      : message.richContent,
                   thinkingDurationSeconds:
                     accumulatedThinkingTime ?? message.thinkingDurationSeconds,
                 }
@@ -425,6 +450,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                   accumulatedReasoning.length > 0
                     ? accumulatedReasoning
                     : undefined,
+                richContent:
+                  accumulatedImages.length > 0 ? [...accumulatedImages] : undefined,
                 thinkingDurationSeconds: accumulatedThinkingTime,
               }
             }
@@ -531,6 +558,25 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                         {message.content && !isStreamingPlaceholder && (
                           <MessageResponse>{message.content}</MessageResponse>
                         )}
+
+                        {message.richContent &&
+                          message.richContent.length > 0 && (
+                            <div className="mt-4 flex flex-wrap gap-4">
+                              {message.richContent.map((segment, i) => {
+                                if (segment.type === 'image_url') {
+                                  return (
+                                    <img
+                                      key={i}
+                                      src={segment.image_url.url}
+                                      alt="Generated image"
+                                      className="max-w-full rounded-lg"
+                                    />
+                                  )
+                                }
+                                return null
+                              })}
+                            </div>
+                          )}
                       </>
                     ) : (
                       <p className="whitespace-pre-wrap">
