@@ -10,13 +10,7 @@ import type {
   ImageContentSegment,
   TextContentSegment,
 } from '@/lib/types'
-import {
-  PromptInput,
-  PromptInputAction,
-  PromptInputActions,
-  PromptInputTextarea,
-} from '@/components/ai/prompt-input'
-import { Button } from '@/components/ui/button'
+import { PromptInputBox } from '@/components/ui/ai-prompt-box'
 import { Loader } from '@/components/ai/loader'
 import {
   Message,
@@ -30,14 +24,9 @@ import {
   ReasoningTrigger,
 } from '@/components/ai/reasoning'
 import {
-  ArrowUp,
   CornerDownRight,
   CheckIcon,
   CopyIcon,
-  Paperclip,
-  Globe,
-  Square,
-  X,
 } from 'lucide-react'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 import { PROMPT_SUGGESTIONS } from '@/lib/constants'
@@ -45,7 +34,6 @@ import {
   readFileAsDataURL,
   isImageFile,
   isPdfFile,
-  isSupportedFile,
 } from '@/lib/utils'
 
 const initialMessages: ChatMessage[] = []
@@ -56,12 +44,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   const [id, setId] = useState<string | undefined>(chatId)
   const [messages, setMessages] =
     useState<ChatMessage[]>(initialMessages)
-  const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [files, setFiles] = useState<File[]>([])
-  const [useWebSearch, setUseWebSearch] = useState(false)
-  const uploadInputRef = useRef<HTMLInputElement | null>(null)
   const [hasJustCopied, setHasJustCopied] = useState(false)
 
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -99,10 +83,11 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   // the final answer begins streaming.
   const thinkingStartRef = useRef<number | null>(null)
 
-  const sendMessage = async (rawContent?: string) => {
-    const source = rawContent ?? input
-    const filesToSend = files
-    const trimmed = source.trim()
+  const sendMessage = async (rawContent: string, filesToSend: File[] = []) => {
+    let content = rawContent;
+    let useWebSearch = true;
+
+    const trimmed = content.trim()
     if ((trimmed.length === 0 && filesToSend.length === 0) || isLoading) {
       return
     }
@@ -194,8 +179,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
     const nextMessages = [...messages, userMessage, assistantPlaceholder]
     setMessages(nextMessages)
-    setInput('')
-    setFiles([])
     setIsLoading(true)
 
     // Initialize chat if needed
@@ -456,45 +439,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
     }
   }
 
-  const handleSubmit = () => {
-    if (isLoading) {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-        abortControllerRef.current = null
-      }
-      return
-    }
-    void sendMessage()
-  }
-
   const handleSuggestionClick = (suggestion: string) => {
     void sendMessage(suggestion)
-  }
-
-  const handleFileChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    if (event.target.files) {
-      const newFiles = Array.from(event.target.files)
-      const allowedFiles = newFiles.filter(isSupportedFile)
-
-      if (allowedFiles.length !== newFiles.length) {
-        setError('Only image and PDF files are supported.')
-      }
-
-      if (allowedFiles.length > 0) {
-        setFiles((prev) => [...prev, ...allowedFiles])
-      }
-
-      event.target.value = ''
-    }
-  }
-
-  const handleRemoveFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index))
-    if (uploadInputRef?.current) {
-      uploadInputRef.current.value = ''
-    }
   }
 
   const handleCopyMessage = (content: string) => {
@@ -511,7 +457,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
   return (
     <div className="relative">
-      <div className="flex flex-col gap-4 pb-32">
+      <div className="flex flex-col gap-4 pb-40">
         <div className="space-y-3">
           {messages.map((message, index) => {
             const isAssistant = message.role === 'assistant'
@@ -704,109 +650,14 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       </div>
 
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 w-full">
-        <div className="pointer-events-auto mx-auto w-full max-w-screen-sm px-4">
-          <div className="bg-white pb-4 pt-3 dark:bg-zinc-950 sm:pb-5">
-            <PromptInput
+        <div className="pointer-events-auto bg-white dark:bg-zinc-950">
+          <div className="mx-auto w-full max-w-screen-sm px-4 pb-4 pt-3 sm:pb-5">
+            <PromptInputBox
               isLoading={isLoading}
-              value={input}
-              onValueChange={setInput}
-              onSubmit={handleSubmit}
-              className="w-full min-h-[96px]"
-            >
-              {files.length > 0 && (
-                <div className="-ml-2 flex flex-wrap gap-2">
-                  {files.map((file, index) => (
-                    <div
-                      key={`${file.name}-${index}`}
-                      className="flex h-8 items-center gap-2 rounded-2xl bg-zinc-900/5 px-3 text-xs text-zinc-700 dark:bg-zinc-50/10 dark:text-zinc-200"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <Paperclip className="h-3.5 w-3.5" />
-                      <span className="max-w-[140px] truncate">
-                        {file.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFile(index)}
-                        className="rounded-full p-1 hover:bg-zinc-900/5 dark:hover:bg-zinc-50/10"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <PromptInputTextarea
-                placeholder="Ask anything"
-                className={files.length > 0 ? 'mt-1 mb-1' : undefined}
-              />
-              <PromptInputActions className="justify-between">
-                <div className="-ml-2 flex items-center gap-2">
-                  <PromptInputAction>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        setUseWebSearch((prev) => !prev)
-                      }}
-                      className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-2xl px-3 text-xs font-medium transition-colors ${
-                        useWebSearch
-                          ? 'bg-zinc-900/5 text-zinc-900 dark:bg-zinc-50/10 dark:text-zinc-50'
-                          : 'text-zinc-500 hover:bg-zinc-900/5 dark:text-zinc-400 dark:hover:bg-zinc-50/10'
-                      }`}
-                      aria-pressed={useWebSearch}
-                      aria-label="Toggle web search"
-                    >
-                      <Globe className="h-4 w-4" />
-                      <span>Web Search</span>
-                    </button>
-                  </PromptInputAction>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <PromptInputAction tooltip="Attach files">
-                    <label
-                      htmlFor="file-upload"
-                      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-2xl hover:bg-zinc-900/5 dark:hover:bg-zinc-50/10"
-                    >
-                      <input
-                        ref={uploadInputRef}
-                        type="file"
-                        multiple
-                        accept="image/*,.pdf"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        id="file-upload"
-                      />
-                      <Paperclip className="h-4 w-4 text-zinc-400" />
-                    </label>
-                  </PromptInputAction>
-
-                  <PromptInputAction
-                    tooltip={isLoading ? 'Stop generation' : 'Send message'}
-                  >
-                    <Button
-                      variant="default"
-                      size="icon"
-                      className="h-8 w-8 cursor-pointer rounded-full bg-zinc-900/5 text-zinc-900 hover:bg-zinc-900/10 dark:bg-zinc-50/10 dark:text-zinc-50 dark:hover:bg-zinc-50/20"
-                      onClick={handleSubmit}
-                      disabled={
-                        isLoading
-                          ? false
-                          : input.trim().length === 0 && files.length === 0
-                      }
-                    >
-                      {isLoading ? (
-                        <Square className="h-4 w-4 fill-current" />
-                      ) : (
-                        <ArrowUp className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </PromptInputAction>
-                </div>
-              </PromptInputActions>
-            </PromptInput>
+              onSend={sendMessage}
+              className="w-full"
+              placeholder="Ask anything"
+            />
           </div>
         </div>
       </div>
