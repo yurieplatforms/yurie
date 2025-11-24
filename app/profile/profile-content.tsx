@@ -8,7 +8,7 @@ import { updateProfile } from './actions'
 import { LogOut, Edit2, Loader2, Check, X, Image as ImageIcon } from 'lucide-react'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 import { createClient } from '@/app/supabase/client'
-import { Footer } from '@/app/footer'
+import { Footer } from '@/components/layout/footer'
 import { useAuth } from '@/components/auth-provider'
 
 const VARIANTS_CONTAINER = {

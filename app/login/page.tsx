@@ -1,6 +1,6 @@
 import { AuthForm } from './auth-form'
 import { Metadata } from 'next'
-import { Footer } from '@/app/footer'
+import { Footer } from '@/components/layout/footer'
 
 export const metadata: Metadata = {
   title: 'Authentication',

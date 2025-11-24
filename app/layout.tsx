@@ -2,10 +2,10 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
-import { Header } from './header'
-import { FooterWrapper } from './footer-wrapper'
+import { Header } from '@/components/layout/header'
+import { FooterWrapper } from '@/components/layout/footer-wrapper'
 import { ThemeProvider } from 'next-themes'
-import { AuthProvider } from '@/components/auth-provider'
+import { AuthProvider } from '@/components/providers/auth-provider'
 
 export const viewport: Viewport = {
   width: 'device-width',

@@ -1,4 +1,4 @@
-import { HistoryList } from '@/components/history-list'
+import { HistoryList } from '@/components/history/history-list'
 import { Metadata } from 'next'
 import { createClient } from '@/app/supabase/server'
 import { getUserChats } from '@/lib/history'

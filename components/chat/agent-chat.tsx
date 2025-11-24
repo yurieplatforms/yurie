@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getChat, saveChat, createChat } from '@/lib/history'
-import { useAuth } from '@/components/auth-provider'
+import { useAuth } from '@/components/providers/auth-provider'
 import type {
   ChatMessage,
   FileContentSegment,

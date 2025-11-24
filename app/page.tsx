@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import AgentChat from '@/components/agent-chat'
+import AgentChat from '@/components/chat/agent-chat'
 
 export const metadata: Metadata = {
   title: 'Home',
