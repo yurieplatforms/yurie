@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 import { PROMPT_SUGGESTIONS } from '@/lib/constants'
+import { TextEffect } from '@/components/ui/text-effect'
 import {
   readFileAsDataURL,
   isImageFile,
@@ -514,6 +515,14 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       })
   }
 
+  const greetingText = `${greeting}${
+    user?.user_metadata?.full_name
+      ? `, ${user.user_metadata.full_name.split(' ')[0]}`
+      : user?.user_metadata?.name
+        ? `, ${user.user_metadata.name.split(' ')[0]}`
+        : ''
+  }`
+
   return (
     <div className="relative h-full">
       <div className="flex h-full flex-col gap-4 pb-24">
@@ -681,14 +690,11 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
           {!isLoading && messages.length === 0 && (
             <div className="mt-auto space-y-3">
-              <p className="mb-5 text-lg font-medium">
-                {greeting}
-                {user?.user_metadata?.full_name
-                  ? `, ${user.user_metadata.full_name.split(' ')[0]}`
-                  : user?.user_metadata?.name
-                    ? `, ${user.user_metadata.name.split(' ')[0]}`
-                    : ''}
-              </p>
+              <div className="mb-5 text-lg font-medium">
+                <TextEffect key={greetingText} preset="fade" per="char" delay={0.2}>
+                  {greetingText}
+                </TextEffect>
+              </div>
               <div className="flex flex-col space-y-0">
                 <AnimatedBackground
                   enableHover

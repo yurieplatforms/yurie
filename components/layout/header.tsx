@@ -16,21 +16,14 @@ export function Header() {
     <header className="fixed left-0 right-0 top-0 z-50 bg-white/80 backdrop-blur-md dark:bg-zinc-950/80">
       <div className="mx-auto flex h-16 max-w-screen-sm items-center justify-between px-4">
         <div className="flex items-center gap-1.5">
-          <Link
-            href="/"
-            className="text-lg font-medium text-black dark:text-white"
-          >
-            Yurie
-          </Link>
-          <Link href="/">
+          <Link href="/" className="flex items-center gap-2">
             <TextEffect
               as="span"
               preset="fade"
               per="char"
-              className="text-lg text-zinc-600 dark:text-zinc-500"
-              delay={0.5}
+              className="text-lg font-medium text-black dark:text-white"
             >
-              Platforms
+              Yurie
             </TextEffect>
           </Link>
         </div>
@@ -49,7 +42,9 @@ export function Header() {
                       : 'hover:text-zinc-950 dark:hover:text-zinc-50'
                   }`}
                 >
-                  {item.label}
+                  <TextEffect as="span" preset="fade" per="char">
+                    {item.label}
+                  </TextEffect>
                 </Link>
               )
             })}
@@ -76,9 +71,11 @@ export function Header() {
                     className="h-5 w-5 rounded-full object-cover"
                   />
                 )}
-                {user.user_metadata?.full_name
-                  ? user.user_metadata.full_name.split(' ')[0]
-                  : 'Profile'}
+                <TextEffect as="span" preset="fade" per="char">
+                  {user.user_metadata?.full_name
+                    ? user.user_metadata.full_name.split(' ')[0]
+                    : 'Profile'}
+                </TextEffect>
               </Link>
             </div>
           ) : (
@@ -86,7 +83,9 @@ export function Header() {
               href="/login"
               className="text-base text-zinc-500 transition-colors hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50"
             >
-              Sign In
+              <TextEffect as="span" preset="fade" per="char">
+                Sign In
+              </TextEffect>
             </Link>
           )}
         </div>

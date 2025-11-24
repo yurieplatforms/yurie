@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import AgentChat from '@/components/chat/agent-chat'
 
 export const metadata: Metadata = {
-  title: 'Home',
+  title: 'Yurie',
 }
 
 export default async function Page({

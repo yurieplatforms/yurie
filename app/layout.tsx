@@ -23,11 +23,11 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   title: {
-    default: 'Yurie Platforms',
-    template: '%s | Yurie Platforms',
+    default: 'Yurie',
+    template: '%s | Yurie',
   },
   description:
-    'Yurie Platforms is a free and open-source personal website template built with Next.js 15, React 19 and Motion-Primitives.',
+    'Yurie is a free and open-source personal website template built with Next.js 15, React 19 and Motion-Primitives.',
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Yurie Platforms',
+    title: 'Yurie',
   },
 }
 
