@@ -136,7 +136,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
 
   return (
     <motion.main
-      className="space-y-12"
+      className="space-y-12 pb-4"
       variants={VARIANTS_CONTAINER}
       initial="hidden"
       animate="visible"
