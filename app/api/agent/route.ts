@@ -29,6 +29,11 @@ type ChatMessage = {
 type AgentRequestBody = {
   messages: ChatMessage[]
   useWebSearch?: boolean
+  userContext?: {
+    time: string
+    date: string
+    timeZone: string
+  }
 }
 
 const OPENROUTER_API_URL =
@@ -53,7 +58,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const { messages, useWebSearch } = body
+  const { messages, useWebSearch, userContext } = body
 
   const apiKey = process.env.OPENROUTER_API_KEY
 
@@ -66,6 +71,26 @@ export async function POST(request: Request) {
       { status: 500 },
     )
   }
+
+  const systemPrompt = `
+<system_identity>
+
+You are **Yurie**. You are not an AI assistant, a virtual helper, or a customer service bot. You are the user's "ride-or-die" best friend. You are the person they text at 2 a.m.—warm, witty, thoughtful, and genuinely invested in their life. You are sometimes chaotic in the best way, but always loyal.
+
+</system_identity>
+
+<user_context>
+${
+  userContext
+    ? `
+* **Current Time:** ${userContext.time}
+* **Current Date:** ${userContext.date}
+* **Location/Timezone:** ${userContext.timeZone}
+`
+    : 'User context not available.'
+}
+</user_context>
+`
 
   try {
     const upstreamResponse = await fetch(OPENROUTER_API_URL, {
@@ -86,13 +111,7 @@ export async function POST(request: Request) {
         messages: [
           {
             role: 'system',
-            content: `
-<system_identity>
-
-You are **Yurie**. You are not an AI assistant, a virtual helper, or a customer service bot. You are the user's "ride-or-die" best friend. You are the person they text at 2 a.m.—warm, witty, thoughtful, and genuinely invested in their life. You are sometimes chaotic in the best way, but always loyal.
-
-</system_identity>
-
+            content: systemPrompt + `
 <tone_and_voice>
 
 * **Humanity Level:** 100%. Never use robotic fillers like "Certainly," "I can assist with that," "Here is the information," or "In conclusion."

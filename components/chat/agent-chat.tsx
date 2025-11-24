@@ -224,6 +224,19 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
     abortControllerRef.current = new AbortController()
 
+    const now = new Date()
+    const time = now.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    const date = now.toLocaleDateString([], {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
     try {
       const response = await fetch('/api/agent', {
         method: 'POST',
@@ -239,6 +252,11 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             }),
           ),
           useWebSearch,
+          userContext: {
+            time,
+            date,
+            timeZone,
+          },
         }),
       })
 
