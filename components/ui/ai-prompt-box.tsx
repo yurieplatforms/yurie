@@ -390,42 +390,6 @@ const PromptInputTextarea: React.FC<PromptInputTextareaProps & React.ComponentPr
   );
 };
 
-interface PromptInputActionProps extends React.ComponentProps<typeof Tooltip> {
-  tooltip: React.ReactNode;
-  children: React.ReactNode;
-  side?: "top" | "bottom" | "left" | "right";
-}
-const PromptInputAction: React.FC<PromptInputActionProps> = ({
-  tooltip,
-  children,
-  className,
-  side = "top",
-  ...props
-}) => {
-  const { disabled } = usePromptInput();
-  return (
-    <Tooltip {...props}>
-      <TooltipTrigger asChild disabled={disabled}>
-        {children}
-      </TooltipTrigger>
-      <TooltipContent side={side} className={className}>
-        {tooltip}
-      </TooltipContent>
-    </Tooltip>
-  );
-};
-
-// Custom Divider Component
-const CustomDivider: React.FC = () => (
-  <div className="relative h-6 w-[1.5px] mx-1">
-    <div
-      className="absolute inset-0 bg-gradient-to-t from-transparent via-[#9b87f5]/70 to-transparent rounded-full"
-      style={{
-        clipPath: "polygon(0% 0%, 100% 0%, 100% 40%, 140% 50%, 100% 60%, 100% 100%, 0% 100%, 0% 60%, -40% 50%, 0% 40%)",
-      }}
-    />
-  </div>
-);
 
 // Main PromptInputBox Component
 interface PromptInputBoxProps {
@@ -444,9 +408,9 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
 
-  const isImageFile = (file: File) => file.type.startsWith("image/");
+  const isImageFile = React.useCallback((file: File) => file.type.startsWith("image/"), []);
 
-  const processFile = (file: File) => {
+  const processFile = React.useCallback((file: File) => {
     if (!isImageFile(file)) {
       console.log("Only image files are allowed");
       return;
@@ -455,11 +419,11 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
       console.log("File too large (max 10MB)");
       return;
     }
-    setFiles([file]);
+    setFiles((prev) => [...prev, file]);
     const reader = new FileReader();
-    reader.onload = (e) => setFilePreviews({ [file.name]: e.target?.result as string });
+    reader.onload = (e) => setFilePreviews((prev) => ({ ...prev, [file.name]: e.target?.result as string }));
     reader.readAsDataURL(file);
-  };
+  }, [isImageFile]);
 
   const handleDragOver = React.useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -477,12 +441,18 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
     const files = Array.from(e.dataTransfer.files);
     const imageFiles = files.filter((file) => isImageFile(file));
     if (imageFiles.length > 0) processFile(imageFiles[0]);
-  }, []);
+  }, [isImageFile, processFile]);
 
   const handleRemoveFile = (index: number) => {
     const fileToRemove = files[index];
-    if (fileToRemove && filePreviews[fileToRemove.name]) setFilePreviews({});
-    setFiles([]);
+    if (fileToRemove && filePreviews[fileToRemove.name]) {
+      setFilePreviews((prev) => {
+        const newPreviews = { ...prev };
+        delete newPreviews[fileToRemove.name];
+        return newPreviews;
+      });
+    }
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const openImageModal = (imageUrl: string) => setSelectedImage(imageUrl);
@@ -500,7 +470,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         }
       }
     }
-  }, []);
+  }, [processFile]);
 
   React.useEffect(() => {
     document.addEventListener("paste", handlePaste);

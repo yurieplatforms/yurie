@@ -84,8 +84,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   const thinkingStartRef = useRef<number | null>(null)
 
   const sendMessage = async (rawContent: string, filesToSend: File[] = []) => {
-    let content = rawContent;
-    let useWebSearch = true;
+    const content = rawContent;
+    const useWebSearch = true;
 
     const trimmed = content.trim()
     if ((trimmed.length === 0 && filesToSend.length === 0) || isLoading) {
