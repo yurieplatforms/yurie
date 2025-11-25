@@ -164,10 +164,10 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
           </div>
         </div>
         
-        <div className="flex flex-col space-y-0">
+        <div className="-mx-4 overflow-hidden">
           <AnimatedBackground
             enableHover
-            className="h-full w-full rounded-lg bg-zinc-100 dark:bg-zinc-900/80"
+            className="h-full w-full rounded-xl bg-zinc-100 dark:bg-zinc-900/80"
             transition={{
               type: 'spring',
               bounce: 0,
@@ -178,20 +178,18 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
               <div
                 key={chat.id}
                 data-id={chat.id}
-                className="-mx-3 rounded-xl px-3 py-3 relative group"
+                className="w-full rounded-xl px-4 py-3 relative group overflow-hidden"
               >
                   <Link
                     href={`/?id=${chat.id}`}
                     className="absolute inset-0 z-0"
                   />
-                  <div className="relative z-10 pointer-events-none flex flex-col space-y-1 pr-8">
-                    <div className="flex items-start justify-between">
-                      <h4 className="font-normal dark:text-zinc-100 truncate">
-                        {chat.title}
-                      </h4>
-                    </div>
+                  <div className="relative z-10 pointer-events-none flex flex-col space-y-1 pr-8 min-w-0 w-full">
+                    <h4 className="font-normal dark:text-zinc-100 truncate">
+                      {chat.title}
+                    </h4>
                     {chat.messages.length > 0 && (
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2">
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 break-words">
                         {chat.messages[chat.messages.length - 1].content.replace(
                           /[#*`_~-]/g,
                           '',

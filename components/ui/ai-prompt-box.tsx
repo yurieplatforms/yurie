@@ -594,7 +594,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               ) : isRecording ? (
                 <StopCircle className="h-5 w-5 text-red-500" />
               ) : (
-                <CornerRightUp className="h-4 w-4 text-current" />
+                <CornerRightUp className="h-4 w-4 text-current" strokeWidth={2.5} />
               )}
             </Button>
           </div>

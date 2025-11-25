@@ -30,7 +30,6 @@ import {
 } from 'lucide-react'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 import { PROMPT_SUGGESTIONS } from '@/lib/constants'
-import { TextEffect } from '@/components/ui/text-effect'
 import {
   readFileAsDataURL,
   isImageFile,
@@ -42,20 +41,7 @@ const initialMessages: ChatMessage[] = []
 export function AgentChat({ chatId }: { chatId?: string }) {
   const router = useRouter()
   const { user } = useAuth()
-  const [greeting, setGreeting] = useState('Good morning')
 
-  useEffect(() => {
-    const hour = new Date().getHours()
-    if (hour >= 5 && hour < 12) {
-      setGreeting('Good morning')
-    } else if (hour >= 12 && hour < 17) {
-      setGreeting('Good afternoon')
-    } else if (hour >= 17 && hour < 21) {
-      setGreeting('Good evening')
-    } else {
-      setGreeting('Good night')
-    }
-  }, [])
   const [id, setId] = useState<string | undefined>(chatId)
   const [messages, setMessages] =
     useState<ChatMessage[]>(initialMessages)
@@ -515,13 +501,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       })
   }
 
-  const greetingText = `${greeting}${
-    user?.user_metadata?.full_name
-      ? `, ${user.user_metadata.full_name.split(' ')[0]}`
-      : user?.user_metadata?.name
-        ? `, ${user.user_metadata.name.split(' ')[0]}`
-        : ''
-  }`
+  const greetingText = 'hi there! ready to dive in?'
 
   return (
     <div className="relative h-full">
@@ -691,9 +671,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
           {!isLoading && messages.length === 0 && (
             <div className="mt-auto space-y-3">
               <div className="mb-5 text-lg font-medium">
-                <TextEffect key={greetingText} preset="fade" per="char" delay={0.2}>
-                  {greetingText}
-                </TextEffect>
+                {greetingText}
               </div>
               <div className="flex flex-col space-y-0">
                 <AnimatedBackground
