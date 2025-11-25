@@ -526,7 +526,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         )}
 
         <div className="flex items-end gap-0 w-full">
-          <div className="flex items-center pb-0.5 pl-1">
+          <div className="flex items-center gap-2 pb-0.5">
             <button
               onClick={() => uploadInputRef.current?.click()}
               className={cn(
@@ -535,7 +535,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               )}
               disabled={isRecording}
             >
-              <Paperclip className="h-5 w-5 transition-colors" />
+              <Paperclip className="h-4 w-4 transition-colors" />
               <input
                 ref={uploadInputRef}
                 type="file"

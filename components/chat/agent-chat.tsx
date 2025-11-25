@@ -745,7 +745,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
               isLoading={isLoading}
               onSend={sendMessage}
               className="w-full"
-              placeholder="Ask anything"
+              placeholder="Message Yurie"
             />
           </div>
         </div>
