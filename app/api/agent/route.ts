@@ -745,7 +745,7 @@ SUGGESTIONS:
         })
 
         const runnerOptions: Parameters<typeof anthropic.beta.messages.toolRunner>[0] = {
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-opus-4-5-20251101',
           max_tokens: 16384,
           system: systemPrompt,
           messages: anthropicMessages,
