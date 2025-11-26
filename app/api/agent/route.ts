@@ -78,13 +78,11 @@ function createRunnableTools(
   sseHandler: SSEHandler,
 ) {
   return [
-    // Calculator tool with strict mode for guaranteed schema-compliant inputs
-    // See: https://platform.claude.com/docs/en/build-with-claude/structured-outputs#strict-tool-use
+    // Calculator tool for mathematical expressions
     betaTool({
       name: 'calculator',
       description:
         'Evaluates mathematical expressions and returns the numerical result. Use this tool for ANY math calculation beyond simple mental arithmetic, including percentages, unit conversions, trigonometry, and complex formulas. The tool supports basic arithmetic operators (+, -, *, /), exponentiation (**), parentheses for grouping, and common math functions (sqrt, sin, cos, tan, asin, acos, atan, log, log10, log2, exp, pow, abs, floor, ceil, round, min, max, random) as well as constants (pi, e, PI, E). Do NOT use this tool for non-numeric operations, string manipulation, or when the user is asking about math concepts rather than computing a specific value.',
-      strict: true,
       inputSchema: {
         type: 'object',
         properties: {
@@ -117,13 +115,11 @@ function createRunnableTools(
       },
     }),
 
-    // Run code tool with strict mode for guaranteed schema-compliant inputs
-    // See: https://platform.claude.com/docs/en/build-with-claude/structured-outputs#strict-tool-use
+    // Run code tool for JavaScript execution
     betaTool({
       name: 'run_code',
       description:
         'Executes JavaScript code in a secure sandboxed environment and returns the result. Use this tool for complex calculations, data transformations, array/object manipulation, date operations, or any logic that would be tedious to express in a single mathematical expression. The sandbox provides access to standard JavaScript built-ins (Math, Date, JSON, Array, Object, String, Number, Boolean, parseInt, parseFloat) and a console object for logging. The last expression in the code is returned as the result. Do NOT use this for simple math (use calculator instead), and note that network requests (fetch), file system access, and other system operations are blocked for security.',
-      strict: true,
       inputSchema: {
         type: 'object',
         properties: {
@@ -659,12 +655,10 @@ SUGGESTIONS:
         // The memory tool uses file-based commands: view, create, str_replace, insert, delete, rename
         // Returns search_result blocks for file views to enable citations
         // See: https://platform.claude.com/docs/en/build-with-claude/search-results
-        // See: https://platform.claude.com/docs/en/build-with-claude/structured-outputs#strict-tool-use
         const memoryTool = betaTool({
           name: 'memory',
           description:
             'Persistent memory storage for saving and retrieving information across conversations. Use this tool to store notes, track progress, remember user preferences, and maintain context across sessions. The memory is organized as files in a /memories directory.',
-          strict: true,
           inputSchema: {
             type: 'object',
             properties: {
