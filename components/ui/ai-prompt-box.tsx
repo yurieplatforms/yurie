@@ -1,6 +1,6 @@
 import React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { CornerRightUp, Paperclip, Square, X, StopCircle } from "lucide-react";
+import { CornerRightUp, Paperclip, Square, X, StopCircle, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 
 // Utility function for className merging
@@ -390,22 +390,49 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
 
+  // File type detection helpers
   const isImageFile = React.useCallback((file: File) => file.type.startsWith("image/"), []);
+  
+  const isPdfFile = React.useCallback((file: File) => 
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"), []);
+  
+  const isTextFile = React.useCallback((file: File) => {
+    const textTypes = ["text/plain", "text/markdown", "text/csv"];
+    const textExtensions = [".txt", ".md", ".csv"];
+    return (
+      textTypes.includes(file.type) ||
+      textExtensions.some((ext) => file.name.toLowerCase().endsWith(ext))
+    );
+  }, []);
+
+  const isSupportedFile = React.useCallback((file: File) => 
+    isImageFile(file) || isPdfFile(file) || isTextFile(file), 
+    [isImageFile, isPdfFile, isTextFile]);
 
   const processFile = React.useCallback((file: File) => {
-    if (!isImageFile(file)) {
-      console.log("Only image files are allowed");
+    // Validate file type
+    if (!isSupportedFile(file)) {
+      console.log("Unsupported file type. Use images, PDFs, or text files.");
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      console.log("File too large (max 10MB)");
+    
+    // Size limits based on file type (following Anthropic best practices)
+    const maxSize = isImageFile(file) ? 5 * 1024 * 1024 : 10 * 1024 * 1024; // 5MB for images, 10MB for documents
+    if (file.size > maxSize) {
+      const maxSizeMB = maxSize / (1024 * 1024);
+      console.log(`File too large (max ${maxSizeMB}MB for ${isImageFile(file) ? 'images' : 'documents'})`);
       return;
     }
+    
     setFiles((prev) => [...prev, file]);
-    const reader = new FileReader();
-    reader.onload = (e) => setFilePreviews((prev) => ({ ...prev, [file.name]: e.target?.result as string }));
-    reader.readAsDataURL(file);
-  }, [isImageFile]);
+    
+    // Only create previews for images
+    if (isImageFile(file)) {
+      const reader = new FileReader();
+      reader.onload = (e) => setFilePreviews((prev) => ({ ...prev, [file.name]: e.target?.result as string }));
+      reader.readAsDataURL(file);
+    }
+  }, [isSupportedFile, isImageFile]);
 
   const handleDragOver = React.useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -420,10 +447,11 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const handleDrop = React.useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const files = Array.from(e.dataTransfer.files);
-    const imageFiles = files.filter((file) => isImageFile(file));
-    if (imageFiles.length > 0) processFile(imageFiles[0]);
-  }, [isImageFile, processFile]);
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    // Process all supported files (images, PDFs, text files)
+    const supportedFiles = droppedFiles.filter((file) => isSupportedFile(file));
+    supportedFiles.forEach((file) => processFile(file));
+  }, [isSupportedFile, processFile]);
 
   const handleRemoveFile = (index: number) => {
     const fileToRemove = files[index];
@@ -499,7 +527,8 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
           <div className="flex flex-wrap gap-2 p-0 pb-1 transition-all duration-300">
             {files.map((file, index) => (
               <div key={index} className="relative group">
-                {file.type.startsWith("image/") && filePreviews[file.name] && (
+                {/* Image preview */}
+                {isImageFile(file) && filePreviews[file.name] && (
                   <div
                     className="w-16 h-16 rounded-xl overflow-hidden cursor-pointer transition-all duration-300"
                     onClick={() => openImageModal(filePreviews[file.name])}
@@ -517,6 +546,24 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                       className="absolute top-1 right-1 rounded-full bg-black/70 p-0.5 opacity-100 transition-opacity"
                     >
                       <X className="h-3 w-3 text-white" />
+                    </button>
+                  </div>
+                )}
+                {/* Document preview (PDF and text files) */}
+                {(isPdfFile(file) || isTextFile(file)) && (
+                  <div className="relative flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-200/50 dark:bg-zinc-700/50 transition-all duration-300">
+                    <FileText className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+                    <span className="text-sm text-zinc-700 dark:text-zinc-300 max-w-[120px] truncate">
+                      {file.name}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFile(index);
+                      }}
+                      className="ml-1 rounded-full bg-zinc-300/70 dark:bg-zinc-600/70 p-0.5 hover:bg-zinc-400/70 dark:hover:bg-zinc-500/70 transition-colors"
+                    >
+                      <X className="h-3 w-3 text-zinc-600 dark:text-zinc-300" />
                     </button>
                   </div>
                 )}
@@ -540,11 +587,14 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                 ref={uploadInputRef}
                 type="file"
                 className="hidden"
+                multiple
                 onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) processFile(e.target.files[0]);
+                  if (e.target.files && e.target.files.length > 0) {
+                    Array.from(e.target.files).forEach((file) => processFile(file));
+                  }
                   if (e.target) e.target.value = "";
                 }}
-                accept="image/*"
+                accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.txt,.md,.csv"
               />
             </button>
           </div>

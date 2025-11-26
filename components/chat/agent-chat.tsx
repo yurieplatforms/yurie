@@ -9,6 +9,9 @@ import type {
   FileContentSegment,
   ImageContentSegment,
   TextContentSegment,
+  ToolUseEvent,
+  WebSearchUserLocation,
+  MessageCitation,
 } from '@/lib/types'
 import { PromptInputBox } from '@/components/ui/ai-prompt-box'
 import { Loader } from '@/components/ai/loader'
@@ -23,6 +26,7 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from '@/components/ai/reasoning'
+import { CitationsFooter } from '@/components/ai/citations'
 import {
   CornerDownRight,
   CheckIcon,
@@ -34,6 +38,9 @@ import {
   readFileAsDataURL,
   isImageFile,
   isPdfFile,
+  isTextFile,
+  resizeImageForVision,
+  validateFile,
 } from '@/lib/utils'
 
 const initialMessages: ChatMessage[] = []
@@ -48,6 +55,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasJustCopied, setHasJustCopied] = useState(false)
+  // Container ID for code execution persistence across messages
+  const [containerId, setContainerId] = useState<string | undefined>(undefined)
 
   const abortControllerRef = useRef<AbortController | null>(null)
 
@@ -66,6 +75,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         if (chat) {
           setId(chatId)
           setMessages(chat.messages)
+          // Restore container ID for code execution persistence
+          setContainerId(chat.containerId)
         }
       } else {
         if (abortControllerRef.current) {
@@ -74,6 +85,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         }
         setId(undefined)
         setMessages([])
+        setContainerId(undefined)
       }
     }
     loadChat()
@@ -94,6 +106,20 @@ export function AgentChat({ chatId }: { chatId?: string }) {
     }
 
     setError(null)
+
+    // Validate all files before processing
+    // See: https://platform.claude.com/docs/en/build-with-claude/vision
+    for (const file of filesToSend) {
+      const validation = await validateFile(file)
+      if (!validation.valid) {
+        setError(validation.error || 'Invalid file')
+        return
+      }
+      // Log warnings if any (e.g., image will be resized)
+      if (validation.warnings) {
+        validation.warnings.forEach((warning) => console.log(`[vision] ${warning}`))
+      }
+    }
 
     const attachmentSummary =
       filesToSend.length > 0
@@ -116,29 +142,35 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
     if (imageFiles.length > 0) {
       try {
+        // Resize images for optimal Claude vision performance
+        // Best practice: Resize to max 1568px to improve time-to-first-token
+        // See: https://platform.claude.com/docs/en/build-with-claude/vision#evaluate-image-size
         imageSegments = await Promise.all(
           imageFiles.map(async (file) => ({
             type: 'image_url',
             image_url: {
-              url: await readFileAsDataURL(file),
+              url: await resizeImageForVision(file),
             },
           })),
         )
       } catch (imageError) {
         console.error(imageError)
-        setError('Unable to read one of the attached images.')
+        setError('Unable to process one of the attached images.')
         return
       }
     }
 
+    // Handle PDF and text files as document segments
     const pdfFiles = filesToSend.filter(isPdfFile)
+    const textFiles = filesToSend.filter(isTextFile)
+    const documentFiles = [...pdfFiles, ...textFiles]
 
     let fileSegments: FileContentSegment[] = []
 
-    if (pdfFiles.length > 0) {
+    if (documentFiles.length > 0) {
       try {
         fileSegments = await Promise.all(
-          pdfFiles.map(async (file) => ({
+          documentFiles.map(async (file) => ({
             type: 'file' as const,
             file: {
               filename: file.name,
@@ -148,7 +180,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         )
       } catch (fileError) {
         console.error(fileError)
-        setError('Unable to read one of the attached PDFs.')
+        setError('Unable to read one of the attached documents.')
         return
       }
     }
@@ -222,6 +254,9 @@ export function AgentChat({ chatId }: { chatId?: string }) {
     let accumulatedReasoning = ''
     let accumulatedImages: ImageContentSegment[] = []
     let accumulatedThinkingTime: number | undefined
+    let accumulatedToolUses: ToolUseEvent[] = []
+    const accumulatedCitations: MessageCitation[] = []
+    let responseContainerId: string | undefined
 
     abortControllerRef.current = new AbortController()
 
@@ -237,6 +272,36 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       day: 'numeric',
     })
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+    // Build user location for localized web search results
+    // See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool#localization
+    const userLocation: WebSearchUserLocation = {
+      type: 'approximate',
+      timezone: timeZone,
+    }
+    
+    // Try to extract country from timezone (e.g., "America/New_York" -> US)
+    // This is a best-effort approach based on IANA timezone naming
+    const timezoneCountryMap: Record<string, string> = {
+      'America': 'US',
+      'US': 'US',
+      'Canada': 'CA',
+      'Europe': 'EU',
+      'Asia': 'APAC',
+      'Australia': 'AU',
+      'Pacific': 'APAC',
+    }
+    const timezoneParts = timeZone.split('/')
+    if (timezoneParts.length >= 1) {
+      const region = timezoneParts[0]
+      if (timezoneCountryMap[region]) {
+        userLocation.country = timezoneCountryMap[region]
+      }
+      // Use the city part as region if available
+      if (timezoneParts.length >= 2) {
+        userLocation.region = timezoneParts[1].replace(/_/g, ' ')
+      }
+    }
 
     try {
       const response = await fetch('/api/agent', {
@@ -258,6 +323,10 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             date,
             timeZone,
           },
+          // Pass container ID for code execution persistence
+          containerId,
+          // Pass user location for localized web search results
+          userLocation,
         }),
       })
 
@@ -302,6 +371,14 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
           try {
             const json = JSON.parse(dataPart)
+
+            // Handle container ID for code execution persistence
+            if (json.containerId) {
+              responseContainerId = json.containerId
+              setContainerId(json.containerId)
+              continue
+            }
+
             const choice = json.choices?.[0]
 
             const deltaContent =
@@ -309,7 +386,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
             let deltaReasoning = ''
 
-            // Unified OpenRouter reasoning fields:
+            // Reasoning fields (OpenRouter-compatible format):
             // - `reasoning` plain-text field
             // - `reasoning_details` structured reasoning blocks
             const directReasoning = choice?.delta?.reasoning
@@ -345,8 +422,56 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             const deltaImages = choice?.delta?.images
             const hasImageDelta = Array.isArray(deltaImages) && deltaImages.length > 0
 
-            if (!hasContentDelta && !hasReasoningDelta && !hasImageDelta) {
+            // Handle tool use events
+            const toolUseEvent = choice?.delta?.tool_use as ToolUseEvent | undefined
+            const hasToolUse = toolUseEvent && toolUseEvent.name && toolUseEvent.status
+
+            // Handle citations from web search and search results
+            // See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool#citations
+            // See: https://platform.claude.com/docs/en/build-with-claude/search-results#citation-fields
+            const deltaCitations = choice?.delta?.citations as MessageCitation[] | undefined
+            const hasCitations = Array.isArray(deltaCitations) && deltaCitations.length > 0
+
+            if (!hasContentDelta && !hasReasoningDelta && !hasImageDelta && !hasToolUse && !hasCitations) {
               continue
+            }
+
+            // Track tool use
+            if (hasToolUse && toolUseEvent) {
+              accumulatedToolUses = [
+                ...accumulatedToolUses.filter(
+                  (t) =>
+                    !(t.name === toolUseEvent.name && t.status === 'start' && toolUseEvent.status === 'end'),
+                ),
+                {
+                  name: toolUseEvent.name,
+                  status: toolUseEvent.status,
+                  input: toolUseEvent.input,
+                  result: toolUseEvent.result,
+                  // Include code execution details if present
+                  codeExecution: toolUseEvent.codeExecution,
+                  // Include web search details if present
+                  webSearch: toolUseEvent.webSearch,
+                },
+              ]
+            }
+
+            // Track citations from web search, search results, and documents
+            if (hasCitations && deltaCitations) {
+              deltaCitations.forEach((citation) => {
+                // Generate a unique key based on citation type
+                const getCitationKey = (c: MessageCitation): string => {
+                  if (c.type === 'web_search_result_location') return c.url
+                  if (c.type === 'search_result_location') return c.source
+                  // Document citations: use type + documentIndex + citedText as key
+                  return `${c.type}:${c.documentIndex}:${c.citedText.slice(0, 50)}`
+                }
+                const citationKey = getCitationKey(citation)
+                const exists = accumulatedCitations.some(c => getCitationKey(c) === citationKey)
+                if (!exists) {
+                  accumulatedCitations.push(citation)
+                }
+              })
             }
 
             // Update accumulated values
@@ -421,6 +546,15 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                       : message.richContent,
                   thinkingDurationSeconds:
                     accumulatedThinkingTime ?? message.thinkingDurationSeconds,
+                  toolUses:
+                    accumulatedToolUses.length > 0
+                      ? [...accumulatedToolUses]
+                      : message.toolUses,
+                  // Include web search citations
+                  citations:
+                    accumulatedCitations.length > 0
+                      ? [...accumulatedCitations]
+                      : message.citations,
                 }
               })
               return next
@@ -472,6 +606,11 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                 richContent:
                   accumulatedImages.length > 0 ? [...accumulatedImages] : undefined,
                 thinkingDurationSeconds: accumulatedThinkingTime,
+                toolUses:
+                  accumulatedToolUses.length > 0 ? [...accumulatedToolUses] : undefined,
+                // Include web search citations
+                citations:
+                  accumulatedCitations.length > 0 ? [...accumulatedCitations] : undefined,
               }
             }
             return msg
@@ -479,6 +618,10 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
           chat.messages = finalMessages
           chat.updatedAt = Date.now()
+          // Save container ID for code execution persistence
+          if (responseContainerId) {
+            chat.containerId = responseContainerId
+          }
           await saveChat(chat, user?.id)
         }
       }
@@ -520,6 +663,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             const isThinkingStage = isReasoningStreaming && !hasAnswerStarted
             const isStreamingPlaceholder =
               isAssistant && isLoading && message.content.length === 0
+            const hasToolUses =
+              Array.isArray(message.toolUses) && message.toolUses.length > 0
 
             return (
               <div key={message.id} className="flex flex-col gap-1">
@@ -527,32 +672,39 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                   <MessageContent from={message.role}>
                     {message.role === 'assistant' ? (
                       <>
-                        {(hasReasoning || isThinkingStage) && (
+                        {(hasReasoning || isThinkingStage || hasToolUses) && (
                           <div className="mb-2">
                             <Reasoning
                               className="w-full"
                               isStreaming={isReasoningStreaming && hasReasoning}
+                              toolUses={message.toolUses}
+                              isLoading={isActiveAssistant && isLoading}
                             >
                               <ReasoningTrigger
-                                label={
+                                toolUses={message.toolUses}
+                                isLoading={isActiveAssistant && isLoading}
+                                thinkingLabel={
                                   isThinkingStage ? (
                                     <Loader
                                       variant="text-shimmer"
                                       size="lg"
                                       text="Thinking"
                                     />
-                                  ) : typeof thoughtSeconds === 'number' ? (
+                                  ) : undefined
+                                }
+                                label={
+                                  !isThinkingStage && typeof thoughtSeconds === 'number' ? (
                                     <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">
                                       Thought for{' '}
                                       {thoughtSeconds >= 60
                                         ? `${Math.floor(thoughtSeconds / 60)}m ${thoughtSeconds % 60}s`
                                         : `${thoughtSeconds}s`}
                                     </span>
-                                  ) : (
+                                  ) : !isThinkingStage ? (
                                     <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">
                                       Thought
                                     </span>
-                                  )
+                                  ) : undefined
                                 }
                               />
                               <ReasoningContent>
@@ -597,6 +749,13 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                                 return null
                               })}
                             </div>
+                          )}
+
+                        {/* Display citations from documents, web search, and search results */}
+                        {message.citations &&
+                          message.citations.length > 0 &&
+                          !isStreamingPlaceholder && (
+                            <CitationsFooter citations={message.citations} />
                           )}
                       </>
                     ) : (
