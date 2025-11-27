@@ -131,7 +131,7 @@ export type RawCitation = {
   title?: string
   source?: string
   document_index?: number
-  document_title?: string | null
+  document_title?: string
   start_char_index?: number
   end_char_index?: number
   start_page_number?: number
