@@ -126,7 +126,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
               className="relative -mx-3 inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium text-zinc-950 dark:text-zinc-50 transition-colors hover:text-zinc-950"
               data-id="start-chat"
             >
-              What's on your mind?
+              Message Yurie
             </Link>
           </AnimatedBackground>
         </div>
