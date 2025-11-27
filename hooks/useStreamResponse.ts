@@ -1,5 +1,14 @@
 'use client'
 
+/**
+ * useStreamResponse Hook
+ *
+ * Processes Server-Sent Events (SSE) stream responses from the AI agent.
+ * Handles real-time content, reasoning, tool use events, citations, and images.
+ *
+ * @module hooks/useStreamResponse
+ */
+
 import { useCallback, useRef } from 'react'
 import type {
   ChatMessage,
@@ -9,31 +18,67 @@ import type {
 } from '@/lib/types'
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 
+/**
+ * Accumulated state during stream processing
+ */
 export type StreamState = {
+  /** Accumulated text content */
   content: string
+  /** Accumulated reasoning/thinking content */
   reasoning: string
+  /** Generated images */
   images: ImageContentSegment[]
+  /** Time spent thinking in seconds */
   thinkingTime: number | undefined
+  /** Tool use events (start/end) */
   toolUses: ToolUseEvent[]
+  /** Citations from web search and documents */
   citations: MessageCitation[]
+  /** Container ID for code execution persistence */
   containerId: string | undefined
 }
 
+/**
+ * Callbacks for stream processing updates
+ */
 export type StreamCallbacks = {
+  /** Called with updated state on each chunk */
   onUpdate: (state: StreamState) => void
+  /** Called when container ID is received */
   onContainerId?: (id: string) => void
 }
 
+/**
+ * Return type for the useStreamResponse hook
+ */
 export type UseStreamResponseReturn = {
+  /** Process an SSE stream response */
   processStream: (
     response: Response,
     callbacks: StreamCallbacks,
   ) => Promise<StreamState>
+  /** Ref to track when thinking started (for duration calculation) */
   thinkingStartRef: React.MutableRefObject<number | null>
 }
 
 /**
  * Hook for processing SSE stream responses from the agent
+ *
+ * Reads the response body as a stream, parses SSE events, and
+ * accumulates content, reasoning, tool uses, and citations.
+ *
+ * @returns Stream processing function and thinking timer ref
+ *
+ * @example
+ * ```tsx
+ * const { processStream, thinkingStartRef } = useStreamResponse()
+ *
+ * thinkingStartRef.current = Date.now()
+ * const finalState = await processStream(response, {
+ *   onUpdate: (state) => updateUI(state),
+ *   onContainerId: (id) => saveContainerId(id),
+ * })
+ * ```
  */
 export function useStreamResponse(): UseStreamResponseReturn {
   const thinkingStartRef = useRef<number | null>(null)
@@ -42,7 +87,10 @@ export function useStreamResponse(): UseStreamResponseReturn {
     response: Response,
     callbacks: StreamCallbacks,
   ): Promise<StreamState> => {
-    const reader = response.body!.getReader()
+    if (!response.body) {
+      throw new Error('Response body is null - cannot process stream')
+    }
+    const reader = response.body.getReader()
     const decoder = new TextDecoder('utf-8')
 
     let buffer = ''
@@ -56,6 +104,9 @@ export function useStreamResponse(): UseStreamResponseReturn {
     let accumulatedToolUses: ToolUseEvent[] = []
     const accumulatedCitations: MessageCitation[] = []
     let responseContainerId: string | undefined
+    
+    let lastUpdateTime = 0
+    const THROTTLE_MS = 50
 
     while (!doneReading) {
       const { value, done } = await reader.read()
@@ -215,20 +266,35 @@ export function useStreamResponse(): UseStreamResponseReturn {
           }
 
           // Notify of update
-          callbacks.onUpdate({
-            content: accumulatedContent,
-            reasoning: accumulatedReasoning,
-            images: accumulatedImages,
-            thinkingTime: accumulatedThinkingTime,
-            toolUses: accumulatedToolUses,
-            citations: accumulatedCitations,
-            containerId: responseContainerId,
-          })
+          const now = Date.now()
+          if (now - lastUpdateTime > THROTTLE_MS) {
+            lastUpdateTime = now
+            callbacks.onUpdate({
+              content: accumulatedContent,
+              reasoning: accumulatedReasoning,
+              images: accumulatedImages,
+              thinkingTime: accumulatedThinkingTime,
+              toolUses: accumulatedToolUses,
+              citations: accumulatedCitations,
+              containerId: responseContainerId,
+            })
+          }
         } catch {
           // ignore malformed chunks
         }
       }
     }
+
+    // Final update to ensure we have the latest state
+    callbacks.onUpdate({
+      content: accumulatedContent,
+      reasoning: accumulatedReasoning,
+      images: accumulatedImages,
+      thinkingTime: accumulatedThinkingTime,
+      toolUses: accumulatedToolUses,
+      citations: accumulatedCitations,
+      containerId: responseContainerId,
+    })
 
     return {
       content: accumulatedContent,

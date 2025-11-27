@@ -33,6 +33,7 @@ export type UserPersonalizationContext = {
 
 /**
  * Fetches user profile information from Supabase auth
+ * Validates that the authenticated user matches the expected userId
  */
 export async function getUserProfile(
   supabase: SupabaseClient,
@@ -41,6 +42,12 @@ export async function getUserProfile(
   const { data: { user }, error } = await supabase.auth.getUser()
   
   if (error || !user) {
+    return null
+  }
+
+  // Validate that the authenticated user matches the expected userId
+  if (user.id !== userId) {
+    console.error('User ID mismatch: expected', userId, 'got', user.id)
     return null
   }
 

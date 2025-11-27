@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
+import { env } from '@/lib/env'
 
 export async function POST(request: Request) {
   let body
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = env.ANTHROPIC_API_KEY
   if (!apiKey) {
     return NextResponse.json(
       { error: 'ANTHROPIC_API_KEY not set' },

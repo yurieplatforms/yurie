@@ -7,7 +7,6 @@
 import {
   Search,
   Code,
-  Terminal,
   FileCode,
   ExternalLink,
   AlertCircle,

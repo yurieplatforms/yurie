@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { Trash2 } from 'lucide-react'
 import { getChats, deleteChat, clearHistory } from '@/lib/chat/history'
@@ -33,28 +33,60 @@ interface HistoryListProps {
 }
 
 export function HistoryList({ initialChats = [] }: HistoryListProps) {
-  const { user } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
   const [chats, setChats] = useState<SavedChat[]>(initialChats)
   const [mounted, setMounted] = useState(false)
+  
+  // Track whether we've done the initial client-side fetch
+  const hasInitializedRef = useRef(false)
+  // Track the user ID that was used for SSR data (if any)
+  const ssrUserIdRef = useRef<string | undefined>(undefined)
 
   useEffect(() => {
     setMounted(true)
-    
+
     async function fetchChats() {
-      // If we have initial server data and a user, we might want to skip the immediate fetch
-      // or fetch in background to ensure consistency without clearing state.
       const data = await getChats(user?.id)
-      // Only update if we have data or if we didn't have initial data
-      if (data.length > 0 || initialChats.length === 0) {
-        setChats(data)
-      }
-    }
-    
-    // Only fetch if we don't have initial chats, or if user state changed/settled
-    if (initialChats.length === 0 || user?.id) {
-       fetchChats()
+      setChats(data)
     }
 
+    // Determine if we need to fetch
+    const shouldFetch = () => {
+      // If auth is still loading, wait
+      if (isAuthLoading) return false
+
+      // If we haven't initialized yet
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true
+        
+        // If we have SSR data, check if the user context matches
+        if (initialChats.length > 0) {
+          // SSR data exists - only refetch if user state differs
+          // (e.g., SSR was for guest but now user is logged in)
+          const ssrWasForGuest = ssrUserIdRef.current === undefined
+          const nowHasUser = !!user?.id
+          
+          // If SSR was for a guest and we now have a logged-in user, fetch
+          if (ssrWasForGuest && nowHasUser) {
+            return true
+          }
+          
+          // Otherwise, SSR data is valid, no need to refetch
+          return false
+        }
+        
+        // No SSR data, we need to fetch
+        return true
+      }
+
+      return false
+    }
+
+    if (shouldFetch()) {
+      fetchChats()
+    }
+
+    // Listen for history updates
     const handleHistoryUpdate = () => {
       fetchChats()
     }
@@ -63,7 +95,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
     return () => {
       window.removeEventListener('history-updated', handleHistoryUpdate)
     }
-  }, [user, initialChats.length])
+  }, [user, isAuthLoading, initialChats.length])
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault()

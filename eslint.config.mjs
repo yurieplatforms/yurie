@@ -19,9 +19,11 @@ const eslintConfig = [
     rules: {
       // Disable Prettier as an ESLint error source; formatting is handled separately.
       "prettier/prettier": "off",
-      // Relax some strict TypeScript rules to avoid blocking builds on stylistic issues.
-      "@typescript-eslint/no-explicit-any": "warn",
+      // Warn on unused variables to avoid blocking builds on stylistic issues.
       "@typescript-eslint/no-unused-vars": "warn",
+      // Error on explicit any to encourage proper typing in new code.
+      // Existing any usages have been addressed or are justified with comments.
+      "@typescript-eslint/no-explicit-any": "error",
     },
   },
 ];

@@ -7,31 +7,36 @@ import { motion } from "framer-motion";
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ");
 
 // Embedded CSS for minimal custom styles
-  const styles = `
-    *:focus-visible {
-      outline-offset: 0 !important;
-      --ring-offset: 0 !important;
-    }
-    textarea::-webkit-scrollbar {
-      width: 6px;
-    }
-    textarea::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    textarea::-webkit-scrollbar-thumb {
-      background-color: var(--color-gray-600, #52525b);
-      border-radius: 3px;
-    }
-    textarea::-webkit-scrollbar-thumb:hover {
-      background-color: var(--color-gray-500, #71717a);
-    }
-  `;
+const styles = `
+  *:focus-visible {
+    outline-offset: 0 !important;
+    --ring-offset: 0 !important;
+  }
+  textarea::-webkit-scrollbar {
+    width: 6px;
+  }
+  textarea::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  textarea::-webkit-scrollbar-thumb {
+    background-color: var(--color-gray-600, #52525b);
+    border-radius: 3px;
+  }
+  textarea::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-gray-500, #71717a);
+  }
+`;
 
-// Inject styles into document
-if (typeof document !== 'undefined') {
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = styles;
-    document.head.appendChild(styleSheet);
+// Style injection tracker to prevent duplicate injection
+let stylesInjected = false;
+
+function injectStyles() {
+  if (stylesInjected || typeof document === 'undefined') return;
+  const styleSheet = document.createElement("style");
+  styleSheet.id = "ai-prompt-box-styles";
+  styleSheet.innerText = styles;
+  document.head.appendChild(styleSheet);
+  stylesInjected = true;
 }
 
 // Textarea Component
@@ -157,23 +162,34 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 }) => {
   const [time, setTime] = React.useState(0);
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const wasRecordingRef = React.useRef(false);
+  const finalTimeRef = React.useRef(0);
+
+  // Track time for stop callback
+  React.useEffect(() => {
+    finalTimeRef.current = time;
+  }, [time]);
 
   React.useEffect(() => {
-    if (isRecording) {
+    if (isRecording && !wasRecordingRef.current) {
+      // Started recording
+      wasRecordingRef.current = true;
       onStartRecording();
       timerRef.current = setInterval(() => setTime((t) => t + 1), 1000);
-    } else {
+    } else if (!isRecording && wasRecordingRef.current) {
+      // Stopped recording
+      wasRecordingRef.current = false;
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      onStopRecording(time);
+      onStopRecording(finalTimeRef.current);
       setTime(0);
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isRecording, time, onStartRecording, onStopRecording]);
+  }, [isRecording, onStartRecording, onStopRecording]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -389,6 +405,11 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
   const [isRecording, setIsRecording] = React.useState(false);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const promptBoxRef = React.useRef<HTMLDivElement>(null);
+
+  // Inject styles on mount
+  React.useEffect(() => {
+    injectStyles();
+  }, []);
 
   // File type detection helpers
   const isImageFile = React.useCallback((file: File) => file.type.startsWith("image/"), []);

@@ -55,12 +55,16 @@ export type ReasoningProps = React.ComponentProps<typeof Collapsible> & {
 
 export function Reasoning({
   isStreaming,
-  toolUses,
-  isLoading,
+  toolUses: _toolUses,
+  isLoading: _isLoading,
   className,
   children,
   ...props
 }: ReasoningProps) {
+  // Note: toolUses and isLoading are passed via props for future use
+  // but the actual display logic is handled by children components
+  void _toolUses;
+  void _isLoading;
   const [open, setOpen] = useState<boolean>(Boolean(isStreaming));
   const wasStreamingRef = useRef<boolean>(false);
 

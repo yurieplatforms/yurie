@@ -1,34 +1,72 @@
 'use client'
 
+/**
+ * useChat Hook
+ *
+ * Manages chat state and persistence for the AI chat interface.
+ * Handles both authenticated (Supabase) and guest (localStorage) storage.
+ *
+ * @module hooks/useChat
+ */
+
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getChat, saveChat, createChat } from '@/lib/chat/history'
 import { useAuth } from '@/components/providers/auth-provider'
 import type { ChatMessage } from '@/lib/types'
 
+/**
+ * Options for the useChat hook
+ */
 export type UseChatOptions = {
+  /** Optional chat ID to load an existing chat */
   chatId?: string
 }
 
+/**
+ * Return type for the useChat hook
+ */
 export type UseChatReturn = {
+  /** Current chat ID */
   id: string | undefined
+  /** Array of chat messages */
   messages: ChatMessage[]
+  /** Whether a message is being processed */
   isLoading: boolean
+  /** Current error message, if any */
   error: string | null
+  /** Container ID for code execution persistence */
   containerId: string | undefined
+  /** Ref to the abort controller for canceling requests */
   abortControllerRef: React.MutableRefObject<AbortController | null>
+  /** Set the current chat ID */
   setId: (id: string | undefined) => void
+  /** Set the messages array */
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>
+  /** Set the loading state */
   setIsLoading: (loading: boolean) => void
+  /** Set the error message */
   setError: (error: string | null) => void
+  /** Set the container ID */
   setContainerId: (id: string | undefined) => void
+  /** Initialize a new chat with messages */
   initializeChat: (initialMessages: ChatMessage[]) => Promise<string>
+  /** Update an existing chat with new messages */
   updateChat: (chatId: string, messages: ChatMessage[], newContainerId?: string) => Promise<void>
+  /** Generate a title for the chat asynchronously */
   generateTitle: (chatId: string, userMessage: ChatMessage) => void
 }
 
 /**
  * Hook for managing chat state and persistence
+ *
+ * @param options - Configuration options including optional chatId
+ * @returns Chat state and management functions
+ *
+ * @example
+ * ```tsx
+ * const { messages, sendMessage, isLoading } = useChat({ chatId: 'abc123' })
+ * ```
  */
 export function useChat({ chatId }: UseChatOptions = {}): UseChatReturn {
   const router = useRouter()

@@ -13,7 +13,6 @@ import type {
   PageLocationCitation,
   ContentBlockLocationCitation,
   WebSearchCitation,
-  SearchResultCitation,
 } from '@/lib/types'
 import { ExternalLinkIcon, FileTextIcon, BookOpenIcon } from 'lucide-react'
 

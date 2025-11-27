@@ -1,15 +1,7 @@
 'use server'
 
 import { createClient } from '@/app/supabase/server'
-import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-
-export async function signOut() {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-  revalidatePath('/', 'layout')
-  redirect('/login')
-}
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient()
