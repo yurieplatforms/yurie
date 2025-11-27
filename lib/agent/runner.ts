@@ -263,17 +263,17 @@ async function handleStreamEvent(
     setActiveToolInput(null)
   } else if (event.type === 'content_block_delta') {
     const deltaEvent = event as ContentBlockDeltaEvent
-    const delta = deltaEvent.delta
+    const delta = deltaEvent.delta as Record<string, unknown>
 
     // Handle thinking_delta for extended thinking
-    if ('thinking' in delta && delta.thinking) {
+    if (delta.thinking && typeof delta.thinking === 'string') {
       await sseHandler.sendSSE({
         choices: [{ delta: { reasoning: delta.thinking } }],
       })
     }
 
     // Handle input_json_delta
-    if ('partial_json' in delta && activeToolName) {
+    if (delta.partial_json && activeToolName) {
       try {
         const partialJson = delta.partial_json as string
         if (partialJson) {
@@ -291,14 +291,14 @@ async function handleStreamEvent(
       }
     }
 
-    if ('text' in delta && delta.text) {
+    if (delta.text && typeof delta.text === 'string') {
       await sseHandler.sendSSE({
         choices: [{ delta: { content: delta.text } }],
       })
     }
 
     // Handle citations using extracted processor
-    if ('citations' in delta && Array.isArray(delta.citations)) {
+    if (Array.isArray(delta.citations)) {
       const allCitations = processCitations(delta.citations as RawCitation[])
 
       if (allCitations.length > 0) {
