@@ -127,7 +127,7 @@ export async function POST(request: Request) {
         const memoryTool = createMemoryTool(sseHandler, memoryToolHandler)
 
         const runnerOptions: Parameters<typeof anthropic.beta.messages.toolRunner>[0] = {
-          model: 'claude-opus-4-5-20251101',
+          model: 'claude-sonnet-4-5-20250929',
           max_tokens: 16384,
           system: systemPrompt,
           messages: anthropicMessages,

@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     )
 
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 100,
       system: 'Generate a 5 to 6 word title summarizing the user\'s specific query. Do not use markdown, quotes, or any formatting. Output only the plain text title.',
       messages: anthropicMessages,
