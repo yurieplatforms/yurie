@@ -136,7 +136,7 @@ export async function runAgent({
           'structured-outputs-2025-11-13',
           'interleaved-thinking-2025-05-14',
         ],
-        // Context editing - beta feature not fully typed
+        // Context editing - beta feature not fully typed in SDK
         context_management: {
           edits: [
             {
@@ -147,7 +147,7 @@ export async function runAgent({
               exclude_tools: ['memory'],
             },
           ],
-        } as Anthropic.Beta.BetaToolRunnerParams['context_management'],
+        },
       }
 
       const runner = anthropic.beta.messages.toolRunner(runnerOptions)
