@@ -1,3 +1,10 @@
+/**
+ * User Context
+ * 
+ * Fetches and formats user personalization context for the agent.
+ * Includes user profile, conversation memories, and prompt formatting.
+ */
+
 import { SupabaseClient } from '@supabase/supabase-js'
 
 export type UserProfile = {
@@ -73,18 +80,23 @@ export async function getConversationMemories(
 
   const memories = chats.map((chat) => {
     const messages = (chat.messages || []).sort(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (a: any, b: any) =>
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     )
 
     // Extract ALL user messages (filter out very short/empty ones)
     const userMessages = messages
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter((m: any) => m.role === 'user' && m.content && m.content.trim().length > 10)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((m: any) => cleanText(m.content, 500))
 
     // Extract ALL assistant messages for context
     const assistantMessages = messages
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter((m: any) => m.role === 'assistant' && m.content && m.content.trim().length > 20)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((m: any) => cleanText(m.content, 300))
 
     totalUserMessages += userMessages.length
@@ -229,3 +241,4 @@ function formatDate(dateStr: string): string {
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
   })
 }
+

@@ -1,5 +1,5 @@
 import { createClient } from '@/app/supabase/client'
-import { SavedChat, ChatMessage } from './types'
+import { SavedChat, ChatMessage } from '@/lib/types'
 import { SupabaseClient } from '@supabase/supabase-js'
 
 const STORAGE_KEY = 'yurie-chat-history'
@@ -227,3 +227,4 @@ export function createChat(messages: ChatMessage[] = []): SavedChat {
     messages,
   }
 }
+

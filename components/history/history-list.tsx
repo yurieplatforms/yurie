@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Trash2 } from 'lucide-react'
-import { getChats, deleteChat, clearHistory } from '@/lib/history'
+import { getChats, deleteChat, clearHistory } from '@/lib/chat/history'
 import { useAuth } from '@/components/providers/auth-provider'
 import type { SavedChat } from '@/lib/types'
 import { motion } from 'motion/react'
