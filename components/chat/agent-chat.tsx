@@ -882,7 +882,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
               isLoading={isLoading}
               onSend={sendMessage}
               className="w-full"
-              placeholder="Message Yurie"
+              placeholder="What's on your mind?"
             />
           </div>
         </div>

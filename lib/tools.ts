@@ -19,7 +19,7 @@ export type ToolResultBlock = {
   is_error?: boolean
 }
 
-export type ServerToolType = 'web_search' | 'web_fetch' | 'code_execution' | 'bash_code_execution' | 'text_editor_code_execution'
+export type ServerToolType = 'web_search' | 'web_fetch'
 export type ClientToolType = 'calculator' | 'memory' | 'run_code'
 export type ToolName = ServerToolType | ClientToolType
 
@@ -78,12 +78,6 @@ export const serverTools: Anthropic.Tool[] = [
     max_content_tokens: 50000,      // Prevent excessive token usage (~20 average pages)
     citations: { enabled: true },   // Enable citations for proper attribution
   } as unknown as Anthropic.Tool,
-  // Code execution tool - Anthropic's sandboxed environment for running Bash/Python
-  // See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool
-  {
-    type: 'code_execution_20250825',
-    name: 'code_execution',
-  } as unknown as Anthropic.Tool,
 ]
 
 /**
@@ -101,11 +95,6 @@ export function createServerTools(webSearchConfig?: WebSearchToolConfig): Anthro
       max_content_tokens: 50000,
       citations: { enabled: true },
     } as unknown as Anthropic.Tool,
-    // Code execution tool
-    {
-      type: 'code_execution_20250825',
-      name: 'code_execution',
-    } as unknown as Anthropic.Tool,
   ]
 }
 
@@ -113,15 +102,9 @@ export function createServerTools(webSearchConfig?: WebSearchToolConfig): Anthro
 // Client-Side Tool Definitions (We execute these)
 // Best practices: Detailed descriptions, input examples, strict schema validation
 // See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use
+// See: https://platform.claude.com/docs/en/build-with-claude/structured-outputs#strict-tool-use
 // ============================================================================
 
-// Client-side tools with programmatic calling enabled and strict mode
-// Tools are callable from code execution container, allowing Claude to:
-// - Call tools in loops for batch processing
-// - Apply conditional logic based on tool results
-// - Filter/aggregate results before returning to context
-// See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/programmatic-tool-calling
-// See: https://platform.claude.com/docs/en/build-with-claude/structured-outputs#strict-tool-use
 export const clientTools: Anthropic.Tool[] = [
   {
     name: 'calculator',
@@ -148,8 +131,6 @@ export const clientTools: Anthropic.Tool[] = [
       { expression: '(100 * 0.15) + 50' },
       { expression: 'pow(2, 10)' },
     ],
-    // Enable programmatic calling from code execution
-    allowed_callers: ['code_execution_20250825'],
   } as Anthropic.Tool,
   // Note: Memory tool is now handled by Anthropic's official Memory Tool
   // See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool
@@ -176,8 +157,6 @@ export const clientTools: Anthropic.Tool[] = [
       { code: 'const date = new Date();\n`${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`' },
       { code: 'const obj = {a: 1, b: 2, c: 3};\nObject.entries(obj).map(([k, v]) => `${k}=${v}`).join("&")' },
     ],
-    // Enable programmatic calling from code execution
-    allowed_callers: ['code_execution_20250825'],
   } as Anthropic.Tool,
 ]
 
@@ -407,12 +386,6 @@ export function isClientTool(toolName: string): boolean {
   return ['calculator', 'memory', 'run_code'].includes(toolName)
 }
 
-/**
- * Check if a tool is a code execution tool (server-side, executed by Anthropic)
- */
-export function isCodeExecutionTool(toolName: string): boolean {
-  return ['code_execution', 'bash_code_execution', 'text_editor_code_execution'].includes(toolName)
-}
 
 /**
  * Extract tool use blocks from message content

@@ -17,14 +17,13 @@ export function Header() {
     <header className="fixed left-0 right-0 top-0 z-50 bg-zinc-50/80 backdrop-blur-md dark:bg-zinc-950/80">
       <div className="mx-auto flex h-16 max-w-screen-sm items-center justify-between px-4">
         <div className="flex items-center gap-1.5">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="group flex items-center gap-2">
             <motion.img
               src="/favicon.ico"
               alt="Yurie Logo"
-              className="h-6 w-6"
+              className="h-6 w-6 transition-transform duration-200 group-hover:scale-[1.2]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
             />
             <TextEffect
               as="span"
