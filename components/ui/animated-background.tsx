@@ -46,7 +46,7 @@ export function AnimatedBackground({
     }
   }, [defaultValue])
 
-  return Children.map(children, (child, index) => {
+  return Children.map(children, (child) => {
     if (!child || typeof child !== 'object' || !('props' in child)) return null
     const element = child as ReactElement<{ 'data-id': string; className?: string; children?: React.ReactNode }>
     const id = element.props['data-id']
@@ -66,7 +66,7 @@ export function AnimatedBackground({
         className: cn('relative flex', element.props.className),
         'data-checked': activeId === id ? 'true' : 'false',
         ...interactionProps,
-      } as React.HTMLAttributes<HTMLElement>,
+      } as unknown as React.HTMLAttributes<HTMLElement>,
       <>
         <AnimatePresence initial={false}>
           {activeId === id && (
