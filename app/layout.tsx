@@ -73,7 +73,7 @@ export default function RootLayout({
           defaultTheme="system"
         >
           <AuthProvider>
-            <div className="flex min-h-dvh w-full flex-col font-[family-name:var(--font-inter-tight)]">
+            <div className="flex min-h-screen w-full flex-col font-[family-name:var(--font-inter-tight)]">
               <Header />
               <div className="relative mx-auto w-full max-w-screen-sm flex-1 px-4 pt-24">
                 {children}

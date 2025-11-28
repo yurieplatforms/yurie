@@ -32,11 +32,6 @@
   html {
     overflow-y: auto;
   }
-  
-  /* Prevent scrolling on home/welcome page */
-  body:has(main[data-welcome-screen="true"]) {
-    overflow: hidden;
-  }
 }
 
 @layer base {
