@@ -33,10 +33,13 @@
     overflow-y: auto;
   }
 
-  @media (max-width: 640px) {
-    html:has([data-page="home"]) {
-      overflow: hidden;
-    }
+  /* Home page: no scrolling at any viewport size */
+  html:has([data-page="home"]) {
+    overflow: hidden;
+  }
+
+  body:has([data-page="home"]) {
+    overflow: hidden;
   }
 }
 

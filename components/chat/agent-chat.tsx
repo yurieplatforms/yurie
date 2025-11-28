@@ -250,39 +250,41 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
   const hasMessages = messages.length > 0
 
+  // Home page: clean, centered input only (no scrolling)
+  if (!hasMessages) {
+    return (
+      <div className="flex h-[calc(100vh-8rem)] items-start justify-center pt-[30vh]">
+        <div className="w-full max-w-screen-sm px-4">
+          <WelcomeScreen onSuggestionClick={handleSuggestionClick} />
+          {error && (
+            <p className="mb-4 text-xs text-red-500 dark:text-red-400">{error}</p>
+          )}
+          <ChatInputArea isLoading={isLoading} onSend={sendMessage} variant="inline" />
+        </div>
+      </div>
+    )
+  }
+
+  // Chat page: messages with fixed bottom input
   return (
     <div className="relative h-full">
-      {hasMessages ? (
-        <>
-          <div className="flex h-full flex-col gap-4 pb-24">
-            <div className="space-y-3">
-              <MessageList
-                messages={messages}
-                isLoading={isLoading}
-                hasJustCopied={hasJustCopied}
-                onCopyMessage={handleCopyMessage}
-                onSuggestionClick={handleSuggestionClick}
-              />
-            </div>
-
-            {error && (
-              <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
-            )}
-          </div>
-
-          <ChatInputArea isLoading={isLoading} onSend={sendMessage} />
-        </>
-      ) : (
-        <div className="flex h-[calc(100vh-12rem)] flex-col items-center justify-start pt-[30vh]">
-          <div className="w-full max-w-screen-sm px-4">
-            <WelcomeScreen onSuggestionClick={handleSuggestionClick} />
-            {error && (
-              <p className="mb-4 text-xs text-red-500 dark:text-red-400">{error}</p>
-            )}
-            <ChatInputArea isLoading={isLoading} onSend={sendMessage} variant="inline" />
-          </div>
+      <div className="flex h-full flex-col gap-4 pb-24">
+        <div className="space-y-3">
+          <MessageList
+            messages={messages}
+            isLoading={isLoading}
+            hasJustCopied={hasJustCopied}
+            onCopyMessage={handleCopyMessage}
+            onSuggestionClick={handleSuggestionClick}
+          />
         </div>
-      )}
+
+        {error && (
+          <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
+        )}
+      </div>
+
+      <ChatInputArea isLoading={isLoading} onSend={sendMessage} />
     </div>
   )
 }

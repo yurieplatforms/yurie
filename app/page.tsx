@@ -11,8 +11,12 @@ export default async function Page({
   searchParams: Promise<{ id?: string }>
 }) {
   const { id } = await searchParams
+
   return (
-    <main className="flex min-h-[calc(100vh-6rem)] flex-col space-y-6">
+    <main
+      data-page={id ? 'chat' : 'home'}
+      className="flex min-h-[calc(100vh-6rem)] flex-col"
+    >
       <div className="flex-1">
         <AgentChat chatId={id} />
       </div>
