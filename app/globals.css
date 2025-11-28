@@ -29,8 +29,10 @@
 }
 
 @layer base {
-  html {
-    overflow-y: auto;
+  html,
+  body {
+    overflow: hidden;
+    height: 100%;
   }
 }
 
