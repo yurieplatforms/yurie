@@ -16,7 +16,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import { createClient } from '@/app/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 // Agent modules
 import { createSSEHandler, sendDoneSignal } from '@/lib/agent/sse-handler'

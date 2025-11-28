@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-import { createClient } from '@/app/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { authSchema } from '@/lib/auth-schema'
 
 export async function signup(formData: FormData) {

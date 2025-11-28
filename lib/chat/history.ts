@@ -7,7 +7,7 @@
  * @module lib/chat/history
  */
 
-import { createClient } from '@/app/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { SavedChat, ChatMessage } from '@/lib/types'
 import { SupabaseClient } from '@supabase/supabase-js'
 

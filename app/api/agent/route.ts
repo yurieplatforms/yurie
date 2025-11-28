@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
-import { createClient } from '@/app/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 // Agent modules
 import { buildSystemPrompt } from '@/lib/agent/system-prompt'
