@@ -248,29 +248,39 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       })
   }
 
+  const hasMessages = messages.length > 0
+
   return (
     <div className="relative h-full">
-      <div className={`flex h-full flex-col gap-4 ${messages.length > 0 ? 'pb-24' : 'pb-4'}`}>
-        <div className="space-y-3">
-          <MessageList
-            messages={messages}
-            isLoading={isLoading}
-            hasJustCopied={hasJustCopied}
-            onCopyMessage={handleCopyMessage}
-            onSuggestionClick={handleSuggestionClick}
-          />
+      <div className={`flex h-full flex-col ${hasMessages ? 'gap-4 pb-24' : 'items-center justify-center pt-[25vh]'}`}>
+        {hasMessages ? (
+          <>
+            <div className="space-y-3">
+              <MessageList
+                messages={messages}
+                isLoading={isLoading}
+                hasJustCopied={hasJustCopied}
+                onCopyMessage={handleCopyMessage}
+                onSuggestionClick={handleSuggestionClick}
+              />
+            </div>
 
-          {!isLoading && messages.length === 0 && (
-            <WelcomeScreen onSuggestionClick={handleSuggestionClick} />
-          )}
-        </div>
-
-        {error && (
-          <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
+            {error && (
+              <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
+            )}
+          </>
+        ) : (
+          <div className="flex w-full max-w-2xl flex-col items-center gap-6 px-4">
+            {!isLoading && <WelcomeScreen />}
+            <ChatInputArea isLoading={isLoading} onSend={sendMessage} variant="inline" />
+            {error && (
+              <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
+            )}
+          </div>
         )}
       </div>
 
-      <ChatInputArea isLoading={isLoading} onSend={sendMessage} />
+      {hasMessages && <ChatInputArea isLoading={isLoading} onSend={sendMessage} />}
     </div>
   )
 }
