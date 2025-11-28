@@ -19,6 +19,20 @@ import type {
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 
 /**
+ * SSE error information from the server
+ */
+export type StreamError = {
+  /** Error type identifier */
+  type: string
+  /** User-friendly error message */
+  message: string
+  /** Whether the error is retryable */
+  retryable: boolean
+  /** Suggested retry delay in milliseconds */
+  retryAfterMs?: number
+}
+
+/**
  * Accumulated state during stream processing
  */
 export type StreamState = {
@@ -36,6 +50,8 @@ export type StreamState = {
   citations: MessageCitation[]
   /** Container ID for code execution persistence */
   containerId: string | undefined
+  /** Error information if stream encountered an error */
+  error: StreamError | undefined
 }
 
 /**
@@ -104,6 +120,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
     let accumulatedToolUses: ToolUseEvent[] = []
     const accumulatedCitations: MessageCitation[] = []
     let responseContainerId: string | undefined
+    let accumulatedError: StreamError | undefined
     
     let lastUpdateTime = 0
     const THROTTLE_MS = 50
@@ -131,6 +148,27 @@ export function useStreamResponse(): UseStreamResponseReturn {
 
         try {
           const json = JSON.parse(dataPart)
+
+          // Handle SSE error events from the server
+          if (json.error) {
+            accumulatedError = {
+              type: json.error.type ?? 'unknown_error',
+              message: json.error.message ?? 'An unexpected error occurred',
+              retryable: json.error.retryable ?? false,
+              retryAfterMs: json.error.retryAfterMs,
+            }
+            callbacks.onUpdate({
+              content: accumulatedContent,
+              reasoning: accumulatedReasoning,
+              images: accumulatedImages,
+              thinkingTime: accumulatedThinkingTime,
+              toolUses: accumulatedToolUses,
+              citations: accumulatedCitations,
+              containerId: responseContainerId,
+              error: accumulatedError,
+            })
+            continue
+          }
 
           // Handle container ID for code execution persistence
           if (json.containerId) {
@@ -277,6 +315,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
               toolUses: accumulatedToolUses,
               citations: accumulatedCitations,
               containerId: responseContainerId,
+              error: accumulatedError,
             })
           }
         } catch {
@@ -294,6 +333,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
       toolUses: accumulatedToolUses,
       citations: accumulatedCitations,
       containerId: responseContainerId,
+      error: accumulatedError,
     })
 
     return {
@@ -304,6 +344,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
       toolUses: accumulatedToolUses,
       citations: accumulatedCitations,
       containerId: responseContainerId,
+      error: accumulatedError,
     }
   }, [])
 

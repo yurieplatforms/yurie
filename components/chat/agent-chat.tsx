@@ -156,6 +156,12 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         // Process the stream using the hook
         finalStreamState = await processStream(response, {
           onUpdate: (state) => {
+            // Handle SSE errors from the stream
+            if (state.error) {
+              setError(state.error.message)
+              return
+            }
+
             setMessages((prev) =>
               prev.map((msg) => {
                 if (msg.id !== assistantMessageId) return msg
@@ -188,6 +194,11 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             setContainerId(newContainerId)
           },
         })
+
+        // Check for errors in final stream state
+        if (finalStreamState?.error) {
+          setError(finalStreamState.error.message)
+        }
       } catch (err) {
         if ((err as Error).name === 'AbortError') {
           return

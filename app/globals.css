@@ -187,6 +187,45 @@
     color: var(--color-accent-hover);
   }
 
+  /* KaTeX LaTeX math styling */
+  .prose .katex {
+    font-size: 1.3em !important;
+  }
+
+  .prose .katex-display {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.75rem 0;
+  }
+
+  .prose .katex-display > .katex {
+    text-align: center;
+    font-size: 1.6em !important;
+  }
+
+  /* Math display blocks styling */
+  .prose .math-display,
+  [data-streamdown] .math-display {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: rgb(250 250 250 / 0.6);
+    overflow-x: auto;
+  }
+
+  .dark .prose .math-display,
+  .dark [data-streamdown] .math-display {
+    background-color: rgb(24 24 27 / 0.4);
+  }
+
+  /* Inline math styling - subtle background for readability */
+  .prose .math-inline,
+  [data-streamdown] .math-inline {
+    padding: 0.1em 0.2em;
+    border-radius: 0.25rem;
+  }
+
   /* PromptKit-style text loaders (text-blink, loading-dots) */
   .loader-text-blink {
     animation: loader-text-blink 1.1s ease-in-out infinite;

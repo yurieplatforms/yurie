@@ -22,6 +22,10 @@ import {
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import { createContext, memo, useContext, useEffect, useState, useMemo } from "react";
 import { Streamdown } from "streamdown";
+import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
+import remarkCjkFriendly from "remark-cjk-friendly";
+import remarkCjkFriendlyGfmStrikethrough from "remark-cjk-friendly-gfm-strikethrough";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -320,6 +324,14 @@ export const MessageBranchPage = ({
 
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
+// Custom remark plugins with singleDollarTextMath enabled for inline LaTeX
+const customRemarkPlugins = [
+  [remarkGfm, {}],
+  [remarkMath, { singleDollarTextMath: true }],
+  [remarkCjkFriendly, {}],
+  [remarkCjkFriendlyGfmStrikethrough, {}],
+];
+
 export const MessageResponse = memo(
   ({ className, components, ...props }: MessageResponseProps) => (
     <Streamdown
@@ -337,6 +349,8 @@ export const MessageResponse = memo(
         "prose-strong:font-medium",
         className
       )}
+      // Enable LaTeX math rendering with single dollar signs ($...$)
+      remarkPlugins={customRemarkPlugins as ComponentProps<typeof Streamdown>['remarkPlugins']}
       // Keep Streamdown's rich code block UI (header, controls), but make
       // structural elements match blog-style prose.
       components={{

@@ -20,6 +20,11 @@ import { createClient } from '@/app/supabase/server'
 
 // Agent modules
 import { createSSEHandler, sendDoneSignal } from '@/lib/agent/sse-handler'
+import {
+  parseAnthropicError,
+  createSSEErrorPayload,
+  logAnthropicError,
+} from '@/lib/agent/errors'
 import { createRunnableTools } from '@/lib/agent/runnable-tools'
 import { createMemoryTool } from '@/lib/agent/memory-tool-config'
 import {
@@ -397,16 +402,13 @@ export async function runAgent({
       await sendDoneSignal(writer)
       await writer.close()
     } catch (error) {
-      console.error('[agent] Tool runner error', error)
+      // Parse the error to get structured information
+      const agentError = parseAnthropicError(error)
+      logAnthropicError('agent', error, agentError)
+
       try {
-        await sseHandler.sendSSE({
-          error: {
-            message:
-              error instanceof Error
-                ? error.message
-                : 'Unknown error in tool runner',
-          },
-        })
+        // Send structured error event via SSE
+        await sseHandler.sendSSE(createSSEErrorPayload(agentError))
         await writer.close()
       } catch {
         // Writer might already be closed
