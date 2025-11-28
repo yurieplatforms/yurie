@@ -12,7 +12,7 @@ export default async function Page({
 }) {
   const { id } = await searchParams
   return (
-    <main className="flex h-[calc(100dvh-6rem)] flex-col overflow-hidden">
+    <main className="mobile-no-scroll flex h-[calc(100dvh-6rem)] flex-col overflow-hidden">
       <div className="h-full overflow-hidden">
         <AgentChat chatId={id} />
       </div>
