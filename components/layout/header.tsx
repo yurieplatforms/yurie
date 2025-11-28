@@ -6,6 +6,7 @@ import { useAuth } from '@/components/providers/auth-provider'
 
 const NAV_ITEMS = [
   { href: '/history', label: 'Threads' },
+  { href: '/memories', label: 'Memories' },
 ] as const
 
 export function Header() {

@@ -17,6 +17,7 @@ const toolCompletedLabels: Record<string, string> = {
   web_search: 'Searched the web',
   web_fetch: 'Fetched page content',
   calculator: 'Calculated',
+  memory: 'Recalled',
   memory_save: 'Saved to memory',
   memory_retrieve: 'Searched memory',
   run_code: 'Ran code',
