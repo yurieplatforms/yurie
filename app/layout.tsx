@@ -11,8 +11,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fafafa' },
-    { media: '(prefers-color-scheme: dark)', color: '#09090b' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
   viewportFit: 'cover',
 }
@@ -64,7 +64,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geist.variable} ${geistMono.variable} bg-zinc-50 tracking-tight antialiased dark:bg-zinc-950`}
+        className={`${geist.variable} ${geistMono.variable} bg-white dark:bg-black tracking-tight antialiased`}
       >
         <ThemeProvider
           enableSystem={true}

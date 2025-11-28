@@ -19,7 +19,7 @@ export default async function LoginPage(props: {
 
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 w-full">
         <div className="pointer-events-auto mx-auto w-full max-w-screen-sm px-4">
-           <div className="bg-white dark:bg-zinc-950">
+           <div className="bg-background">
              <Footer className="mt-0" />
            </div>
         </div>
