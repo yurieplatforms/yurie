@@ -21,7 +21,7 @@ export function Header() {
               as="span"
               preset="fade"
               per="char"
-              className="font-zalando text-xl text-black dark:text-white"
+              className="font-zalando text-lg text-black dark:text-white"
             >
               yurie
             </TextEffect>
@@ -84,7 +84,7 @@ export function Header() {
               className="text-base text-zinc-500 transition-colors hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50"
             >
               <TextEffect as="span" preset="fade" per="char">
-                Sign In
+                Log in
               </TextEffect>
             </Link>
           )}

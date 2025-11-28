@@ -9,8 +9,9 @@ import {
   type StreamState,
 } from '@/hooks/useStreamResponse'
 import { useFileProcessor } from '@/hooks/useFileProcessor'
+import { useGeolocation, buildUserLocation } from '@/hooks/useGeolocation'
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
-import type { ChatMessage, WebSearchUserLocation } from '@/lib/types'
+import type { ChatMessage } from '@/lib/types'
 
 // Extracted subcomponents
 import { MessageList } from './message-list'
@@ -20,6 +21,11 @@ import { ChatInputArea } from './chat-input-area'
 export function AgentChat({ chatId }: { chatId?: string }) {
   const { user } = useAuth()
   const [hasJustCopied, setHasJustCopied] = useState(false)
+
+  // Get user location for localized web search results
+  // Uses timezone-based inference with comprehensive city/region mapping
+  // @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool#localization
+  const geolocationData = useGeolocation()
 
   // Use custom hooks for chat state and stream processing
   const {
@@ -112,30 +118,9 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
       // Build user location for localized web search results
-      const userLocation: WebSearchUserLocation = {
-        type: 'approximate',
-        timezone: timeZone,
-      }
-
-      const timezoneCountryMap: Record<string, string> = {
-        America: 'US',
-        US: 'US',
-        Canada: 'CA',
-        Europe: 'EU',
-        Asia: 'APAC',
-        Australia: 'AU',
-        Pacific: 'APAC',
-      }
-      const timezoneParts = timeZone.split('/')
-      if (timezoneParts.length >= 1) {
-        const region = timezoneParts[0]
-        if (timezoneCountryMap[region]) {
-          userLocation.country = timezoneCountryMap[region]
-        }
-        if (timezoneParts.length >= 2) {
-          userLocation.region = timezoneParts[1].replace(/_/g, ' ')
-        }
-      }
+      // Uses comprehensive timezone-to-location mapping for accurate city/region detection
+      // @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool#localization
+      const userLocation = buildUserLocation(geolocationData)
 
       let finalStreamState: StreamState | null = null
 
@@ -232,6 +217,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       id,
       containerId,
       user,
+      geolocationData,
       setError,
       setMessages,
       setIsLoading,

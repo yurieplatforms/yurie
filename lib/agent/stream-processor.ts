@@ -13,6 +13,7 @@ import type {
   PageLocationCitation,
   ContentBlockLocationCitation,
   MessageCitation,
+  WebSearchErrorCode,
 } from '@/lib/types'
 
 // ============================================================================
@@ -209,7 +210,7 @@ export async function processWebSearchResult(
               type: 'web_search',
               query: (activeToolInput?.query as string) || '',
               results: [],
-              errorCode: errorContent.error_code as 'too_many_requests' | 'invalid_input' | 'max_uses_exceeded' | 'query_too_long' | 'unavailable',
+              errorCode: errorContent.error_code as WebSearchErrorCode,
             },
           },
         },

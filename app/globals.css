@@ -3,18 +3,9 @@
 @source "../node_modules/streamdown/dist/index.js";
 @custom-variant dark (&:is(.dark *));
 
-/* Zalando Sans font for logo */
-@font-face {
-  font-family: 'Zalando Sans';
-  src: url('https://cdn.jsdelivr.net/gh/nickmilo/Zalando-Sans-Font@master/font/web/ZalandoSans-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* Utility class for Zalando Sans font */
+/* Utility class for Zalando Sans font (logo) */
 .font-zalando {
-  font-family: 'Zalando Sans', sans-serif;
+  font-family: 'Zalando Sans Expanded', sans-serif;
   font-weight: 600;
   font-style: italic;
 }

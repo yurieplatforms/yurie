@@ -8,7 +8,13 @@ import type {
   MessageContentSegment,
 } from '@/lib/types'
 import { readFileAsDataURL, isImageFile, isPdfFile } from '@/lib/utils'
-import { isTextFile, resizeImageForVision, validateFile } from '@/lib/files'
+import { 
+  isTextFile, 
+  resizeImageForVision, 
+  validateFile, 
+  validatePdfFile,
+  validateImageCount,
+} from '@/lib/files'
 
 export type FileProcessorResult = {
   textSegment: TextContentSegment
@@ -30,21 +36,70 @@ export type UseFileProcessorReturn = {
 export function useFileProcessor(): UseFileProcessorReturn {
   /**
    * Validate all files before processing
+   * 
+   * Follows Anthropic best practices:
+   * - Validates image count (max 100 per request)
+   * - Applies stricter dimension limits when >20 images
+   * - Uses specific validation for PDFs
+   * 
+   * @see https://platform.claude.com/docs/en/build-with-claude/vision
+   * @see https://platform.claude.com/docs/en/build-with-claude/pdf-support
    */
   const validateFiles = useCallback(
-    async (files: File[]): Promise<{ valid: boolean; error?: string }> => {
-      for (const file of files) {
-        const validation = await validateFile(file)
-        if (!validation.valid) {
-          return { valid: false, error: validation.error || 'Invalid file' }
+    async (files: File[]): Promise<{ valid: boolean; error?: string; totalEstimatedTokens?: number }> => {
+      // Count images to apply appropriate validation rules
+      const imageFiles = files.filter(isImageFile)
+      const imageCount = imageFiles.length
+      let totalEstimatedTokens = 0
+
+      // Validate total image count (max 100 per API request)
+      if (imageCount > 0) {
+        const countValidation = validateImageCount(imageCount)
+        if (!countValidation.valid) {
+          return { valid: false, error: countValidation.error }
         }
-        if (validation.warnings) {
-          validation.warnings.forEach((warning) =>
+        if (countValidation.warnings) {
+          countValidation.warnings.forEach((warning) =>
             console.log(`[vision] ${warning}`),
           )
         }
       }
-      return { valid: true }
+
+      for (const file of files) {
+        // Use PDF-specific validation for PDF files
+        if (isPdfFile(file)) {
+          const pdfValidation = await validatePdfFile(file)
+          if (!pdfValidation.valid) {
+            return { valid: false, error: pdfValidation.error || 'Invalid PDF file' }
+          }
+          if (pdfValidation.warnings) {
+            pdfValidation.warnings.forEach((warning) =>
+              console.log(`[pdf] ${warning}`),
+            )
+          }
+        } else {
+          // Use general validation with image count for proper dimension limits
+          const validation = await validateFile(file, { imageCount })
+          if (!validation.valid) {
+            return { valid: false, error: validation.error || 'Invalid file' }
+          }
+          if (validation.warnings) {
+            validation.warnings.forEach((warning) =>
+              console.log(`[files] ${warning}`),
+            )
+          }
+          // Track estimated tokens for images
+          if (validation.estimatedTokens) {
+            totalEstimatedTokens += validation.estimatedTokens
+          }
+        }
+      }
+
+      if (totalEstimatedTokens > 0) {
+        console.log(`[vision] Estimated image tokens: ~${totalEstimatedTokens}`)
+      }
+
+      return { valid: true, totalEstimatedTokens }
     },
     [],
   )
@@ -133,9 +188,12 @@ export function useFileProcessor(): UseFileProcessorReturn {
       }
 
       // Combine segments if we have rich content
+      // Best practice: Images should come before text in the content array
+      // @see https://platform.claude.com/docs/en/build-with-claude/vision
+      // Order: 1. Images, 2. Documents (PDFs/text files), 3. Text content
       const richContentSegments =
         imageSegments.length > 0 || fileSegments.length > 0
-          ? [textSegment, ...imageSegments, ...fileSegments]
+          ? [...imageSegments, ...fileSegments, textSegment]
           : undefined
 
       return {

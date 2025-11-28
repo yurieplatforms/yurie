@@ -2,9 +2,17 @@
  * Message Converter
  * 
  * Converts chat messages to Anthropic API format.
- * Handles images, documents, and text with proper ordering and labeling.
+ * Handles images, documents (including PDFs), and text with proper ordering and labeling.
  * 
- * Best practices from https://platform.claude.com/docs/en/build-with-claude/vision:
+ * Best practices for PDF support:
+ * @see https://platform.claude.com/docs/en/build-with-claude/pdf-support
+ * - Place PDFs before text in requests
+ * - Enable citations for full visual PDF understanding
+ * - Use cache_control for repeated PDF analysis (ephemeral caching)
+ * - Maximum 32MB request size, 100 pages per PDF
+ * 
+ * Best practices for vision:
+ * @see https://platform.claude.com/docs/en/build-with-claude/vision
  * - Images should come before text (image-then-text structure)
  * - Multiple images should be labeled "Image 1:", "Image 2:", etc.
  * - Multiple documents should be labeled "Document 1:", "Document 2:", etc.
@@ -14,6 +22,24 @@
 
 import type Anthropic from '@anthropic-ai/sdk'
 import type { MessageContentSegment } from '@/lib/types'
+
+/**
+ * Extracts a filename from a URL for document titles
+ * Falls back to 'Document' if extraction fails
+ */
+function extractFilenameFromUrl(url: string): string {
+  try {
+    const urlObj = new URL(url)
+    const pathname = urlObj.pathname
+    const filename = pathname.split('/').pop()
+    if (filename && filename.length > 0) {
+      return decodeURIComponent(filename)
+    }
+  } catch {
+    // Invalid URL, fall through to default
+  }
+  return 'Document'
+}
 
 /**
  * Converts message content to Anthropic API format
@@ -35,9 +61,10 @@ export function convertToAnthropicContent(
     }> = []
     const documentSegments: Array<{
       type: 'document'
-      source: { type: 'base64' | 'text'; media_type: string; data: string }
+      source: { type: 'base64' | 'text' | 'url'; media_type?: string; data?: string; url?: string }
       title: string
       citations: { enabled: boolean }
+      cache_control?: { type: 'ephemeral' }
     }> = []
 
     // Process each segment and categorize
@@ -47,8 +74,10 @@ export function convertToAnthropicContent(
           textSegments.push({ type: 'text' as const, text: segment.text })
         }
       } else if (segment.type === 'image_url') {
+        // Handle image_url type (legacy format, supports both data URLs and regular URLs)
         const url = segment.image_url.url
         if (url.startsWith('data:')) {
+          // Base64-encoded image
           const matches = url.match(/^data:([^;]+);base64,(.+)$/)
           if (matches) {
             imageSegments.push({
@@ -65,6 +94,8 @@ export function convertToAnthropicContent(
             })
           }
         } else {
+          // URL-based image
+          // @see https://platform.claude.com/docs/en/build-with-claude/vision#url-based-image-example
           imageSegments.push({
             type: 'image' as const,
             source: {
@@ -73,16 +104,34 @@ export function convertToAnthropicContent(
             },
           })
         }
+      } else if (segment.type === 'url_image') {
+        // Handle url_image type (explicit URL-based image format)
+        // This is the preferred format for remote images
+        // @see https://platform.claude.com/docs/en/build-with-claude/vision#url-based-image-example
+        imageSegments.push({
+          type: 'image' as const,
+          source: {
+            type: 'url' as const,
+            url: segment.url_image.url,
+          },
+        })
       } else if (segment.type === 'file') {
         // Handle file attachments as document blocks with citations enabled
         const { filename, file_data } = segment.file
-        const dataUrlMatch = file_data.match(/^data:([^;]+);base64,(.+)$/)
         
-        if (dataUrlMatch) {
-          const mediaType = dataUrlMatch[1]
-          const base64Data = dataUrlMatch[2]
+        // Extract media type and base64 data without using regex on large strings
+        // Regex with .+ can cause stack overflow on large base64 PDFs
+        const dataPrefix = 'data:'
+        const base64Marker = ';base64,'
+        
+        if (file_data.startsWith(dataPrefix) && file_data.includes(base64Marker)) {
+          const markerIndex = file_data.indexOf(base64Marker)
+          const mediaType = file_data.slice(dataPrefix.length, markerIndex)
+          const base64Data = file_data.slice(markerIndex + base64Marker.length)
           
-          // PDF documents - use base64 source with citations
+          // PDF documents - use base64 source with citations and cache_control
+          // Best practice: Enable prompt caching for repeated PDF analysis
+          // @see https://platform.claude.com/docs/en/build-with-claude/pdf-support#use-prompt-caching
           if (mediaType === 'application/pdf') {
             documentSegments.push({
               type: 'document' as const,
@@ -93,6 +142,8 @@ export function convertToAnthropicContent(
               },
               title: filename,
               citations: { enabled: true },
+              // Enable ephemeral caching for repeated queries on the same PDF
+              cache_control: { type: 'ephemeral' },
             })
           }
           
@@ -115,6 +166,21 @@ export function convertToAnthropicContent(
             }
           }
         }
+      } else if (segment.type === 'url_document') {
+        // Handle URL-based documents (PDFs and other documents from remote URLs)
+        // Best practice: URL-based PDFs are the simplest approach for hosted documents
+        // @see https://platform.claude.com/docs/en/build-with-claude/pdf-support#option-1-url-based-pdf-document
+        const { url, title } = segment.url_document
+        documentSegments.push({
+          type: 'document' as const,
+          source: {
+            type: 'url' as const,
+            url: url,
+          },
+          title: title || extractFilenameFromUrl(url),
+          citations: { enabled: true },
+          cache_control: { type: 'ephemeral' },
+        })
       }
     }
 

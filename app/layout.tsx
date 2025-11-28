@@ -57,6 +57,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Zalando+Sans+Expanded:wght@400;600&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
         className={`${geist.variable} ${geistMono.variable} bg-zinc-50 tracking-tight antialiased dark:bg-zinc-950`}
       >

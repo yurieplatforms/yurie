@@ -9,6 +9,7 @@ import { runAgent } from '@/lib/agent/runner'
 
 // API types
 import type { AgentRequestBody } from '@/lib/api/types'
+import type { EffortLevel } from '@/lib/agent/types'
 
 // User context
 import {
@@ -37,7 +38,12 @@ export async function POST(request: Request) {
     )
   }
 
-  const { messages, userContext, userLocation } = body
+  const { messages, userContext, userLocation, effort } = body
+
+  // Validate effort level if provided
+  const validEffortLevels: EffortLevel[] = ['low', 'medium', 'high']
+  const validatedEffort: EffortLevel =
+    effort && validEffortLevels.includes(effort) ? effort : 'high'
 
   const apiKey = env.ANTHROPIC_API_KEY
 
@@ -90,6 +96,7 @@ export async function POST(request: Request) {
       systemPrompt,
       userLocation,
       userId,
+      effort: validatedEffort,
     })
   } catch (error) {
     console.error('[agent] Unexpected error', error)

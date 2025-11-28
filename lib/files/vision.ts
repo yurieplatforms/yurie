@@ -8,32 +8,144 @@
 import { readFileAsDataURL, isImageFile, isPdfFile } from '@/lib/utils'
 
 /**
- * Maximum dimension for optimal Claude vision performance.
- * Anthropic recommends resizing images to no more than 1568 pixels on the longest edge
- * to improve time-to-first-token without sacrificing model performance.
+ * Vision API Constants
+ * @see https://platform.claude.com/docs/en/build-with-claude/vision
  */
-const MAX_IMAGE_DIMENSION = 1568
+export const VISION_CONSTANTS = {
+  /**
+   * Maximum dimension for optimal Claude vision performance.
+   * Anthropic recommends resizing images to no more than 1568 pixels on the longest edge
+   * to improve time-to-first-token without sacrificing model performance.
+   */
+  MAX_OPTIMAL_DIMENSION: 1568,
 
-/**
- * Target megapixels for optimal performance (~1.15 megapixels)
- * Images larger than this will be resized by Claude anyway, so we do it client-side
- * to reduce upload time and improve latency.
- */
-const TARGET_MEGAPIXELS = 1.15 * 1000000
+  /**
+   * Target megapixels for optimal performance (~1.15 megapixels)
+   * Images larger than this will be resized by Claude anyway, so we do it client-side
+   * to reduce upload time and improve latency.
+   */
+  TARGET_MEGAPIXELS: 1.15 * 1000000,
+
+  /**
+   * Minimum recommended image dimension.
+   * Very small images under 200 pixels on any given edge may degrade performance.
+   */
+  MIN_RECOMMENDED_DIMENSION: 200,
+
+  /**
+   * Maximum absolute image dimension (will be rejected by API)
+   */
+  MAX_ABSOLUTE_DIMENSION: 8000,
+
+  /**
+   * Maximum dimension when more than 20 images are in a single request.
+   * If you submit more than 20 images in one API request, the limit becomes 2000x2000 px.
+   */
+  MAX_DIMENSION_MULTI_IMAGE: 2000,
+
+  /**
+   * Threshold for applying multi-image dimension limits
+   */
+  MULTI_IMAGE_THRESHOLD: 20,
+
+  /**
+   * Maximum number of images per API request
+   */
+  MAX_IMAGES_PER_REQUEST: 100,
+
+  /**
+   * Maximum file size per image (5MB for API)
+   */
+  MAX_FILE_SIZE: 5 * 1024 * 1024,
+
+  /**
+   * Token divisor for estimating image token usage.
+   * Formula: tokens = (width * height) / 750
+   */
+  TOKEN_DIVISOR: 750,
+} as const
+
+// Legacy exports for backwards compatibility
+const MAX_IMAGE_DIMENSION = VISION_CONSTANTS.MAX_OPTIMAL_DIMENSION
+const TARGET_MEGAPIXELS = VISION_CONSTANTS.TARGET_MEGAPIXELS
 
 /**
  * Supported image formats for Claude vision API
  */
-export const SUPPORTED_IMAGE_FORMATS = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+export const SUPPORTED_IMAGE_FORMATS: readonly string[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+export type SupportedImageFormat = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+
+/**
+ * Checks if a media type is a supported image format
+ */
+export const isSupportedImageFormat = (mediaType: string): mediaType is SupportedImageFormat =>
+  SUPPORTED_IMAGE_FORMATS.includes(mediaType)
 
 /**
  * File size limits based on Anthropic documentation
+ * @see https://platform.claude.com/docs/en/build-with-claude/pdf-support
+ * 
  * - API: Maximum 5MB per image
  * - Documents: Maximum 32MB total request size
+ * - PDF pages: Maximum 100 pages per request
  */
-export const MAX_IMAGE_FILE_SIZE = 5 * 1024 * 1024 // 5MB
-export const MAX_DOCUMENT_FILE_SIZE = 10 * 1024 * 1024 // 10MB for PDFs/text
-export const MAX_IMAGE_DIMENSION_LIMIT = 8000 // Max 8000x8000 px
+export const MAX_IMAGE_FILE_SIZE = VISION_CONSTANTS.MAX_FILE_SIZE
+export const MAX_DOCUMENT_FILE_SIZE = 32 * 1024 * 1024 // 32MB max request size for PDFs
+export const MAX_IMAGE_DIMENSION_LIMIT = VISION_CONSTANTS.MAX_ABSOLUTE_DIMENSION
+export const MAX_PDF_PAGES = 100 // Max pages per PDF request
+
+// ============================================================================
+// Token Estimation
+// ============================================================================
+
+/**
+ * Estimates the number of tokens an image will consume.
+ * 
+ * Formula from Anthropic documentation: tokens = (width * height) / 750
+ * 
+ * @see https://platform.claude.com/docs/en/build-with-claude/vision#calculate-image-costs
+ * 
+ * @param width - Image width in pixels
+ * @param height - Image height in pixels
+ * @returns Approximate number of tokens
+ */
+export const estimateImageTokens = (width: number, height: number): number =>
+  Math.ceil((width * height) / VISION_CONSTANTS.TOKEN_DIVISOR)
+
+/**
+ * Estimates the cost of processing an image based on token count and model pricing.
+ * 
+ * @param width - Image width in pixels
+ * @param height - Image height in pixels
+ * @param pricePerMillionTokens - Model's price per million input tokens (default: $3 for Claude Sonnet)
+ * @returns Estimated cost in USD
+ */
+export const estimateImageCost = (
+  width: number,
+  height: number,
+  pricePerMillionTokens: number = 3
+): number => {
+  const tokens = estimateImageTokens(width, height)
+  return (tokens / 1_000_000) * pricePerMillionTokens
+}
+
+/**
+ * Optimal image sizes by aspect ratio that won't be resized by Claude.
+ * These use approximately 1,600 tokens each.
+ * 
+ * @see https://platform.claude.com/docs/en/build-with-claude/vision#evaluate-image-size
+ */
+export const OPTIMAL_IMAGE_SIZES: Record<string, { width: number; height: number }> = {
+  '1:1': { width: 1092, height: 1092 },
+  '3:4': { width: 951, height: 1268 },
+  '2:3': { width: 896, height: 1344 },
+  '9:16': { width: 819, height: 1456 },
+  '1:2': { width: 784, height: 1568 },
+}
+
+// ============================================================================
+// Image Dimension Utilities
+// ============================================================================
 
 /**
  * Loads an image from a File and returns its dimensions
@@ -204,26 +316,80 @@ export const validateFileSize = (
 
 /**
  * Validates image dimensions against Claude API limits
- * Images larger than 8000x8000 px will be rejected
+ * 
+ * Checks:
+ * - Images larger than 8000x8000 px will be rejected
+ * - Warns if images are very small (<200px) as this may degrade performance
+ * - Supports multi-image mode where limits change when >20 images in request
+ * 
+ * @param file - The image file to validate
+ * @param options - Validation options
+ * @returns Validation result with dimensions and any warnings
  */
 export const validateImageDimensions = async (
-  file: File
-): Promise<{ valid: boolean; error?: string; dimensions?: { width: number; height: number } }> => {
+  file: File,
+  options: {
+    /** Total number of images in the request (affects dimension limits) */
+    imageCount?: number
+  } = {}
+): Promise<{
+  valid: boolean
+  error?: string
+  warnings?: string[]
+  dimensions?: { width: number; height: number }
+  estimatedTokens?: number
+}> => {
+  const { imageCount = 1 } = options
+  const warnings: string[] = []
+
   try {
     const dimensions = await getImageDimensions(file)
+    const { width, height } = dimensions
+    const estimatedTokens = estimateImageTokens(width, height)
 
-    if (
-      dimensions.width > MAX_IMAGE_DIMENSION_LIMIT ||
-      dimensions.height > MAX_IMAGE_DIMENSION_LIMIT
-    ) {
+    // Determine the max dimension based on image count
+    // When more than 20 images in a request, the limit is 2000x2000 px
+    const isMultiImageMode = imageCount > VISION_CONSTANTS.MULTI_IMAGE_THRESHOLD
+    const maxDimension = isMultiImageMode
+      ? VISION_CONSTANTS.MAX_DIMENSION_MULTI_IMAGE
+      : VISION_CONSTANTS.MAX_ABSOLUTE_DIMENSION
+
+    // Check maximum dimensions
+    if (width > maxDimension || height > maxDimension) {
+      const limitReason = isMultiImageMode
+        ? `When submitting more than ${VISION_CONSTANTS.MULTI_IMAGE_THRESHOLD} images, the maximum is ${maxDimension}x${maxDimension}px`
+        : `Maximum dimensions are ${maxDimension}x${maxDimension}px`
+      
       return {
         valid: false,
-        error: `Image "${file.name}" exceeds maximum dimensions (${MAX_IMAGE_DIMENSION_LIMIT}x${MAX_IMAGE_DIMENSION_LIMIT}px)`,
+        error: `Image "${file.name}" (${width}x${height}px) exceeds limits. ${limitReason}`,
         dimensions,
+        estimatedTokens,
       }
     }
 
-    return { valid: true, dimensions }
+    // Warn about very small images that may degrade performance
+    if (width < VISION_CONSTANTS.MIN_RECOMMENDED_DIMENSION || 
+        height < VISION_CONSTANTS.MIN_RECOMMENDED_DIMENSION) {
+      warnings.push(
+        `Image "${file.name}" (${width}x${height}px) is very small. Images under ${VISION_CONSTANTS.MIN_RECOMMENDED_DIMENSION}px may degrade performance.`
+      )
+    }
+
+    // Warn if image will be resized by Claude
+    if (width > VISION_CONSTANTS.MAX_OPTIMAL_DIMENSION || 
+        height > VISION_CONSTANTS.MAX_OPTIMAL_DIMENSION) {
+      warnings.push(
+        `Image "${file.name}" will be resized to fit within ${VISION_CONSTANTS.MAX_OPTIMAL_DIMENSION}px for optimal performance.`
+      )
+    }
+
+    return {
+      valid: true,
+      dimensions,
+      estimatedTokens,
+      warnings: warnings.length > 0 ? warnings : undefined,
+    }
   } catch {
     return {
       valid: false,
@@ -233,12 +399,54 @@ export const validateImageDimensions = async (
 }
 
 /**
+ * Validates the number of images in a request against API limits.
+ * 
+ * @param imageCount - Number of images in the request
+ * @returns Validation result
+ */
+export const validateImageCount = (
+  imageCount: number
+): { valid: boolean; error?: string; warnings?: string[] } => {
+  const warnings: string[] = []
+
+  if (imageCount > VISION_CONSTANTS.MAX_IMAGES_PER_REQUEST) {
+    return {
+      valid: false,
+      error: `Too many images (${imageCount}). Maximum is ${VISION_CONSTANTS.MAX_IMAGES_PER_REQUEST} images per API request.`,
+    }
+  }
+
+  // Warn about multi-image mode restrictions
+  if (imageCount > VISION_CONSTANTS.MULTI_IMAGE_THRESHOLD) {
+    warnings.push(
+      `With ${imageCount} images, maximum dimension per image is ${VISION_CONSTANTS.MAX_DIMENSION_MULTI_IMAGE}x${VISION_CONSTANTS.MAX_DIMENSION_MULTI_IMAGE}px (not ${VISION_CONSTANTS.MAX_ABSOLUTE_DIMENSION}x${VISION_CONSTANTS.MAX_ABSOLUTE_DIMENSION}px).`
+    )
+  }
+
+  return { valid: true, warnings: warnings.length > 0 ? warnings : undefined }
+}
+
+/**
  * Comprehensive file validation for Claude vision/document API
  * Validates format, size, and dimensions (for images)
+ * 
+ * @param file - The file to validate
+ * @param options - Validation options
+ * @returns Validation result with warnings and estimated tokens for images
  */
 export const validateFile = async (
-  file: File
-): Promise<{ valid: boolean; error?: string; warnings?: string[] }> => {
+  file: File,
+  options: {
+    /** Total number of images in the request (affects dimension limits) */
+    imageCount?: number
+  } = {}
+): Promise<{
+  valid: boolean
+  error?: string
+  warnings?: string[]
+  estimatedTokens?: number
+}> => {
+  const { imageCount = 1 } = options
   const warnings: string[] = []
 
   // Check if it's a supported file type
@@ -267,21 +475,26 @@ export const validateFile = async (
     return sizeValidation
   }
 
-  // Validate image dimensions
+  // Validate image dimensions with image count for multi-image mode
   if (isImage) {
-    const dimensionValidation = await validateImageDimensions(file)
+    const dimensionValidation = await validateImageDimensions(file, { imageCount })
     if (!dimensionValidation.valid) {
-      return dimensionValidation
+      return {
+        valid: false,
+        error: dimensionValidation.error,
+        estimatedTokens: dimensionValidation.estimatedTokens,
+      }
     }
 
-    // Add warning if image is large and will be resized
-    if (dimensionValidation.dimensions) {
-      const { width, height } = dimensionValidation.dimensions
-      if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
-        warnings.push(
-          `Image will be resized from ${width}x${height} to fit within ${MAX_IMAGE_DIMENSION}px for optimal performance.`
-        )
-      }
+    // Collect dimension-related warnings
+    if (dimensionValidation.warnings) {
+      warnings.push(...dimensionValidation.warnings)
+    }
+
+    return {
+      valid: true,
+      warnings: warnings.length > 0 ? warnings : undefined,
+      estimatedTokens: dimensionValidation.estimatedTokens,
     }
   }
 
