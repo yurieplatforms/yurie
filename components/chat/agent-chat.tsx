@@ -254,7 +254,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   if (!hasMessages) {
     return (
       <div className="flex h-[calc(100vh-8rem)] items-start justify-center pt-[30vh]">
-        <div className="w-full max-w-screen-sm px-4">
+        <div className="w-[min(100vw-2rem,48rem)]">
           <WelcomeScreen onSuggestionClick={handleSuggestionClick} />
           {error && (
             <p className="mb-4 text-xs text-red-500 dark:text-red-400">{error}</p>
