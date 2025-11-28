@@ -99,7 +99,8 @@ export function MessageList({
             {message.role === 'assistant' &&
               message.suggestions &&
               message.suggestions.length > 0 &&
-              !isLoading && (
+              !isLoading &&
+              isLastMessage && (
                 <SuggestionsList
                   suggestions={message.suggestions}
                   onSuggestionClick={onSuggestionClick}
