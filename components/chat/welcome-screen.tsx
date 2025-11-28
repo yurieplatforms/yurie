@@ -1,6 +1,10 @@
 'use client'
 
-export function WelcomeScreen() {
+type WelcomeScreenProps = {
+  onSuggestionClick?: (suggestion: string) => void
+}
+
+export function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
   return null
 }
 
