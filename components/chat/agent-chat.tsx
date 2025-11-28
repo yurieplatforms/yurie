@@ -251,8 +251,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   const hasMessages = messages.length > 0
 
   return (
-    <div className="relative h-full">
-      <div className={`flex h-full flex-col ${hasMessages ? 'gap-4 pb-24' : 'items-center justify-center pb-56'}`}>
+    <div className="relative h-full overflow-hidden">
+      <div className={`flex h-full flex-col ${hasMessages ? 'gap-4 pb-24 overflow-y-auto' : 'items-center justify-center'}`}>
         {hasMessages ? (
           <>
             <div className="space-y-3">
