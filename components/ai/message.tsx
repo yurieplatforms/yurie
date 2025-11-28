@@ -339,10 +339,10 @@ export const MessageResponse = memo(
       )}
       // Keep Streamdown's rich code block UI (header, controls), but make
       // structural elements match blog-style prose.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       components={{
         // Handle custom <suggestions> tags from AI output - suppress React warning
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        suggestions: () => null as any,
+        suggestions: () => null,
         blockquote({ children, ...rest }: React.ComponentPropsWithoutRef<'blockquote'>) {
           return <blockquote {...rest}>{children}</blockquote>;
         },
@@ -368,7 +368,7 @@ export const MessageResponse = memo(
           return <td {...rest}>{children}</td>;
         },
         ...components,
-      }}
+      } as ComponentProps<typeof Streamdown>['components']}
       {...props}
     />
   ),
