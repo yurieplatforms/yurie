@@ -252,7 +252,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
   return (
     <div className="relative h-full">
-      <div className={`flex h-full flex-col ${hasMessages ? 'gap-4 pb-24' : 'items-center justify-center pt-[25vh]'}`}>
+      <div className={`flex h-full flex-col ${hasMessages ? 'gap-4 pb-24' : 'items-center justify-center pb-56'}`}>
         {hasMessages ? (
           <>
             <div className="space-y-3">
