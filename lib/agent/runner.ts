@@ -139,13 +139,17 @@ function addCacheControlToMessages(
           ],
         }
       } else if (Array.isArray(msg.content)) {
-        // Add cache_control to the last content block
+        // Add cache_control to the last cacheable content block (not thinking blocks)
         const content = [...msg.content]
-        if (content.length > 0) {
-          const lastBlock = content[content.length - 1]
-          content[content.length - 1] = {
-            ...lastBlock,
-            cache_control: { type: 'ephemeral' as const },
+        // Find the last cacheable block (text, image, document, or tool_result)
+        for (let i = content.length - 1; i >= 0; i--) {
+          const block = content[i]
+          if ('type' in block && (block.type === 'text' || block.type === 'image' || block.type === 'document' || block.type === 'tool_result')) {
+            content[i] = {
+              ...block,
+              cache_control: { type: 'ephemeral' as const },
+            } as typeof block
+            break
           }
         }
         return { ...msg, content }
