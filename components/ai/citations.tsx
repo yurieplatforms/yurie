@@ -117,8 +117,8 @@ export const CitationMark = memo(function CitationMark({
             'inline-flex items-center justify-center',
             'h-4 min-w-4 px-1 rounded-sm',
             'text-[10px] font-medium leading-none',
-            'bg-blue-100 text-blue-700 hover:bg-blue-200',
-            'dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-800/60',
+            'bg-[#7F91E0]/20 text-[#7F91E0] hover:bg-[#7F91E0]/30',
+            'dark:bg-[#7F91E0]/20 dark:text-[#7F91E0] dark:hover:bg-[#7F91E0]/30',
             'transition-colors cursor-pointer',
             'align-super -translate-y-0.5',
             className
@@ -141,7 +141,7 @@ export const CitationMark = memo(function CitationMark({
           
           {/* Cited text */}
           {citedText && (
-            <blockquote className="text-sm border-l-2 border-blue-500 pl-2 text-zinc-200 italic">
+            <blockquote className="text-sm border-l-2 border-[#7F91E0] pl-2 text-zinc-200 italic">
               &ldquo;{citedText.length > 200 ? `${citedText.slice(0, 200)}...` : citedText}&rdquo;
             </blockquote>
           )}
@@ -152,7 +152,7 @@ export const CitationMark = memo(function CitationMark({
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 hover:underline"
+              className="inline-flex items-center gap-1 text-xs text-[#7F91E0] hover:text-[#8FA0E8] hover:underline"
               onClick={(e) => e.stopPropagation()}
             >
               View source
@@ -245,7 +245,7 @@ export const CitationsFooter = memo(function CitationsFooter({
               key={getCitationKey(citation)}
               className="flex items-start gap-2 text-sm"
             >
-              <span className="inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-sm text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+              <span className="inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-sm text-[10px] font-medium bg-[#7F91E0]/20 text-[#7F91E0] dark:bg-[#7F91E0]/20 dark:text-[#7F91E0]">
                 {i + 1}
               </span>
               <div className="flex items-center gap-1.5 text-zinc-600 dark:text-zinc-300">
@@ -255,7 +255,7 @@ export const CitationsFooter = memo(function CitationsFooter({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline truncate max-w-[300px]"
+                    className="hover:text-[#7F91E0] dark:hover:text-[#7F91E0] hover:underline truncate max-w-[300px]"
                   >
                     {location}
                   </a>

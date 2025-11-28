@@ -264,7 +264,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
   return (
     <div className="relative h-full">
-      <div className="flex h-full flex-col gap-4 pb-24">
+      <div className={`flex h-full flex-col gap-4 ${messages.length > 0 ? 'pb-24' : 'pb-4'}`}>
         <div className="space-y-3">
           <MessageList
             messages={messages}

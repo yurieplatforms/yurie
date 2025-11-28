@@ -327,7 +327,7 @@ const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
           <div
             ref={ref}
             className={cn(
-              "rounded-3xl border border-[#444444] bg-[#1F2023] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300",
+              "rounded-3xl border border-zinc-300 dark:border-zinc-700 bg-[#1F2023] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300",
               className
             )}
             onDragOver={onDragOver}
@@ -535,7 +535,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         isLoading={isLoading}
         onSubmit={handleSubmit}
         className={cn(
-          "rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/90 dark:bg-[#202020] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300 ease-in-out",
+          "rounded-xl border border-zinc-300 dark:border-zinc-700 bg-zinc-100/90 dark:bg-[#202020] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300 ease-in-out",
           className
         )}
         disabled={isLoading || isRecording}
@@ -644,14 +644,14 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
 
           <div className="flex items-center gap-2 pb-0.5">
             <Button
-              variant="default"
+              variant="ghost"
               size="icon"
               className={cn(
                 "h-8 w-8 rounded-lg transition-all duration-200 cursor-pointer",
                 isRecording
                   ? "bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 text-red-500 hover:text-red-600"
                   : hasContent
-                  ? "bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-900"
+                  ? "!bg-[#7F91E0] hover:!bg-[#7F91E0]/90 text-white"
                   : "bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
               )}
               onClick={() => {

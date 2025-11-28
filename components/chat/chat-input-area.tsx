@@ -11,7 +11,7 @@ export type ChatInputAreaProps = {
 export function ChatInputArea({
   isLoading,
   onSend,
-  placeholder = "What's on your mind?",
+  placeholder = "what's on your mind?",
 }: ChatInputAreaProps) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 w-full">

@@ -182,7 +182,7 @@ export function AuthForm({
           <Button 
             type="submit" 
             disabled={isPending}
-            className="w-full bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="w-full bg-[#7F91E0] text-white hover:bg-[#6B7FD6] dark:bg-[#7F91E0] dark:text-white dark:hover:bg-[#8FA0E8]"
           >
             {isPending ? (
               <div className="flex items-center justify-center gap-2">

@@ -3,6 +3,22 @@
 @source "../node_modules/streamdown/dist/index.js";
 @custom-variant dark (&:is(.dark *));
 
+/* Zalando Sans font for logo */
+@font-face {
+  font-family: 'Zalando Sans';
+  src: url('https://cdn.jsdelivr.net/gh/nickmilo/Zalando-Sans-Font@master/font/web/ZalandoSans-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Utility class for Zalando Sans font */
+.font-zalando {
+  font-family: 'Zalando Sans', sans-serif;
+  font-weight: 600;
+  font-style: italic;
+}
+
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still
@@ -31,11 +47,17 @@
   :root {
     --color-background: rgb(250 250 250 / 1);
     --color-muted-foreground: rgb(161 161 170 / 1);
+    --color-accent: #7F91E0;
+    --color-accent-foreground: #ffffff;
+    --color-accent-hover: #6B7FD6;
   }
 
   .dark {
     --color-background: rgb(9 9 11 / 1);
     --color-muted-foreground: rgb(113 113 122 / 1);
+    --color-accent: #7F91E0;
+    --color-accent-foreground: #ffffff;
+    --color-accent-hover: #8FA0E8;
   }
 }
 
@@ -135,6 +157,34 @@
 
   .dark [data-streamdown="horizontal-rule"] {
     border-color: rgb(39 39 42 / 1); /* zinc-800 */
+  }
+
+  /* AI-generated links in prose content - use accent color */
+  .prose a,
+  .prose-gray a,
+  [data-streamdown] a {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.15s ease;
+  }
+
+  .prose a:hover,
+  .prose-gray a:hover,
+  [data-streamdown] a:hover {
+    color: var(--color-accent-hover);
+  }
+
+  .dark .prose a,
+  .dark .prose-gray a,
+  .dark [data-streamdown] a {
+    color: var(--color-accent);
+  }
+
+  .dark .prose a:hover,
+  .dark .prose-gray a:hover,
+  .dark [data-streamdown] a:hover {
+    color: var(--color-accent-hover);
   }
 
   /* PromptKit-style text loaders (text-blink, loading-dots) */

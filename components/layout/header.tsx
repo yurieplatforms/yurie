@@ -3,7 +3,6 @@ import { TextEffect } from '@/components/ui/text-effect'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/providers/auth-provider'
-import { motion } from 'motion/react'
 
 const NAV_ITEMS = [
   { href: '/history', label: 'Threads' },
@@ -18,20 +17,13 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-screen-sm items-center justify-between px-4">
         <div className="flex items-center gap-1.5">
           <Link href="/" className="group flex items-center gap-2">
-            <motion.img
-              src="/favicon.ico"
-              alt="Yurie Logo"
-              className="h-6 w-6 transition-transform duration-200 group-hover:scale-[1.2]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            />
             <TextEffect
               as="span"
               preset="fade"
               per="char"
-              className="text-lg font-medium text-black dark:text-white"
+              className="font-zalando text-xl text-black dark:text-white"
             >
-              Yurie
+              yurie
             </TextEffect>
           </Link>
         </div>

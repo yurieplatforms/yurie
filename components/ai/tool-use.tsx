@@ -108,9 +108,9 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                           rel="noopener noreferrer"
                           className="group/link flex items-start gap-2 rounded-md p-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
                         >
-                          <ExternalLink className="mt-0.5 h-3 w-3 flex-shrink-0 text-zinc-400 group-hover/link:text-blue-500" />
+                          <ExternalLink className="mt-0.5 h-3 w-3 flex-shrink-0 text-zinc-400 group-hover/link:text-[#7F91E0]" />
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-xs font-medium text-zinc-700 group-hover/link:text-blue-600 dark:text-zinc-300 dark:group-hover/link:text-blue-400">
+                            <div className="truncate text-xs font-medium text-zinc-700 group-hover/link:text-[#7F91E0] dark:text-zinc-300 dark:group-hover/link:text-[#7F91E0]">
                               {result.title || 'Untitled'}
                             </div>
                             <div className="truncate text-xs text-zinc-400">
