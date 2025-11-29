@@ -42,7 +42,7 @@ const VARIANTS_SECTION = {
 
 const TRANSITION_SECTION = {
   duration: 0.4,
-  ease: "easeInOut",
+  ease: "easeInOut" as const,
 }
 
 type Toast = {
