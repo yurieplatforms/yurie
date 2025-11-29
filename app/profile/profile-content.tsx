@@ -19,11 +19,11 @@ import {
   Cake,
   MapPin,
   Globe,
-  Settings
+  Settings,
+  Palette
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { ThemeSwitch } from '@/components/layout/footer'
-import { Palette } from 'lucide-react'
 import { useAuth } from '@/components/providers/auth-provider'
 
 const VARIANTS_CONTAINER = {
@@ -60,10 +60,13 @@ export function ProfileContent({
   const { signOut } = useAuth()
   const [fullName, setFullName] = useState(user.user_metadata?.full_name || '')
   const [avatarUrl, setAvatarUrl] = useState(user.user_metadata?.avatar_url || null)
+  const [coverUrl, setCoverUrl] = useState(user.user_metadata?.cover_url || null)
   const [isUploading, setIsUploading] = useState(false)
+  const [isUploadingCover, setIsUploadingCover] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const coverInputRef = useRef<HTMLInputElement>(null)
   
   // Preferences state
   const [isEditingPreferences, setIsEditingPreferences] = useState(false)
@@ -117,6 +120,47 @@ export function ProfileContent({
     formData.append('avatarUrl', data.publicUrl)
     await updateProfile(formData)
     showToast('Profile photo updated', 'success')
+  }
+
+  const handleCoverUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      showToast('Please upload an image file', 'error')
+      return
+    }
+
+    const fileExt = file.name.split('.').pop()
+    const fileName = `cover-${user.id}-${Date.now()}.${fileExt}`
+    const filePath = `${fileName}`
+
+    setIsUploadingCover(true)
+    const supabase = createClient()
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file)
+
+    if (uploadError) {
+      console.error('Upload error', uploadError)
+      showToast('Failed to upload cover image', 'error')
+      setIsUploadingCover(false)
+      return
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
+    setCoverUrl(data.publicUrl)
+    setIsUploadingCover(false)
+    
+    const formData = new FormData()
+    formData.append('fullName', fullName)
+    if (avatarUrl) formData.append('avatarUrl', avatarUrl)
+    formData.append('coverUrl', data.publicUrl)
+    await updateProfile(formData)
+    showToast('Cover photo updated', 'success')
+  }
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+    await handleCoverUpload(e.target.files[0])
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -237,21 +281,62 @@ export function ProfileContent({
         initial="hidden"
         animate="visible"
       >
-        {/* Profile Header */}
+        {/* Profile Header with Cover */}
         <motion.section
           variants={VARIANTS_SECTION}
           transition={TRANSITION_SECTION}
-          className="flex flex-col items-center text-center pt-4"
+          className="flex flex-col items-center text-center"
         >
-          {/* Avatar */}
+          {/* Cover Background */}
+          <div className="relative w-full h-36 sm:h-44 rounded-2xl overflow-hidden group/cover">
+            {coverUrl ? (
+              <img 
+                src={coverUrl} 
+                alt="Cover" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-[#7F91E0] via-[#9683D8] via-[45%] to-[#D4A5C9] dark:from-[#4A5A9E] dark:via-[#5F5088] dark:via-[45%] dark:to-[#876878]">
+                {/* Decorative elements */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(127,145,224,0.25)_0%,transparent_45%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(210,165,200,0.2)_0%,transparent_45%)]" />
+                <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/10 to-transparent" />
+              </div>
+            )}
+            
+            {/* Cover upload button */}
+            <button 
+              onClick={() => coverInputRef.current?.click()}
+              disabled={isUploadingCover}
+              className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white text-xs font-medium opacity-0 group-hover/cover:opacity-100 transition-all duration-200 cursor-pointer"
+            >
+              {isUploadingCover ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Camera className="h-3.5 w-3.5" />
+              )}
+              Edit cover
+            </button>
+            
+            <input 
+              ref={coverInputRef}
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              onChange={handleCoverChange}
+              disabled={isUploadingCover}
+            />
+          </div>
+
+          {/* Avatar - Overlapping Cover */}
           <div 
-            className="relative mb-5"
+            className="relative -mt-14 mb-3"
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
           >
             <motion.div 
-              className={`relative h-28 w-28 rounded-full overflow-hidden ring-[3px] ring-zinc-200 dark:ring-zinc-800 transition-all duration-300 ${
+              className={`relative h-28 w-28 rounded-full overflow-hidden ring-4 ring-zinc-100 dark:ring-zinc-950 transition-all duration-300 ${
                 isDragging ? 'ring-[var(--color-accent)] scale-105' : ''
               }`}
               whileHover={{ scale: 1.03 }}
@@ -301,58 +386,22 @@ export function ProfileContent({
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
             {displayName}
           </h1>
-
-          {/* Email */}
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            {user.email}
-          </p>
         </motion.section>
 
-        {/* Info Cards */}
-        <motion.section
-          variants={VARIANTS_SECTION}
-          transition={TRANSITION_SECTION}
-          className="space-y-2"
-        >
-          <div className="rounded-2xl bg-zinc-100/60 dark:bg-zinc-900/60 divide-y divide-zinc-200/60 dark:divide-zinc-800/60 overflow-hidden">
-            {/* Email Row */}
-            <div className="flex items-center gap-4 px-4 py-3.5">
-              <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                <Mail className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-zinc-500 dark:text-zinc-500">Email</p>
-                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{user.email}</p>
-              </div>
-            </div>
-
-            {/* Member Since Row */}
-            <div className="flex items-center gap-4 px-4 py-3.5">
-              <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                <Calendar className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs text-zinc-500 dark:text-zinc-500">Member since</p>
-                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{memberSince}</p>
-              </div>
-            </div>
-          </div>
-        </motion.section>
-
-        {/* User Preferences */}
+        {/* Unified Profile Details */}
         <motion.section
           variants={VARIANTS_SECTION}
           transition={TRANSITION_SECTION}
           className="space-y-3"
         >
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Preferences</h2>
+            <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Profile Details</h2>
             {!isEditingPreferences && (
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={startEditingPreferences}
-                className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors"
+                className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors cursor-pointer"
               >
                 <Settings className="h-3.5 w-3.5" />
                 Edit
@@ -370,7 +419,7 @@ export function ProfileContent({
                   exit={{ opacity: 0 }}
                   className="p-4 space-y-4"
                 >
-                  {/* Name Field */}
+                  {/* Name Field (Editable) */}
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
                       <UserIcon className="h-3.5 w-3.5" />
@@ -384,7 +433,7 @@ export function ProfileContent({
                     />
                   </div>
                   
-                  {/* Birthday Field */}
+                  {/* Birthday Field (Editable) */}
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
                       <Cake className="h-3.5 w-3.5" />
@@ -400,7 +449,7 @@ export function ProfileContent({
                     </div>
                   </div>
                   
-                  {/* Location Field */}
+                  {/* Location Field (Editable) */}
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
                       <MapPin className="h-3.5 w-3.5" />
@@ -414,7 +463,7 @@ export function ProfileContent({
                     />
                   </div>
                   
-                  {/* Timezone Field */}
+                  {/* Timezone Field (Editable) */}
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
                       <Globe className="h-3.5 w-3.5" />
@@ -476,7 +525,7 @@ export function ProfileContent({
                       whileTap={{ scale: 0.98 }}
                       onClick={handleSavePreferences}
                       disabled={isSavingPreferences}
-                      className="flex-1 h-11 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                      className="flex-1 h-11 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
                     >
                       {isSavingPreferences ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -489,7 +538,7 @@ export function ProfileContent({
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={cancelEditingPreferences}
-                      className="flex-1 h-11 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium transition-colors"
+                      className="flex-1 h-11 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium transition-colors cursor-pointer"
                     >
                       Cancel
                     </motion.button>
@@ -511,6 +560,28 @@ export function ProfileContent({
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-zinc-500 dark:text-zinc-500">Name</p>
                       <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{displayName}</p>
+                    </div>
+                  </div>
+
+                  {/* Email Row */}
+                  <div className="flex items-center gap-4 px-4 py-3.5">
+                    <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
+                      <Mail className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-zinc-500 dark:text-zinc-500">Email</p>
+                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{user.email}</p>
+                    </div>
+                  </div>
+
+                  {/* Member Since Row */}
+                  <div className="flex items-center gap-4 px-4 py-3.5">
+                    <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
+                      <Calendar className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-zinc-500 dark:text-zinc-500">Member since</p>
+                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{memberSince}</p>
                     </div>
                   </div>
                   
