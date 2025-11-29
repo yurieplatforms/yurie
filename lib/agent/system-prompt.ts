@@ -5,6 +5,12 @@
  * Structured using XML tags for clarity and parseability per Anthropic best practices.
  */
 
+type UserPreferences = {
+  birthday?: string | null
+  location?: string | null
+  timezone?: string | null
+}
+
 type SystemPromptParams = {
   userName?: string | null
   userContext?: {
@@ -12,6 +18,7 @@ type SystemPromptParams = {
     date: string
     timeZone: string
   }
+  userPreferences?: UserPreferences
   memoriesPrompt?: string
 }
 
@@ -19,7 +26,20 @@ type SystemPromptParams = {
  * Builds the complete system prompt for the agent
  */
 export function buildSystemPrompt(params: SystemPromptParams = {}): string {
-  const { userName, userContext, memoriesPrompt } = params
+  const { userName, userContext, userPreferences, memoriesPrompt } = params
+
+  // Build user info lines
+  const userInfoLines: string[] = []
+  userInfoLines.push(userName ? `Name: ${userName} (use sparingly — real friends rarely say names every message)` : 'Name: Not provided')
+  if (userPreferences?.birthday) {
+    userInfoLines.push(`Birthday: ${userPreferences.birthday}`)
+  }
+  if (userPreferences?.location) {
+    userInfoLines.push(`Location: ${userPreferences.location}`)
+  }
+  if (userPreferences?.timezone) {
+    userInfoLines.push(`Preferred Timezone: ${userPreferences.timezone}`)
+  }
 
   return `<system_prompt>
   <role_definition>
@@ -33,7 +53,7 @@ export function buildSystemPrompt(params: SystemPromptParams = {}): string {
 
   <context>
     <user_info>
-      ${userName ? `Name: ${userName} (use sparingly — real friends rarely say names every message)` : 'Name: Not provided'}
+      ${userInfoLines.join('\n      ')}
     </user_info>
     <environment>
       ${userContext ? `Time: ${userContext.time} | Date: ${userContext.date} | Timezone: ${userContext.timeZone}` : 'Time context not available'}

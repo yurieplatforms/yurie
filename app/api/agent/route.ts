@@ -61,6 +61,7 @@ export async function POST(request: Request) {
   let userName: string | null = null
   let memoriesPrompt = ''
   let userId: string | undefined
+  let userPreferences: { birthday?: string | null; location?: string | null; timezone?: string | null } = {}
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -70,16 +71,26 @@ export async function POST(request: Request) {
       const personalizationContext = await getUserPersonalizationContext(supabase, user.id)
       userName = getUserName(personalizationContext)
       memoriesPrompt = formatMemoriesForPrompt(personalizationContext)
+      
+      // Extract user preferences from profile
+      if (personalizationContext.profile) {
+        userPreferences = {
+          birthday: personalizationContext.profile.birthday,
+          location: personalizationContext.profile.location,
+          timezone: personalizationContext.profile.timezone,
+        }
+      }
     }
   } catch (e) {
     // Silently continue without personalization if it fails
     console.error('[agent] Failed to fetch user personalization', e)
   }
 
-  // Build system prompt with user context
+  // Build system prompt with user context and preferences
   const systemPrompt = buildSystemPrompt({
     userName,
     userContext,
+    userPreferences,
     memoriesPrompt,
   })
 

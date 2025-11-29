@@ -19,7 +19,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl w-full">
+    <div className="mx-auto max-w-xl w-full px-4">
       <ProfileContent user={user} />
     </div>
   )

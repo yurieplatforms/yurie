@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { TextLoop } from '@/components/ui/text-loop'
 import { cn } from '@/lib/utils'
 import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react'
@@ -64,12 +65,12 @@ export function Footer({ className }: { className?: string }) {
   return (
     <footer className={cn("mt-24 border-t border-zinc-100 px-0 py-4 dark:border-zinc-800", className)}>
       <div className="flex items-center justify-between">
-        <a href="https://github.com/ibelick/yurie" target="_blank">
+        <Link href="/">
           <TextLoop className="text-xs text-zinc-500">
             <span>© 2025 Yurie Platforms.</span>
             <span>Built with love and a little bit of magic.</span>
           </TextLoop>
-        </a>
+        </Link>
         <div className="text-xs text-zinc-400">
           <ThemeSwitch />
         </div>

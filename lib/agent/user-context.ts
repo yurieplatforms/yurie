@@ -11,6 +11,9 @@ export type UserProfile = {
   id: string
   name: string | null
   email: string | null
+  birthday: string | null
+  location: string | null
+  timezone: string | null
 }
 
 export type ConversationMemory = {
@@ -55,6 +58,9 @@ export async function getUserProfile(
     id: user.id,
     name: user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
     email: user.email ?? null,
+    birthday: user.user_metadata?.birthday ?? null,
+    location: user.user_metadata?.location ?? null,
+    timezone: user.user_metadata?.timezone ?? null,
   }
 }
 
