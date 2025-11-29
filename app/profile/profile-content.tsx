@@ -15,7 +15,7 @@ import {
   Calendar,
   ChevronRight,
   ChevronDown,
-  User,
+  User as UserIcon,
   Cake,
   MapPin,
   Globe,
@@ -372,7 +372,7 @@ export function ProfileContent({
                   {/* Name Field */}
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                      <User className="h-3.5 w-3.5" />
+                      <UserIcon className="h-3.5 w-3.5" />
                       Name
                     </label>
                     <Input
@@ -505,7 +505,7 @@ export function ProfileContent({
                   {/* Name Row */}
                   <div className="flex items-center gap-4 px-4 py-3.5">
                     <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                      <User className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                      <UserIcon className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-zinc-500 dark:text-zinc-500">Name</p>
