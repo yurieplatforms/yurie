@@ -24,7 +24,7 @@ const THEMES_OPTIONS = [
   },
 ]
 
-function ThemeSwitch() {
+export function ThemeSwitch() {
   const [mounted, setMounted] = useState(false)
   const { theme, setTheme } = useTheme()
 
@@ -61,7 +61,7 @@ function ThemeSwitch() {
   )
 }
 
-export function Footer({ className }: { className?: string }) {
+export function Footer({ className, hideThemeSwitch }: { className?: string; hideThemeSwitch?: boolean }) {
   return (
     <footer className={cn("mt-24 border-t border-zinc-100 px-0 py-4 dark:border-zinc-800", className)}>
       <div className="flex items-center justify-between">
@@ -71,9 +71,11 @@ export function Footer({ className }: { className?: string }) {
             <span>Built with love and a little bit of magic.</span>
           </TextLoop>
         </Link>
-        <div className="text-xs text-zinc-400">
-          <ThemeSwitch />
-        </div>
+        {!hideThemeSwitch && (
+          <div className="text-xs text-zinc-400">
+            <ThemeSwitch />
+          </div>
+        )}
       </div>
     </footer>
   )

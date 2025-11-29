@@ -22,7 +22,8 @@ import {
   Settings
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Footer } from '@/components/layout/footer'
+import { ThemeSwitch } from '@/components/layout/footer'
+import { Palette } from 'lucide-react'
 import { useAuth } from '@/components/providers/auth-provider'
 
 const VARIANTS_CONTAINER = {
@@ -231,7 +232,7 @@ export function ProfileContent({
       </div>
 
       <motion.main
-        className="space-y-6 pb-32"
+        className="space-y-6 pb-8"
         variants={VARIANTS_CONTAINER}
         initial="hidden"
         animate="visible"
@@ -551,6 +552,17 @@ export function ProfileContent({
                       </p>
                     </div>
                   </div>
+                  
+                  {/* Theme Row */}
+                  <div className="flex items-center gap-4 px-4 py-3.5">
+                    <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
+                      <Palette className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-zinc-500 dark:text-zinc-500">Theme</p>
+                    </div>
+                    <ThemeSwitch />
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -565,7 +577,7 @@ export function ProfileContent({
           <motion.button 
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
-            className="w-full rounded-2xl bg-zinc-100/60 dark:bg-zinc-900/60 hover:bg-red-50 dark:hover:bg-red-950/30 px-4 py-3.5 text-left group transition-colors"
+            className="w-full rounded-2xl bg-zinc-100/60 dark:bg-zinc-900/60 hover:bg-red-50 dark:hover:bg-red-950/30 px-4 py-3.5 text-left group transition-colors cursor-pointer"
             onClick={() => signOut()}
           >
             <div className="flex items-center gap-4">
@@ -580,14 +592,6 @@ export function ProfileContent({
           </motion.button>
         </motion.section>
 
-        {/* Footer */}
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 w-full">
-          <div className="pointer-events-auto mx-auto w-full max-w-screen-sm px-4">
-            <div className="bg-white dark:bg-black pt-2">
-              <Footer className="mt-0 border-t-0" />
-            </div>
-          </div>
-        </div>
       </motion.main>
     </>
   )

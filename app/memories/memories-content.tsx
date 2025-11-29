@@ -18,7 +18,6 @@ import {
   Sparkles,
   AlertTriangle
 } from 'lucide-react'
-import { Footer } from '@/components/layout/footer'
 import { AnimatedBackground } from '@/components/ui/animated-background'
 import { 
   type MemoryFile, 
@@ -475,7 +474,7 @@ export function MemoriesContent({
           /* Detail View */
           <motion.main
             key="detail-view"
-            className="space-y-4 pb-24"
+            className="space-y-4 pb-8"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -590,20 +589,12 @@ export function MemoriesContent({
               <span>{wordCount.toLocaleString()} words</span>
             </div>
 
-            {/* Footer */}
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 w-full">
-              <div className="pointer-events-auto mx-auto w-full max-w-screen-sm px-4">
-                <div className="bg-white dark:bg-black pt-2">
-                  <Footer className="mt-0 border-t-0" />
-                </div>
-              </div>
-            </div>
           </motion.main>
         ) : (
           /* List View */
           <motion.main
             key="list-view"
-            className="space-y-6 pb-24"
+            className="space-y-6 pb-8"
             variants={VARIANTS_CONTAINER}
             initial="hidden"
             animate="visible"
@@ -956,14 +947,6 @@ export function MemoriesContent({
               )}
             </motion.section>
 
-            {/* Footer */}
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 w-full">
-              <div className="pointer-events-auto mx-auto w-full max-w-screen-sm px-4">
-                <div className="bg-white dark:bg-black pt-2">
-                  <Footer className="mt-0 border-t-0" />
-                </div>
-              </div>
-            </div>
           </motion.main>
         )}
       </AnimatePresence>
