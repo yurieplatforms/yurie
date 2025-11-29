@@ -6,8 +6,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, Lightbulb, Wrench, Search, Globe, History, Code, Calculator, Terminal, FileCode, Play } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ChevronRight, Wrench, Search, Globe, History, Code, Calculator, Terminal, FileCode, Play } from "lucide-react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 import { Shimmer } from "./shimmer";
 import type { ToolUseEvent } from "@/lib/types";
@@ -67,29 +67,14 @@ export function Reasoning({
   // but the actual display logic is handled by children components
   void _toolUses;
   void _isLoading;
-  const [open, setOpen] = useState<boolean>(Boolean(isStreaming));
-  const wasStreamingRef = useRef<boolean>(false);
-
-  // Auto-open while streaming, auto-close once when streaming finishes.
-  useEffect(() => {
-    if (isStreaming) {
-      setOpen(true);
-      wasStreamingRef.current = true;
-      return;
-    }
-
-    if (!isStreaming && wasStreamingRef.current) {
-      setOpen(false);
-      wasStreamingRef.current = false;
-    }
-  }, [isStreaming]);
+  const [open, setOpen] = useState<boolean>(false);
 
   return (
     <Collapsible
       open={open}
       onOpenChange={setOpen}
       className={cn(
-        "group rounded-lg border bg-muted/40 shadow-sm dark:border-zinc-800",
+        "group rounded-lg bg-muted/40",
         className
       )}
       {...props}
@@ -131,12 +116,12 @@ export function ReasoningTrigger({
 
   // Build dynamic label
   let dynamicLabel: ReactNode = label;
-  let Icon: React.ComponentType<{ className?: string }> = Lightbulb;
+  let ToolIcon: React.ComponentType<{ className?: string }> | null = null;
 
   if (!label) {
     if (hasActiveTools && activeToolLabel) {
       // Show active tool with shimmer
-      Icon = ActiveToolIcon || Wrench;
+      ToolIcon = ActiveToolIcon || Wrench;
       dynamicLabel = <Shimmer className="text-base">{activeToolLabel}</Shimmer>;
     } else if (thinkingLabel) {
       // Show thinking label (shimmer while thinking)
@@ -149,18 +134,20 @@ export function ReasoningTrigger({
   return (
     <CollapsibleTrigger
       className={cn(
-        "flex w-full items-center justify-between gap-2 px-3 py-2 text-[11px] font-medium tracking-wide text-zinc-500 transition-colors cursor-pointer",
+        "flex w-full items-center gap-2 px-3 py-2 text-[11px] font-medium tracking-wide text-zinc-500 transition-colors cursor-pointer",
         "hover:text-zinc-900 dark:hover:text-zinc-100",
         className
       )}
       {...props}
     >
-      <span className="inline-flex items-center gap-1.5">
-        <Icon className="h-4 w-4" />
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full hover:bg-zinc-100/90 dark:hover:bg-[#202020] transition-colors">
+        {ToolIcon ? (
+          <ToolIcon className="h-4 w-4" />
+        ) : (
+          <img src="/favicon.ico" alt="" className="h-5 w-5" />
+        )}
         {dynamicLabel}
-      </span>
-      <span className="inline-flex items-center gap-1.5 text-[10px] font-normal text-zinc-400">
-        <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90 text-zinc-400" />
       </span>
     </CollapsibleTrigger>
   );
@@ -168,20 +155,27 @@ export function ReasoningTrigger({
 
 export type ReasoningContentProps = React.ComponentProps<
   typeof CollapsibleContent
->;
+> & {
+  children?: ReactNode;
+};
 
 export function ReasoningContent({
   className,
+  children,
   ...props
 }: ReasoningContentProps) {
   return (
     <CollapsibleContent
       className={cn(
-        "border-t px-3 py-2 dark:border-zinc-800",
+        "px-3 py-2",
         "data-[state=closed]:animate-collapse-up data-[state=open]:animate-collapse-down",
         className
       )}
       {...props}
-    />
+    >
+      <div className="relative pl-5 ml-[18px] border-l border-zinc-700/50">
+        {children}
+      </div>
+    </CollapsibleContent>
   );
 }
