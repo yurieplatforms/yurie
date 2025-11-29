@@ -61,10 +61,10 @@ export const MessageContent = ({
       from === "user"
         ? [
             // User bubble: align with blog card surfaces
-            "w-fit ml-auto rounded-2xl border px-4 py-3 text-zinc-900 shadow-sm",
-            "border-zinc-200 bg-zinc-100/90",
+            "w-fit ml-auto rounded-2xl px-4 py-3 text-zinc-900 shadow-sm",
+            "bg-zinc-100/90",
             // Dark mode bubble color override
-            "dark:border-zinc-800 dark:bg-[#202020] dark:text-zinc-50",
+            "dark:bg-[#262628] dark:text-zinc-50",
           ]
         : "w-full text-zinc-900 dark:text-zinc-100",
       className
@@ -355,12 +355,30 @@ function preprocessLatexCodeBlocks(content: string): string {
   );
 }
 
+/**
+ * Escapes currency dollar signs to prevent them from being parsed as LaTeX math.
+ * Uses HTML entity &#36; which renders as $ but won't trigger math parsing.
+ * Currency patterns: $177.00, $15, $1,234.56, $4 trillion
+ * Math patterns (not escaped): $x$, $\alpha$, $x^2$
+ */
+function escapeCurrencyDollars(content: string): string {
+  if (typeof content !== 'string') return content;
+  
+  // Match $ followed by digits (with optional commas and decimals)
+  // This distinguishes currency ($177.00) from math ($x$)
+  // Use HTML entity &#36; to render as $ without math interpretation
+  return content.replace(
+    /\$(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)/g,
+    '&#36;$1'
+  );
+}
+
 export const MessageResponse = memo(
   ({ className, components, children, ...props }: MessageResponseProps) => {
-    // Preprocess content to convert latex code blocks to raw LaTeX
+    // Preprocess content: escape currency dollar signs, then convert latex code blocks
     const processedChildren = useMemo(() => {
       if (typeof children === 'string') {
-        return preprocessLatexCodeBlocks(children);
+        return preprocessLatexCodeBlocks(escapeCurrencyDollars(children));
       }
       return children;
     }, [children]);

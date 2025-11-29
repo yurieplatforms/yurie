@@ -96,6 +96,61 @@ export type WebFetchResult = {
 }
 
 // ============================================================================
+// EXA Search Types
+// @see https://docs.exa.ai/reference/search
+// ============================================================================
+
+/**
+ * EXA search category for filtering results by content type.
+ * @see https://docs.exa.ai/reference/search#category
+ */
+export type ExaSearchCategory =
+  | 'company'
+  | 'research paper'
+  | 'news'
+  | 'pdf'
+  | 'github'
+  | 'personal site'
+  | 'linkedin profile'
+  | 'financial report'
+
+/**
+ * Individual search result item from EXA search.
+ */
+export type ExaSearchResultItem = {
+  /** URL of the source page */
+  url: string
+  /** Title of the source page */
+  title: string
+  /** Author of the content, if available */
+  author?: string
+  /** ISO 8601 date when the content was published */
+  publishedDate?: string
+  /** Text content/snippet from the page */
+  text?: string
+  /** AI-generated summary of the content */
+  summary?: string
+  /** Relevance score from EXA */
+  score?: number
+}
+
+/**
+ * EXA search result containing the query and all results.
+ */
+export type ExaSearchResult = {
+  /** Always 'exa_search' for EXA search results */
+  type: 'exa_search'
+  /** The search query that was executed */
+  query: string
+  /** Category filter applied, if any */
+  category?: ExaSearchCategory
+  /** Array of search result items */
+  results: ExaSearchResultItem[]
+  /** Error message if the search failed */
+  error?: string
+}
+
+// ============================================================================
 // Web Search Types
 // @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
 // ============================================================================
@@ -297,6 +352,9 @@ export type ToolUseEvent = {
   // Web search specific fields
   // See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
   webSearch?: WebSearchResult
+  // EXA search specific fields
+  // See: https://docs.exa.ai/reference/search
+  exaSearch?: ExaSearchResult
   // Programmatic tool calling - indicates how the tool was invoked
   // 'direct' = traditional tool use, 'code_execution_20250825' = called from code execution
   caller?: ToolCaller

@@ -169,7 +169,7 @@ function AssistantMessageContent({
                 ) : undefined
               }
             />
-            <ReasoningContent>
+            <ReasoningContent showLine={hasReasoning}>
               {hasReasoning ? (
                 <MessageResponse className="italic">
                   {message.reasoning}

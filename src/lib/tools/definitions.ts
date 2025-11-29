@@ -51,7 +51,7 @@ export type ToolResultBlock = {
 export type ServerToolType = 'web_search' | 'web_fetch'
 
 /** Client-side tools executed by our application */
-export type ClientToolType = 'calculator' | 'memory' | 'run_code'
+export type ClientToolType = 'calculator' | 'memory' | 'run_code' | 'exa_search'
 
 /** All tool types available to the agent */
 export type ToolName = ServerToolType | ClientToolType

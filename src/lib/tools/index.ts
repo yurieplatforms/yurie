@@ -42,3 +42,11 @@ export {
   createMemoryToolHandler,
 } from './memory'
 
+// EXA search tool
+export {
+  type ExaSearchInput,
+  exaSearch,
+  formatExaResultsForLLM,
+  isExaAvailable,
+} from './exa'
+
