@@ -96,35 +96,44 @@
   }
 
   /* Remove outer border from Streamdown-rendered code blocks */
+  [data-streamdown="code-block"],
   [data-code-block-container="true"],
   [data-code-block-container] {
     border-width: 0 !important;
   }
 
-  /* Match code block border + background colors to chat/blog feel */
+  /* Match code block border + background colors to user chat bubble */
+  [data-streamdown="code-block"],
   [data-code-block-container="true"],
   [data-code-block-container] {
-    background-color: rgb(250 250 250 / 0.95); /* light subtle surface */
+    background-color: rgb(244 244 245 / 0.9) !important; /* match user bubble bg-zinc-100/90 */
   }
 
+  .dark [data-streamdown="code-block"],
   .dark [data-code-block-container="true"],
   .dark [data-code-block-container] {
-    background-color: rgb(12 12 12 / 0.96); /* dark subtle surface */
+    background-color: #202020 !important; /* match user bubble dark:bg-[#202020] */
   }
 
   /* Inner code area border + background */
+  [data-streamdown="code-block-body"],
   [data-code-block] {
     border-top-width: 0 !important; /* remove separator line under header */
     border-color: rgb(212 212 216 / 1); /* zinc-300 */
-    background-color: rgb(244 244 245 / 0.9); /* match PromptInput bg-zinc-100/90 */
+    background-color: rgb(244 244 245 / 0.9) !important; /* match user bubble bg-zinc-100/90 */
   }
 
+  .dark [data-streamdown="code-block-body"],
   .dark [data-code-block] {
     border-color: rgb(39 39 42 / 1); /* zinc-800 */
-    background-color: #202020; /* unified dark background */
+    background-color: #202020 !important; /* match user bubble dark:bg-[#202020] */
   }
 
   /* Remove extra space between header and code, and force unified background */
+  [data-streamdown="code-block-body"] pre,
+  [data-streamdown="code-block-body"] pre code,
+  [data-streamdown="code-block"] pre,
+  [data-streamdown="code-block"] pre code,
   [data-code-block] pre,
   [data-code-block] pre code {
     margin-top: 0;
@@ -132,22 +141,35 @@
     background-color: rgb(244 244 245 / 0.9) !important; /* override Shiki inline bg */
   }
 
+  .dark [data-streamdown="code-block-body"] pre,
+  .dark [data-streamdown="code-block-body"] pre code,
+  .dark [data-streamdown="code-block"] pre,
+  .dark [data-streamdown="code-block"] pre code,
   .dark [data-code-block] pre,
   .dark [data-code-block] pre code {
     background-color: #202020 !important; /* override Shiki inline bg */
   }
 
   /* Code block header surface + text (match code background) */
+  [data-streamdown="code-block-header"],
   [data-code-block-header] {
     background-color: rgb(244 244 245 / 0.9) !important;
     color: rgb(24 24 27 / 1); /* zinc-900 */
     border-bottom: 1px solid rgb(228 228 231 / 1); /* zinc-200 */
   }
 
+  .dark [data-streamdown="code-block-header"],
   .dark [data-code-block-header] {
     background-color: #202020 !important;
     color: rgb(228 228 231 / 1); /* zinc-200 */
     border-bottom: 1px solid rgb(39 39 42 / 1); /* zinc-800, subtle separator */
+  }
+
+  /* Code block line numbers - match placeholder text color (muted-foreground) */
+  [data-streamdown="code-block-body"] code > span::before,
+  [data-streamdown="code-block"] code > span::before {
+    color: var(--color-muted-foreground) !important;
+    opacity: 1 !important;
   }
 
   /* Match AI-generated horizontal rule separators to PromptInput outline color */

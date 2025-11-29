@@ -332,59 +332,94 @@ const customRemarkPlugins = [
   [remarkCjkFriendlyGfmStrikethrough, {}],
 ];
 
+/**
+ * Preprocesses markdown to convert latex/tex code blocks into raw LaTeX.
+ * This allows KaTeX to render math that the AI outputs inside code fences.
+ */
+function preprocessLatexCodeBlocks(content: string): string {
+  if (typeof content !== 'string') return content;
+  
+  // Match ```latex or ```tex code blocks and extract their content
+  // This regex handles both inline and display math inside code blocks
+  return content.replace(
+    /```(?:latex|tex)\s*\n([\s\S]*?)```/gi,
+    (_, latexContent: string) => {
+      // Trim the content and return it as raw LaTeX
+      const trimmed = latexContent.trim();
+      // If the content doesn't have math delimiters, wrap in display math
+      if (!trimmed.startsWith('$') && !trimmed.startsWith('\\[') && !trimmed.startsWith('\\begin')) {
+        return `$$${trimmed}$$`;
+      }
+      return trimmed;
+    }
+  );
+}
+
 export const MessageResponse = memo(
-  ({ className, components, ...props }: MessageResponseProps) => (
-    <Streamdown
-      className={cn(
-        // Match blog typography (see blog layout) for AI-generated content
-        // while letting prose handle its own inner spacing.
-        "prose prose-gray dark:prose-invert",
-        "prose-h4:prose-base",
-        "prose-h1:text-xl prose-h1:font-medium",
-        "prose-h2:mt-12 prose-h2:scroll-m-20 prose-h2:text-lg prose-h2:font-medium",
-        "prose-h3:text-base prose-h3:font-medium",
-        "prose-h4:font-medium",
-        "prose-h5:text-base prose-h5:font-medium",
-        "prose-h6:text-base prose-h6:font-medium",
-        "prose-strong:font-medium",
-        className
-      )}
-      // Enable LaTeX math rendering with single dollar signs ($...$)
-      remarkPlugins={customRemarkPlugins as ComponentProps<typeof Streamdown>['remarkPlugins']}
-      // Keep Streamdown's rich code block UI (header, controls), but make
-      // structural elements match blog-style prose.
-      components={{
-        // Handle custom <suggestions> tags from AI output - suppress React warning
-        suggestions: () => null,
-        blockquote({ children, ...rest }: React.ComponentPropsWithoutRef<'blockquote'>) {
-          return <blockquote {...rest}>{children}</blockquote>;
-        },
-        hr(rest: React.ComponentPropsWithoutRef<'hr'>) {
-          return <hr {...rest} />;
-        },
-        table({ children, ...rest }: React.ComponentPropsWithoutRef<'table'>) {
-          return <table {...rest}>{children}</table>;
-        },
-        thead({ children, ...rest }: React.ComponentPropsWithoutRef<'thead'>) {
-          return <thead {...rest}>{children}</thead>;
-        },
-        tbody({ children, ...rest }: React.ComponentPropsWithoutRef<'tbody'>) {
-          return <tbody {...rest}>{children}</tbody>;
-        },
-        tr({ children, ...rest }: React.ComponentPropsWithoutRef<'tr'>) {
-          return <tr {...rest}>{children}</tr>;
-        },
-        th({ children, ...rest }: React.ComponentPropsWithoutRef<'th'>) {
-          return <th {...rest}>{children}</th>;
-        },
-        td({ children, ...rest }: React.ComponentPropsWithoutRef<'td'>) {
-          return <td {...rest}>{children}</td>;
-        },
-        ...components,
-      } as ComponentProps<typeof Streamdown>['components']}
-      {...props}
-    />
-  ),
+  ({ className, components, children, ...props }: MessageResponseProps) => {
+    // Preprocess content to convert latex code blocks to raw LaTeX
+    const processedChildren = useMemo(() => {
+      if (typeof children === 'string') {
+        return preprocessLatexCodeBlocks(children);
+      }
+      return children;
+    }, [children]);
+
+    return (
+      <Streamdown
+        className={cn(
+          // Match blog typography (see blog layout) for AI-generated content
+          // while letting prose handle its own inner spacing.
+          "prose prose-gray dark:prose-invert",
+          "prose-h4:prose-base",
+          "prose-h1:text-xl prose-h1:font-medium",
+          "prose-h2:mt-12 prose-h2:scroll-m-20 prose-h2:text-lg prose-h2:font-medium",
+          "prose-h3:text-base prose-h3:font-medium",
+          "prose-h4:font-medium",
+          "prose-h5:text-base prose-h5:font-medium",
+          "prose-h6:text-base prose-h6:font-medium",
+          "prose-strong:font-medium",
+          className
+        )}
+        // Enable LaTeX math rendering with single dollar signs ($...$)
+        remarkPlugins={customRemarkPlugins as ComponentProps<typeof Streamdown>['remarkPlugins']}
+        // Keep Streamdown's rich code block UI (header, controls), but make
+        // structural elements match blog-style prose.
+        components={{
+          // Handle custom <suggestions> tags from AI output - suppress React warning
+          suggestions: () => null,
+          blockquote({ children, ...rest }: React.ComponentPropsWithoutRef<'blockquote'>) {
+            return <blockquote {...rest}>{children}</blockquote>;
+          },
+          hr(rest: React.ComponentPropsWithoutRef<'hr'>) {
+            return <hr {...rest} />;
+          },
+          table({ children, ...rest }: React.ComponentPropsWithoutRef<'table'>) {
+            return <table {...rest}>{children}</table>;
+          },
+          thead({ children, ...rest }: React.ComponentPropsWithoutRef<'thead'>) {
+            return <thead {...rest}>{children}</thead>;
+          },
+          tbody({ children, ...rest }: React.ComponentPropsWithoutRef<'tbody'>) {
+            return <tbody {...rest}>{children}</tbody>;
+          },
+          tr({ children, ...rest }: React.ComponentPropsWithoutRef<'tr'>) {
+            return <tr {...rest}>{children}</tr>;
+          },
+          th({ children, ...rest }: React.ComponentPropsWithoutRef<'th'>) {
+            return <th {...rest}>{children}</th>;
+          },
+          td({ children, ...rest }: React.ComponentPropsWithoutRef<'td'>) {
+            return <td {...rest}>{children}</td>;
+          },
+          ...components,
+        } as ComponentProps<typeof Streamdown>['components']}
+        {...props}
+      >
+        {processedChildren}
+      </Streamdown>
+    );
+  },
   (prevProps, nextProps) => prevProps.children === nextProps.children
 );
 
