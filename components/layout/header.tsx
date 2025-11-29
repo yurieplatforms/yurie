@@ -14,8 +14,8 @@ export function Header() {
   const { user, isLoading } = useAuth()
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 bg-white dark:bg-black">
-      <div className="mx-auto flex h-16 max-w-screen-sm items-center justify-between px-4">
+    <header className="fixed left-0 right-0 top-0 z-50 bg-white dark:bg-black" suppressHydrationWarning>
+      <div className="mx-auto flex h-16 max-w-screen-sm items-center justify-between px-4" suppressHydrationWarning>
         <div className="flex items-center gap-1.5">
           <Link href="/" className="group flex items-center gap-2">
             <TextEffect
@@ -29,8 +29,8 @@ export function Header() {
           </Link>
         </div>
 
-        <div className="flex items-center gap-4">
-          <nav className="flex items-center gap-4 text-base text-zinc-500 dark:text-zinc-400">
+        <div className="flex items-center gap-4" suppressHydrationWarning>
+          <nav className="flex items-center gap-4 text-base text-zinc-500 dark:text-zinc-400" suppressHydrationWarning>
             {NAV_ITEMS.map((item) => {
               const isActive = pathname === item.href
               return (
