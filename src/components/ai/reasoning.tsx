@@ -6,7 +6,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown, Lightbulb, Wrench, Search, Globe, Brain, Code, Calculator, Terminal, FileCode, Play } from "lucide-react";
+import { ChevronDown, Lightbulb, Wrench, Search, Globe, History, Code, Calculator, Terminal, FileCode, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Shimmer } from "./shimmer";
@@ -29,9 +29,9 @@ const toolIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   web_search: Search,
   web_fetch: Globe,
   calculator: Calculator,
-  memory: Brain,
-  memory_save: Brain,
-  memory_retrieve: Brain,
+  memory: History,
+  memory_save: History,
+  memory_retrieve: History,
   run_code: Code,
   code_execution: Play,
   bash_code_execution: Terminal,
