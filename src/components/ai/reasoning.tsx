@@ -6,7 +6,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Search, Globe, History, Calculator, Atom, Lightbulb, Sparkles, Link2 } from "lucide-react";
+import { Search, Globe, History, Calculator, Atom, Lightbulb, Sparkles, Link2, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Shimmer } from "./shimmer";
@@ -118,6 +118,7 @@ export function ReasoningTrigger({
   // Build dynamic label
   let dynamicLabel: ReactNode = label;
   let Icon: React.ComponentType<{ className?: string }> = Atom;
+  let showArrow = !!label; // Only show arrow when "Thought for Xs" is displayed
 
   if (!label) {
     if (hasActiveTools && activeToolLabel) {
@@ -130,6 +131,7 @@ export function ReasoningTrigger({
       dynamicLabel = thinkingLabel;
     } else {
       // Completed thought shows atom icon
+      showArrow = true;
       dynamicLabel = <span className="text-base">{title}</span>;
     }
   }
@@ -146,6 +148,9 @@ export function ReasoningTrigger({
       <span className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full hover:bg-zinc-100/90 dark:hover:bg-[#202020] transition-colors">
         <Icon className="size-4 shrink-0" />
         <span className="leading-none">{dynamicLabel}</span>
+        {showArrow && (
+          <ChevronRight className="size-3.5 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+        )}
       </span>
     </CollapsibleTrigger>
   );
