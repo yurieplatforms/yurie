@@ -1,7 +1,7 @@
 import React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { CornerRightUp, Paperclip, Square, X, StopCircle, FileText } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Utility function for className merging
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ");
@@ -44,11 +44,11 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
   className?: string;
 }
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
-  <textarea
-    className={cn(
-      "flex w-full rounded-md border-none bg-transparent pl-2 pr-2 py-1.5 text-base text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[36px] resize-none scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600 scrollbar-track-transparent hover:scrollbar-thumb-zinc-400 dark:hover:scrollbar-thumb-zinc-500",
-      className
-    )}
+    <textarea
+      className={cn(
+        "flex w-full rounded-xl border-none bg-transparent pl-2 pr-2 py-1.5 text-base text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[36px] resize-none scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600 scrollbar-track-transparent hover:scrollbar-thumb-zinc-400 dark:hover:scrollbar-thumb-zinc-500",
+        className
+      )}
     ref={ref}
     rows={1}
     {...props}
@@ -327,7 +327,7 @@ const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
           <div
             ref={ref}
             className={cn(
-              "rounded-3xl bg-[#1F2023] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300",
+              "rounded-[26px] bg-[#1F2023] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300",
               className
             )}
             onDragOver={onDragOver}
@@ -535,7 +535,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         isLoading={isLoading}
         onSubmit={handleSubmit}
         className={cn(
-          "rounded-xl bg-zinc-100/90 dark:bg-[#181818] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300 ease-in-out",
+          "rounded-[26px] bg-zinc-100/90 dark:bg-[#181818] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300 ease-in-out",
           className
         )}
         disabled={isLoading || isRecording}
@@ -544,61 +544,83 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        {files.length > 0 && !isRecording && (
-          <div className="flex flex-wrap gap-2 p-0 pb-1 transition-all duration-300">
-            {files.map((file, index) => (
-              <div key={index} className="relative group">
-                {/* Image preview */}
-                {isImageFile(file) && filePreviews[file.name] && (
-                  <div
-                    className="w-16 h-16 rounded-xl overflow-hidden cursor-pointer transition-all duration-300"
-                    onClick={() => openImageModal(filePreviews[file.name])}
+        <AnimatePresence mode="popLayout">
+          {files.length > 0 && !isRecording && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: "auto", marginBottom: 8 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="flex flex-wrap gap-2 w-full overflow-hidden"
+            >
+              <AnimatePresence mode="popLayout">
+                {files.map((file, index) => (
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, scale: 0.8, width: 0 }}
+                    animate={{ opacity: 1, scale: 1, width: "auto" }}
+                    exit={{ opacity: 0, scale: 0.8, width: 0 }}
+                    transition={{ 
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 30
+                    }}
+                    key={`${file.name}-${index}`}
+                    className="relative group overflow-hidden"
                   >
-                    <img
-                      src={filePreviews[file.name]}
-                      alt={file.name}
-                      className="h-full w-full object-cover"
-                    />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveFile(index);
-                      }}
-                      className="absolute top-1 right-1 rounded-full bg-black/70 p-0.5 opacity-100 transition-opacity"
-                    >
-                      <X className="h-3 w-3 text-white" />
-                    </button>
-                  </div>
-                )}
-                {/* Document preview (PDF and text files) */}
-                {(isPdfFile(file) || isTextFile(file)) && (
-                  <div className="relative flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-200/50 dark:bg-zinc-700/50 transition-all duration-300">
-                    <FileText className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
-                    <span className="text-sm text-zinc-700 dark:text-zinc-300 max-w-[120px] truncate">
-                      {file.name}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveFile(index);
-                      }}
-                      className="ml-1 rounded-full bg-zinc-300/70 dark:bg-zinc-600/70 p-0.5 hover:bg-zinc-400/70 dark:hover:bg-zinc-500/70 transition-colors"
-                    >
-                      <X className="h-3 w-3 text-zinc-600 dark:text-zinc-300" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                    {/* Image preview */}
+                    {isImageFile(file) && filePreviews[file.name] && (
+                      <div
+                        className="w-16 h-16 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300"
+                        onClick={() => openImageModal(filePreviews[file.name])}
+                      >
+                        <img
+                          src={filePreviews[file.name]}
+                          alt={file.name}
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFile(index);
+                          }}
+                          className="absolute top-1 right-1 rounded-full bg-black/70 p-0.5 opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3 text-white" />
+                        </button>
+                      </div>
+                    )}
+                    {/* Document preview (PDF and text files) */}
+                    {(isPdfFile(file) || isTextFile(file)) && (
+                      <div className="relative flex items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-200/50 dark:bg-zinc-700/50 transition-all duration-300">
+                        <FileText className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
+                        <span className="text-sm text-zinc-700 dark:text-zinc-300 max-w-[120px] truncate">
+                          {file.name}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFile(index);
+                          }}
+                          className="ml-1 rounded-full bg-zinc-300/70 dark:bg-zinc-600/70 p-0.5 hover:bg-zinc-400/70 dark:hover:bg-zinc-500/70 transition-colors"
+                        >
+                          <X className="h-3 w-3 text-zinc-600 dark:text-zinc-300" />
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="flex items-end gap-0 w-full">
           <div className="flex items-center gap-2 pb-0.5">
             <button
               onClick={() => uploadInputRef.current?.click()}
               className={cn(
-                "flex h-8 w-8 text-zinc-500 dark:text-zinc-400 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 hover:text-zinc-700 dark:hover:text-zinc-200",
+                "flex h-8 w-8 text-zinc-500 dark:text-zinc-400 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 hover:text-zinc-700 dark:hover:text-zinc-200",
                 isRecording && "hidden"
               )}
               disabled={isRecording}
@@ -647,7 +669,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               variant="ghost"
               size="icon"
               className={cn(
-                "h-8 w-8 rounded-lg transition-all duration-200 cursor-pointer",
+                "h-8 w-8 rounded-full transition-all duration-200 cursor-pointer",
                 isRecording
                   ? "bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 text-red-500 hover:text-red-600"
                   : hasContent

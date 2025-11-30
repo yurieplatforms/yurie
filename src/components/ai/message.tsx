@@ -61,7 +61,7 @@ export const MessageContent = ({
       from === "user"
         ? [
             // User bubble: align with blog card surfaces
-            "w-fit ml-auto rounded-2xl px-4 py-3 text-zinc-900 shadow-sm",
+            "w-fit ml-auto rounded-[26px] px-5 py-3.5 text-zinc-900 shadow-sm",
             "bg-zinc-100/90",
             // Dark mode bubble color override
             "dark:bg-[#262628] dark:text-zinc-50",
