@@ -113,11 +113,10 @@ export function ReasoningTrigger({
   const activeToolLabel = currentActiveTool 
     ? toolLabels[currentActiveTool.name] || `Using ${currentActiveTool.name}`
     : null;
-  const ActiveToolIcon = currentActiveTool ? toolIcons[currentActiveTool.name] : null;
 
   // Build dynamic label
   let dynamicLabel: ReactNode = label;
-  let Icon: React.ComponentType<{ className?: string }> | null = null;
+  let Icon: React.ElementType | null = Lightbulb;
   let showArrow = !!label; // Only show arrow when "Thought for Xs" is displayed
 
   if (!label) {
