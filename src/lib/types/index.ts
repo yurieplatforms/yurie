@@ -1,4 +1,5 @@
 import type { UIMessage } from 'ai'
+import type { ExaErrorInfo } from '@/lib/tools/exa-errors'
 
 export type Role = UIMessage['role']
 
@@ -153,6 +154,8 @@ export type ExaSearchResult = {
   results: ExaSearchResultItem[]
   /** Error message if the search failed */
   error?: string
+  /** Detailed error information for error handling */
+  errorInfo?: ExaErrorInfo
 }
 
 /**
@@ -170,6 +173,8 @@ export type ExaAnswerResult = {
   sources: ExaSearchResultItem[]
   /** Error message if the request failed */
   error?: string
+  /** Detailed error information for error handling */
+  errorInfo?: ExaErrorInfo
 }
 
 // ============================================================================
@@ -237,6 +242,8 @@ export type ExaResearchResult = {
   }
   /** Error message if the research failed */
   error?: string
+  /** Detailed error information for error handling */
+  errorInfo?: ExaErrorInfo
 }
 
 // ============================================================================

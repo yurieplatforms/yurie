@@ -7,6 +7,7 @@
  *
  * @see https://docs.exa.ai/reference/search
  * @see https://docs.exa.ai/reference/contents-retrieval
+ * @see https://docs.exa.ai/reference/error-codes
  *
  * @module lib/tools/exa
  */
@@ -22,6 +23,13 @@ import type {
   ExaResearchResult,
   ExaResearchCitation,
 } from '@/lib/types'
+import {
+  parseExaError,
+  toExaErrorInfo,
+  retryWithBackoff,
+  logExaError,
+  type RetryConfig,
+} from './exa-errors'
 
 // ============================================================================
 // EXA Client
@@ -144,10 +152,27 @@ export type ExaSearchInput = {
 // ============================================================================
 
 /**
+ * Default retry configuration for EXA API calls
+ * @see https://docs.exa.ai/reference/error-codes
+ */
+const DEFAULT_EXA_RETRY_CONFIG: RetryConfig = {
+  maxRetries: 3,
+  initialDelayMs: 5000,
+  maxDelayMs: 60000,
+  backoffMultiplier: 2,
+}
+
+/**
  * Perform a search using the EXA API
  *
+ * Implements retry logic with exponential backoff for retryable errors
+ * (429, 500, 502, 503).
+ *
  * @param input - Search parameters
+ * @param retryConfig - Optional retry configuration
  * @returns Search result with query and results array
+ *
+ * @see https://docs.exa.ai/reference/error-codes
  *
  * @example
  * ```ts
@@ -158,7 +183,10 @@ export type ExaSearchInput = {
  * })
  * ```
  */
-export async function exaSearch(input: ExaSearchInput): Promise<ExaSearchResult> {
+export async function exaSearch(
+  input: ExaSearchInput,
+  retryConfig: RetryConfig = DEFAULT_EXA_RETRY_CONFIG,
+): Promise<ExaSearchResult> {
   const client = getExaClient()
 
   if (!client) {
@@ -220,8 +248,12 @@ export async function exaSearch(input: ExaSearchInput): Promise<ExaSearchResult>
       ...(input.excludeDomains && input.excludeDomains.length > 0 && { excludeDomains: input.excludeDomains }),
     }
 
-    // Execute search with contents
-    const response = await client.searchAndContents(input.query, searchOptions)
+    // Execute search with contents and retry logic
+    // @see https://docs.exa.ai/reference/error-codes
+    const response = await retryWithBackoff(
+      () => client.searchAndContents(input.query, searchOptions),
+      retryConfig,
+    )
 
     // Transform results to our format including highlights and summaries
     // @see https://docs.exa.ai/reference/contents-retrieval
@@ -253,15 +285,18 @@ export async function exaSearch(input: ExaSearchInput): Promise<ExaSearchResult>
       results,
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    console.error('[exa] Search error:', errorMessage)
+    // Parse error with Exa-specific error handling
+    // @see https://docs.exa.ai/reference/error-codes
+    const exaError = parseExaError(error)
+    logExaError('exa.search', error, exaError)
 
     return {
       type: 'exa_search',
       query: input.query,
       category: input.category,
       results: [],
-      error: errorMessage,
+      error: exaError.message,
+      errorInfo: toExaErrorInfo(exaError),
     }
   }
 }
@@ -299,9 +334,15 @@ export type ExaFindSimilarInput = {
  * Find similar content to a given URL using EXA API.
  * Great for discovering related articles, research, or competitors.
  *
+ * Implements retry logic with exponential backoff for retryable errors.
+ *
  * @see https://docs.exa.ai/reference/find-similar-links
+ * @see https://docs.exa.ai/reference/error-codes
  */
-export async function exaFindSimilar(input: ExaFindSimilarInput): Promise<ExaSearchResult> {
+export async function exaFindSimilar(
+  input: ExaFindSimilarInput,
+  retryConfig: RetryConfig = DEFAULT_EXA_RETRY_CONFIG,
+): Promise<ExaSearchResult> {
   const client = getExaClient()
 
   if (!client) {
@@ -335,7 +376,12 @@ export async function exaFindSimilar(input: ExaFindSimilarInput): Promise<ExaSea
       ...(input.category && { category: input.category }),
     }
 
-    const response = await client.findSimilarAndContents(input.url, options)
+    // Execute find similar with retry logic
+    // @see https://docs.exa.ai/reference/error-codes
+    const response = await retryWithBackoff(
+      () => client.findSimilarAndContents(input.url, options),
+      retryConfig,
+    )
 
     const results: ExaSearchResultItem[] = response.results.map((result) => {
       const resultWithContent = result as typeof result & {
@@ -363,14 +409,17 @@ export async function exaFindSimilar(input: ExaFindSimilarInput): Promise<ExaSea
       results,
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    console.error('[exa] Find similar error:', errorMessage)
+    // Parse error with Exa-specific error handling
+    // @see https://docs.exa.ai/reference/error-codes
+    const exaError = parseExaError(error)
+    logExaError('exa.findSimilar', error, exaError)
 
     return {
       type: 'exa_search',
       query: `Similar to: ${input.url}`,
       results: [],
-      error: errorMessage,
+      error: exaError.message,
+      errorInfo: toExaErrorInfo(exaError),
     }
   }
 }
@@ -401,15 +450,22 @@ export type ExaAnswerResult = {
   answer: string
   sources: ExaSearchResultItem[]
   error?: string
+  errorInfo?: import('@/lib/tools/exa-errors').ExaErrorInfo
 }
 
 /**
  * Get a direct answer to a question using EXA's answer endpoint.
  * EXA searches the web and synthesizes an answer with sources.
  *
+ * Implements retry logic with exponential backoff for retryable errors.
+ *
  * @see https://docs.exa.ai/reference/answer
+ * @see https://docs.exa.ai/reference/error-codes
  */
-export async function exaAnswer(input: ExaAnswerInput): Promise<ExaAnswerResult> {
+export async function exaAnswer(
+  input: ExaAnswerInput,
+  retryConfig: RetryConfig = DEFAULT_EXA_RETRY_CONFIG,
+): Promise<ExaAnswerResult> {
   const client = getExaClient()
 
   if (!client) {
@@ -423,10 +479,15 @@ export async function exaAnswer(input: ExaAnswerInput): Promise<ExaAnswerResult>
   }
 
   try {
-    const response = await client.answer(input.question, {
-      text: input.includeText ?? true,
-      ...(input.category && { category: input.category }),
-    })
+    // Execute answer with retry logic
+    // @see https://docs.exa.ai/reference/error-codes
+    const response = await retryWithBackoff(
+      () => client.answer(input.question, {
+        text: input.includeText ?? true,
+        ...(input.category && { category: input.category }),
+      }),
+      retryConfig,
+    )
 
     // Extract sources from the response
     // Type assertion needed as the SDK types may not include all fields
@@ -451,15 +512,18 @@ export async function exaAnswer(input: ExaAnswerInput): Promise<ExaAnswerResult>
       sources,
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    console.error('[exa] Answer error:', errorMessage)
+    // Parse error with Exa-specific error handling
+    // @see https://docs.exa.ai/reference/error-codes
+    const exaError = parseExaError(error)
+    logExaError('exa.answer', error, exaError)
 
     return {
       type: 'exa_answer',
       question: input.question,
       answer: '',
       sources: [],
-      error: errorMessage,
+      error: exaError.message,
+      errorInfo: toExaErrorInfo(exaError),
     }
   }
 }
@@ -625,11 +689,16 @@ export type ExaResearchInput = {
  * 1. Plans - Parses instructions into research steps
  * 2. Searches - Issues semantic queries, expanding and refining results
  * 3. Synthesizes - Combines facts across sources into structured output
+ *
+ * Implements retry logic with exponential backoff for retryable errors
+ * during the initial create call. Polling errors are handled separately.
  * 
  * @param input - Research parameters
+ * @param retryConfig - Optional retry configuration for the create call
  * @returns Research result with structured output or markdown report
  * 
  * @see https://docs.exa.ai/reference/exa-research
+ * @see https://docs.exa.ai/reference/error-codes
  * 
  * @example
  * ```ts
@@ -664,7 +733,10 @@ export type ExaResearchInput = {
  * })
  * ```
  */
-export async function exaResearch(input: ExaResearchInput): Promise<ExaResearchResult> {
+export async function exaResearch(
+  input: ExaResearchInput,
+  retryConfig: RetryConfig = DEFAULT_EXA_RETRY_CONFIG,
+): Promise<ExaResearchResult> {
   const client = getExaClient()
   const model = input.model ?? 'exa-research'
   
@@ -706,7 +778,8 @@ export async function exaResearch(input: ExaResearchInput): Promise<ExaResearchR
       }>
     }
     
-    // Create the research task
+    // Create the research task with retry logic
+    // @see https://docs.exa.ai/reference/error-codes
     const createParams: {
       model: string
       instructions: string
@@ -720,9 +793,13 @@ export async function exaResearch(input: ExaResearchInput): Promise<ExaResearchR
       createParams.outputSchema = input.outputSchema
     }
     
-    const researchTask = await researchApi.create(createParams)
+    const researchTask = await retryWithBackoff(
+      () => researchApi.create(createParams),
+      retryConfig,
+    )
     
-    // Poll until completion
+    // Poll until completion - polling has its own timeout handling
+    // Retry logic for polling is handled internally by pollUntilFinished
     const result = await researchApi.pollUntilFinished(researchTask.researchId, {
       timeoutMs: input.timeoutMs ?? 120000,
       pollIntervalMs: input.pollIntervalMs ?? 2000,
@@ -741,6 +818,21 @@ export async function exaResearch(input: ExaResearchInput): Promise<ExaResearchR
       excerpt: c.excerpt,
     }))
     
+    // If the research task itself reported an error, parse it
+    if (result.error) {
+      return {
+        type: 'exa_research',
+        researchId: result.researchId,
+        instructions: input.instructions,
+        model,
+        status: 'failed',
+        output: result.output,
+        citations: citations.length > 0 ? citations : undefined,
+        cost: result.cost,
+        error: result.error,
+      }
+    }
+    
     return {
       type: 'exa_research',
       researchId: result.researchId,
@@ -750,11 +842,12 @@ export async function exaResearch(input: ExaResearchInput): Promise<ExaResearchR
       output: result.output,
       citations: citations.length > 0 ? citations : undefined,
       cost: result.cost,
-      error: result.error,
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    console.error('[exa] Research error:', errorMessage)
+    // Parse error with Exa-specific error handling
+    // @see https://docs.exa.ai/reference/error-codes
+    const exaError = parseExaError(error)
+    logExaError('exa.research', error, exaError)
     
     return {
       type: 'exa_research',
@@ -762,7 +855,8 @@ export async function exaResearch(input: ExaResearchInput): Promise<ExaResearchR
       instructions: input.instructions,
       model,
       status: 'failed',
-      error: errorMessage,
+      error: exaError.message,
+      errorInfo: toExaErrorInfo(exaError),
     }
   }
 }

@@ -62,3 +62,20 @@ export {
   isExaAvailable,
 } from './exa'
 
+// EXA error handling utilities
+// @see https://docs.exa.ai/reference/error-codes
+export {
+  type ExaErrorType,
+  type ExaContentErrorTag,
+  type ExaError,
+  type ExaContentError,
+  type ExaErrorInfo,
+  type RetryConfig,
+  isExaApiError,
+  parseExaError,
+  parseContentError,
+  toExaErrorInfo,
+  retryWithBackoff,
+  logExaError,
+} from './exa-errors'
+
