@@ -301,7 +301,9 @@ export async function runAgent({
         'fine-grained-tool-streaming-2025-05-14',
         'web-fetch-2025-09-10',
         'context-management-2025-06-27',
-        'structured-outputs-2025-11-13',
+        // Note: structured-outputs-2025-11-13 was removed because it adds a `parsed` field
+        // to text content blocks which causes "Extra inputs are not permitted" errors
+        // when the SDK sends tool results back in multi-turn conversations
         // Required for extended thinking with tool use
         // Enables Claude to think between tool calls for more sophisticated reasoning
         // @see https://platform.claude.com/docs/en/build-with-claude/extended-thinking#interleaved-thinking

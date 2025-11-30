@@ -15,22 +15,11 @@ export {
   type WebSearchToolConfig,
   // Server tools
   createWebSearchTool,
-  serverTools,
   createServerTools,
-  // Client tools
-  clientTools,
-  allTools,
-  // Helpers
-  extractToolUseBlocks,
-  extractTextContent,
 } from './definitions'
 
 // Tool execution handlers
-export {
-  evaluateMathExpression,
-  executeClientTool,
-  isClientTool,
-} from './handlers'
+export { evaluateMathExpression } from './handlers'
 
 // Memory tool
 export {
@@ -78,4 +67,3 @@ export {
   retryWithBackoff,
   logExaError,
 } from './exa-errors'
-

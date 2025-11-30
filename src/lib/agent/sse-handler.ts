@@ -59,18 +59,3 @@ export async function sendDoneSignal(writer: WritableStreamDefaultWriter<Uint8Ar
   const encoder = new TextEncoder()
   await writer.write(encoder.encode('data: [DONE]\n\n'))
 }
-
-/**
- * Sends an error through the SSE stream
- */
-export async function sendSSEError(
-  handler: SSEHandler,
-  error: Error | unknown,
-) {
-  await handler.sendSSE({
-    error: {
-      message: error instanceof Error ? error.message : 'Unknown error',
-    },
-  })
-}
-

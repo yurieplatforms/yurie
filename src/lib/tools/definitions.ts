@@ -15,13 +15,6 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import type { WebSearchUserLocation } from '@/lib/types'
 
-// Re-export execution handlers for backward compatibility
-export {
-  evaluateMathExpression,
-  executeClientTool,
-  isClientTool,
-} from './handlers'
-
 // ============================================================================
 // Tool Types
 // ============================================================================
@@ -224,33 +217,6 @@ export function createWebSearchTool(config: WebSearchToolConfig = {}): Anthropic
   return tool as unknown as Anthropic.Tool
 }
 
-// ============================================================================
-// Server-Side Tool Definitions (Anthropic executes these)
-// ============================================================================
-
-/**
- * Default server tools without user location (for backwards compatibility).
- *
- * Server-side tools are executed by Anthropic's infrastructure, not our code.
- * The API handles all the execution and returns results to Claude.
- *
- * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
- * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool
- */
-export const serverTools: Anthropic.Tool[] = [
-  createWebSearchTool(),
-  // Web fetch tool - Retrieves full content from web pages and PDFs
-  // See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool
-  {
-    type: 'web_fetch_20250910',
-    name: 'web_fetch',
-    max_uses: 5, // Limit fetches per request
-    max_content_tokens: 50000, // Prevent excessive token usage (~20 average pages)
-    citations: { enabled: true }, // Enable citations for proper attribution
-    defer_loading: false, // Always load upfront, don't defer to Tool Search Tool
-  } as unknown as Anthropic.Tool,
-]
-
 /**
  * Creates server tools with optional web search configuration.
  *
@@ -303,70 +269,3 @@ export function createServerTools(
     } as unknown as Anthropic.Tool,
   ]
 }
-
-// ============================================================================
-// Client-Side Tool Definitions (We execute these)
-// Best practices: Detailed descriptions, input examples, strict schema validation
-// See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use
-// See: https://platform.claude.com/docs/en/build-with-claude/structured-outputs#strict-tool-use
-// ============================================================================
-
-export const clientTools: Anthropic.Tool[] = [
-  {
-    name: 'calculator',
-    description:
-      'Evaluates mathematical expressions and returns the numerical result as a string. Use this tool for ANY math calculation beyond simple mental arithmetic, including percentages, unit conversions, trigonometry, and complex formulas. The tool supports basic arithmetic operators (+, -, *, /), exponentiation (**), parentheses for grouping, and common math functions (sqrt, sin, cos, tan, asin, acos, atan, log, log10, log2, exp, pow, abs, floor, ceil, round, min, max, random) as well as constants (pi, e, PI, E). Returns: A string containing the numeric result (e.g., "42" or "3.14159"). On error, returns an error message string starting with "Error:".',
-    // Enable strict mode for guaranteed schema-compliant inputs
-    strict: true,
-    input_schema: {
-      type: 'object',
-      properties: {
-        expression: {
-          type: 'string',
-          description:
-            'The mathematical expression to evaluate. Use standard math notation with function calls for complex operations. Examples: "2 + 2", "sqrt(16)", "sin(pi/2)", "max(1, 2, 3)", "log(100)/log(10)", "(5 + 3) * 2 ** 3"',
-        },
-      },
-      required: ['expression'],
-      additionalProperties: false,
-    },
-    input_examples: [
-      { expression: 'sqrt(144) + 15' },
-      { expression: 'sin(pi/4) * 2' },
-      { expression: 'max(10, 25, 8) / min(2, 3)' },
-      { expression: '(100 * 0.15) + 50' },
-      { expression: 'pow(2, 10)' },
-    ],
-  } as Anthropic.Tool,
-  // Note: Memory tool is now handled by Anthropic's official Memory Tool
-  // See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool
-]
-
-// All tools combined for the API request
-export const allTools: Anthropic.Tool[] = [...serverTools, ...clientTools]
-
-// ============================================================================
-// Tool Extraction Helpers
-// ============================================================================
-
-/**
- * Extract tool use blocks from message content
- */
-export function extractToolUseBlocks(
-  content: Anthropic.ContentBlock[],
-): ToolUseBlock[] {
-  return content.filter(
-    (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
-  ) as ToolUseBlock[]
-}
-
-/**
- * Extract text blocks from message content
- */
-export function extractTextContent(content: Anthropic.ContentBlock[]): string {
-  return content
-    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-    .map((block) => block.text)
-    .join('')
-}
-

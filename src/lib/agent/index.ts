@@ -4,7 +4,7 @@
  * Re-exports all agent utilities for convenient importing.
  *
  * @example
- * import { parseAnthropicError, runAgent, createSSEHandler } from '@/lib/agent'
+ * import { runAgent, buildSystemPrompt, convertToAnthropicContent } from '@/lib/agent'
  */
 
 // Error handling
@@ -33,9 +33,10 @@ export { createRunnableTools } from './runnable-tools'
 
 // Agent runner
 export { runAgent } from './runner'
+export type { RunnerParams } from './runner'
 
 // SSE handler
-export { createSSEHandler, sendDoneSignal, sendSSEError } from './sse-handler'
+export { createSSEHandler, sendDoneSignal } from './sse-handler'
 export type { SSEHandler } from './sse-handler'
 
 // Stream processor
@@ -45,7 +46,7 @@ export {
   processWebSearchResult,
 } from './stream-processor'
 export type {
-  RawCitation as StreamRawCitation,
+  RawCitation,
   WebFetchResultContent,
   WebSearchResultContent,
 } from './stream-processor'
@@ -53,29 +54,10 @@ export type {
 // System prompt
 export { buildSystemPrompt } from './system-prompt'
 
-// Types
+// Types - only export commonly used types
 export type {
   EffortLevel,
-  ThinkingContentBlock,
-  RedactedThinkingContentBlock,
-  ToolUseContentBlock,
-  ServerToolUseContentBlock,
-  WebFetchToolResultBlock,
-  WebSearchToolResultBlock,
-  TextContentBlock,
-  ContentBlock,
-  TextDelta,
-  ThinkingDelta,
-  InputJsonDelta,
-  CitationDelta,
-  StreamDelta,
-  ContentBlockStartEvent,
-  ContentBlockDeltaEvent,
-  ContentBlockStopEvent,
-  MessageStopEvent,
-  MessageStartEvent,
   StreamEvent,
-  RawCitation,
   SSEPayload,
 } from './types'
 
