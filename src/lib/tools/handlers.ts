@@ -64,81 +64,6 @@ export function evaluateMathExpression(expression: string): number {
 }
 
 /**
- * Safe JavaScript code execution with sandboxing
- * Provides limited access to built-in objects while blocking dangerous operations
- */
-export function executeCode(code: string): string {
-  const logs: string[] = []
-
-  // Create a sandboxed console
-  const sandboxConsole = {
-    log: (...args: unknown[]) => {
-      logs.push(args.map((a) => JSON.stringify(a)).join(' '))
-    },
-    error: (...args: unknown[]) => {
-      logs.push(`[ERROR] ${args.map((a) => JSON.stringify(a)).join(' ')}`)
-    },
-    warn: (...args: unknown[]) => {
-      logs.push(`[WARN] ${args.map((a) => JSON.stringify(a)).join(' ')}`)
-    },
-  }
-
-  // Limited global scope
-  const sandbox: Record<string, unknown> = {
-    console: sandboxConsole,
-    Math,
-    Date,
-    JSON,
-    Array,
-    Object,
-    String,
-    Number,
-    Boolean,
-    parseInt,
-    parseFloat,
-    isNaN,
-    isFinite,
-    encodeURIComponent,
-    decodeURIComponent,
-    // Prevent access to dangerous globals
-    fetch: undefined,
-    require: undefined,
-    import: undefined,
-    eval: undefined,
-    Function: undefined,
-    process: undefined,
-    global: undefined,
-    window: undefined,
-    document: undefined,
-  }
-
-  try {
-    // Wrap code to capture return value
-    const wrappedCode = `
-      "use strict";
-      ${code}
-    `
-
-    const fn = new Function(...Object.keys(sandbox), wrappedCode)
-    const result = fn(...Object.values(sandbox))
-
-    // Combine logs and result
-    const output: string[] = []
-    if (logs.length > 0) {
-      output.push('Console output:')
-      output.push(...logs)
-    }
-    if (result !== undefined) {
-      output.push(`Result: ${JSON.stringify(result, null, 2)}`)
-    }
-
-    return output.length > 0 ? output.join('\n') : 'Code executed successfully (no output)'
-  } catch (error) {
-    return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-  }
-}
-
-/**
  * Execute a client-side tool and return the result
  * Returns descriptive error messages to help Claude retry with corrections
  * See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use#troubleshooting-errors
@@ -170,31 +95,9 @@ export async function executeClientTool(
         return { result: `${result}`, isError: false }
       }
 
-      case 'run_code': {
-        const code = input.code as string
-        if (!code || typeof code !== 'string') {
-          return {
-            result: 'Error: Missing required "code" parameter. Please provide JavaScript code to execute.',
-            isError: true,
-          }
-        }
-        if (code.trim().length === 0) {
-          return {
-            result: 'Error: The "code" parameter is empty. Please provide valid JavaScript code.',
-            isError: true,
-          }
-        }
-        const result = executeCode(code)
-        // Check if the execution returned an error
-        if (result.startsWith('Error:')) {
-          return { result, isError: true }
-        }
-        return { result, isError: false }
-      }
-
       default:
         return {
-          result: `Error: Unknown tool "${toolName}". Available tools are: calculator, run_code. Memory operations use the dedicated memory tool.`,
+          result: `Error: Unknown tool "${toolName}". Available tools are: calculator. Memory operations use the dedicated memory tool.`,
           isError: true,
         }
     }
@@ -212,6 +115,6 @@ export async function executeClientTool(
  * Note: The 'memory' tool is handled separately via the Memory Tool Handler
  */
 export function isClientTool(toolName: string): boolean {
-  return ['calculator', 'memory', 'run_code'].includes(toolName)
+  return ['calculator', 'memory'].includes(toolName)
 }
 

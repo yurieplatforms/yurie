@@ -3,7 +3,7 @@
  *
  * Defines all tools available to the AI agent, including:
  * - Server-side tools (executed by Anthropic): web_search, web_fetch
- * - Client-side tools (executed by us): calculator, run_code, memory
+ * - Client-side tools (executed by us): calculator, memory
  *
  * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
  * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool
@@ -18,7 +18,6 @@ import type { WebSearchUserLocation } from '@/lib/types'
 // Re-export execution handlers for backward compatibility
 export {
   evaluateMathExpression,
-  executeCode,
   executeClientTool,
   isClientTool,
 } from './handlers'
@@ -51,7 +50,7 @@ export type ToolResultBlock = {
 export type ServerToolType = 'web_search' | 'web_fetch'
 
 /** Client-side tools executed by our application */
-export type ClientToolType = 'calculator' | 'memory' | 'run_code' | 'exa_search'
+export type ClientToolType = 'calculator' | 'memory' | 'exa_search'
 
 /** All tool types available to the agent */
 export type ToolName = ServerToolType | ClientToolType
@@ -248,6 +247,7 @@ export const serverTools: Anthropic.Tool[] = [
     max_uses: 5, // Limit fetches per request
     max_content_tokens: 50000, // Prevent excessive token usage (~20 average pages)
     citations: { enabled: true }, // Enable citations for proper attribution
+    defer_loading: false, // Always load upfront, don't defer to Tool Search Tool
   } as unknown as Anthropic.Tool,
 ]
 
@@ -299,6 +299,7 @@ export function createServerTools(
       max_uses: 5,
       max_content_tokens: 50000,
       citations: { enabled: true },
+      defer_loading: false, // Always load upfront, don't defer to Tool Search Tool
     } as unknown as Anthropic.Tool,
   ]
 }
@@ -339,30 +340,6 @@ export const clientTools: Anthropic.Tool[] = [
   } as Anthropic.Tool,
   // Note: Memory tool is now handled by Anthropic's official Memory Tool
   // See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool
-  {
-    name: 'run_code',
-    description:
-      'Executes JavaScript code in a secure sandboxed environment and returns the result. Use this tool for complex calculations, data transformations, array/object manipulation, date operations, or any logic that would be tedious to express in a single mathematical expression. The sandbox provides access to standard JavaScript built-ins (Math, Date, JSON, Array, Object, String, Number, Boolean, parseInt, parseFloat) and a console object for logging. The last expression in the code is returned as the result. Do NOT use this for simple math (use calculator instead), and note that network requests (fetch), file system access, and other system operations are blocked for security. Returns: A string containing console output (if any) followed by "Result: <JSON value>" for the last expression, or "Error: <message>" on failure.',
-    // Enable strict mode for guaranteed schema-compliant inputs
-    strict: true,
-    input_schema: {
-      type: 'object',
-      properties: {
-        code: {
-          type: 'string',
-          description:
-            'JavaScript code to execute. The code runs in strict mode. Use console.log() for intermediate output and ensure the last expression evaluates to the desired result. Multi-line code is supported.',
-        },
-      },
-      required: ['code'],
-      additionalProperties: false,
-    },
-    input_examples: [
-      { code: 'const arr = [1, 2, 3, 4, 5];\narr.reduce((sum, n) => sum + n, 0)' },
-      { code: 'const date = new Date();\n`${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`' },
-      { code: 'const obj = {a: 1, b: 2, c: 3};\nObject.entries(obj).map(([k, v]) => `${k}=${v}`).join("&")' },
-    ],
-  } as Anthropic.Tool,
 ]
 
 // All tools combined for the API request

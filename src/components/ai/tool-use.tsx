@@ -7,7 +7,6 @@
 import {
   Search,
   Code,
-  FileCode,
   ExternalLink,
   AlertCircle,
 } from 'lucide-react'
@@ -16,15 +15,14 @@ import type { ToolUseEvent } from '@/lib/types'
 const toolCompletedLabels: Record<string, string> = {
   web_search: 'Searched',
   web_fetch: 'Read',
-  exa_search: 'Browsed',
+  exa_search: 'Researched',
+  exa_find_similar: 'Found similar',
+  exa_answer: 'Answered',
+  exa_research: 'Deep Research',
   calculator: 'Calculated',
   memory: 'Remembered',
   memory_save: 'Saved',
   memory_retrieve: 'Recalled',
-  run_code: 'Ran code',
-  code_execution: 'Executed code',
-  bash_code_execution: 'Ran command',
-  text_editor_code_execution: 'Edited file',
 }
 
 interface ToolResultsProps {
@@ -33,7 +31,7 @@ interface ToolResultsProps {
 
 export function ToolResults({ toolUses }: ToolResultsProps) {
   const completedTools = toolUses.filter(
-    (t) => t.status === 'end' && (t.result || t.codeExecution || t.webSearch || t.exaSearch),
+    (t) => t.status === 'end' && (t.result || t.webSearch || t.exaSearch || t.exaResearch),
   )
 
   if (completedTools.length === 0) return null
@@ -41,9 +39,9 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
   return (
     <div className="mt-3 space-y-2">
       {completedTools.map((tool, index) => {
-        const isCodeExecution = tool.codeExecution !== undefined
         const isWebSearch = tool.webSearch !== undefined
         const isExaSearch = tool.exaSearch !== undefined
+        const isExaResearch = tool.exaResearch !== undefined
 
         return (
           <div
@@ -55,15 +53,6 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
               <span className="text-base font-medium">
                 {toolCompletedLabels[tool.name] || tool.name} result
               </span>
-              {isCodeExecution && tool.codeExecution?.type === 'bash' && (
-                <span className={`ml-auto text-xs ${
-                  tool.codeExecution.returnCode === 0 
-                    ? 'text-emerald-500' 
-                    : 'text-red-500'
-                }`}>
-                  exit {tool.codeExecution.returnCode ?? 0}
-                </span>
-              )}
               {isWebSearch && !tool.webSearch?.errorCode && (
                 <span className="ml-auto text-xs text-emerald-500">
                   {tool.webSearch?.results.length ?? 0} result{(tool.webSearch?.results.length ?? 0) !== 1 ? 's' : ''}
@@ -84,10 +73,126 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                   error
                 </span>
               )}
+              {isExaResearch && tool.exaResearch?.status === 'completed' && (
+                <span className="ml-auto text-xs text-emerald-500">
+                  {tool.exaResearch?.citations?.length ?? 0} source{(tool.exaResearch?.citations?.length ?? 0) !== 1 ? 's' : ''}
+                </span>
+              )}
+              {isExaResearch && tool.exaResearch?.status === 'failed' && (
+                <span className="ml-auto text-xs text-red-500">
+                  failed
+                </span>
+              )}
+              {isExaResearch && (tool.exaResearch?.status === 'running' || tool.exaResearch?.status === 'pending') && (
+                <span className="ml-auto text-xs text-amber-500">
+                  {tool.exaResearch?.status}...
+                </span>
+              )}
             </div>
 
             <div className="border-t px-3 py-2 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-              {isExaSearch ? (
+              {isExaResearch ? (
+                <div className="space-y-3">
+                  {tool.exaResearch?.instructions && (
+                    <div className="flex items-start gap-2 text-xs text-zinc-500">
+                      <Search className="mt-0.5 h-3 w-3 flex-shrink-0" />
+                      <span className="line-clamp-2">Research: &quot;{tool.exaResearch.instructions}&quot;</span>
+                    </div>
+                  )}
+                  
+                  {tool.exaResearch?.model && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="rounded bg-violet-100 px-1.5 py-0.5 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                        {tool.exaResearch.model}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {tool.exaResearch?.error && (
+                    <div className="flex items-center gap-2 rounded-md bg-red-50 p-2 text-xs text-red-600 dark:bg-red-950/20 dark:text-red-400">
+                      <AlertCircle className="h-4 w-4" />
+                      <span>Research error: {tool.exaResearch.error}</span>
+                    </div>
+                  )}
+                  
+                  {tool.exaResearch?.output !== undefined && tool.exaResearch.status === 'completed' && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        Research Output:
+                      </div>
+                      <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+                        {typeof tool.exaResearch.output === 'string' ? (
+                          <div className="whitespace-pre-wrap text-xs text-zinc-700 dark:text-zinc-300">
+                            {tool.exaResearch.output}
+                          </div>
+                        ) : (
+                          <pre className="overflow-x-auto whitespace-pre-wrap font-mono text-xs text-zinc-700 dark:text-zinc-300">
+                            {JSON.stringify(tool.exaResearch.output, null, 2)}
+                          </pre>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {tool.exaResearch?.citations && tool.exaResearch.citations.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-violet-600 dark:text-violet-400">
+                        Sources ({tool.exaResearch.citations.length}):
+                      </div>
+                      <div className="space-y-2">
+                        {tool.exaResearch.citations.map((citation, i) => (
+                          <div
+                            key={i}
+                            className="rounded-md border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-700 dark:bg-zinc-800/30"
+                          >
+                            <a
+                              href={citation.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group/link flex items-start gap-2"
+                            >
+                              <ExternalLink className="mt-0.5 h-3 w-3 flex-shrink-0 text-zinc-400 group-hover/link:text-violet-500" />
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs font-medium text-zinc-800 group-hover/link:text-violet-600 dark:text-zinc-200 dark:group-hover/link:text-violet-400">
+                                  {citation.title || 'Untitled'}
+                                </div>
+                                <div className="truncate text-xs text-zinc-400">
+                                  {citation.url}
+                                </div>
+                              </div>
+                            </a>
+                            {citation.excerpt && (
+                              <div className="mt-1.5 rounded border-l-2 border-zinc-300 py-1 pl-2 text-xs text-zinc-500 dark:border-zinc-600 dark:text-zinc-400">
+                                &ldquo;{citation.excerpt}&rdquo;
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {tool.exaResearch?.cost && (
+                    <div className="flex flex-wrap gap-2 text-xs text-zinc-500">
+                      {tool.exaResearch.cost.searches !== undefined && (
+                        <span className="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-700">
+                          {tool.exaResearch.cost.searches} searches
+                        </span>
+                      )}
+                      {tool.exaResearch.cost.pagesRead !== undefined && (
+                        <span className="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-700">
+                          {tool.exaResearch.cost.pagesRead} pages
+                        </span>
+                      )}
+                      {tool.exaResearch.cost.totalUsd !== undefined && (
+                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                          ${tool.exaResearch.cost.totalUsd.toFixed(4)}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : isExaSearch ? (
                 <div className="space-y-3">
                   {tool.exaSearch?.query && (
                     <div className="flex items-center gap-2 text-xs text-zinc-500">
@@ -109,38 +214,83 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                   )}
                   
                   {tool.exaSearch?.results && tool.exaSearch.results.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {tool.exaSearch.results.map((result, i) => (
-                        <a
+                        <div
                           key={i}
-                          href={result.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group/link flex items-start gap-2 rounded-md p-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                          className="rounded-lg border border-zinc-200 bg-white p-3 transition-colors dark:border-zinc-700 dark:bg-zinc-800/50"
                         >
-                          <ExternalLink className="mt-0.5 h-3 w-3 flex-shrink-0 text-zinc-400 group-hover/link:text-violet-500" />
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-xs font-medium text-zinc-700 group-hover/link:text-violet-500 dark:text-zinc-300 dark:group-hover/link:text-violet-400">
-                              {result.title || 'Untitled'}
-                            </div>
-                            <div className="truncate text-xs text-zinc-400">
-                              {result.url}
-                            </div>
-                            <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
-                              {result.author && (
-                                <span>By: {result.author}</span>
-                              )}
-                              {result.publishedDate && (
-                                <span>Published: {new Date(result.publishedDate).toLocaleDateString()}</span>
-                              )}
-                            </div>
-                            {result.text && (
-                              <div className="mt-1 line-clamp-2 text-xs text-zinc-500 dark:text-zinc-400">
-                                {result.text.slice(0, 200)}...
+                          <a
+                            href={result.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group/link flex items-start gap-2"
+                          >
+                            <ExternalLink className="mt-0.5 h-3 w-3 flex-shrink-0 text-zinc-400 group-hover/link:text-violet-500" />
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium text-zinc-800 group-hover/link:text-violet-600 dark:text-zinc-200 dark:group-hover/link:text-violet-400">
+                                {result.title || 'Untitled'}
                               </div>
+                              <div className="truncate text-xs text-zinc-400">
+                                {result.url}
+                              </div>
+                            </div>
+                            {result.score !== undefined && (
+                              <span className="ml-auto rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                                {(result.score * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </a>
+                          
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-zinc-500">
+                            {result.author && (
+                              <span className="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-700">
+                                {result.author}
+                              </span>
+                            )}
+                            {result.publishedDate && (
+                              <span className="rounded bg-zinc-100 px-1.5 py-0.5 dark:bg-zinc-700">
+                                {new Date(result.publishedDate).toLocaleDateString()}
+                              </span>
                             )}
                           </div>
-                        </a>
+
+                          {/* Highlights - key excerpts */}
+                          {result.highlights && result.highlights.length > 0 && (
+                            <div className="mt-2 space-y-1.5">
+                              <div className="text-xs font-medium text-violet-600 dark:text-violet-400">
+                                Key Highlights:
+                              </div>
+                              {result.highlights.map((highlight, j) => (
+                                <div
+                                  key={j}
+                                  className="rounded-md border-l-2 border-violet-400 bg-violet-50 py-1.5 pl-3 pr-2 text-xs text-zinc-700 dark:border-violet-500 dark:bg-violet-950/30 dark:text-zinc-300"
+                                >
+                                  &ldquo;{highlight}&rdquo;
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Summary */}
+                          {result.summary && (
+                            <div className="mt-2">
+                              <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                Summary:
+                              </div>
+                              <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+                                {result.summary}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Text content fallback */}
+                          {result.text && !result.highlights?.length && !result.summary && (
+                            <div className="mt-2 line-clamp-3 text-xs text-zinc-500 dark:text-zinc-400">
+                              {result.text.slice(0, 300)}...
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}
@@ -208,52 +358,6 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                     <div className="text-xs text-zinc-500">
                       No results found for this search.
                     </div>
-                  )}
-                </div>
-              ) : isCodeExecution && tool.codeExecution?.type === 'bash' ? (
-                <div className="space-y-2">
-                  {tool.codeExecution.command && (
-                    <div>
-                      <span className="text-xs font-medium text-zinc-500">Command:</span>
-                      <pre className="mt-1 whitespace-pre-wrap rounded bg-zinc-100 p-2 font-mono text-xs dark:bg-zinc-900">
-                        {tool.codeExecution.command}
-                      </pre>
-                    </div>
-                  )}
-                  {tool.codeExecution.stdout && (
-                    <div>
-                      <span className="text-xs font-medium text-zinc-500">Output:</span>
-                      <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap rounded bg-zinc-100 p-2 font-mono text-xs dark:bg-zinc-900">
-                        {tool.codeExecution.stdout}
-                      </pre>
-                    </div>
-                  )}
-                  {tool.codeExecution.stderr && (
-                    <div>
-                      <span className="text-xs font-medium text-red-500">Error:</span>
-                      <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap rounded bg-red-50 p-2 font-mono text-xs text-red-600 dark:bg-red-950/20 dark:text-red-400">
-                        {tool.codeExecution.stderr}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              ) : isCodeExecution && tool.codeExecution?.type === 'text_editor' ? (
-                <div className="space-y-2">
-                  {tool.codeExecution.path && (
-                    <div className="flex items-center gap-2">
-                      <FileCode className="h-3 w-3" />
-                      <span className="font-mono text-xs">{tool.codeExecution.path}</span>
-                      {tool.codeExecution.isFileUpdate && (
-                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                          updated
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {tool.codeExecution.content && (
-                    <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded bg-zinc-100 p-2 font-mono text-xs dark:bg-zinc-900">
-                      {tool.codeExecution.content}
-                    </pre>
                   )}
                 </div>
               ) : (

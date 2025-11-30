@@ -13,7 +13,15 @@
 
 import Exa from 'exa-js'
 import { env } from '@/lib/config/env'
-import type { ExaSearchCategory, ExaSearchResultItem, ExaSearchResult } from '@/lib/types'
+import type { 
+  ExaSearchCategory, 
+  ExaSearchType, 
+  ExaSearchResultItem, 
+  ExaSearchResult,
+  ExaResearchModel,
+  ExaResearchResult,
+  ExaResearchCitation,
+} from '@/lib/types'
 
 // ============================================================================
 // EXA Client
@@ -50,6 +58,8 @@ export function isExaAvailable(): boolean {
 
 /**
  * Input parameters for EXA search
+ * @see https://docs.exa.ai/reference/search
+ * @see https://docs.exa.ai/reference/contents-retrieval
  */
 export type ExaSearchInput = {
   /** The search query - supports semantic/neural search */
@@ -66,10 +76,67 @@ export type ExaSearchInput = {
   includeDomains?: string[]
   /** Exclude results from these domains */
   excludeDomains?: string[]
-  /** Search type: 'auto' (default), 'neural', or 'keyword' */
-  type?: 'auto' | 'neural' | 'keyword'
-  /** Whether to use livecrawling for fresh content */
-  livecrawl?: boolean
+  /**
+   * Search type controlling search behavior.
+   * - 'auto' (default): Intelligently combines multiple search methods
+   * - 'neural': AI semantic search using embeddings
+   * - 'keyword': Traditional keyword matching
+   * - 'fast': Streamlined for speed (<400ms)
+   * - 'deep': Comprehensive search with query expansion
+   * @see https://docs.exa.ai/reference/how-exa-search-works
+   */
+  type?: ExaSearchType
+  /**
+   * Livecrawl mode for content freshness.
+   * - 'always': Always fetch fresh content (slowest, freshest)
+   * - 'preferred': Prefer live crawling, use cache as backup
+   * - 'fallback': Use cache first, live crawl if unavailable (default)
+   * - 'never': Only use cached content (fastest)
+   * @see https://docs.exa.ai/reference/livecrawling-contents
+   */
+  livecrawl?: 'always' | 'preferred' | 'fallback' | 'never' | boolean
+
+  // ============================================================================
+  // Content Retrieval Options (Exa Best Practices)
+  // @see https://docs.exa.ai/reference/contents-retrieval
+  // ============================================================================
+
+  /**
+   * Enable highlights - key excerpts from content.
+   * Recommended for LLM context as it provides focused, relevant text.
+   * @default true
+   */
+  useHighlights?: boolean
+  /**
+   * Custom query for extracting highlights.
+   * Useful when highlight focus differs from search query.
+   */
+  highlightsQuery?: string
+  /**
+   * Number of sentences per highlight.
+   * @default 3
+   */
+  numSentences?: number
+  /**
+   * Number of highlights per URL/result.
+   * @default 1
+   */
+  highlightsPerUrl?: number
+  /**
+   * Enable AI-generated summaries.
+   * Useful for quick understanding without reading full text.
+   */
+  useSummary?: boolean
+  /**
+   * Custom query for generating summaries.
+   * Guides the AI on what aspects to summarize.
+   */
+  summaryQuery?: string
+  /**
+   * Maximum characters for text content.
+   * @default 1000
+   */
+  maxCharacters?: number
 }
 
 // ============================================================================
@@ -105,54 +172,76 @@ export async function exaSearch(input: ExaSearchInput): Promise<ExaSearchResult>
   }
 
   try {
-    // Build search options
-    const searchOptions: Parameters<typeof client.searchAndContents>[1] = {
+    // Build search options following Exa best practices
+    // @see https://docs.exa.ai/reference/contents-retrieval
+    type SearchOptions = NonNullable<Parameters<typeof client.searchAndContents>[1]>
+    
+    // Determine livecrawl mode
+    // @see https://docs.exa.ai/reference/livecrawling-contents
+    const livecrawlMode = typeof input.livecrawl === 'string'
+      ? input.livecrawl
+      : input.livecrawl === true
+        ? 'preferred'
+        : 'fallback'
+
+    const searchOptions: SearchOptions = {
       type: input.type ?? 'auto',
       numResults: Math.min(Math.max(input.numResults ?? 5, 1), 10),
-      // Content options - get text for each result
+      livecrawl: livecrawlMode,
+      // Text content options
+      // @see https://docs.exa.ai/reference/contents-retrieval
       text: {
-        maxCharacters: 1000,
+        maxCharacters: input.maxCharacters ?? 1000,
         includeHtmlTags: false,
       },
-      // Enable livecrawl for fresh content when requested
-      livecrawl: input.livecrawl ? 'preferred' : 'fallback',
-    }
-
-    // Add category filter if specified
-    if (input.category) {
-      searchOptions.category = input.category
-    }
-
-    // Add date filters if specified
-    if (input.startPublishedDate) {
-      searchOptions.startPublishedDate = input.startPublishedDate
-    }
-    if (input.endPublishedDate) {
-      searchOptions.endPublishedDate = input.endPublishedDate
-    }
-
-    // Add domain filters if specified
-    if (input.includeDomains && input.includeDomains.length > 0) {
-      searchOptions.includeDomains = input.includeDomains
-    }
-    if (input.excludeDomains && input.excludeDomains.length > 0) {
-      searchOptions.excludeDomains = input.excludeDomains
+      // Highlights - recommended for LLM context (more focused than full text)
+      // @see https://docs.exa.ai/reference/contents-retrieval
+      ...(input.useHighlights !== false && {
+        highlights: {
+          numSentences: input.numSentences ?? 3,
+          highlightsPerUrl: input.highlightsPerUrl ?? 1,
+          ...(input.highlightsQuery && { query: input.highlightsQuery }),
+        },
+      }),
+      // AI-generated summaries
+      // @see https://docs.exa.ai/reference/contents-retrieval
+      ...(input.useSummary && {
+        summary: {
+          ...(input.summaryQuery && { query: input.summaryQuery }),
+        },
+      }),
+      // Category filter
+      ...(input.category && { category: input.category }),
+      // Date filters
+      ...(input.startPublishedDate && { startPublishedDate: input.startPublishedDate }),
+      ...(input.endPublishedDate && { endPublishedDate: input.endPublishedDate }),
+      // Domain filters
+      ...(input.includeDomains && input.includeDomains.length > 0 && { includeDomains: input.includeDomains }),
+      ...(input.excludeDomains && input.excludeDomains.length > 0 && { excludeDomains: input.excludeDomains }),
     }
 
     // Execute search with contents
     const response = await client.searchAndContents(input.query, searchOptions)
 
-    // Transform results to our format
-    // The response includes text content since we requested it via the text option
+    // Transform results to our format including highlights and summaries
+    // @see https://docs.exa.ai/reference/contents-retrieval
     const results: ExaSearchResultItem[] = response.results.map((result) => {
-      // Type assertion needed because searchAndContents adds text to results
-      const resultWithText = result as typeof result & { text?: string }
+      // Type assertion needed because searchAndContents adds content fields to results
+      const resultWithContent = result as typeof result & {
+        text?: string
+        highlights?: string[]
+        highlightScores?: number[]
+        summary?: string
+      }
       return {
         url: result.url,
         title: result.title ?? 'Untitled',
         author: result.author ?? undefined,
         publishedDate: result.publishedDate ?? undefined,
-        text: resultWithText.text ?? undefined,
+        text: resultWithContent.text ?? undefined,
+        highlights: resultWithContent.highlights ?? undefined,
+        highlightScores: resultWithContent.highlightScores ?? undefined,
+        summary: resultWithContent.summary ?? undefined,
         score: result.score ?? undefined,
       }
     })
@@ -177,8 +266,242 @@ export async function exaSearch(input: ExaSearchInput): Promise<ExaSearchResult>
   }
 }
 
+// ============================================================================
+// Find Similar Function
+// @see https://docs.exa.ai/reference/find-similar-links
+// ============================================================================
+
 /**
- * Format EXA search results as a string for the LLM
+ * Input parameters for finding similar content
+ */
+export type ExaFindSimilarInput = {
+  /** URL to find similar content for */
+  url: string
+  /** Number of similar results to return (1-10, default: 5) */
+  numResults?: number
+  /** Exclude the source domain from results */
+  excludeSourceDomain?: boolean
+  /** Only include results from these domains */
+  includeDomains?: string[]
+  /** Exclude results from these domains */
+  excludeDomains?: string[]
+  /** Enable highlights for focused context */
+  useHighlights?: boolean
+  /** Enable AI summaries */
+  useSummary?: boolean
+  /** Maximum characters for text content */
+  maxCharacters?: number
+  /** Category filter */
+  category?: ExaSearchCategory
+}
+
+/**
+ * Find similar content to a given URL using EXA API.
+ * Great for discovering related articles, research, or competitors.
+ *
+ * @see https://docs.exa.ai/reference/find-similar-links
+ */
+export async function exaFindSimilar(input: ExaFindSimilarInput): Promise<ExaSearchResult> {
+  const client = getExaClient()
+
+  if (!client) {
+    return {
+      type: 'exa_search',
+      query: `Similar to: ${input.url}`,
+      results: [],
+      error: 'EXA API key is not configured. Please set EXA_API_KEY environment variable.',
+    }
+  }
+
+  try {
+    type SimilarOptions = NonNullable<Parameters<typeof client.findSimilarAndContents>[1]>
+    
+    const options: SimilarOptions = {
+      numResults: Math.min(Math.max(input.numResults ?? 5, 1), 10),
+      excludeSourceDomain: input.excludeSourceDomain ?? true,
+      text: {
+        maxCharacters: input.maxCharacters ?? 1000,
+        includeHtmlTags: false,
+      },
+      ...(input.useHighlights !== false && {
+        highlights: {
+          numSentences: 3,
+          highlightsPerUrl: 1,
+        },
+      }),
+      ...(input.useSummary && { summary: {} }),
+      ...(input.includeDomains && input.includeDomains.length > 0 && { includeDomains: input.includeDomains }),
+      ...(input.excludeDomains && input.excludeDomains.length > 0 && { excludeDomains: input.excludeDomains }),
+      ...(input.category && { category: input.category }),
+    }
+
+    const response = await client.findSimilarAndContents(input.url, options)
+
+    const results: ExaSearchResultItem[] = response.results.map((result) => {
+      const resultWithContent = result as typeof result & {
+        text?: string
+        highlights?: string[]
+        highlightScores?: number[]
+        summary?: string
+      }
+      return {
+        url: result.url,
+        title: result.title ?? 'Untitled',
+        author: result.author ?? undefined,
+        publishedDate: result.publishedDate ?? undefined,
+        text: resultWithContent.text ?? undefined,
+        highlights: resultWithContent.highlights ?? undefined,
+        highlightScores: resultWithContent.highlightScores ?? undefined,
+        summary: resultWithContent.summary ?? undefined,
+        score: result.score ?? undefined,
+      }
+    })
+
+    return {
+      type: 'exa_search',
+      query: `Similar to: ${input.url}`,
+      results,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    console.error('[exa] Find similar error:', errorMessage)
+
+    return {
+      type: 'exa_search',
+      query: `Similar to: ${input.url}`,
+      results: [],
+      error: errorMessage,
+    }
+  }
+}
+
+// ============================================================================
+// Answer Function (Direct Question Answering)
+// @see https://docs.exa.ai/reference/answer
+// ============================================================================
+
+/**
+ * Input parameters for EXA answer
+ */
+export type ExaAnswerInput = {
+  /** The question to answer */
+  question: string
+  /** Include full text from sources */
+  includeText?: boolean
+  /** Category filter for sources */
+  category?: ExaSearchCategory
+}
+
+/**
+ * Result from EXA answer
+ */
+export type ExaAnswerResult = {
+  type: 'exa_answer'
+  question: string
+  answer: string
+  sources: ExaSearchResultItem[]
+  error?: string
+}
+
+/**
+ * Get a direct answer to a question using EXA's answer endpoint.
+ * EXA searches the web and synthesizes an answer with sources.
+ *
+ * @see https://docs.exa.ai/reference/answer
+ */
+export async function exaAnswer(input: ExaAnswerInput): Promise<ExaAnswerResult> {
+  const client = getExaClient()
+
+  if (!client) {
+    return {
+      type: 'exa_answer',
+      question: input.question,
+      answer: '',
+      sources: [],
+      error: 'EXA API key is not configured. Please set EXA_API_KEY environment variable.',
+    }
+  }
+
+  try {
+    const response = await client.answer(input.question, {
+      text: input.includeText ?? true,
+      ...(input.category && { category: input.category }),
+    })
+
+    // Extract sources from the response
+    // Type assertion needed as the SDK types may not include all fields
+    type CitationWithText = { url: string; title: string | null; text?: string }
+    const citations = (response.citations ?? []) as CitationWithText[]
+    
+    const sources: ExaSearchResultItem[] = citations.map((citation) => ({
+      url: citation.url,
+      title: citation.title ?? 'Untitled',
+      text: citation.text ?? undefined,
+    }))
+
+    // The answer can be a string or object depending on the response
+    const answerText = typeof response.answer === 'string' 
+      ? response.answer 
+      : JSON.stringify(response.answer)
+
+    return {
+      type: 'exa_answer',
+      question: input.question,
+      answer: answerText,
+      sources,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    console.error('[exa] Answer error:', errorMessage)
+
+    return {
+      type: 'exa_answer',
+      question: input.question,
+      answer: '',
+      sources: [],
+      error: errorMessage,
+    }
+  }
+}
+
+/**
+ * Format EXA answer result as a string for the LLM
+ */
+export function formatExaAnswerForLLM(result: ExaAnswerResult): string {
+  if (result.error) {
+    return `EXA Answer Error: ${result.error}`
+  }
+
+  const lines: string[] = [
+    `Question: "${result.question}"`,
+    '',
+    `Answer: ${result.answer}`,
+    '',
+  ]
+
+  if (result.sources.length > 0) {
+    lines.push(`Sources (${result.sources.length}):`)
+    result.sources.forEach((source, i) => {
+      lines.push(`  ${i + 1}. ${source.title} - ${source.url}`)
+    })
+  }
+
+  return lines.join('\n')
+}
+
+// ============================================================================
+// Result Formatting
+// ============================================================================
+
+/**
+ * Format EXA search results as a string for the LLM.
+ *
+ * Prioritizes content in this order (following Exa best practices):
+ * 1. Highlights - most focused and relevant excerpts
+ * 2. Summary - AI-generated overview
+ * 3. Text - full content snippet
+ *
+ * @see https://docs.exa.ai/reference/contents-retrieval
  */
 export function formatExaResultsForLLM(result: ExaSearchResult): string {
   if (result.error) {
@@ -200,18 +523,310 @@ export function formatExaResultsForLLM(result: ExaSearchResult): string {
     lines.push(`--- Result ${index + 1} ---`)
     lines.push(`Title: ${item.title}`)
     lines.push(`URL: ${item.url}`)
+
     if (item.author) {
       lines.push(`Author: ${item.author}`)
     }
     if (item.publishedDate) {
       lines.push(`Published: ${item.publishedDate}`)
     }
-    if (item.text) {
+    if (item.score !== undefined) {
+      lines.push(`Relevance: ${(item.score * 100).toFixed(1)}%`)
+    }
+
+    // Prioritize highlights - most focused content for LLMs
+    if (item.highlights && item.highlights.length > 0) {
+      lines.push('Key Highlights:')
+      item.highlights.forEach((highlight, i) => {
+        const score = item.highlightScores?.[i]
+        const scoreStr = score !== undefined ? ` (${(score * 100).toFixed(0)}% match)` : ''
+        lines.push(`  • ${highlight}${scoreStr}`)
+      })
+    }
+
+    // Show summary if available - provides quick understanding
+    if (item.summary) {
+      lines.push(`Summary: ${item.summary}`)
+    }
+
+    // Fall back to text content if no highlights/summary
+    if (item.text && !item.highlights?.length && !item.summary) {
       lines.push(`Content: ${item.text}`)
     }
+    // Also show text if it provides additional context beyond highlights
+    else if (item.text && item.highlights?.length) {
+      lines.push(`Full Content: ${item.text}`)
+    }
+
     lines.push('')
   })
 
+  return lines.join('\n')
+}
+
+// ============================================================================
+// Research Function (Deep Web Research with Structured Output)
+// @see https://docs.exa.ai/reference/exa-research
+// ============================================================================
+
+/**
+ * Input parameters for EXA research
+ * @see https://docs.exa.ai/reference/exa-research
+ */
+export type ExaResearchInput = {
+  /**
+   * Natural-language instructions describing what to research.
+   * Be explicit: describe (1) what information you want, (2) how to find it, 
+   * and (3) how to compose the final report.
+   * Maximum 4096 characters.
+   * 
+   * @example "Compare the current flagship GPUs from NVIDIA, AMD and Intel. Return a table of model name, MSRP USD, TDP watts, and launch date."
+   */
+  instructions: string
+  
+  /**
+   * JSON Schema describing the desired output structure.
+   * Keep schemas small (1-5 root fields) for best results.
+   * Use enums to improve accuracy and reduce hallucinations.
+   * Must have ≤ 8 root fields and not be more than 5 fields deep.
+   * 
+   * If not provided, returns a detailed markdown report.
+   */
+  outputSchema?: Record<string, unknown>
+  
+  /**
+   * Research model to use.
+   * - 'exa-research' (default): Adapts to task difficulty, recommended for most use cases
+   * - 'exa-research-pro': Maximum quality for complex multi-step tasks
+   * 
+   * @default 'exa-research'
+   */
+  model?: ExaResearchModel
+  
+  /**
+   * Maximum time to wait for research completion in milliseconds.
+   * Research tasks typically complete in 20-90 seconds.
+   * 
+   * @default 120000 (2 minutes)
+   */
+  timeoutMs?: number
+  
+  /**
+   * Polling interval in milliseconds.
+   * @default 2000 (2 seconds)
+   */
+  pollIntervalMs?: number
+}
+
+/**
+ * Perform deep web research using the EXA Research API.
+ * 
+ * The Research API is an asynchronous, multi-step pipeline that:
+ * 1. Plans - Parses instructions into research steps
+ * 2. Searches - Issues semantic queries, expanding and refining results
+ * 3. Synthesizes - Combines facts across sources into structured output
+ * 
+ * @param input - Research parameters
+ * @returns Research result with structured output or markdown report
+ * 
+ * @see https://docs.exa.ai/reference/exa-research
+ * 
+ * @example
+ * ```ts
+ * // Basic research with markdown output
+ * const result = await exaResearch({
+ *   instructions: 'What are the latest developments in AI agents?',
+ * })
+ * 
+ * // Research with structured output
+ * const structuredResult = await exaResearch({
+ *   instructions: 'Compare flagship GPUs from NVIDIA, AMD and Intel',
+ *   outputSchema: {
+ *     type: 'object',
+ *     required: ['gpus'],
+ *     properties: {
+ *       gpus: {
+ *         type: 'array',
+ *         items: {
+ *           type: 'object',
+ *           required: ['manufacturer', 'model', 'msrpUsd'],
+ *           properties: {
+ *             manufacturer: { type: 'string' },
+ *             model: { type: 'string' },
+ *             msrpUsd: { type: 'number' },
+ *           }
+ *         }
+ *       }
+ *     },
+ *     additionalProperties: false
+ *   },
+ *   model: 'exa-research-pro',
+ * })
+ * ```
+ */
+export async function exaResearch(input: ExaResearchInput): Promise<ExaResearchResult> {
+  const client = getExaClient()
+  const model = input.model ?? 'exa-research'
+  
+  if (!client) {
+    return {
+      type: 'exa_research',
+      researchId: '',
+      instructions: input.instructions,
+      model,
+      status: 'failed',
+      error: 'EXA API key is not configured. Please set EXA_API_KEY environment variable.',
+    }
+  }
+  
+  try {
+    // Access the research API through the client
+    // The exa-js SDK provides research.create() and research.pollUntilFinished()
+    const researchApi = client.research as {
+      create: (params: {
+        model: string
+        instructions: string
+        outputSchema?: Record<string, unknown>
+      }) => Promise<{ researchId: string }>
+      pollUntilFinished: (researchId: string, options?: {
+        timeoutMs?: number
+        pollIntervalMs?: number
+      }) => Promise<{
+        researchId: string
+        status: string
+        output?: unknown
+        citations?: Array<{ url: string; title?: string; excerpt?: string }>
+        cost?: {
+          searches?: number
+          pagesRead?: number
+          reasoningTokens?: number
+          totalUsd?: number
+        }
+        error?: string
+      }>
+    }
+    
+    // Create the research task
+    const createParams: {
+      model: string
+      instructions: string
+      outputSchema?: Record<string, unknown>
+    } = {
+      model,
+      instructions: input.instructions,
+    }
+    
+    if (input.outputSchema) {
+      createParams.outputSchema = input.outputSchema
+    }
+    
+    const researchTask = await researchApi.create(createParams)
+    
+    // Poll until completion
+    const result = await researchApi.pollUntilFinished(researchTask.researchId, {
+      timeoutMs: input.timeoutMs ?? 120000,
+      pollIntervalMs: input.pollIntervalMs ?? 2000,
+    })
+    
+    // Map the status
+    const status = result.status === 'completed' ? 'completed' 
+      : result.status === 'failed' ? 'failed'
+      : result.status === 'running' ? 'running'
+      : 'pending'
+    
+    // Transform citations
+    const citations: ExaResearchCitation[] = (result.citations ?? []).map((c) => ({
+      url: c.url,
+      title: c.title,
+      excerpt: c.excerpt,
+    }))
+    
+    return {
+      type: 'exa_research',
+      researchId: result.researchId,
+      instructions: input.instructions,
+      model,
+      status: status as ExaResearchResult['status'],
+      output: result.output,
+      citations: citations.length > 0 ? citations : undefined,
+      cost: result.cost,
+      error: result.error,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    console.error('[exa] Research error:', errorMessage)
+    
+    return {
+      type: 'exa_research',
+      researchId: '',
+      instructions: input.instructions,
+      model,
+      status: 'failed',
+      error: errorMessage,
+    }
+  }
+}
+
+/**
+ * Format EXA research result as a string for the LLM
+ */
+export function formatExaResearchForLLM(result: ExaResearchResult): string {
+  if (result.error) {
+    return `EXA Research Error: ${result.error}`
+  }
+  
+  if (result.status !== 'completed') {
+    return `EXA Research Status: ${result.status} (Research ID: ${result.researchId})`
+  }
+  
+  const lines: string[] = [
+    `EXA Research Results`,
+    `Instructions: "${result.instructions}"`,
+    `Model: ${result.model}`,
+    '',
+  ]
+  
+  // Format the output
+  if (result.output !== undefined) {
+    if (typeof result.output === 'string') {
+      lines.push('Research Output:')
+      lines.push(result.output)
+    } else {
+      lines.push('Research Output (Structured):')
+      lines.push(JSON.stringify(result.output, null, 2))
+    }
+    lines.push('')
+  }
+  
+  // Add citations
+  if (result.citations && result.citations.length > 0) {
+    lines.push(`Sources (${result.citations.length}):`)
+    result.citations.forEach((citation, i) => {
+      lines.push(`  ${i + 1}. ${citation.title ?? 'Untitled'} - ${citation.url}`)
+      if (citation.excerpt) {
+        lines.push(`     "${citation.excerpt}"`)
+      }
+    })
+    lines.push('')
+  }
+  
+  // Add cost information if available
+  if (result.cost) {
+    lines.push('Cost Breakdown:')
+    if (result.cost.searches !== undefined) {
+      lines.push(`  Searches: ${result.cost.searches}`)
+    }
+    if (result.cost.pagesRead !== undefined) {
+      lines.push(`  Pages Read: ${result.cost.pagesRead}`)
+    }
+    if (result.cost.reasoningTokens !== undefined) {
+      lines.push(`  Reasoning Tokens: ${result.cost.reasoningTokens}`)
+    }
+    if (result.cost.totalUsd !== undefined) {
+      lines.push(`  Total Cost: $${result.cost.totalUsd.toFixed(4)}`)
+    }
+  }
+  
   return lines.join('\n')
 }
 

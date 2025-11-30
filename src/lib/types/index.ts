@@ -65,27 +65,6 @@ export type MessageContentSegment =
   | FileContentSegment
   | UrlDocumentContentSegment
 
-// Code execution specific types
-export type CodeExecutionResultType = 'bash' | 'text_editor'
-
-export type BashExecutionResult = {
-  type: 'bash'
-  command: string
-  stdout?: string
-  stderr?: string
-  returnCode?: number
-}
-
-export type TextEditorExecutionResult = {
-  type: 'text_editor'
-  command: 'view' | 'create' | 'str_replace'
-  path: string
-  content?: string
-  isFileUpdate?: boolean
-}
-
-export type CodeExecutionResult = BashExecutionResult | TextEditorExecutionResult
-
 // Web fetch result type
 // See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool
 export type WebFetchResult = {
@@ -99,6 +78,17 @@ export type WebFetchResult = {
 // EXA Search Types
 // @see https://docs.exa.ai/reference/search
 // ============================================================================
+
+/**
+ * EXA search type for controlling search behavior.
+ * @see https://docs.exa.ai/reference/how-exa-search-works
+ */
+export type ExaSearchType =
+  | 'auto'    // Default - intelligently combines multiple search methods
+  | 'neural'  // AI semantic search using embeddings
+  | 'keyword' // Traditional keyword matching
+  | 'fast'    // Streamlined for speed (<400ms)
+  | 'deep'    // Comprehensive search with query expansion
 
 /**
  * EXA search category for filtering results by content type.
@@ -116,6 +106,7 @@ export type ExaSearchCategory =
 
 /**
  * Individual search result item from EXA search.
+ * @see https://docs.exa.ai/reference/contents-retrieval
  */
 export type ExaSearchResultItem = {
   /** URL of the source page */
@@ -128,9 +119,23 @@ export type ExaSearchResultItem = {
   publishedDate?: string
   /** Text content/snippet from the page */
   text?: string
-  /** AI-generated summary of the content */
+  /**
+   * Key highlights/excerpts from the content.
+   * Recommended for LLM context - more focused than full text.
+   * @see https://docs.exa.ai/reference/contents-retrieval
+   */
+  highlights?: string[]
+  /**
+   * Relevance scores for each highlight (0-1).
+   * Higher scores indicate more relevant excerpts.
+   */
+  highlightScores?: number[]
+  /**
+   * AI-generated summary of the content.
+   * Useful for quick understanding without reading full text.
+   */
   summary?: string
-  /** Relevance score from EXA */
+  /** Relevance score from EXA search ranking */
   score?: number
 }
 
@@ -147,6 +152,90 @@ export type ExaSearchResult = {
   /** Array of search result items */
   results: ExaSearchResultItem[]
   /** Error message if the search failed */
+  error?: string
+}
+
+/**
+ * EXA answer result from the direct question answering endpoint.
+ * @see https://docs.exa.ai/reference/answer
+ */
+export type ExaAnswerResult = {
+  /** Always 'exa_answer' for answer results */
+  type: 'exa_answer'
+  /** The question that was asked */
+  question: string
+  /** The synthesized answer */
+  answer: string
+  /** Source citations for the answer */
+  sources: ExaSearchResultItem[]
+  /** Error message if the request failed */
+  error?: string
+}
+
+// ============================================================================
+// EXA Research Types
+// @see https://docs.exa.ai/reference/exa-research
+// ============================================================================
+
+/**
+ * Research model type controlling compute allocation.
+ * @see https://docs.exa.ai/reference/exa-research#models
+ */
+export type ExaResearchModel =
+  | 'exa-research'     // Default - adapts to task difficulty
+  | 'exa-research-pro' // Maximum quality for complex tasks
+
+/**
+ * Research task status.
+ */
+export type ExaResearchStatus =
+  | 'pending'    // Task is queued
+  | 'running'    // Task is being processed
+  | 'completed'  // Task finished successfully
+  | 'failed'     // Task failed
+
+/**
+ * Citation from a research result.
+ */
+export type ExaResearchCitation = {
+  /** The source URL */
+  url: string
+  /** Title of the source */
+  title?: string
+  /** Excerpt from the source */
+  excerpt?: string
+}
+
+/**
+ * EXA research result from the Research API.
+ * @see https://docs.exa.ai/reference/exa-research
+ */
+export type ExaResearchResult = {
+  /** Always 'exa_research' for research results */
+  type: 'exa_research'
+  /** The research task ID */
+  researchId: string
+  /** The instructions provided */
+  instructions: string
+  /** Model used for the research */
+  model: ExaResearchModel
+  /** Status of the research task */
+  status: ExaResearchStatus
+  /** 
+   * The research output - either structured JSON (if outputSchema was provided)
+   * or a detailed markdown report.
+   */
+  output?: unknown
+  /** Citations from the research */
+  citations?: ExaResearchCitation[]
+  /** Cost breakdown (if available) */
+  cost?: {
+    searches?: number
+    pagesRead?: number
+    reasoningTokens?: number
+    totalUsd?: number
+  }
+  /** Error message if the research failed */
   error?: string
 }
 
@@ -327,26 +416,11 @@ export type ContentBlockLocationCitation = {
 // Union of all document citation types
 export type DocumentCitation = CharLocationCitation | PageLocationCitation | ContentBlockLocationCitation
 
-// Programmatic tool calling types
-// See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/programmatic-tool-calling
-export type DirectToolCaller = {
-  type: 'direct'
-}
-
-export type ProgrammaticToolCaller = {
-  type: 'code_execution_20250825'
-  tool_id: string
-}
-
-export type ToolCaller = DirectToolCaller | ProgrammaticToolCaller
-
 export type ToolUseEvent = {
   name: string
   status: 'start' | 'end'
   input?: Record<string, unknown>
   result?: string
-  // Code execution specific fields
-  codeExecution?: CodeExecutionResult
   // Web fetch specific fields
   webFetch?: WebFetchResult
   // Web search specific fields
@@ -355,9 +429,12 @@ export type ToolUseEvent = {
   // EXA search specific fields
   // See: https://docs.exa.ai/reference/search
   exaSearch?: ExaSearchResult
-  // Programmatic tool calling - indicates how the tool was invoked
-  // 'direct' = traditional tool use, 'code_execution_20250825' = called from code execution
-  caller?: ToolCaller
+  // EXA answer specific fields
+  // See: https://docs.exa.ai/reference/answer
+  exaAnswer?: ExaAnswerResult
+  // EXA research specific fields
+  // See: https://docs.exa.ai/reference/exa-research
+  exaResearch?: ExaResearchResult
 }
 
 // Citations from search results and documents embedded in text responses

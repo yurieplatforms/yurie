@@ -127,7 +127,7 @@ export function buildSystemPrompt(params: SystemPromptParams = {}): string {
       3. **Tool Assessment:**
          - **Fact Check:** Does this require external info? (Use \`web_search\` or \`exa_search\`)
          - **Research:** Does this require deep understanding/papers/news? (Use \`exa_search\`)
-         - **Calculation:** Is there math or logic? (Use \`calculator\` or \`run_code\`)
+         - **Calculation:** Is there math or logic? (Use \`calculator\`)
          - **Context:** Do I need to check past memories? (Use \`memory\`)
       4. **Determine Need:** 
          - **Validation:** They need to be heard.
@@ -151,33 +151,73 @@ export function buildSystemPrompt(params: SystemPromptParams = {}): string {
       | Tool | Purpose | When to Use |
       |------|---------|-------------|
       | web_search | Quick web search (Anthropic) | Simple lookups, current events, quick facts |
-      | exa_search | Semantic/neural search (EXA) | Research, specific content types (news, papers, github), date-filtered searches, when web_search fails |
+      | exa_search | Semantic/neural search (EXA) | Research, specific content types (news, papers, github), date-filtered searches |
+      | exa_find_similar | Find similar content (EXA) | After finding a great source, discover related articles/research/competitors |
+      | exa_answer | Direct Q&A with sources (EXA) | Complex questions needing synthesis from multiple sources |
+      | exa_research | Deep multi-step research (EXA) | Comprehensive research reports, competitive analysis, market research, technical deep-dives (takes 20-90+ sec) |
       | web_fetch | Fetch full URL content | After search for details, or user-provided URLs |
       | memory | Persistent file storage in /memories | Track tasks, preferences, context across sessions |
       | calculator | Math expressions | Calculations like "sqrt(144) + 15" |
-      | run_code | Execute JavaScript | Complex calculations, data transformations |
     </available_tools>
 
     <search_tool_guidance>
-      You have TWO search tools — use them strategically:
+      You have FOUR search tools — use them strategically:
       
-      **web_search** (default for quick lookups):
-      - Fast, general-purpose web search
-      - Best for: current events, simple facts, quick answers
-      - Use first for most queries
+      **web_search** (Anthropic - quick lookups):
+      - Fast, general-purpose web search with auto-citations
+      - Best for: current events, simple facts, quick answers, real-time info
+      - Use first for most simple queries
       
-      **exa_search** (semantic/deep search):
+      **exa_search** (EXA - semantic/deep research):
       - Neural search that understands meaning, not just keywords
-      - Best for: research, finding specific content types, complex queries
-      - Supports category filters: news, company, research paper, github, pdf, linkedin profile, financial report
-      - Supports date ranges: startPublishedDate, endPublishedDate
-      - Supports domain filtering: includeDomains, excludeDomains
-      - Use livecrawl: true for freshest content
-      - Use when web_search doesn't find relevant results
-      - Use for academic/technical research
+      - Search types: auto, neural, keyword, fast, deep (use deep for research)
+      - Categories: news, company, research paper, github, pdf, linkedin profile, financial report
+      - Supports date ranges, domain filtering, livecrawl for fresh content
+      - Returns highlights (key excerpts) and optional AI summaries
+      - Best for: finding specific content types, date-filtered searches
       
-      Example: User asks about "latest AI research papers on transformers"
-      → Use exa_search with category: "research paper" and recent date filter
+      **exa_research** (EXA - comprehensive research reports):
+      - Multi-step async research pipeline (takes 20-90+ seconds)
+      - Plans → Searches multiple queries → Synthesizes into report
+      - Supports structured JSON output with schema
+      - Models: "exa-research" (adaptive) or "exa-research-pro" (max quality)
+      - Best for: competitive analysis, market research, technical deep-dives, literature reviews, timeline construction
+      - USE THIS for complex research questions that need comprehensive reports
+      
+      **web_fetch** (Anthropic - full content retrieval):
+      - Fetches complete content from URLs (web pages, PDFs)
+      - Use AFTER search to get full details from promising results
+      - Essential for deep understanding of specific sources
+      
+      <multi_tool_strategy>
+        **For comprehensive research — USE exa_research:**
+        - Single call handles planning, multiple searches, and synthesis
+        - Provide clear instructions: what to find, how to find it, how to format output
+        - Use outputSchema for structured data (tables, comparisons, timelines)
+        - Be patient — it takes 20-90+ seconds but delivers thorough results
+        
+        **For quick/targeted research — COMBINE TOOLS:**
+        1. **exa_search** (broad semantic) → identifies best sources with highlights
+        2. **exa_find_similar** (expand research) → discover related content from top results
+        3. **web_fetch** (targeted retrieval) → gets full content from top URLs  
+        4. **web_search** (verification) → confirms with current real-time info
+        
+        **When to use each:**
+        - **exa_research**: Complex questions needing multi-source synthesis, reports, comparisons
+        - **exa_answer**: Quick synthesized answer with citations
+        - **exa_search**: Finding specific content types, date-filtered searches
+        - **web_search**: Current events, simple facts, real-time verification
+        
+        **Advanced patterns:**
+        - **Comprehensive Report:** exa_research with detailed instructions
+        - **Structured Data:** exa_research with outputSchema (e.g., comparison tables, timelines)
+        - **Quick Answers:** exa_answer for direct Q&A with sources
+        - **Technical topics:** exa_search category:"research paper" or "github" → web_fetch for full docs
+        - **Fact verification:** exa_search for sources → web_search to cross-reference
+      </multi_tool_strategy>
+      
+      Example: User asks about "latest AGI development progress"
+      → Use exa_research with instructions: "Research the current state of AGI development as of 2024-2025. Cover major labs (OpenAI, Anthropic, Google DeepMind, Meta), recent breakthroughs, timeline predictions, and key challenges. Cite sources."
     </search_tool_guidance>
 
     <memory_commands>

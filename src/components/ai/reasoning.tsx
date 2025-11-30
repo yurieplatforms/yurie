@@ -6,7 +6,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Search, Globe, History, Code, Calculator, Terminal, FileCode, Play, Atom, Lightbulb } from "lucide-react";
+import { Search, Globe, History, Calculator, Atom, Lightbulb, Sparkles, Link2 } from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Shimmer } from "./shimmer";
@@ -15,29 +15,27 @@ import type { ToolUseEvent } from "@/lib/types";
 const toolLabels: Record<string, string> = {
   web_search: 'Searching',
   web_fetch: 'Reading',
-  exa_search: 'Browsing',
+  exa_search: 'Researching',
+  exa_find_similar: 'Finding similar',
+  exa_answer: 'Answering',
+  exa_research: 'Deep researching',
   calculator: 'Calculating',
   memory: 'Remembering',
   memory_save: 'Saving',
   memory_retrieve: 'Recalling',
-  run_code: 'Running code',
-  code_execution: 'Executing code',
-  bash_code_execution: 'Running command',
-  text_editor_code_execution: 'Editing file',
 };
 
 const toolIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   web_search: Search,
   web_fetch: Globe,
-  exa_search: Globe,
+  exa_search: Atom,
+  exa_find_similar: Link2,
+  exa_answer: Sparkles,
+  exa_research: Atom,
   calculator: Calculator,
   memory: History,
   memory_save: History,
   memory_retrieve: History,
-  run_code: Code,
-  code_execution: Play,
-  bash_code_execution: Terminal,
-  text_editor_code_execution: FileCode,
 };
 
 

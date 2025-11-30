@@ -44,6 +44,10 @@ function extractFilenameFromUrl(url: string): string {
 /**
  * Converts message content to Anthropic API format
  * Handles text, images (base64 and URL), and documents (PDF and text)
+ * 
+ * IMPORTANT: This function strips any extra properties from content segments
+ * to prevent "Extra inputs are not permitted" API errors. Only known fields
+ * defined by the Anthropic API are included in the output.
  */
 export function convertToAnthropicContent(
   content: string | MessageContentSegment[],
@@ -68,10 +72,15 @@ export function convertToAnthropicContent(
     }> = []
 
     // Process each segment and categorize
+    // IMPORTANT: Explicitly extract ONLY known fields to avoid API errors like
+    // "Extra inputs are not permitted" when messages from storage contain
+    // extra properties (e.g., 'parsed', 'suggestions', etc.)
     for (const segment of content) {
+      // Handle text segments - ONLY extract type and text fields
       if (segment.type === 'text') {
-        if (segment.text.trim().length > 0) {
-          textSegments.push({ type: 'text' as const, text: segment.text })
+        const text = (segment as { text?: string }).text
+        if (typeof text === 'string' && text.trim().length > 0) {
+          textSegments.push({ type: 'text' as const, text: text })
         }
       } else if (segment.type === 'image_url') {
         // Handle image_url type (legacy format, supports both data URLs and regular URLs)
