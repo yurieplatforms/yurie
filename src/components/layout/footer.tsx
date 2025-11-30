@@ -45,7 +45,7 @@ export function ThemeSwitch() {
             key={option.id}
             onClick={() => setTheme(option.id)}
             className={cn(
-              'inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg transition-colors',
+              'inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-full transition-colors',
               isActive
                 ? 'bg-zinc-100 text-zinc-950 dark:bg-zinc-800 dark:text-zinc-50'
                 : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50',

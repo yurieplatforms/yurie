@@ -74,12 +74,12 @@ export function AuthForm({
         </p>
       </div>
 
-      <div className="relative flex w-full items-center justify-center rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800/50">
-        <div className="absolute inset-0 rounded-lg p-1">
+      <div className="relative flex w-full items-center justify-center rounded-full bg-zinc-100 p-1 dark:bg-zinc-800/50">
+        <div className="absolute inset-0 rounded-full p-1">
           <motion.div
             layoutId="active-tab"
             className={cn(
-              "absolute inset-y-1 w-[calc(50%-4px)] rounded-md bg-white shadow-sm dark:bg-zinc-950",
+              "absolute inset-y-1 w-[calc(50%-4px)] rounded-full bg-white shadow-sm dark:bg-zinc-950",
               mode === 'signup' ? "left-[50%]" : "left-1"
             )}
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
@@ -113,12 +113,12 @@ export function AuthForm({
 
       <form action={handleSubmit} className="flex flex-col gap-4">
         {localError && (
-          <div className="rounded-md bg-red-500/10 p-3 text-sm text-red-500 dark:bg-red-500/20">
+          <div className="rounded-2xl bg-[var(--color-destructive)]/10 p-3 text-sm text-[var(--color-destructive)]">
             {localError}
           </div>
         )}
         {message && (
-          <div className="rounded-md bg-zinc-500/10 p-3 text-sm text-zinc-500 dark:bg-zinc-500/20">
+          <div className="rounded-2xl bg-zinc-500/10 p-3 text-sm text-zinc-500 dark:bg-zinc-500/20">
             {message}
           </div>
         )}
@@ -182,7 +182,7 @@ export function AuthForm({
           <Button 
             type="submit" 
             disabled={isPending}
-            className="w-full bg-[#7F91E0] text-white hover:bg-[#6B7FD6] dark:bg-[#7F91E0] dark:text-white dark:hover:bg-[#8FA0E8]"
+            className="w-full bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:bg-[var(--color-accent-hover)]"
           >
             {isPending ? (
               <div className="flex items-center justify-center gap-2">

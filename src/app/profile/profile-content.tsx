@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
 import { User } from '@supabase/supabase-js'
 import { Input } from '@/components/ui/input'
 import { updateProfile } from './actions'
@@ -25,26 +24,6 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { ThemeSwitch } from '@/components/layout/footer'
 import { useAuth } from '@/lib/providers/auth-provider'
-
-const VARIANTS_CONTAINER = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-    },
-  },
-}
-
-const VARIANTS_SECTION = {
-  hidden: { opacity: 0, y: 20, filter: 'blur(8px)' },
-  visible: { opacity: 1, y: 0, filter: 'blur(0px)' },
-}
-
-const TRANSITION_SECTION = {
-  duration: 0.4,
-  ease: "easeInOut" as const,
-}
 
 type Toast = {
   id: string
@@ -247,46 +226,32 @@ export function ProfileContent({
     <>
       {/* Toast Notifications */}
       <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
-        <AnimatePresence mode="popLayout">
-          {toasts.map(toast => (
-            <motion.div
-              key={toast.id}
-              initial={{ opacity: 0, x: 50, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 50, scale: 0.95 }}
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
               className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-lg border ${
                 toast.type === 'success' 
-                  ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300' 
-                  : 'bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
+                  ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/20 text-[var(--color-success)]' 
+                  : 'bg-[var(--color-destructive)]/10 border-[var(--color-destructive)]/20 text-[var(--color-destructive)]'
               }`}
             >
               <div className={`h-5 w-5 rounded-full flex items-center justify-center ${
-                toast.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'
+                toast.type === 'success' ? 'bg-[var(--color-success)]' : 'bg-[var(--color-destructive)]'
               }`}>
-                {toast.type === 'success' ? (
-                  <Check className="h-3 w-3 text-white" />
-                ) : (
-                  <X className="h-3 w-3 text-white" />
-                )}
-              </div>
-              <span className="text-sm font-medium">{toast.message}</span>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              {toast.type === 'success' ? (
+                <Check className="h-3 w-3 text-white" />
+              ) : (
+                <X className="h-3 w-3 text-white" />
+              )}
+            </div>
+            <span className="text-sm font-medium">{toast.message}</span>
+          </div>
+        ))}
       </div>
 
-      <motion.main
-        className="space-y-6 pb-8"
-        variants={VARIANTS_CONTAINER}
-        initial="hidden"
-        animate="visible"
-      >
+      <main className="space-y-6 pb-8">
         {/* Profile Header with Cover */}
-        <motion.section
-          variants={VARIANTS_SECTION}
-          transition={TRANSITION_SECTION}
-          className="flex flex-col items-center text-center"
-        >
+        <section className="flex flex-col items-center text-center">
           {/* Cover Background */}
           <div className="relative w-full h-36 sm:h-44 rounded-2xl overflow-hidden group/cover">
             {coverUrl ? (
@@ -296,7 +261,7 @@ export function ProfileContent({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-[#7F91E0] via-[#9683D8] via-[45%] to-[#D4A5C9] dark:from-[#4A5A9E] dark:via-[#5F5088] dark:via-[45%] dark:to-[#876878]">
+              <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent)] via-[#9683D8] via-[45%] to-[#D4A5C9] dark:from-[#4A5A9E] dark:via-[#5F5088] dark:via-[45%] dark:to-[#876878]">
                 {/* Decorative elements */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(127,145,224,0.25)_0%,transparent_45%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(210,165,200,0.2)_0%,transparent_45%)]" />
@@ -308,7 +273,7 @@ export function ProfileContent({
             <button 
               onClick={() => coverInputRef.current?.click()}
               disabled={isUploadingCover}
-              className="absolute bottom-3 right-3 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white text-xs font-medium opacity-0 group-hover/cover:opacity-100 transition-all duration-200 cursor-pointer"
+              className="absolute bottom-3 right-3 flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white text-xs font-medium opacity-0 group-hover/cover:opacity-100 transition-all duration-200 cursor-pointer"
             >
               {isUploadingCover ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -335,12 +300,10 @@ export function ProfileContent({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
           >
-            <motion.div 
+            <div 
               className={`relative h-28 w-28 rounded-full overflow-hidden ring-4 ring-zinc-100 dark:ring-zinc-950 transition-all duration-300 ${
                 isDragging ? 'ring-[var(--color-accent)] scale-105' : ''
               }`}
-              whileHover={{ scale: 1.03 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
               {avatarUrl ? (
                 <img 
@@ -370,7 +333,7 @@ export function ProfileContent({
                   )}
                 </div>
               </button>
-            </motion.div>
+            </div>
             
             <input 
               ref={fileInputRef}
@@ -386,284 +349,252 @@ export function ProfileContent({
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
             {displayName}
           </h1>
-        </motion.section>
+        </section>
 
         {/* Unified Profile Details */}
-        <motion.section
-          variants={VARIANTS_SECTION}
-          transition={TRANSITION_SECTION}
-          className="space-y-3"
-        >
+        <section className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Profile Details</h2>
+            <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Settings</h2>
             {!isEditingPreferences && (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 onClick={startEditingPreferences}
                 className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors cursor-pointer"
               >
                 <Settings className="h-3.5 w-3.5" />
                 Edit
-              </motion.button>
+              </button>
             )}
           </div>
           
           <div className="rounded-2xl bg-zinc-100/60 dark:bg-zinc-900/60 divide-y divide-zinc-200/60 dark:divide-zinc-800/60 overflow-hidden">
-            <AnimatePresence mode="wait">
-              {isEditingPreferences ? (
-                <motion.div
-                  key="editing"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="p-4 space-y-4"
-                >
-                  {/* Name Field (Editable) */}
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                      <UserIcon className="h-3.5 w-3.5" />
-                      Name
-                    </label>
+            {isEditingPreferences ? (
+              <div className="p-4 space-y-4">
+                {/* Name Field (Editable) */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    <UserIcon className="h-3.5 w-3.5" />
+                    Name
+                  </label>
+                  <Input
+                    value={editingFullName}
+                    onChange={(e) => setEditingFullName(e.target.value)}
+                    placeholder="Your name"
+                    className="h-11 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-full focus:ring-2 focus:ring-[var(--color-accent)]"
+                  />
+                </div>
+                
+                {/* Birthday Field (Editable) */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    <Cake className="h-3.5 w-3.5" />
+                    Birthday
+                  </label>
+                  <div className="relative">
                     <Input
-                      value={editingFullName}
-                      onChange={(e) => setEditingFullName(e.target.value)}
-                      placeholder="Your name"
-                      className="h-11 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-xl focus:ring-2 focus:ring-[var(--color-accent)]"
+                      type="date"
+                      value={editingBirthday}
+                      onChange={(e) => setEditingBirthday(e.target.value)}
+                      className="h-11 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-full focus:ring-2 focus:ring-[var(--color-accent)] [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 [&::-webkit-calendar-picker-indicator]:transition-opacity"
                     />
                   </div>
-                  
-                  {/* Birthday Field (Editable) */}
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                      <Cake className="h-3.5 w-3.5" />
-                      Birthday
-                    </label>
-                    <div className="relative">
-                      <Input
-                        type="date"
-                        value={editingBirthday}
-                        onChange={(e) => setEditingBirthday(e.target.value)}
-                        className="h-11 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-xl focus:ring-2 focus:ring-[var(--color-accent)] [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 [&::-webkit-calendar-picker-indicator]:transition-opacity"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Location Field (Editable) */}
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                      <MapPin className="h-3.5 w-3.5" />
-                      Location
-                    </label>
-                    <Input
-                      value={editingLocation}
-                      onChange={(e) => setEditingLocation(e.target.value)}
-                      placeholder="City, Country"
-                      className="h-11 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-xl focus:ring-2 focus:ring-[var(--color-accent)]"
-                    />
-                  </div>
-                  
-                  {/* Timezone Field (Editable) */}
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                      <Globe className="h-3.5 w-3.5" />
-                      Timezone
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={editingTimezone}
-                        onChange={(e) => setEditingTimezone(e.target.value)}
-                        className="w-full h-11 px-3 pr-10 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-xl text-sm text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-[var(--color-accent)] focus:outline-none appearance-none cursor-pointer"
-                      >
-                        <option value="">Select timezone</option>
-                        <optgroup label="Detected">
-                          <option value={detectedTimezone}>{detectedTimezone} (Auto-detected)</option>
-                        </optgroup>
-                        <optgroup label="Americas">
-                          <option value="America/New_York">America/New_York (EST/EDT)</option>
-                          <option value="America/Chicago">America/Chicago (CST/CDT)</option>
-                          <option value="America/Denver">America/Denver (MST/MDT)</option>
-                          <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
-                          <option value="America/Anchorage">America/Anchorage (AKST/AKDT)</option>
-                          <option value="Pacific/Honolulu">Pacific/Honolulu (HST)</option>
-                          <option value="America/Toronto">America/Toronto (EST/EDT)</option>
-                          <option value="America/Vancouver">America/Vancouver (PST/PDT)</option>
-                          <option value="America/Mexico_City">America/Mexico_City (CST/CDT)</option>
-                          <option value="America/Sao_Paulo">America/Sao_Paulo (BRT)</option>
-                        </optgroup>
-                        <optgroup label="Europe">
-                          <option value="Europe/London">Europe/London (GMT/BST)</option>
-                          <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
-                          <option value="Europe/Berlin">Europe/Berlin (CET/CEST)</option>
-                          <option value="Europe/Amsterdam">Europe/Amsterdam (CET/CEST)</option>
-                          <option value="Europe/Moscow">Europe/Moscow (MSK)</option>
-                        </optgroup>
-                        <optgroup label="Asia">
-                          <option value="Asia/Dubai">Asia/Dubai (GST)</option>
-                          <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                          <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
-                          <option value="Asia/Hong_Kong">Asia/Hong_Kong (HKT)</option>
-                          <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
-                          <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
-                          <option value="Asia/Seoul">Asia/Seoul (KST)</option>
-                        </optgroup>
-                        <optgroup label="Oceania">
-                          <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
-                          <option value="Australia/Melbourne">Australia/Melbourne (AEST/AEDT)</option>
-                          <option value="Australia/Perth">Australia/Perth (AWST)</option>
-                          <option value="Pacific/Auckland">Pacific/Auckland (NZST/NZDT)</option>
-                        </optgroup>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 dark:text-zinc-400 pointer-events-none" />
-                    </div>
-                  </div>
-                  
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 pt-2">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleSavePreferences}
-                      disabled={isSavingPreferences}
-                      className="flex-1 h-11 rounded-xl bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 cursor-pointer"
+                </div>
+                
+                {/* Location Field (Editable) */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Location
+                  </label>
+                  <Input
+                    value={editingLocation}
+                    onChange={(e) => setEditingLocation(e.target.value)}
+                    placeholder="City, Country"
+                    className="h-11 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-full focus:ring-2 focus:ring-[var(--color-accent)]"
+                  />
+                </div>
+                
+                {/* Timezone Field (Editable) */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    <Globe className="h-3.5 w-3.5" />
+                    Timezone
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={editingTimezone}
+                      onChange={(e) => setEditingTimezone(e.target.value)}
+                      className="w-full h-11 px-3 pr-10 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-full text-sm text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-[var(--color-accent)] focus:outline-none appearance-none cursor-pointer"
                     >
-                      {isSavingPreferences ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Check className="h-4 w-4" />
-                      )}
-                      Save
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={cancelEditingPreferences}
-                      className="flex-1 h-11 rounded-xl bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium transition-colors cursor-pointer"
-                    >
-                      Cancel
-                    </motion.button>
+                      <option value="">Select timezone</option>
+                      <optgroup label="Detected">
+                        <option value={detectedTimezone}>{detectedTimezone} (Auto-detected)</option>
+                      </optgroup>
+                      <optgroup label="Americas">
+                        <option value="America/New_York">America/New_York (EST/EDT)</option>
+                        <option value="America/Chicago">America/Chicago (CST/CDT)</option>
+                        <option value="America/Denver">America/Denver (MST/MDT)</option>
+                        <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                        <option value="America/Anchorage">America/Anchorage (AKST/AKDT)</option>
+                        <option value="Pacific/Honolulu">Pacific/Honolulu (HST)</option>
+                        <option value="America/Toronto">America/Toronto (EST/EDT)</option>
+                        <option value="America/Vancouver">America/Vancouver (PST/PDT)</option>
+                        <option value="America/Mexico_City">America/Mexico_City (CST/CDT)</option>
+                        <option value="America/Sao_Paulo">America/Sao_Paulo (BRT)</option>
+                      </optgroup>
+                      <optgroup label="Europe">
+                        <option value="Europe/London">Europe/London (GMT/BST)</option>
+                        <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+                        <option value="Europe/Berlin">Europe/Berlin (CET/CEST)</option>
+                        <option value="Europe/Amsterdam">Europe/Amsterdam (CET/CEST)</option>
+                        <option value="Europe/Moscow">Europe/Moscow (MSK)</option>
+                      </optgroup>
+                      <optgroup label="Asia">
+                        <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                        <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                        <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
+                        <option value="Asia/Hong_Kong">Asia/Hong_Kong (HKT)</option>
+                        <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+                        <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                        <option value="Asia/Seoul">Asia/Seoul (KST)</option>
+                      </optgroup>
+                      <optgroup label="Oceania">
+                        <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
+                        <option value="Australia/Melbourne">Australia/Melbourne (AEST/AEDT)</option>
+                        <option value="Australia/Perth">Australia/Perth (AWST)</option>
+                        <option value="Pacific/Auckland">Pacific/Auckland (NZST/NZDT)</option>
+                      </optgroup>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 dark:text-zinc-400 pointer-events-none" />
                   </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="display"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="divide-y divide-zinc-200/60 dark:divide-zinc-800/60"
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={handleSavePreferences}
+                    disabled={isSavingPreferences}
+                    className="flex-1 h-11 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-sm font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-[var(--color-accent)]/20"
+                  >
+                    {isSavingPreferences ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                    Save
+                  </button>
+                  <button
+                    onClick={cancelEditingPreferences}
+                    className="h-11 w-11 rounded-full bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center justify-center transition-all cursor-pointer"
+                    title="Cancel"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-zinc-200/60 dark:divide-zinc-800/60">
+                {/* Name Row */}
+                <div className="flex items-center gap-4 px-4 py-3.5">
+                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
+                    <UserIcon className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Name</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{displayName}</p>
+                  </div>
+                </div>
+
+                {/* Email Row */}
+                <div className="flex items-center gap-4 px-4 py-3.5">
+                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
+                    <Mail className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Email</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{user.email}</p>
+                  </div>
+                </div>
+
+                {/* Member Since Row */}
+                <div className="flex items-center gap-4 px-4 py-3.5">
+                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
+                    <Calendar className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Member since</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{memberSince}</p>
+                  </div>
+                </div>
+                
+                {/* Birthday Row */}
+                <div className="flex items-center gap-4 px-4 py-3.5">
+                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
+                    <Cake className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Birthday</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                      {birthday ? new Date(birthday + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Not set'}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Location Row */}
+                <div className="flex items-center gap-4 px-4 py-3.5">
+                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
+                    <MapPin className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Location</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                      {location || 'Not set'}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Timezone Row */}
+                <div className="flex items-center gap-4 px-4 py-3.5">
+                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
+                    <Globe className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Timezone</p>
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                      {displayTimezone}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Theme Row */}
+                <div className="flex items-center gap-4 px-4 py-3.5">
+                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
+                    <Palette className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Theme</p>
+                  </div>
+                  <ThemeSwitch />
+                </div>
+
+                {/* Sign Out Row */}
+                <button
+                  onClick={() => signOut()}
+                  className="flex w-full items-center gap-4 px-4 py-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
                 >
-                  {/* Name Row */}
-                  <div className="flex items-center gap-4 px-4 py-3.5">
-                    <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                      <UserIcon className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-zinc-500 dark:text-zinc-500">Name</p>
-                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{displayName}</p>
-                    </div>
+                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
+                    <LogOut className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
                   </div>
-
-                  {/* Email Row */}
-                  <div className="flex items-center gap-4 px-4 py-3.5">
-                    <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                      <Mail className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-zinc-500 dark:text-zinc-500">Email</p>
-                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{user.email}</p>
-                    </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Sign out</p>
                   </div>
-
-                  {/* Member Since Row */}
-                  <div className="flex items-center gap-4 px-4 py-3.5">
-                    <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                      <Calendar className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-xs text-zinc-500 dark:text-zinc-500">Member since</p>
-                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{memberSince}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Birthday Row */}
-                  <div className="flex items-center gap-4 px-4 py-3.5">
-                    <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                      <Cake className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-zinc-500 dark:text-zinc-500">Birthday</p>
-                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
-                        {birthday ? new Date(birthday + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Not set'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Location Row */}
-                  <div className="flex items-center gap-4 px-4 py-3.5">
-                    <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                      <MapPin className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-zinc-500 dark:text-zinc-500">Location</p>
-                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
-                        {location || 'Not set'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Timezone Row */}
-                  <div className="flex items-center gap-4 px-4 py-3.5">
-                    <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                      <Globe className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-zinc-500 dark:text-zinc-500">Timezone</p>
-                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
-                        {displayTimezone}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {/* Theme Row */}
-                  <div className="flex items-center gap-4 px-4 py-3.5">
-                    <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                      <Palette className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-zinc-500 dark:text-zinc-500">Theme</p>
-                    </div>
-                    <ThemeSwitch />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <ChevronRight className="h-4 w-4 text-zinc-400" />
+                </button>
+              </div>
+            )}
           </div>
-        </motion.section>
+        </section>
 
-        {/* Sign Out */}
-        <motion.section
-          variants={VARIANTS_SECTION}
-          transition={TRANSITION_SECTION}
-        >
-          <motion.button 
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            className="w-full rounded-2xl bg-zinc-100/60 dark:bg-zinc-900/60 hover:bg-red-50 dark:hover:bg-red-950/30 px-4 py-3.5 text-left group transition-colors cursor-pointer"
-            onClick={() => signOut()}
-          >
-            <div className="flex items-center gap-4">
-              <div className="h-9 w-9 rounded-xl bg-red-100 dark:bg-red-950/50 flex items-center justify-center group-hover:bg-red-200 dark:group-hover:bg-red-900/50 transition-colors">
-                <LogOut className="h-4 w-4 text-red-600 dark:text-red-400" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">Sign out</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-zinc-400 group-hover:text-red-500 transition-colors" />
-            </div>
-          </motion.button>
-        </motion.section>
-
-      </motion.main>
+      </main>
     </>
   )
 }

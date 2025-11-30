@@ -146,7 +146,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
           </p>
           <AnimatedBackground
             enableHover
-            className="h-full w-full rounded-lg bg-zinc-100 dark:bg-zinc-900/80"
+            className="h-full w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900/80"
             transition={{
               type: 'spring',
               bounce: 0,
@@ -155,7 +155,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
           >
             <Link
               href="/"
-              className="relative -mx-3 inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium text-zinc-950 dark:text-zinc-50 transition-colors hover:text-zinc-950"
+              className="relative -mx-3 inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-medium text-zinc-950 dark:text-zinc-50 transition-colors hover:text-zinc-950"
               data-id="start-chat"
             >
               Message Yurie
@@ -199,7 +199,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
         <div className="-mx-4 overflow-hidden">
           <AnimatedBackground
             enableHover
-            className="h-full w-full rounded-xl bg-zinc-100 dark:bg-zinc-900/80"
+            className="h-full w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900/80"
             transition={{
               type: 'spring',
               bounce: 0,
@@ -210,7 +210,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
               <div
                 key={chat.id}
                 data-id={chat.id}
-                className="w-full rounded-xl px-4 py-3 relative group overflow-hidden"
+                className="w-full rounded-2xl px-4 py-3 relative group overflow-hidden"
               >
                   <Link
                     href={`/?id=${chat.id}`}
@@ -236,7 +236,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
                   </div>
                   <button
                     onClick={(e) => handleDelete(e, chat.id)}
-                    className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-all hover:bg-zinc-200 hover:text-red-500 opacity-0 group-hover:opacity-100 focus:opacity-100 dark:hover:bg-zinc-800"
+                    className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-all hover:bg-[var(--color-destructive)]/10 hover:text-[var(--color-destructive)] opacity-0 group-hover:opacity-100 focus:opacity-100"
                     title="Delete chat"
                   >
                     <Trash2 className="w-4 h-4" />

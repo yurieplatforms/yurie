@@ -46,7 +46,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
         return (
           <div
             key={`result-${tool.name}-${index}`}
-            className="rounded-lg border bg-muted/40 shadow-sm dark:border-zinc-800"
+            className="rounded-2xl border bg-muted/40 shadow-sm dark:border-zinc-800"
           >
             <div className="flex items-center gap-2 px-3 py-2 text-zinc-500 dark:text-zinc-400">
               <Code className="h-4 w-4" />
@@ -54,37 +54,37 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                 {toolCompletedLabels[tool.name] || tool.name} result
               </span>
               {isWebSearch && !tool.webSearch?.errorCode && (
-                <span className="ml-auto text-xs text-emerald-500">
+                <span className="ml-auto text-xs text-[var(--color-success)]">
                   {tool.webSearch?.results.length ?? 0} result{(tool.webSearch?.results.length ?? 0) !== 1 ? 's' : ''}
                 </span>
               )}
               {isWebSearch && tool.webSearch?.errorCode && (
-                <span className="ml-auto text-xs text-red-500">
+                <span className="ml-auto text-xs text-[var(--color-destructive)]">
                   {tool.webSearch.errorCode}
                 </span>
               )}
               {isExaSearch && !tool.exaSearch?.error && (
-                <span className="ml-auto text-xs text-emerald-500">
+                <span className="ml-auto text-xs text-[var(--color-success)]">
                   {tool.exaSearch?.results.length ?? 0} result{(tool.exaSearch?.results.length ?? 0) !== 1 ? 's' : ''}
                 </span>
               )}
               {isExaSearch && tool.exaSearch?.error && (
-                <span className="ml-auto text-xs text-red-500">
+                <span className="ml-auto text-xs text-[var(--color-destructive)]">
                   error
                 </span>
               )}
               {isExaResearch && tool.exaResearch?.status === 'completed' && (
-                <span className="ml-auto text-xs text-emerald-500">
+                <span className="ml-auto text-xs text-[var(--color-success)]">
                   {tool.exaResearch?.citations?.length ?? 0} source{(tool.exaResearch?.citations?.length ?? 0) !== 1 ? 's' : ''}
                 </span>
               )}
               {isExaResearch && tool.exaResearch?.status === 'failed' && (
-                <span className="ml-auto text-xs text-red-500">
+                <span className="ml-auto text-xs text-[var(--color-destructive)]">
                   failed
                 </span>
               )}
               {isExaResearch && (tool.exaResearch?.status === 'running' || tool.exaResearch?.status === 'pending') && (
-                <span className="ml-auto text-xs text-amber-500">
+                <span className="ml-auto text-xs text-[var(--color-warning)]">
                   {tool.exaResearch?.status}...
                 </span>
               )}
@@ -102,14 +102,14 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                   
                   {tool.exaResearch?.model && (
                     <div className="flex items-center gap-2 text-xs">
-                      <span className="rounded bg-violet-100 px-1.5 py-0.5 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                      <span className="rounded bg-[var(--color-info)]/10 px-1.5 py-0.5 text-[var(--color-info)]">
                         {tool.exaResearch.model}
                       </span>
                     </div>
                   )}
                   
                   {tool.exaResearch?.error && (
-                    <div className="flex items-center gap-2 rounded-md bg-red-50 p-2 text-xs text-red-600 dark:bg-red-950/20 dark:text-red-400">
+                    <div className="flex items-center gap-2 rounded-md bg-[var(--color-destructive)]/10 p-2 text-xs text-[var(--color-destructive)]">
                       <AlertCircle className="h-4 w-4" />
                       <span>Research error: {tool.exaResearch.error}</span>
                     </div>
@@ -117,10 +117,10 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                   
                   {tool.exaResearch?.output !== undefined && tool.exaResearch.status === 'completed' && (
                     <div className="space-y-2">
-                      <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      <div className="text-xs font-medium text-[var(--color-success)]">
                         Research Output:
                       </div>
-                      <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800/50">
                         {typeof tool.exaResearch.output === 'string' ? (
                           <div className="whitespace-pre-wrap text-xs text-zinc-700 dark:text-zinc-300">
                             {tool.exaResearch.output}
@@ -136,7 +136,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                   
                   {tool.exaResearch?.citations && tool.exaResearch.citations.length > 0 && (
                     <div className="space-y-2">
-                      <div className="text-xs font-medium text-violet-600 dark:text-violet-400">
+                      <div className="text-xs font-medium text-[var(--color-info)]">
                         Sources ({tool.exaResearch.citations.length}):
                       </div>
                       <div className="space-y-2">
@@ -151,9 +151,9 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                               rel="noopener noreferrer"
                               className="group/link flex items-start gap-2"
                             >
-                              <ExternalLink className="mt-0.5 h-3 w-3 flex-shrink-0 text-zinc-400 group-hover/link:text-violet-500" />
+                              <ExternalLink className="mt-0.5 h-3 w-3 flex-shrink-0 text-zinc-400 group-hover/link:text-[var(--color-info)]" />
                               <div className="min-w-0 flex-1">
-                                <div className="text-xs font-medium text-zinc-800 group-hover/link:text-violet-600 dark:text-zinc-200 dark:group-hover/link:text-violet-400">
+                                <div className="text-xs font-medium text-zinc-800 group-hover/link:text-[var(--color-info)] dark:text-zinc-200">
                                   {citation.title || 'Untitled'}
                                 </div>
                                 <div className="truncate text-xs text-zinc-400">
@@ -185,7 +185,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                         </span>
                       )}
                       {tool.exaResearch.cost.totalUsd !== undefined && (
-                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <span className="rounded bg-[var(--color-success)]/10 px-1.5 py-0.5 text-[var(--color-success)]">
                           ${tool.exaResearch.cost.totalUsd.toFixed(4)}
                         </span>
                       )}
@@ -199,7 +199,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                       <Search className="h-3 w-3" />
                       <span>Searched for: &quot;{tool.exaSearch.query}&quot;</span>
                       {tool.exaSearch.category && (
-                        <span className="rounded bg-violet-100 px-1.5 py-0.5 text-xs text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                        <span className="rounded bg-[var(--color-info)]/10 px-1.5 py-0.5 text-xs text-[var(--color-info)]">
                           {tool.exaSearch.category}
                         </span>
                       )}
@@ -207,7 +207,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                   )}
                   
                   {tool.exaSearch?.error && (
-                    <div className="flex items-center gap-2 rounded-md bg-red-50 p-2 text-xs text-red-600 dark:bg-red-950/20 dark:text-red-400">
+                    <div className="flex items-center gap-2 rounded-md bg-[var(--color-destructive)]/10 p-2 text-xs text-[var(--color-destructive)]">
                       <AlertCircle className="h-4 w-4" />
                       <span>Search error: {tool.exaSearch.error}</span>
                     </div>
@@ -218,7 +218,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                       {tool.exaSearch.results.map((result, i) => (
                         <div
                           key={i}
-                          className="rounded-lg border border-zinc-200 bg-white p-3 transition-colors dark:border-zinc-700 dark:bg-zinc-800/50"
+                          className="rounded-2xl border border-zinc-200 bg-white p-3 transition-colors dark:border-zinc-700 dark:bg-zinc-800/50"
                         >
                           <a
                             href={result.url}
@@ -226,9 +226,9 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                             rel="noopener noreferrer"
                             className="group/link flex items-start gap-2"
                           >
-                            <ExternalLink className="mt-0.5 h-3 w-3 flex-shrink-0 text-zinc-400 group-hover/link:text-violet-500" />
+                            <ExternalLink className="mt-0.5 h-3 w-3 flex-shrink-0 text-zinc-400 group-hover/link:text-[var(--color-info)]" />
                             <div className="min-w-0 flex-1">
-                              <div className="text-sm font-medium text-zinc-800 group-hover/link:text-violet-600 dark:text-zinc-200 dark:group-hover/link:text-violet-400">
+                              <div className="text-sm font-medium text-zinc-800 group-hover/link:text-[var(--color-info)] dark:text-zinc-200">
                                 {result.title || 'Untitled'}
                               </div>
                               <div className="truncate text-xs text-zinc-400">
@@ -236,7 +236,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                               </div>
                             </div>
                             {result.score !== undefined && (
-                              <span className="ml-auto rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                              <span className="ml-auto rounded-full bg-[var(--color-info)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-info)]">
                                 {(result.score * 100).toFixed(0)}%
                               </span>
                             )}
@@ -258,13 +258,13 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                           {/* Highlights - key excerpts */}
                           {result.highlights && result.highlights.length > 0 && (
                             <div className="mt-2 space-y-1.5">
-                              <div className="text-xs font-medium text-violet-600 dark:text-violet-400">
+                              <div className="text-xs font-medium text-[var(--color-info)]">
                                 Key Highlights:
                               </div>
                               {result.highlights.map((highlight, j) => (
                                 <div
                                   key={j}
-                                  className="rounded-md border-l-2 border-violet-400 bg-violet-50 py-1.5 pl-3 pr-2 text-xs text-zinc-700 dark:border-violet-500 dark:bg-violet-950/30 dark:text-zinc-300"
+                                  className="rounded-md border-l-2 border-[var(--color-info)]/50 bg-[var(--color-info)]/5 py-1.5 pl-3 pr-2 text-xs text-zinc-700 dark:text-zinc-300"
                                 >
                                   &ldquo;{highlight}&rdquo;
                                 </div>
@@ -275,7 +275,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                           {/* Summary */}
                           {result.summary && (
                             <div className="mt-2">
-                              <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                              <div className="text-xs font-medium text-[var(--color-success)]">
                                 Summary:
                               </div>
                               <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
@@ -311,7 +311,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                   )}
                   
                   {tool.webSearch?.errorCode && (
-                    <div className="flex items-center gap-2 rounded-md bg-red-50 p-2 text-xs text-red-600 dark:bg-red-950/20 dark:text-red-400">
+                    <div className="flex items-center gap-2 rounded-md bg-[var(--color-destructive)]/10 p-2 text-xs text-[var(--color-destructive)]">
                       <AlertCircle className="h-4 w-4" />
                       <span>
                         Search error: {

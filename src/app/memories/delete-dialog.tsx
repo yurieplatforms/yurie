@@ -70,7 +70,7 @@ export function DeleteConfirmDialog({
                   whileTap={{ scale: 0.98 }}
                   onClick={onCancel}
                   disabled={isDeleting}
-                  className="flex-1 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
+                  className="flex-1 h-11 rounded-full bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium transition-all cursor-pointer disabled:opacity-50"
                 >
                   Cancel
                 </motion.button>
@@ -79,7 +79,7 @@ export function DeleteConfirmDialog({
                   whileTap={{ scale: 0.98 }}
                   onClick={onConfirm}
                   disabled={isDeleting}
-                  className="flex-1 h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer disabled:opacity-50"
+                  className="flex-1 h-11 rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-medium flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 shadow-lg shadow-red-600/20"
                 >
                   {isDeleting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

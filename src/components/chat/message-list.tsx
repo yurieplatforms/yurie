@@ -169,9 +169,9 @@ function AssistantMessageContent({
                 ) : undefined
               }
             />
-            <ReasoningContent showLine={hasReasoning}>
+            <ReasoningContent>
               {hasReasoning ? (
-                <MessageResponse className="italic">
+                <MessageResponse className="italic text-zinc-500 dark:text-zinc-400 prose-headings:text-zinc-500 dark:prose-headings:text-zinc-400 prose-strong:text-zinc-500 dark:prose-strong:text-zinc-400">
                   {message.reasoning}
                 </MessageResponse>
               ) : (
@@ -199,7 +199,7 @@ function AssistantMessageContent({
                   key={i}
                   src={segment.image_url.url}
                   alt="Generated image"
-                  className="max-w-full rounded-lg"
+                  className="max-w-full rounded-2xl"
                 />
               )
             }
@@ -230,7 +230,7 @@ function SuggestionsList({
     <div className="mt-2 flex flex-col space-y-0">
       <AnimatedBackground
         enableHover
-        className="h-full w-full rounded-lg bg-zinc-100 dark:bg-zinc-900/80"
+        className="h-full w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900/80"
         transition={{
           type: 'spring',
           bounce: 0,

@@ -46,7 +46,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
     <textarea
       className={cn(
-        "flex w-full rounded-xl border-none bg-transparent pl-2 pr-2 py-1.5 text-base text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[36px] resize-none scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600 scrollbar-track-transparent hover:scrollbar-thumb-zinc-400 dark:hover:scrollbar-thumb-zinc-500",
+        "flex w-full rounded-2xl border-none bg-transparent pl-2 pr-2 py-1.5 text-base text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[36px] resize-none scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600 scrollbar-track-transparent hover:scrollbar-thumb-zinc-400 dark:hover:scrollbar-thumb-zinc-500",
         className
       )}
     ref={ref}
@@ -86,7 +86,7 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border border-zinc-200 dark:border-zinc-800 bg-zinc-100/90 dark:bg-[#202020] p-0 shadow-xl duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-2xl",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border border-zinc-200 dark:border-zinc-800 bg-zinc-100/90 dark:bg-[#202020] p-0 shadow-xl duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-3xl",
         className
       )}
       {...props}
@@ -205,7 +205,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       )}
     >
       <div className="flex items-center gap-2 mb-3">
-        <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+        <div className="h-2 w-2 rounded-full bg-[var(--color-destructive)] animate-pulse" />
         <span className="font-mono text-sm text-zinc-900 dark:text-zinc-100/80">{formatTime(time)}</span>
       </div>
       <div className="w-full h-10 flex items-center justify-center gap-0.5 px-4">
@@ -671,9 +671,9 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               className={cn(
                 "h-8 w-8 rounded-full transition-all duration-200 cursor-pointer",
                 isRecording
-                  ? "bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 text-red-500 hover:text-red-600"
+                  ? "bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 text-[var(--color-destructive)] hover:text-[var(--color-destructive)]"
                   : hasContent
-                  ? "!bg-[#7F91E0] hover:!bg-[#7F91E0]/90 text-white"
+                  ? "!bg-[var(--color-accent)] hover:!bg-[var(--color-accent-hover)] text-white"
                   : "bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
               )}
               onClick={() => {
@@ -685,7 +685,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               {isLoading ? (
                 <Square className="h-4 w-4 fill-current animate-pulse" />
               ) : isRecording ? (
-                <StopCircle className="h-5 w-5 text-red-500" />
+                <StopCircle className="h-5 w-5 text-[var(--color-destructive)]" />
               ) : (
                 <CornerRightUp className="h-4 w-4 text-current" strokeWidth={2.5} />
               )}
