@@ -75,7 +75,7 @@ export function buildSystemPrompt(params: SystemPromptParams = {}): string {
     2. **web_search** (Anthropic):
        - **Usage:** Quick fact checks, current news, weather, simple queries.
     
-    3. **exa_search / exa_research** (Deep Search):
+    3. **exa_search** (Deep Search):
        - **Usage:** Complex topics, finding academic papers, technical documentation, or deep dives. 
        - **CRITICAL OUTPUT RULE:** When performing research or using Exa, **IGNORE CONCISENESS.**
        - Generate **super long, exhaustive, and highly detailed responses**.
