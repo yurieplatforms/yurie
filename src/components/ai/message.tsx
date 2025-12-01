@@ -401,6 +401,8 @@ export const MessageResponse = memo(
         )}
         // Enable LaTeX math rendering with single dollar signs ($...$)
         remarkPlugins={customRemarkPlugins as ComponentProps<typeof Streamdown>['remarkPlugins']}
+        // Use high-contrast themes for better readability in both modes
+        shikiTheme={['github-light', 'github-dark']}
         // Keep Streamdown's rich code block UI (header, controls), but make
         // structural elements match blog-style prose.
         components={{

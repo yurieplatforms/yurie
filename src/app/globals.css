@@ -150,6 +150,16 @@
     --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.4);
     --shadow-accent: 0 4px 14px rgba(127, 145, 224, 0.15);
     --shadow-destructive: 0 4px 14px rgba(248, 113, 113, 0.15);
+
+    /* Syntax Highlighting (Dark Mode) - Colorful pastels */
+    --sh-class: #7ec8e8;
+    --sh-sign: #c8d0d8;
+    --sh-string: #98d89c;
+    --sh-keyword: #e89cbc;
+    --sh-comment: #8888a0;
+    --sh-jsxliterals: #7ec8e8;
+    --sh-property: #6cd8c8;
+    --sh-entity: #e8c878;
   }
 }
 
@@ -204,7 +214,7 @@
   .dark [data-streamdown="code-block"],
   .dark [data-code-block-container="true"],
   .dark [data-code-block-container] {
-    background-color: #202020 !important; /* match user bubble dark:bg-[#202020] */
+    background-color: rgb(24 24 27 / 1) !important; /* match user bubble dark:bg-zinc-900 */
   }
 
   /* Inner code area border + background */
@@ -218,7 +228,7 @@
   .dark [data-streamdown="code-block-body"],
   .dark [data-code-block] {
     border-color: rgb(39 39 42 / 1); /* zinc-800 */
-    background-color: #202020 !important; /* match user bubble dark:bg-[#202020] */
+    background-color: rgb(24 24 27 / 1) !important; /* match user bubble dark:bg-zinc-900 */
   }
 
   /* Remove extra space between header and code, and force unified background */
@@ -239,7 +249,7 @@
   .dark [data-streamdown="code-block"] pre code,
   .dark [data-code-block] pre,
   .dark [data-code-block] pre code {
-    background-color: #202020 !important; /* override Shiki inline bg */
+    background-color: rgb(24 24 27 / 1) !important; /* override Shiki inline bg */
   }
 
   /* Code block header surface + text (match code background) */
@@ -252,7 +262,7 @@
 
   .dark [data-streamdown="code-block-header"],
   .dark [data-code-block-header] {
-    background-color: #202020 !important;
+    background-color: rgb(24 24 27 / 1) !important;
     color: rgb(228 228 231 / 1); /* zinc-200 */
     border-bottom: 1px solid rgb(39 39 42 / 1); /* zinc-800, subtle separator */
   }
@@ -262,6 +272,91 @@
   [data-streamdown="code-block"] code > span::before {
     color: var(--color-muted-foreground) !important;
     opacity: 1 !important;
+  }
+
+  /* Dark mode code block text - enhance readability */
+  .dark [data-streamdown="code-block-body"] pre code,
+  .dark [data-streamdown="code-block"] pre code,
+  .dark [data-code-block] pre code,
+  .dark pre code,
+  .dark pre.shiki code {
+    /* Ensure base text is bright white */
+    color: #ffffff !important;
+  }
+
+  /* Override ALL Shiki token colors in dark mode - colorful and bright */
+  .dark [data-streamdown="code-block-body"] pre code span,
+  .dark [data-streamdown="code-block"] pre code span,
+  .dark [data-code-block] pre code span,
+  .dark pre code span,
+  .dark pre.shiki code span,
+  .dark pre.shiki span {
+    /* High brightness with good saturation for colorful look */
+    filter: brightness(1.6) saturate(1.1);
+  }
+
+  /* Force colorful bright colors on Shiki spans with inline styles */
+  .dark pre.shiki span[style],
+  .dark [data-streamdown] pre span[style],
+  .dark code span[style] {
+    filter: brightness(1.6) saturate(1.1) !important;
+  }
+
+  /* Specific token color overrides for dark mode - colorful */
+  .dark pre code .token.comment,
+  .dark pre code .token.prolog,
+  .dark pre code .token.doctype,
+  .dark pre code .token.cdata {
+    color: #8888a0 !important; /* muted lavender gray */
+  }
+
+  .dark pre code .token.punctuation {
+    color: #b8c0c8 !important; /* silver */
+  }
+
+  .dark pre code .token.property,
+  .dark pre code .token.tag,
+  .dark pre code .token.constant,
+  .dark pre code .token.symbol,
+  .dark pre code .token.deleted {
+    color: #f0a0b8 !important; /* pink */
+  }
+
+  .dark pre code .token.boolean,
+  .dark pre code .token.number {
+    color: #f0c080 !important; /* orange */
+  }
+
+  .dark pre code .token.selector,
+  .dark pre code .token.attr-name,
+  .dark pre code .token.string,
+  .dark pre code .token.char,
+  .dark pre code .token.builtin,
+  .dark pre code .token.inserted {
+    color: #90d898 !important; /* green */
+  }
+
+  .dark pre code .token.operator,
+  .dark pre code .token.entity,
+  .dark pre code .token.url,
+  .dark pre code .token.variable {
+    color: #70d8c8 !important; /* teal */
+  }
+
+  .dark pre code .token.atrule,
+  .dark pre code .token.attr-value,
+  .dark pre code .token.function,
+  .dark pre code .token.class-name {
+    color: #80c8f0 !important; /* blue */
+  }
+
+  .dark pre code .token.keyword {
+    color: #e090b8 !important; /* magenta/rose */
+  }
+
+  .dark pre code .token.regex,
+  .dark pre code .token.important {
+    color: #f0d070 !important; /* yellow */
   }
 
   /* Match AI-generated horizontal rule separators to PromptInput outline color */
