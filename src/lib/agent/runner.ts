@@ -292,7 +292,7 @@ export async function runAgent({
       // Model selection
       // Note: Effort parameter is ONLY supported by Claude Opus 4.5
       // @see https://platform.claude.com/docs/en/build-with-claude/effort
-      const MODEL = 'claude-haiku-4-5-20251001'
+      const MODEL = 'claude-opus-4-5-20251101'
       const isOpusModel = MODEL.includes('opus')
 
       // Build beta headers list
