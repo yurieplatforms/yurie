@@ -178,75 +178,6 @@ export type ExaAnswerResult = {
 }
 
 // ============================================================================
-// EXA Research Types
-// @see https://docs.exa.ai/reference/exa-research
-// ============================================================================
-
-/**
- * Research model type controlling compute allocation.
- * @see https://docs.exa.ai/reference/exa-research#models
- */
-export type ExaResearchModel =
-  | 'exa-research'     // Default - adapts to task difficulty
-  | 'exa-research-pro' // Maximum quality for complex tasks
-
-/**
- * Research task status.
- */
-export type ExaResearchStatus =
-  | 'pending'    // Task is queued
-  | 'running'    // Task is being processed
-  | 'completed'  // Task finished successfully
-  | 'failed'     // Task failed
-
-/**
- * Citation from a research result.
- */
-export type ExaResearchCitation = {
-  /** The source URL */
-  url: string
-  /** Title of the source */
-  title?: string
-  /** Excerpt from the source */
-  excerpt?: string
-}
-
-/**
- * EXA research result from the Research API.
- * @see https://docs.exa.ai/reference/exa-research
- */
-export type ExaResearchResult = {
-  /** Always 'exa_research' for research results */
-  type: 'exa_research'
-  /** The research task ID */
-  researchId: string
-  /** The instructions provided */
-  instructions: string
-  /** Model used for the research */
-  model: ExaResearchModel
-  /** Status of the research task */
-  status: ExaResearchStatus
-  /** 
-   * The research output - either structured JSON (if outputSchema was provided)
-   * or a detailed markdown report.
-   */
-  output?: unknown
-  /** Citations from the research */
-  citations?: ExaResearchCitation[]
-  /** Cost breakdown (if available) */
-  cost?: {
-    searches?: number
-    pagesRead?: number
-    reasoningTokens?: number
-    totalUsd?: number
-  }
-  /** Error message if the research failed */
-  error?: string
-  /** Detailed error information for error handling */
-  errorInfo?: ExaErrorInfo
-}
-
-// ============================================================================
 // Web Search Types
 // @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
 // ============================================================================
@@ -439,9 +370,6 @@ export type ToolUseEvent = {
   // EXA answer specific fields
   // See: https://docs.exa.ai/reference/answer
   exaAnswer?: ExaAnswerResult
-  // EXA research specific fields
-  // See: https://docs.exa.ai/reference/exa-research
-  exaResearch?: ExaResearchResult
 }
 
 // Citations from search results and documents embedded in text responses

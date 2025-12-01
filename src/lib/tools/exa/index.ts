@@ -16,5 +16,4 @@ export * from './client'
 export * from './search'
 export * from './find-similar'
 export * from './answer'
-export * from './research'
 

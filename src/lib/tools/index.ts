@@ -34,20 +34,16 @@ export {
 // @see https://docs.exa.ai/reference/search
 // @see https://docs.exa.ai/reference/find-similar-links
 // @see https://docs.exa.ai/reference/answer
-// @see https://docs.exa.ai/reference/exa-research
 export {
   type ExaSearchInput,
   type ExaFindSimilarInput,
   type ExaAnswerInput,
   type ExaAnswerResult,
-  type ExaResearchInput,
   exaSearch,
   exaFindSimilar,
   exaAnswer,
-  exaResearch,
   formatExaResultsForLLM,
   formatExaAnswerForLLM,
-  formatExaResearchForLLM,
   isExaAvailable,
 } from './exa'
 

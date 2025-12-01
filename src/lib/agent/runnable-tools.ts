@@ -13,14 +13,12 @@ import {
   exaSearch,
   exaFindSimilar,
   exaAnswer,
-  exaResearch,
   formatExaResultsForLLM,
   formatExaAnswerForLLM,
-  formatExaResearchForLLM,
   isExaAvailable,
 } from '@/lib/tools/exa'
-import type { ExaSearchInput, ExaFindSimilarInput, ExaAnswerInput, ExaResearchInput } from '@/lib/tools/exa'
-import type { ExaSearchCategory, ExaSearchType, ExaResearchModel } from '@/lib/types'
+import type { ExaSearchInput, ExaFindSimilarInput, ExaAnswerInput } from '@/lib/tools/exa'
+import type { ExaSearchCategory, ExaSearchType } from '@/lib/types'
 import type { SSEHandler } from './sse-handler'
 
 /**
@@ -380,87 +378,6 @@ export function createRunnableTools(sseHandler: SSEHandler) {
               } catch (error) {
                 const errorMsg = `EXA answer error: ${error instanceof Error ? error.message : 'Unknown error'}`
                 await sseHandler.sendToolEvent('exa_answer', 'end', input as Record<string, unknown>, errorMsg)
-                return errorMsg
-              }
-            },
-          }),
-
-          // EXA Research - deep web research with structured output
-          // @see https://docs.exa.ai/reference/exa-research
-          betaTool({
-            name: 'exa_research',
-            description:
-              'Perform deep, multi-step web research with optional structured output. This is an asynchronous research pipeline that: (1) Plans research steps from your instructions, (2) Searches the web with multiple queries, expanding and refining, (3) Synthesizes findings into a comprehensive report or structured JSON. Best for complex research requiring multiple sources and reasoning. Takes 20-90+ seconds. Use for: competitive analysis, market research, technical deep-dives, literature reviews, timeline construction.',
-            inputSchema: {
-              type: 'object',
-              properties: {
-                instructions: {
-                  type: 'string',
-                  description:
-                    'Natural-language research instructions. Be explicit: describe (1) what information you want, (2) how to find it, (3) how to compose the final report. Max 4096 chars. Example: "Compare flagship GPUs from NVIDIA, AMD, Intel. Find MSRP, TDP, and launch dates. Return as a comparison table with citations."',
-                },
-                outputSchema: {
-                  type: 'object',
-                  description:
-                    'Optional JSON Schema for structured output. Keep small (1-5 root fields). Use enums for better accuracy. Max 8 root fields, 5 levels deep. If not provided, returns detailed markdown report.',
-                  additionalProperties: true,
-                },
-                model: {
-                  type: 'string',
-                  enum: ['exa-research', 'exa-research-pro'],
-                  description:
-                    'Research model: "exa-research" (default) adapts to task complexity, "exa-research-pro" uses maximum reasoning for complex multi-step research. Pro takes longer but higher quality.',
-                },
-                timeoutMs: {
-                  type: 'number',
-                  description:
-                    'Maximum wait time in milliseconds. Default: 120000 (2 min). Research typically takes 20-90 seconds.',
-                },
-              },
-              required: ['instructions'] as const,
-              additionalProperties: false,
-            },
-            run: async (input) => {
-              const researchInput: ExaResearchInput = {
-                instructions: input.instructions,
-                outputSchema: input.outputSchema as Record<string, unknown> | undefined,
-                model: input.model as ExaResearchModel | undefined,
-                timeoutMs: input.timeoutMs,
-              }
-
-              try {
-                if (!researchInput.instructions || researchInput.instructions.trim().length === 0) {
-                  const errorMsg = 'Error: Missing or empty "instructions" parameter. Please provide research instructions.'
-                  await sseHandler.sendToolEvent('exa_research', 'end', input as Record<string, unknown>, errorMsg)
-                  return errorMsg
-                }
-
-                // Send start event since research can take a while
-                await sseHandler.sendToolEvent('exa_research', 'start', input as Record<string, unknown>)
-
-                const result = await exaResearch(researchInput)
-                const formattedResult = formatExaResearchForLLM(result)
-
-                await sseHandler.sendSSE({
-                  choices: [
-                    {
-                      delta: {
-                        tool_use: {
-                          name: 'exa_research',
-                          status: 'end',
-                          input: input as Record<string, unknown>,
-                          result: formattedResult,
-                          exaResearch: result,
-                        },
-                      },
-                    },
-                  ],
-                })
-
-                return formattedResult
-              } catch (error) {
-                const errorMsg = `EXA research error: ${error instanceof Error ? error.message : 'Unknown error'}`
-                await sseHandler.sendToolEvent('exa_research', 'end', input as Record<string, unknown>, errorMsg)
                 return errorMsg
               }
             },
