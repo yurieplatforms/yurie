@@ -1,15 +1,53 @@
 import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+const inputVariants = cva(
+  "flex w-full text-sm transition-all duration-[var(--transition-base)] placeholder:text-[var(--color-muted-foreground)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 file:border-0 file:bg-transparent file:text-sm file:font-medium",
+  {
+    variants: {
+      variant: {
+        default: [
+          "h-10 rounded-[var(--radius-full)] border border-[var(--color-border)] bg-[var(--color-surface)]",
+          "px-4 py-2 text-[var(--color-foreground)]",
+          "hover:border-[var(--color-muted-foreground)]/50 hover:bg-[var(--color-surface-hover)]",
+          "focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:bg-[var(--color-background)]",
+        ],
+        ghost: [
+          "h-10 rounded-[var(--radius-lg)] bg-transparent border-none",
+          "px-3 py-2 text-[var(--color-foreground)]",
+          "hover:bg-[var(--color-surface-hover)] focus:bg-[var(--color-surface-hover)]",
+        ],
+        filled: [
+          "h-11 rounded-[var(--radius-full)] border-2 border-transparent bg-[var(--color-surface-hover)]",
+          "px-4 py-2 text-[var(--color-foreground)]",
+          "hover:bg-[var(--color-surface-active)]",
+          "focus:border-[var(--color-accent)]/50 focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:bg-[var(--color-surface-hover)]",
+        ],
+      },
+      inputSize: {
+        default: "h-10",
+        sm: "h-8 text-xs px-3",
+        lg: "h-11 text-base",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      inputSize: "default",
+    },
+  }
+)
+
+export interface InputProps
+  extends Omit<React.ComponentProps<"input">, "size">,
+    VariantProps<typeof inputVariants> {}
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, variant, inputSize, ...props }, ref) => {
     return (
       <input
         type={type}
-        className={cn(
-          "flex h-9 w-full rounded-full border border-zinc-200 bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-zinc-950 placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:border-zinc-800 dark:file:text-zinc-50 dark:placeholder:text-zinc-400 dark:focus-visible:ring-zinc-300",
-          className
-        )}
+        className={cn(inputVariants({ variant, inputSize }), className)}
         ref={ref}
         {...props}
       />
@@ -18,6 +56,4 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
 )
 Input.displayName = "Input"
 
-export { Input }
-
-
+export { Input, inputVariants }

@@ -46,7 +46,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
     <textarea
       className={cn(
-        "flex w-full rounded-2xl border-none bg-transparent pl-2 pr-2 py-1.5 text-base text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[36px] resize-none scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600 scrollbar-track-transparent hover:scrollbar-thumb-zinc-400 dark:hover:scrollbar-thumb-zinc-500",
+        "flex w-full rounded-[var(--radius-card)] border-none bg-transparent pl-2 pr-2 py-1.5 text-base text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)] focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[36px] resize-none scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600 scrollbar-track-transparent hover:scrollbar-thumb-zinc-400 dark:hover:scrollbar-thumb-zinc-500",
         className
       )}
     ref={ref}
@@ -86,14 +86,14 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border border-zinc-200 dark:border-zinc-800 bg-zinc-100/90 dark:bg-[#202020] p-0 shadow-xl duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-3xl",
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border border-[var(--color-border)] bg-[var(--color-surface)] dark:bg-[var(--color-surface-dark)] p-0 shadow-xl duration-[var(--transition-slow)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-[var(--radius-dialog)]",
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-full bg-zinc-100 dark:bg-zinc-800/80 p-2 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all cursor-pointer">
-        <X className="h-5 w-5 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100" />
+      <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-[var(--radius-full)] bg-[var(--color-surface)] p-2 hover:bg-[var(--color-surface-hover)] transition-all duration-[var(--transition-base)] cursor-pointer">
+        <X className="h-5 w-5 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
@@ -107,7 +107,7 @@ const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold leading-none tracking-tight text-zinc-900 dark:text-zinc-100", className)}
+    className={cn("text-lg font-semibold leading-none tracking-tight text-[var(--color-foreground)]", className)}
     {...props}
   />
 ));
@@ -200,19 +200,19 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center w-full transition-all duration-300 py-3",
+        "flex flex-col items-center justify-center w-full transition-all duration-[var(--transition-slow)] py-3",
         isRecording ? "opacity-100" : "opacity-0 h-0"
       )}
     >
       <div className="flex items-center gap-2 mb-3">
-        <div className="h-2 w-2 rounded-full bg-[var(--color-destructive)] animate-pulse" />
-        <span className="font-mono text-sm text-zinc-900 dark:text-zinc-100/80">{formatTime(time)}</span>
+        <div className="h-2 w-2 rounded-[var(--radius-full)] bg-[var(--color-destructive)] animate-pulse" />
+        <span className="font-mono text-sm text-[var(--color-foreground)]/80">{formatTime(time)}</span>
       </div>
       <div className="w-full h-10 flex items-center justify-center gap-0.5 px-4">
         {[...Array(visualizerBars)].map((_, i) => (
           <div
             key={i}
-            className="w-0.5 rounded-full bg-zinc-900/50 dark:bg-white/50 animate-pulse"
+            className="w-0.5 rounded-[var(--radius-full)] bg-[var(--color-foreground)]/50 animate-pulse"
             style={{
               height: `${Math.max(15, Math.random() * 100)}%`,
               animationDelay: `${i * 0.05}s`,
@@ -241,12 +241,12 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative bg-zinc-100/90 dark:bg-[#202020] rounded-2xl overflow-hidden shadow-2xl"
+          className="relative bg-[var(--color-surface)] dark:bg-[var(--color-surface-dark)] rounded-[var(--radius-card)] overflow-hidden shadow-2xl"
         >
           <img
             src={imageUrl}
             alt="Full preview"
-            className="w-full max-h-[80vh] object-contain rounded-2xl"
+            className="w-full max-h-[80vh] object-contain rounded-[var(--radius-card)]"
           />
         </motion.div>
       </DialogContent>
@@ -327,7 +327,7 @@ const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
           <div
             ref={ref}
             className={cn(
-              "rounded-[26px] bg-[#1F2023] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300",
+              "rounded-[var(--radius-prompt)] bg-[var(--color-prompt-bg)] p-2 shadow-[var(--shadow-lg)] transition-all duration-[var(--transition-slow)]",
               className
             )}
             onDragOver={onDragOver}
@@ -535,7 +535,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
         isLoading={isLoading}
         onSubmit={handleSubmit}
         className={cn(
-          "rounded-[26px] bg-zinc-100/90 dark:bg-[#181818] p-2 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.24)] transition-all duration-300 ease-in-out",
+          "rounded-[var(--radius-prompt)] bg-[var(--color-surface)] dark:bg-[var(--color-prompt-dark-bg)] p-2 shadow-[var(--shadow-lg)] transition-all duration-[var(--transition-slow)] ease-in-out",
           className
         )}
         disabled={isLoading || isRecording}
@@ -571,7 +571,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                     {/* Image preview */}
                     {isImageFile(file) && filePreviews[file.name] && (
                       <div
-                        className="w-16 h-16 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300"
+                        className="w-16 h-16 rounded-[var(--radius-card)] overflow-hidden cursor-pointer transition-all duration-[var(--transition-slow)]"
                         onClick={() => openImageModal(filePreviews[file.name])}
                       >
                         <img
@@ -592,9 +592,9 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                     )}
                     {/* Document preview (PDF and text files) */}
                     {(isPdfFile(file) || isTextFile(file)) && (
-                      <div className="relative flex items-center gap-2 px-3 py-2 rounded-2xl bg-zinc-200/50 dark:bg-zinc-700/50 transition-all duration-300">
-                        <FileText className="h-5 w-5 text-zinc-500 dark:text-zinc-400" />
-                        <span className="text-sm text-zinc-700 dark:text-zinc-300 max-w-[120px] truncate">
+                      <div className="relative flex items-center gap-2 px-3 py-2 rounded-[var(--radius-card)] bg-[var(--color-surface-hover)] transition-all duration-[var(--transition-slow)]">
+                        <FileText className="h-5 w-5 text-[var(--color-muted-foreground)]" />
+                        <span className="text-sm text-[var(--color-foreground)] max-w-[120px] truncate">
                           {file.name}
                         </span>
                         <button
@@ -602,9 +602,9 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
                             e.stopPropagation();
                             handleRemoveFile(index);
                           }}
-                          className="ml-1 rounded-full bg-zinc-300/70 dark:bg-zinc-600/70 p-0.5 hover:bg-zinc-400/70 dark:hover:bg-zinc-500/70 transition-colors"
+                          className="ml-1 rounded-[var(--radius-full)] bg-[var(--color-muted)] p-0.5 hover:bg-[var(--color-surface-hover)] transition-colors duration-[var(--transition-base)]"
                         >
-                          <X className="h-3 w-3 text-zinc-600 dark:text-zinc-300" />
+                          <X className="h-3 w-3 text-[var(--color-muted-foreground)]" />
                         </button>
                       </div>
                     )}
@@ -620,7 +620,7 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
             <button
               onClick={() => uploadInputRef.current?.click()}
               className={cn(
-                "flex h-8 w-8 text-zinc-500 dark:text-zinc-400 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 hover:text-zinc-700 dark:hover:text-zinc-200",
+                "flex h-8 w-8 text-[var(--color-muted-foreground)] cursor-pointer items-center justify-center rounded-[var(--radius-full)] transition-all duration-[var(--transition-base)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-foreground)] active:bg-[var(--color-surface-active)] active:scale-95",
                 isRecording && "hidden"
               )}
               disabled={isRecording}
@@ -669,12 +669,12 @@ export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref:
               variant="ghost"
               size="icon"
               className={cn(
-                "h-8 w-8 rounded-full transition-all duration-200 cursor-pointer",
+                "h-8 w-8 rounded-[var(--radius-full)] transition-all duration-[var(--transition-base)] cursor-pointer",
                 isRecording
-                  ? "bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 text-[var(--color-destructive)] hover:text-[var(--color-destructive)]"
+                  ? "bg-transparent hover:bg-[var(--color-destructive)]/15 active:bg-[var(--color-destructive)]/25 text-[var(--color-destructive)] hover:text-[var(--color-destructive)]"
                   : hasContent
-                  ? "!bg-[var(--color-accent)] hover:!bg-[var(--color-accent-hover)] text-white"
-                  : "bg-transparent hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+                  ? "!bg-[var(--color-accent)] hover:!bg-[var(--color-accent-hover)] hover:shadow-lg active:scale-95 text-white"
+                  : "bg-transparent hover:bg-[var(--color-surface-hover)] active:bg-[var(--color-surface-active)] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
               )}
               onClick={() => {
                 if (isRecording) setIsRecording(false);

@@ -3,6 +3,10 @@
 import { useState, useRef, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { useToast, ToastContainer } from '@/components/ui/toast'
 import { updateProfile } from './actions'
 import { 
   LogOut, 
@@ -24,12 +28,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { ThemeSwitch } from '@/components/layout/footer'
 import { useAuth } from '@/lib/providers/auth-provider'
-
-type Toast = {
-  id: string
-  message: string
-  type: 'success' | 'error'
-}
+import { cn } from '@/lib/utils'
 
 export function ProfileContent({
   user,
@@ -43,9 +42,11 @@ export function ProfileContent({
   const [isUploading, setIsUploading] = useState(false)
   const [isUploadingCover, setIsUploadingCover] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  const [toasts, setToasts] = useState<Toast[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
+  
+  // Toast
+  const { toasts, showToast } = useToast()
   
   // Preferences state
   const [isEditingPreferences, setIsEditingPreferences] = useState(false)
@@ -57,14 +58,6 @@ export function ProfileContent({
   const [editingLocation, setEditingLocation] = useState(location)
   const [timezone, setTimezone] = useState(user.user_metadata?.timezone || '')
   const [editingTimezone, setEditingTimezone] = useState(timezone)
-
-  const showToast = useCallback((message: string, type: 'success' | 'error') => {
-    const id = Math.random().toString(36).slice(2)
-    setToasts(prev => [...prev, { id, message, type }])
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id))
-    }, 3000)
-  }, [])
 
   const handleFileUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -225,35 +218,13 @@ export function ProfileContent({
   return (
     <>
       {/* Toast Notifications */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
-        {toasts.map(toast => (
-          <div
-            key={toast.id}
-              className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-lg border ${
-                toast.type === 'success' 
-                  ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/20 text-[var(--color-success)]' 
-                  : 'bg-[var(--color-destructive)]/10 border-[var(--color-destructive)]/20 text-[var(--color-destructive)]'
-              }`}
-            >
-              <div className={`h-5 w-5 rounded-full flex items-center justify-center ${
-                toast.type === 'success' ? 'bg-[var(--color-success)]' : 'bg-[var(--color-destructive)]'
-              }`}>
-              {toast.type === 'success' ? (
-                <Check className="h-3 w-3 text-white" />
-              ) : (
-                <X className="h-3 w-3 text-white" />
-              )}
-            </div>
-            <span className="text-sm font-medium">{toast.message}</span>
-          </div>
-        ))}
-      </div>
+      <ToastContainer toasts={toasts} />
 
       <main className="space-y-6 pb-8">
         {/* Profile Header with Cover */}
         <section className="flex flex-col items-center text-center">
           {/* Cover Background */}
-          <div className="relative w-full h-36 sm:h-44 rounded-2xl overflow-hidden group/cover">
+          <div className="relative w-full h-36 sm:h-44 rounded-[var(--radius-card)] overflow-hidden group/cover">
             {coverUrl ? (
               <img 
                 src={coverUrl} 
@@ -261,7 +232,7 @@ export function ProfileContent({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent)] via-[#9683D8] via-[45%] to-[#D4A5C9] dark:from-[#4A5A9E] dark:via-[#5F5088] dark:via-[45%] dark:to-[#876878]">
+              <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent)] dark:from-[var(--color-gradient-dark-start)] via-[var(--color-gradient-mid-1)] via-[45%] to-[var(--color-gradient-mid-2)]">
                 {/* Decorative elements */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(127,145,224,0.25)_0%,transparent_45%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(210,165,200,0.2)_0%,transparent_45%)]" />
@@ -273,7 +244,7 @@ export function ProfileContent({
             <button 
               onClick={() => coverInputRef.current?.click()}
               disabled={isUploadingCover}
-              className="absolute bottom-3 right-3 flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white text-xs font-medium opacity-0 group-hover/cover:opacity-100 transition-all duration-200 cursor-pointer"
+              className="absolute bottom-3 right-3 flex items-center gap-2 px-4 py-2 rounded-[var(--radius-full)] bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white text-xs font-medium opacity-0 group-hover/cover:opacity-100 transition-all duration-[var(--transition-base)] cursor-pointer"
             >
               {isUploadingCover ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -301,9 +272,10 @@ export function ProfileContent({
             onDragLeave={handleDragLeave}
           >
             <div 
-              className={`relative h-28 w-28 rounded-full overflow-hidden ring-4 ring-zinc-100 dark:ring-zinc-950 transition-all duration-300 ${
-                isDragging ? 'ring-[var(--color-accent)] scale-105' : ''
-              }`}
+              className={cn(
+                "relative h-28 w-28 rounded-full overflow-hidden ring-4 ring-[var(--color-background)] transition-all duration-300",
+                isDragging && "ring-[var(--color-accent)] scale-105"
+              )}
             >
               {avatarUrl ? (
                 <img 
@@ -312,7 +284,7 @@ export function ProfileContent({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="h-full w-full bg-gradient-to-br from-[var(--color-accent)] to-purple-600 flex items-center justify-center">
+                <div className="h-full w-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-info)] flex items-center justify-center">
                   <span className="text-3xl font-bold text-white">
                     {displayName.charAt(0).toUpperCase()}
                   </span>
@@ -323,9 +295,9 @@ export function ProfileContent({
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 transition-all duration-200 cursor-pointer group/upload"
+                className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 transition-all duration-[var(--transition-base)] cursor-pointer group/upload"
               >
-                <div className="opacity-0 group-hover/upload:opacity-100 transition-opacity duration-200">
+                <div className="opacity-0 group-hover/upload:opacity-100 transition-opacity duration-[var(--transition-base)]">
                   {isUploading ? (
                     <Loader2 className="h-6 w-6 animate-spin text-white" />
                   ) : (
@@ -346,7 +318,7 @@ export function ProfileContent({
           </div>
 
           {/* Name */}
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-foreground)]">
             {displayName}
           </h1>
         </section>
@@ -354,11 +326,11 @@ export function ProfileContent({
         {/* Unified Profile Details */}
         <section className="space-y-3">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Settings</h2>
+            <h2 className="text-sm font-medium text-[var(--color-muted-foreground)]">Settings</h2>
             {!isEditingPreferences && (
               <button
                 onClick={startEditingPreferences}
-                className="flex items-center gap-1.5 text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-md)] text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] hover:bg-[var(--color-accent)]/10 active:bg-[var(--color-accent)]/20 transition-all cursor-pointer"
               >
                 <Settings className="h-3.5 w-3.5" />
                 Edit
@@ -366,64 +338,65 @@ export function ProfileContent({
             )}
           </div>
           
-          <div className="rounded-2xl bg-zinc-100/60 dark:bg-zinc-900/60 divide-y divide-zinc-200/60 dark:divide-zinc-800/60 overflow-hidden">
+          <Card variant="default" padding="none" className="divide-y divide-[var(--color-border)]/60 overflow-hidden">
             {isEditingPreferences ? (
               <div className="p-4 space-y-4">
                 {/* Name Field (Editable) */}
                 <div className="space-y-1.5">
-                  <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  <Label variant="muted" size="xs" className="flex items-center gap-2">
                     <UserIcon className="h-3.5 w-3.5" />
                     Name
-                  </label>
+                  </Label>
                   <Input
                     value={editingFullName}
                     onChange={(e) => setEditingFullName(e.target.value)}
                     placeholder="Your name"
-                    className="h-11 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-full focus:ring-2 focus:ring-[var(--color-accent)]"
+                    variant="filled"
                   />
                 </div>
                 
                 {/* Birthday Field (Editable) */}
                 <div className="space-y-1.5">
-                  <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  <Label variant="muted" size="xs" className="flex items-center gap-2">
                     <Cake className="h-3.5 w-3.5" />
                     Birthday
-                  </label>
+                  </Label>
                   <div className="relative">
                     <Input
                       type="date"
                       value={editingBirthday}
                       onChange={(e) => setEditingBirthday(e.target.value)}
-                      className="h-11 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-full focus:ring-2 focus:ring-[var(--color-accent)] [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 [&::-webkit-calendar-picker-indicator]:transition-opacity"
+                      variant="filled"
+                      className="[&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 [&::-webkit-calendar-picker-indicator]:transition-opacity"
                     />
                   </div>
                 </div>
                 
                 {/* Location Field (Editable) */}
                 <div className="space-y-1.5">
-                  <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  <Label variant="muted" size="xs" className="flex items-center gap-2">
                     <MapPin className="h-3.5 w-3.5" />
                     Location
-                  </label>
+                  </Label>
                   <Input
                     value={editingLocation}
                     onChange={(e) => setEditingLocation(e.target.value)}
                     placeholder="City, Country"
-                    className="h-11 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-full focus:ring-2 focus:ring-[var(--color-accent)]"
+                    variant="filled"
                   />
                 </div>
                 
                 {/* Timezone Field (Editable) */}
                 <div className="space-y-1.5">
-                  <label className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  <Label variant="muted" size="xs" className="flex items-center gap-2">
                     <Globe className="h-3.5 w-3.5" />
                     Timezone
-                  </label>
+                  </Label>
                   <div className="relative">
                     <select
                       value={editingTimezone}
                       onChange={(e) => setEditingTimezone(e.target.value)}
-                      className="w-full h-11 px-3 pr-10 bg-zinc-200/60 dark:bg-zinc-800/60 border-none rounded-full text-sm text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-[var(--color-accent)] focus:outline-none appearance-none cursor-pointer"
+                      className="w-full h-11 px-4 pr-10 bg-[var(--color-surface-hover)] border-none rounded-[var(--radius-full)] text-sm text-[var(--color-foreground)] focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:outline-none appearance-none cursor-pointer transition-all"
                     >
                       <option value="">Select timezone</option>
                       <optgroup label="Detected">
@@ -464,16 +437,17 @@ export function ProfileContent({
                         <option value="Pacific/Auckland">Pacific/Auckland (NZST/NZDT)</option>
                       </optgroup>
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 dark:text-zinc-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-muted-foreground)] pointer-events-none" />
                   </div>
                 </div>
                 
                 {/* Action Buttons */}
                 <div className="flex gap-2 pt-2">
-                  <button
+                  <Button
                     onClick={handleSavePreferences}
                     disabled={isSavingPreferences}
-                    className="flex-1 h-11 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-sm font-medium flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-[var(--color-accent)]/20"
+                    size="lg"
+                    className="flex-1"
                   >
                     {isSavingPreferences ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -481,59 +455,60 @@ export function ProfileContent({
                       <Check className="h-4 w-4" />
                     )}
                     Save
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={cancelEditingPreferences}
-                    className="h-11 w-11 rounded-full bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center justify-center transition-all cursor-pointer"
+                    variant="secondary"
+                    size="icon-lg"
                     title="Cancel"
                   >
                     <X className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : (
-              <div className="divide-y divide-zinc-200/60 dark:divide-zinc-800/60">
+              <div className="divide-y divide-[var(--color-border)]/60">
                 {/* Name Row */}
                 <div className="flex items-center gap-4 px-4 py-3.5">
-                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                    <UserIcon className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  <div className="h-9 w-9 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center">
+                    <UserIcon className="h-4 w-4 text-[var(--color-muted-foreground)]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Name</p>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{displayName}</p>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">Name</p>
+                    <p className="text-sm font-medium text-[var(--color-foreground)] truncate">{displayName}</p>
                   </div>
                 </div>
 
                 {/* Email Row */}
                 <div className="flex items-center gap-4 px-4 py-3.5">
-                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                    <Mail className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  <div className="h-9 w-9 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center">
+                    <Mail className="h-4 w-4 text-[var(--color-muted-foreground)]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Email</p>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{user.email}</p>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">Email</p>
+                    <p className="text-sm font-medium text-[var(--color-foreground)] truncate">{user.email}</p>
                   </div>
                 </div>
 
                 {/* Member Since Row */}
                 <div className="flex items-center gap-4 px-4 py-3.5">
-                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  <div className="h-9 w-9 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center">
+                    <Calendar className="h-4 w-4 text-[var(--color-muted-foreground)]" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Member since</p>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{memberSince}</p>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">Member since</p>
+                    <p className="text-sm font-medium text-[var(--color-foreground)]">{memberSince}</p>
                   </div>
                 </div>
                 
                 {/* Birthday Row */}
                 <div className="flex items-center gap-4 px-4 py-3.5">
-                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                    <Cake className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  <div className="h-9 w-9 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center">
+                    <Cake className="h-4 w-4 text-[var(--color-muted-foreground)]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Birthday</p>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                    <p className="text-xs text-[var(--color-muted-foreground)]">Birthday</p>
+                    <p className="text-sm font-medium text-[var(--color-foreground)] truncate">
                       {birthday ? new Date(birthday + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Not set'}
                     </p>
                   </div>
@@ -541,12 +516,12 @@ export function ProfileContent({
                 
                 {/* Location Row */}
                 <div className="flex items-center gap-4 px-4 py-3.5">
-                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                    <MapPin className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  <div className="h-9 w-9 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center">
+                    <MapPin className="h-4 w-4 text-[var(--color-muted-foreground)]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Location</p>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                    <p className="text-xs text-[var(--color-muted-foreground)]">Location</p>
+                    <p className="text-sm font-medium text-[var(--color-foreground)] truncate">
                       {location || 'Not set'}
                     </p>
                   </div>
@@ -554,12 +529,12 @@ export function ProfileContent({
                 
                 {/* Timezone Row */}
                 <div className="flex items-center gap-4 px-4 py-3.5">
-                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                    <Globe className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  <div className="h-9 w-9 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center">
+                    <Globe className="h-4 w-4 text-[var(--color-muted-foreground)]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Timezone</p>
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                    <p className="text-xs text-[var(--color-muted-foreground)]">Timezone</p>
+                    <p className="text-sm font-medium text-[var(--color-foreground)] truncate">
                       {displayTimezone}
                     </p>
                   </div>
@@ -567,11 +542,11 @@ export function ProfileContent({
                 
                 {/* Theme Row */}
                 <div className="flex items-center gap-4 px-4 py-3.5">
-                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                    <Palette className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  <div className="h-9 w-9 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center">
+                    <Palette className="h-4 w-4 text-[var(--color-muted-foreground)]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-zinc-500 dark:text-zinc-500">Theme</p>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">Theme</p>
                   </div>
                   <ThemeSwitch />
                 </div>
@@ -579,19 +554,19 @@ export function ProfileContent({
                 {/* Sign Out Row */}
                 <button
                   onClick={() => signOut()}
-                  className="flex w-full items-center gap-4 px-4 py-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+                  className="flex w-full items-center gap-4 px-4 py-3.5 hover:bg-[var(--color-surface-hover)] active:bg-[var(--color-surface-active)] transition-all cursor-pointer"
                 >
-                  <div className="h-9 w-9 rounded-full bg-zinc-200/80 dark:bg-zinc-800 flex items-center justify-center">
-                    <LogOut className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  <div className="h-9 w-9 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center">
+                    <LogOut className="h-4 w-4 text-[var(--color-muted-foreground)]" />
                   </div>
                   <div className="flex-1 min-w-0 text-left">
-                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Sign out</p>
+                    <p className="text-sm font-medium text-[var(--color-foreground)]">Sign out</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-zinc-400" />
+                  <ChevronRight className="h-4 w-4 text-[var(--color-muted-foreground)]" />
                 </button>
               </div>
             )}
-          </div>
+          </Card>
         </section>
 
       </main>

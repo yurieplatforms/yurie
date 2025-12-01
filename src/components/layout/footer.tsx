@@ -45,10 +45,10 @@ export function ThemeSwitch() {
             key={option.id}
             onClick={() => setTheme(option.id)}
             className={cn(
-              'inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-full transition-colors',
+              'inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-[var(--radius-full)] transition-all duration-[var(--transition-base)]',
               isActive
-                ? 'bg-zinc-100 text-zinc-950 dark:bg-zinc-800 dark:text-zinc-50'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50',
+                ? 'bg-[var(--color-surface-hover)] text-[var(--color-foreground)]'
+                : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface)] active:bg-[var(--color-surface-hover)]',
             )}
             type="button"
             aria-label={`Switch to ${option.label} theme`}
@@ -63,16 +63,16 @@ export function ThemeSwitch() {
 
 export function Footer({ className, hideThemeSwitch }: { className?: string; hideThemeSwitch?: boolean }) {
   return (
-    <footer className={cn("mt-24 border-t border-zinc-100 px-0 py-4 dark:border-zinc-800", className)}>
+    <footer className={cn("mt-24 border-t border-[var(--color-border)] px-0 py-4", className)}>
       <div className="flex items-center justify-between">
         <Link href="/">
-          <TextLoop className="text-xs text-zinc-500">
+          <TextLoop className="text-xs text-[var(--color-muted-foreground)]">
             <span>© 2025 Yurie Platforms.</span>
             <span>Built with love and a little bit of magic.</span>
           </TextLoop>
         </Link>
         {!hideThemeSwitch && (
-          <div className="text-xs text-zinc-400">
+          <div className="text-xs">
             <ThemeSwitch />
           </div>
         )}

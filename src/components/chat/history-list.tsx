@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/providers/auth-provider'
 import type { SavedChat } from '@/lib/types'
 import { motion } from 'motion/react'
 import { AnimatedBackground } from '@/components/ui/animated-background'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 const VARIANTS_CONTAINER = {
   hidden: { opacity: 0 },
@@ -122,7 +124,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
   // For server-side provided data, we render immediately.
   if (!mounted && initialChats.length === 0) {
     return (
-      <div className="p-4 text-center text-zinc-500">Loading history...</div>
+      <div className="p-4 text-center text-[var(--color-muted-foreground)]">Loading history...</div>
     )
   }
 
@@ -135,18 +137,18 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
         transition={{ duration: 0.3 }}
       >
         <div className="flex w-full max-w-sm flex-col items-center justify-center text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-900">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-surface)]">
             <img src="/favicon.ico" alt="Yurie" className="h-8 w-8 opacity-50 grayscale" />
           </div>
-          <h3 className="mb-2 text-lg font-medium text-zinc-900 dark:text-zinc-100">
+          <h3 className="mb-2 text-lg font-medium text-[var(--color-foreground)]">
             Nothing here yet
           </h3>
-          <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mb-6 text-sm text-[var(--color-muted-foreground)]">
             Start a conversation to see your threads here.
           </p>
           <AnimatedBackground
             enableHover
-            className="h-full w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900/80"
+            className="h-full w-full rounded-[var(--radius-card)] bg-[var(--color-surface)]"
             transition={{
               type: 'spring',
               bounce: 0,
@@ -155,7 +157,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
           >
             <Link
               href="/"
-              className="relative -mx-3 inline-flex items-center justify-center rounded-full px-3 py-2 text-sm font-medium text-zinc-950 dark:text-zinc-50 transition-colors hover:text-zinc-950"
+              className="relative -mx-3 inline-flex items-center justify-center rounded-[var(--radius-full)] px-3 py-2 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:text-[var(--color-foreground)]"
               data-id="start-chat"
             >
               Message Yurie
@@ -178,18 +180,18 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
         transition={TRANSITION_SECTION}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium">Your conversations</h2>
+          <h1 className="text-lg font-semibold tracking-tight text-[var(--color-foreground)]">Your conversations</h1>
           <div className="flex items-center gap-2">
             <Link
               href="/"
-              className="cursor-pointer text-sm text-zinc-500 transition-colors hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50 flex items-center gap-2"
+              className="cursor-pointer text-sm text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-foreground)] flex items-center gap-2"
             >
               New thread
             </Link>
-            <div className="h-4 w-[1px] bg-zinc-300 dark:bg-zinc-700" />
+            <div className="h-4 w-[1px] bg-[var(--color-border)]" />
             <button
               onClick={handleClearHistory}
-              className="cursor-pointer text-sm text-zinc-500 transition-colors hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-zinc-50"
+              className="cursor-pointer text-sm text-[var(--color-muted-foreground)] transition-colors hover:text-[var(--color-foreground)]"
             >
               Clear all
             </button>
@@ -199,7 +201,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
         <div className="-mx-4 overflow-hidden">
           <AnimatedBackground
             enableHover
-            className="h-full w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900/80"
+            className="h-full w-full rounded-[var(--radius-card)] bg-[var(--color-surface)]"
             transition={{
               type: 'spring',
               bounce: 0,
@@ -207,28 +209,29 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
             }}
           >
             {chats.map((chat) => (
-              <div
+              <Card
                 key={chat.id}
                 data-id={chat.id}
-                className="w-full rounded-2xl px-4 py-3 relative group overflow-hidden"
+                variant="ghost"
+                className="w-full relative group overflow-hidden"
               >
                   <Link
                     href={`/?id=${chat.id}`}
                     className="absolute inset-0 z-0"
                   />
                   <div className="relative z-10 pointer-events-none flex flex-col space-y-1 pr-8 min-w-0 w-full">
-                    <h4 className="font-normal dark:text-zinc-100 truncate">
+                    <h4 className="font-normal text-[var(--color-foreground)] truncate">
                       {chat.title}
                     </h4>
                     {chat.messages.length > 0 && (
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 break-words">
+                      <p className="text-sm text-[var(--color-muted-foreground)] line-clamp-2 break-words">
                         {chat.messages[chat.messages.length - 1].content.replace(
                           /[#*`_~-]/g,
                           '',
                         )}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 pt-1">
+                    <div className="flex items-center gap-2 text-xs text-[var(--color-muted-foreground)] pt-1">
                       <span suppressHydrationWarning>{new Date(chat.updatedAt).toLocaleDateString()}</span>
                       <span>•</span>
                       <span>{chat.messages.length} messages</span>
@@ -236,12 +239,12 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
                   </div>
                   <button
                     onClick={(e) => handleDelete(e, chat.id)}
-                    className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition-all hover:bg-[var(--color-destructive)]/10 hover:text-[var(--color-destructive)] opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    className="cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-muted-foreground)] transition-all hover:bg-[var(--color-destructive)]/20 hover:text-[var(--color-destructive)] active:bg-[var(--color-destructive)]/30 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:scale-110 active:scale-100"
                     title="Delete chat"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
-              </div>
+              </Card>
             ))}
           </AnimatedBackground>
         </div>
