@@ -887,12 +887,18 @@ export async function getGitHubToolsForAnthropic(
   }
 
   try {
-    const tools = await composio.tools.get(DEFAULT_USER_ID, {
-      toolkits: ['github'],
-      ...(options?.tools && { tools: options.tools }),
-      ...(options?.search && { search: options.search }),
-      ...(options?.limit && { limit: options.limit }),
-    })
+    // If specific tools are requested, use tools parameter; otherwise use toolkits
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let tools: any[]
+    if (options?.tools && options.tools.length > 0) {
+      tools = await composio.tools.get(DEFAULT_USER_ID, {
+        tools: options.tools,
+      })
+    } else {
+      tools = await composio.tools.get(DEFAULT_USER_ID, {
+        toolkits: ['github'],
+      })
+    }
 
     return tools
   } catch (error) {
