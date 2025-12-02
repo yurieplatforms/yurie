@@ -97,7 +97,7 @@ export async function initiateConnection(appName: string) {
       user.id,
       authConfigId,
       {
-        redirectUrl: `${origin}/profile`,
+        callbackUrl: `${origin}/profile`,
       }
     )
     
