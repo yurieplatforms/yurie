@@ -21,6 +21,7 @@ import { ChatInputArea } from './chat-input-area'
 export function AgentChat({ chatId }: { chatId?: string }) {
   const { user } = useAuth()
   const [hasJustCopied, setHasJustCopied] = useState(false)
+  const [selectedTools, setSelectedTools] = useState<string[]>([])
 
   // Get user location for localized web search results
   // Uses timezone-based inference with comprehensive city/region mapping
@@ -270,7 +271,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
           {error && (
             <p className="mb-4 text-xs text-red-500 dark:text-red-400">{error}</p>
           )}
-          <ChatInputArea isLoading={isLoading} onSend={sendMessage} variant="inline" />
+          <ChatInputArea isLoading={isLoading} onSend={sendMessage} variant="inline" selectedTools={selectedTools} onSelectedToolsChange={setSelectedTools} />
         </div>
       </div>
     )
@@ -279,7 +280,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   // Chat page: messages with fixed bottom input
   return (
     <div className="relative h-full">
-      <div className="flex h-full flex-col gap-4 pb-24">
+      <div className="flex h-full flex-col gap-4 pb-36">
         <div className="space-y-3">
           <MessageList
             messages={messages}
@@ -295,7 +296,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         )}
       </div>
 
-      <ChatInputArea isLoading={isLoading} onSend={sendMessage} />
+      <ChatInputArea isLoading={isLoading} onSend={sendMessage} selectedTools={selectedTools} onSelectedToolsChange={setSelectedTools} />
     </div>
   )
 }

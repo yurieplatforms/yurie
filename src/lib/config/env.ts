@@ -4,6 +4,7 @@ const envSchema = z.object({
   // Server-side variables
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   EXA_API_KEY: z.string().min(1).optional(),
+  COMPOSIO_API_KEY: z.string().min(1).optional(),
   
   // Client-side variables (NEXT_PUBLIC_)
   NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
@@ -16,6 +17,7 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse({
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
   EXA_API_KEY: process.env.EXA_API_KEY,
+  COMPOSIO_API_KEY: process.env.COMPOSIO_API_KEY,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 })

@@ -25,7 +25,7 @@ import {
   createSSEErrorPayload,
   logAnthropicError,
 } from '@/lib/agent/errors'
-import { createRunnableTools } from '@/lib/agent/runnable-tools'
+import { createRunnableTools, type FocusedRepoContext } from '@/lib/agent/runnable-tools'
 import { createMemoryTool } from '@/lib/agent/memory-tool-config'
 import {
   processCitations,
@@ -96,12 +96,99 @@ const CACHING_CONFIG = {
 } as const
 
 /**
+ * Sanitizes a content block to only include known Anthropic API fields.
+ * This prevents "Extra inputs are not permitted" errors when messages
+ * from storage contain extra properties (e.g., 'parsed', 'suggestions').
+ */
+function sanitizeContentBlock(block: Anthropic.ContentBlockParam): Anthropic.ContentBlockParam {
+  if (!block || typeof block !== 'object') return block
+  
+  const type = (block as { type: string }).type
+  
+  switch (type) {
+    case 'text': {
+      const textBlock = block as { type: 'text'; text: string; cache_control?: { type: 'ephemeral' } }
+      const sanitized: Anthropic.TextBlockParam = {
+        type: 'text',
+        text: textBlock.text,
+      }
+      if (textBlock.cache_control) {
+        (sanitized as Anthropic.TextBlockParam & { cache_control: { type: 'ephemeral' } }).cache_control = textBlock.cache_control
+      }
+      return sanitized
+    }
+    case 'image': {
+      const imageBlock = block as Anthropic.ImageBlockParam
+      return {
+        type: 'image',
+        source: imageBlock.source,
+      } as Anthropic.ImageBlockParam
+    }
+    case 'document': {
+      const docBlock = block as Anthropic.DocumentBlockParam & { title?: string; citations?: { enabled: boolean }; cache_control?: { type: 'ephemeral' } }
+      const sanitized: Anthropic.DocumentBlockParam = {
+        type: 'document',
+        source: docBlock.source,
+      }
+      if (docBlock.title) (sanitized as Anthropic.DocumentBlockParam & { title: string }).title = docBlock.title
+      if (docBlock.citations) (sanitized as Anthropic.DocumentBlockParam & { citations: { enabled: boolean } }).citations = docBlock.citations
+      if (docBlock.cache_control) (sanitized as Anthropic.DocumentBlockParam & { cache_control: { type: 'ephemeral' } }).cache_control = docBlock.cache_control
+      return sanitized
+    }
+    case 'tool_use': {
+      const toolBlock = block as Anthropic.ToolUseBlockParam
+      return {
+        type: 'tool_use',
+        id: toolBlock.id,
+        name: toolBlock.name,
+        input: toolBlock.input,
+      } as Anthropic.ToolUseBlockParam
+    }
+    case 'tool_result': {
+      const resultBlock = block as Anthropic.ToolResultBlockParam & { cache_control?: { type: 'ephemeral' } }
+      const sanitized: Anthropic.ToolResultBlockParam = {
+        type: 'tool_result',
+        tool_use_id: resultBlock.tool_use_id,
+      }
+      if (resultBlock.content !== undefined) sanitized.content = resultBlock.content
+      if (resultBlock.is_error !== undefined) sanitized.is_error = resultBlock.is_error
+      if (resultBlock.cache_control) (sanitized as Anthropic.ToolResultBlockParam & { cache_control: { type: 'ephemeral' } }).cache_control = resultBlock.cache_control
+      return sanitized
+    }
+    default:
+      // For unknown types, return as-is (thinking blocks, etc.)
+      return block
+  }
+}
+
+/**
+ * Sanitizes a message to only include known Anthropic API fields.
+ */
+function sanitizeMessage(msg: Anthropic.MessageParam): Anthropic.MessageParam {
+  if (typeof msg.content === 'string') {
+    return { role: msg.role, content: msg.content }
+  }
+  
+  if (Array.isArray(msg.content)) {
+    return {
+      role: msg.role,
+      content: msg.content.map(sanitizeContentBlock),
+    }
+  }
+  
+  return { role: msg.role, content: msg.content }
+}
+
+/**
  * Adds cache_control breakpoint to the last user message for prompt caching.
  *
  * This enables caching of previous conversation context including:
  * - Previous web search results (encrypted_content)
  * - Previous tool results and assistant responses
  * - Document content (PDFs, text files)
+ *
+ * IMPORTANT: This function also sanitizes messages to remove any extra fields
+ * that might cause "Extra inputs are not permitted" API errors.
  *
  * @param messages - Array of messages to process
  * @returns Messages with cache_control added to the last user message
@@ -111,30 +198,33 @@ const CACHING_CONFIG = {
 function addCacheControlToMessages(
   messages: Anthropic.MessageParam[],
 ): Anthropic.MessageParam[] {
-  if (messages.length < CACHING_CONFIG.MIN_MESSAGES_FOR_CACHING) {
-    return messages
+  // First, sanitize all messages to remove extra fields
+  const sanitizedMessages = messages.map(sanitizeMessage)
+  
+  if (sanitizedMessages.length < CACHING_CONFIG.MIN_MESSAGES_FOR_CACHING) {
+    return sanitizedMessages
   }
 
   // Find the last user message index
   let lastUserIndex = -1
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].role === 'user') {
+  for (let i = sanitizedMessages.length - 1; i >= 0; i--) {
+    if (sanitizedMessages[i].role === 'user') {
       lastUserIndex = i
       break
     }
   }
 
   if (lastUserIndex === -1) {
-    return messages
+    return sanitizedMessages
   }
 
   // Clone messages and add cache_control to last user message
-  return messages.map((msg, index) => {
+  return sanitizedMessages.map((msg, index) => {
     if (index === lastUserIndex) {
       // Handle both string and array content
       if (typeof msg.content === 'string') {
         return {
-          ...msg,
+          role: msg.role,
           content: [
             {
               type: 'text' as const,
@@ -150,14 +240,16 @@ function addCacheControlToMessages(
         for (let i = content.length - 1; i >= 0; i--) {
           const block = content[i]
           if ('type' in block && (block.type === 'text' || block.type === 'image' || block.type === 'document' || block.type === 'tool_result')) {
-            content[i] = {
-              ...block,
-              cache_control: { type: 'ephemeral' as const },
-            } as typeof block
+            // Create a new sanitized block with cache_control
+            const sanitized = sanitizeContentBlock(block)
+            if (sanitized && typeof sanitized === 'object') {
+              (sanitized as { cache_control?: { type: 'ephemeral' } }).cache_control = { type: 'ephemeral' }
+            }
+            content[i] = sanitized
             break
           }
         }
-        return { ...msg, content }
+        return { role: msg.role, content }
       }
     }
     return msg
@@ -178,6 +270,8 @@ export type RunnerParams = {
   userLocation?: WebSearchUserLocation
   /** User ID for memory tool access */
   userId?: string
+  /** Focused GitHub repository for default context */
+  focusedRepo?: FocusedRepoContext | null
   /**
    * Effort level for controlling token usage.
    *
@@ -244,6 +338,7 @@ export async function runAgent({
   systemPrompt,
   userLocation,
   userId,
+  focusedRepo,
   effort = 'high',
   thinkingBudget = THINKING_CONFIG.COMPLEX_TASK_BUDGET,
 }: RunnerParams): Promise<Response> {
@@ -265,8 +360,8 @@ export async function runAgent({
   // Create SSE handler for tools
   const sseHandler = createSSEHandler(writer)
 
-  // Create runnable tools with SSE access
-  const runnableTools = createRunnableTools(sseHandler)
+  // Create runnable tools with SSE access, user context, and focused repo
+  const runnableTools = await createRunnableTools(sseHandler, userId, focusedRepo)
 
   // Run the tool runner in the background
   ;(async () => {
@@ -296,14 +391,13 @@ export async function runAgent({
       const isOpusModel = MODEL.includes('opus')
 
       // Build beta headers list
+      // Note: Several betas removed due to causing "Extra inputs are not permitted" errors:
+      // - structured-outputs-2025-11-13: adds 'parsed' field to text blocks
+      // - context-management-2025-06-27: causes issues with tool result handling
+      // - fine-grained-tool-streaming-2025-05-14: may add extra fields during streaming
       const betas = [
         'advanced-tool-use-2025-11-20',
-        'fine-grained-tool-streaming-2025-05-14',
         'web-fetch-2025-09-10',
-        'context-management-2025-06-27',
-        // Note: structured-outputs-2025-11-13 was removed because it adds a `parsed` field
-        // to text content blocks which causes "Extra inputs are not permitted" errors
-        // when the SDK sends tool results back in multi-turn conversations
         // Required for extended thinking with tool use
         // Enables Claude to think between tool calls for more sophisticated reasoning
         // @see https://platform.claude.com/docs/en/build-with-claude/extended-thinking#interleaved-thinking
@@ -365,18 +459,6 @@ export async function runAgent({
         ...(isOpusModel && { output_config: { effort } }),
         // Beta features
         betas,
-        // Context editing - beta feature not fully typed in SDK
-        context_management: {
-          edits: [
-            {
-              type: 'clear_tool_uses_20250919',
-              trigger: { type: 'input_tokens', value: 100000 },
-              keep: { type: 'tool_uses', value: 5 },
-              clear_at_least: { type: 'input_tokens', value: 10000 },
-              exclude_tools: ['memory'],
-            },
-          ],
-        },
       }
 
       const runner = anthropic.beta.messages.toolRunner(runnerOptions)

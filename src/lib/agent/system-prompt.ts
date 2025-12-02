@@ -11,6 +11,17 @@ type UserPreferences = {
   timezone?: string | null
 }
 
+type FocusedRepoContext = {
+  owner: string
+  name: string
+  fullName: string
+  description: string | null
+  htmlUrl: string
+  private: boolean
+  language: string | null
+  defaultBranch: string
+}
+
 type SystemPromptParams = {
   userName?: string | null
   userContext?: {
@@ -20,13 +31,14 @@ type SystemPromptParams = {
   }
   userPreferences?: UserPreferences
   memoriesPrompt?: string
+  focusedRepo?: FocusedRepoContext | null
 }
 
 /**
  * Builds the complete system prompt for the agent
  */
 export function buildSystemPrompt(params: SystemPromptParams = {}): string {
-  const { userName, userContext, userPreferences, memoriesPrompt } = params
+  const { userName, userContext, userPreferences, memoriesPrompt, focusedRepo } = params
 
   // Build user info lines
   const userInfoLines: string[] = []
@@ -34,6 +46,109 @@ export function buildSystemPrompt(params: SystemPromptParams = {}): string {
   if (userPreferences?.birthday) userInfoLines.push(`Birthday: ${userPreferences.birthday}`)
   if (userPreferences?.location) userInfoLines.push(`Location: ${userPreferences.location}`)
   if (userPreferences?.timezone) userInfoLines.push(`Timezone: ${userPreferences.timezone}`)
+
+  // Build GitHub context section if user has a focused repo
+  const githubContextSection = focusedRepo ? `
+    <github_context>
+      **🎯 ACTIVE REPOSITORY FOCUS: ${focusedRepo.fullName}**
+      
+      You have FULL ACCESS to this GitHub repository. The user has explicitly authorized you to:
+      - Browse all files, code, and documentation
+      - Read and manage issues, pull requests, and commits
+      - Create issues, PRs, comments, and reviews
+      - Manage labels, assignees, and states
+      - Star, fork, and watch repositories
+      - View and trigger CI/CD workflows
+      
+      **Repository Details:**
+      | Property | Value |
+      |----------|-------|
+      | **Name** | ${focusedRepo.fullName} |
+      | **Description** | ${focusedRepo.description || 'No description'} |
+      | **Language** | ${focusedRepo.language || 'Unknown'} |
+      | **Visibility** | ${focusedRepo.private ? '🔒 Private' : '🌐 Public'} |
+      | **Default Branch** | ${focusedRepo.defaultBranch} |
+      | **URL** | ${focusedRepo.htmlUrl} |
+      
+      **GitHub Tools Reference:**
+      
+      📂 **EXPLORE THE CODEBASE:**
+      | Tool | Use Case |
+      |------|----------|
+      | \`github_get_tree\` | Get full directory structure (START HERE) |
+      | \`github_get_file\` | Read specific file contents |
+      | \`github_get_readme\` | Get project documentation |
+      | \`github_get_repo\` | Get repo stats, topics, license |
+      | \`github_list_branches\` | See all branches |
+      
+      📋 **BROWSE ACTIVITY:**
+      | Tool | Use Case |
+      |------|----------|
+      | \`github_list_issues\` | List open/closed issues |
+      | \`github_get_issue\` | Get issue details + body |
+      | \`github_list_issue_comments\` | Read discussion on issues |
+      | \`github_list_prs\` | List pull requests |
+      | \`github_get_pr\` | Get PR details + diff stats |
+      | \`github_list_pr_files\` | See files changed in PR |
+      | \`github_list_commits\` | Recent commit history |
+      | \`github_list_releases\` | Version history |
+      
+      🔧 **TAKE ACTION:**
+      | Tool | Use Case |
+      |------|----------|
+      | \`github_create_issue\` | Report bugs, request features |
+      | \`github_update_issue\` | Close, edit, or reassign issues |
+      | \`github_add_comment\` | Comment on issues/PRs |
+      | \`github_add_labels\` | Categorize with labels |
+      | \`github_create_pr\` | Propose code changes |
+      | \`github_review_pr\` | Approve/request changes |
+      | \`github_merge_pr\` | Merge (confirm with user first!) |
+      
+      ⭐ **REPOSITORY ACTIONS:**
+      | Tool | Use Case |
+      |------|----------|
+      | \`github_star_repo\` | Star a repository |
+      | \`github_fork_repo\` | Create a fork |
+      | \`github_watch_repo\` | Subscribe to notifications |
+      | \`github_get_me\` | Get authenticated user info |
+      
+      🚀 **CI/CD & WORKFLOWS:**
+      | Tool | Use Case |
+      |------|----------|
+      | \`github_list_workflows\` | List GitHub Actions workflows |
+      | \`github_list_workflow_runs\` | See recent CI/CD runs |
+      | \`github_trigger_workflow\` | Manually trigger a workflow |
+      
+      **🎯 DEFAULT BEHAVIOR (IMPORTANT):**
+      - **You can OMIT \`owner\` and \`repo\` parameters** — they default to "${focusedRepo.owner}" and "${focusedRepo.name}"
+      - When user says "my repo", "this project", "the code", "my issues" — they mean THIS repository
+      - Only specify owner/repo if user explicitly asks about a DIFFERENT repository
+      
+      **🧠 PROACTIVE WORKFLOWS:**
+      
+      1. **"What's in my repo?" / "Show me the project"**
+         → \`github_get_tree\` → \`github_get_readme\` → summarize structure
+      
+      2. **"Any open issues?" / "What needs work?"**
+         → \`github_list_issues\` → summarize by priority/labels
+      
+      3. **"Review PR #X" / "What changed in this PR?"**
+         → \`github_get_pr\` → \`github_list_pr_files\` → provide review
+      
+      4. **"Create an issue for X bug"**
+         → \`github_list_issues\` (check duplicates) → \`github_create_issue\`
+      
+      5. **"How's CI doing?" / "Did the build pass?"**
+         → \`github_list_workflow_runs\` → summarize status
+      
+      6. **"Find where X is implemented"**
+         → \`github_get_tree\` → \`github_get_file\` (relevant files)
+      
+      **⚠️ CONFIRMATION REQUIRED:**
+      - Before \`github_merge_pr\`: Always confirm with user
+      - Before \`github_trigger_workflow\`: Explain what will run
+      - Before creating issues: Check for duplicates first
+    </github_context>` : ''
 
   return `<system_prompt>
   <role>
@@ -59,7 +174,7 @@ export function buildSystemPrompt(params: SystemPromptParams = {}): string {
     <environment>
       ${userContext ? `Current Time: ${userContext.time} | Date: ${userContext.date} | Timezone: ${userContext.timeZone}` : 'Time unknown'}
     </environment>
-    ${memoriesPrompt ? `<memories>\n      This is what you remember about me. USE THIS. Reference these details naturally to show you know me.\n      ${memoriesPrompt}\n    </memories>` : ''}
+    ${memoriesPrompt ? `<memories>\n      This is what you remember about me. USE THIS. Reference these details naturally to show you know me.\n      ${memoriesPrompt}\n    </memories>` : ''}${githubContextSection}
   </context>
 
   <tools>

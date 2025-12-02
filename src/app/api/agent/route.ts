@@ -62,6 +62,17 @@ export async function POST(request: Request) {
   let memoriesPrompt = ''
   let userId: string | undefined
   let userPreferences: { birthday?: string | null; location?: string | null; timezone?: string | null } = {}
+  let focusedRepo: {
+    owner: string
+    name: string
+    fullName: string
+    description: string | null
+    htmlUrl: string
+    private: boolean
+    language: string | null
+    defaultBranch: string
+  } | null = null
+  
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -80,6 +91,22 @@ export async function POST(request: Request) {
           timezone: personalizationContext.profile.timezone,
         }
       }
+      
+      // Get focused GitHub repo if set
+      const githubFocusedRepo = user.user_metadata?.github_focused_repo as {
+        owner: string
+        name: string
+        fullName: string
+        description: string | null
+        htmlUrl: string
+        private: boolean
+        language: string | null
+        defaultBranch: string
+      } | undefined
+      if (githubFocusedRepo) {
+        focusedRepo = githubFocusedRepo
+        console.log(`[agent] Using focused GitHub repo: ${githubFocusedRepo.fullName}`)
+      }
     }
   } catch (e) {
     // Silently continue without personalization if it fails
@@ -92,6 +119,7 @@ export async function POST(request: Request) {
     userContext,
     userPreferences,
     memoriesPrompt,
+    focusedRepo,
   })
 
   // Convert messages to Anthropic format
@@ -107,6 +135,7 @@ export async function POST(request: Request) {
       systemPrompt,
       userLocation,
       userId,
+      focusedRepo,
       effort: validatedEffort,
     })
   } catch (error) {

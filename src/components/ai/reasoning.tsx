@@ -109,7 +109,7 @@ export function ReasoningTrigger({
   // Get the current active tool for display
   const currentActiveTool = activeTools[activeTools.length - 1];
   const activeToolLabel = currentActiveTool 
-    ? toolLabels[currentActiveTool.name] || `Using ${currentActiveTool.name}`
+    ? toolLabels[currentActiveTool.name] || `Using ${currentActiveTool.name.replace(/_/g, ' ').replace(/github/i, 'GitHub')}`
     : null;
 
   // Build dynamic label

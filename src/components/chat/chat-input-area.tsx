@@ -7,6 +7,10 @@ export type ChatInputAreaProps = {
   onSend: (content: string, files?: File[]) => void
   placeholder?: string
   variant?: 'fixed' | 'inline'
+  /** Controlled selected tools state */
+  selectedTools?: string[]
+  /** Callback when selected tools change */
+  onSelectedToolsChange?: (tools: string[]) => void
 }
 
 export function ChatInputArea({
@@ -14,6 +18,8 @@ export function ChatInputArea({
   onSend,
   placeholder = "what's on your mind?",
   variant = 'fixed',
+  selectedTools,
+  onSelectedToolsChange,
 }: ChatInputAreaProps) {
   if (variant === 'inline') {
     return (
@@ -23,6 +29,8 @@ export function ChatInputArea({
           onSend={onSend}
           className="w-full"
           placeholder={placeholder}
+          selectedTools={selectedTools}
+          onSelectedToolsChange={onSelectedToolsChange}
         />
       </div>
     )
@@ -37,6 +45,8 @@ export function ChatInputArea({
             onSend={onSend}
             className="w-full"
             placeholder={placeholder}
+            selectedTools={selectedTools}
+            onSelectedToolsChange={onSelectedToolsChange}
           />
         </div>
       </div>

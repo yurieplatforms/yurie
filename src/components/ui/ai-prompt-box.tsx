@@ -1,153 +1,67 @@
 import React from "react";
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { CornerRightUp, Paperclip, Square, X, StopCircle, FileText } from "lucide-react";
+import { CornerRightUp, Paperclip, Square, X, StopCircle, FileText, Plus, Globe, Github, Mic, Settings2, X as XIcon, Target, Sparkles, GitBranch } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { getFocusedRepo, type FocusedRepo } from "@/app/profile/actions";
 
-// Utility function for className merging
-const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ");
+// --- Utility Function & Radix Primitives ---
 
-// Embedded CSS for minimal custom styles
-const styles = `
-  *:focus-visible {
-    outline-offset: 0 !important;
-    --ring-offset: 0 !important;
-  }
-  textarea::-webkit-scrollbar {
-    width: 6px;
-  }
-  textarea::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  textarea::-webkit-scrollbar-thumb {
-    background-color: var(--color-gray-600, #52525b);
-    border-radius: 3px;
-  }
-  textarea::-webkit-scrollbar-thumb:hover {
-    background-color: var(--color-gray-500, #71717a);
-  }
-`;
+type ClassValue = string | number | boolean | null | undefined;
+function cn(...inputs: ClassValue[]): string { return inputs.filter(Boolean).join(" "); }
 
-// Style injection tracker to prevent duplicate injection
-let stylesInjected = false;
+const TooltipProvider = TooltipPrimitive.Provider;
+const Tooltip = TooltipPrimitive.Root;
+const TooltipTrigger = TooltipPrimitive.Trigger;
+const TooltipContent = React.forwardRef<React.ElementRef<typeof TooltipPrimitive.Content>, React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> & { showArrow?: boolean }>(({ className, sideOffset = 4, showArrow = false, ...props }, ref) => ( <TooltipPrimitive.Portal><TooltipPrimitive.Content ref={ref} sideOffset={sideOffset} className={cn("relative z-50 max-w-[280px] rounded-md bg-black text-white px-1.5 py-1 text-xs animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2", className)} {...props}>{props.children}{showArrow && <TooltipPrimitive.Arrow className="-my-px fill-black" />}</TooltipPrimitive.Content></TooltipPrimitive.Portal>));
+TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
-function injectStyles() {
-  if (stylesInjected || typeof document === 'undefined') return;
-  const styleSheet = document.createElement("style");
-  styleSheet.id = "ai-prompt-box-styles";
-  styleSheet.innerText = styles;
-  document.head.appendChild(styleSheet);
-  stylesInjected = true;
-}
+const Popover = PopoverPrimitive.Root;
+const PopoverTrigger = PopoverPrimitive.Trigger;
+const PopoverContent = React.forwardRef<React.ElementRef<typeof PopoverPrimitive.Content>, React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>>(({ className, align = "center", sideOffset = 4, ...props }, ref) => ( <PopoverPrimitive.Portal><PopoverPrimitive.Content ref={ref} align={align} sideOffset={sideOffset} className={cn("z-50 w-64 rounded-xl bg-[var(--color-surface)] dark:bg-[#181818] p-2 text-[var(--color-foreground)] dark:text-white shadow-md outline-none animate-in data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 border border-[var(--color-border)]", className)} {...props} /></PopoverPrimitive.Portal>));
+PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
-// Textarea Component
-interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  className?: string;
-}
-const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
-    <textarea
-      className={cn(
-        "flex w-full rounded-[var(--radius-card)] border-none bg-transparent pl-2 pr-2 py-1.5 text-base text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)] focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[36px] resize-none scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-600 scrollbar-track-transparent hover:scrollbar-thumb-zinc-400 dark:hover:scrollbar-thumb-zinc-500",
-        className
-      )}
-    ref={ref}
-    rows={1}
-    {...props}
-  />
-));
-Textarea.displayName = "Textarea";
-
-// Tooltip Components (Removed as they were causing unused variable errors and not used)
-const TooltipProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
-
-// Dialog Components
 const Dialog = DialogPrimitive.Root;
 const DialogPortal = DialogPrimitive.Portal;
-const DialogOverlay = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Overlay
-    ref={ref}
-    className={cn(
-      "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-      className
-    )}
-    {...props}
-  />
-));
+const DialogTrigger = DialogPrimitive.Trigger;
+const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>>(({ className, ...props }, ref) => ( <DialogPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", className)} {...props} />));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
-
-const DialogContent = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border border-[var(--color-border)] bg-[var(--color-surface)] dark:bg-[var(--color-surface-dark)] p-0 shadow-xl duration-[var(--transition-slow)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-[var(--radius-dialog)]",
-        className
-      )}
-      {...props}
-    >
-      {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 z-10 rounded-[var(--radius-full)] bg-[var(--color-surface)] p-2 hover:bg-[var(--color-surface-hover)] transition-all duration-[var(--transition-base)] cursor-pointer">
-        <X className="h-5 w-5 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]" />
-        <span className="sr-only">Close</span>
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
-  </DialogPortal>
-));
+const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>(({ className, children, ...props }, ref) => ( <DialogPortal><DialogOverlay /><DialogPrimitive.Content ref={ref} className={cn("fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border-none bg-transparent p-0 shadow-none duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95", className)} {...props}><div className="relative bg-[var(--color-surface)] dark:bg-[#181818] rounded-[28px] overflow-hidden shadow-2xl p-1">{children}<DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-full bg-background/50 dark:bg-[#181818] p-1 hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#27272a] transition-all"><XIcon className="h-5 w-5 text-[var(--color-muted-foreground)] dark:text-gray-200 hover:text-[var(--color-foreground)] dark:hover:text-white" /><span className="sr-only">Close</span></DialogPrimitive.Close></div></DialogPrimitive.Content></DialogPortal>));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
-
-const DialogTitle = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title
-    ref={ref}
-    className={cn("text-lg font-semibold leading-none tracking-tight text-[var(--color-foreground)]", className)}
-    {...props}
-  />
-));
+const DialogTitle = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>>(({ className, ...props }, ref) => ( <DialogPrimitive.Title ref={ref} className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props} />));
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
-// Button Component
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "default" | "outline" | "ghost";
-  size?: "default" | "sm" | "lg" | "icon";
+// ImageViewDialog Component
+interface ImageViewDialogProps {
+  imageUrl: string | null;
+  onClose: () => void;
 }
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "default", ...props }, ref) => {
-    const variantClasses = {
-      default: "bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-zinc-50 dark:text-zinc-900",
-      outline: "border border-zinc-200 dark:border-zinc-700 bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800",
-      ghost: "bg-transparent hover:bg-zinc-100 dark:hover:bg-zinc-800",
-    };
-    const sizeClasses = {
-      default: "h-10 px-4 py-2",
-      sm: "h-8 px-3 text-sm",
-      lg: "h-12 px-6",
-      icon: "h-8 w-8 rounded-full aspect-[1/1]",
-    };
-    return (
-      <button
-        className={cn(
-          "inline-flex items-center justify-center font-medium transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
-          variantClasses[variant],
-          sizeClasses[size],
-          className
-        )}
-        ref={ref}
-        {...props}
-      />
-    );
-  }
-);
-Button.displayName = "Button";
+const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) => {
+  if (!imageUrl) return null;
+  return (
+    <Dialog open={!!imageUrl} onOpenChange={onClose}>
+      <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-[90vw] md:max-w-[800px]">
+        <DialogTitle className="sr-only">Image Preview</DialogTitle>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="relative bg-[var(--color-surface)] dark:bg-[#181818] rounded-[var(--radius-card)] overflow-hidden shadow-2xl"
+        >
+          <img
+            src={imageUrl}
+            alt="Full preview"
+            className="w-full max-h-[80vh] object-contain rounded-[var(--radius-card)]"
+          />
+        </motion.div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
-// VoiceRecorder Component
+// --- VoiceRecorder Component ---
 interface VoiceRecorderProps {
   isRecording: boolean;
   onStartRecording: () => void;
@@ -200,21 +114,21 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center w-full transition-all duration-[var(--transition-slow)] py-3",
-        isRecording ? "opacity-100" : "opacity-0 h-0"
+        "flex items-center justify-center w-full transition-all duration-300 px-3",
+        isRecording ? "opacity-100" : "opacity-0 hidden"
       )}
     >
-      <div className="flex items-center gap-2 mb-3">
-        <div className="h-2 w-2 rounded-[var(--radius-full)] bg-[var(--color-destructive)] animate-pulse" />
+      <div className="flex items-center gap-2 mr-3">
+        <div className="h-2 w-2 rounded-full bg-[var(--color-destructive)] animate-pulse" />
         <span className="font-mono text-sm text-[var(--color-foreground)]/80">{formatTime(time)}</span>
       </div>
-      <div className="w-full h-10 flex items-center justify-center gap-0.5 px-4">
+      <div className="flex-1 h-8 flex items-center gap-0.5">
         {[...Array(visualizerBars)].map((_, i) => (
           <div
             key={i}
-            className="w-0.5 rounded-[var(--radius-full)] bg-[var(--color-foreground)]/50 animate-pulse"
+            className="w-0.5 rounded-full bg-[var(--color-foreground)]/50 animate-pulse"
             style={{
-              height: `${Math.max(15, Math.random() * 100)}%`,
+              height: `${Math.max(20, Math.random() * 100)}%`,
               animationDelay: `${i * 0.05}s`,
               animationDuration: `${0.5 + Math.random() * 0.5}s`,
             }}
@@ -225,478 +139,474 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   );
 };
 
-// ImageViewDialog Component
-interface ImageViewDialogProps {
-  imageUrl: string | null;
-  onClose: () => void;
-}
-const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) => {
-  if (!imageUrl) return null;
-  return (
-    <Dialog open={!!imageUrl} onOpenChange={onClose}>
-      <DialogContent className="p-0 border-none bg-transparent shadow-none max-w-[90vw] md:max-w-[800px]">
-        <DialogTitle className="sr-only">Image Preview</DialogTitle>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative bg-[var(--color-surface)] dark:bg-[var(--color-surface-dark)] rounded-[var(--radius-card)] overflow-hidden shadow-2xl"
-        >
-          <img
-            src={imageUrl}
-            alt="Full preview"
-            className="w-full max-h-[80vh] object-contain rounded-[var(--radius-card)]"
-          />
-        </motion.div>
-      </DialogContent>
-    </Dialog>
-  );
-};
+// --- Main Component ---
 
-// PromptInput Context and Components
-interface PromptInputContextType {
-  isLoading: boolean;
-  value: string;
-  setValue: (value: string) => void;
-  maxHeight: number | string;
-  onSubmit?: () => void;
-  disabled?: boolean;
-}
-const PromptInputContext = React.createContext<PromptInputContextType>({
-  isLoading: false,
-  value: "",
-  setValue: () => {},
-  maxHeight: 240,
-  onSubmit: undefined,
-  disabled: false,
-});
-function usePromptInput() {
-  const context = React.useContext(PromptInputContext);
-  if (!context) throw new Error("usePromptInput must be used within a PromptInput");
-  return context;
-}
+const toolsList = [
+  { id: 'web_search', name: 'Web Search', shortName: 'Search', icon: Globe, description: 'Search the web for information' },
+  { id: 'github', name: 'GitHub', shortName: 'GitHub', icon: Github, description: 'Access GitHub repositories' },
+];
 
-interface PromptInputProps {
-  isLoading?: boolean;
-  value?: string;
-  onValueChange?: (value: string) => void;
-  maxHeight?: number | string;
-  onSubmit?: () => void;
-  children: React.ReactNode;
-  className?: string;
-  disabled?: boolean;
-  onDragOver?: (e: React.DragEvent) => void;
-  onDragLeave?: (e: React.DragEvent) => void;
-  onDrop?: (e: React.DragEvent) => void;
-}
-const PromptInput = React.forwardRef<HTMLDivElement, PromptInputProps>(
-  (
-    {
-      className,
-      isLoading = false,
-      maxHeight = 240,
-      value,
-      onValueChange,
-      onSubmit,
-      children,
-      disabled = false,
-      onDragOver,
-      onDragLeave,
-      onDrop,
-    },
-    ref
-  ) => {
-    const [internalValue, setInternalValue] = React.useState(value || "");
-    const handleChange = (newValue: string) => {
-      setInternalValue(newValue);
-      onValueChange?.(newValue);
-    };
-    return (
-      <TooltipProvider>
-        <PromptInputContext.Provider
-          value={{
-            isLoading,
-            value: value ?? internalValue,
-            setValue: onValueChange ?? handleChange,
-            maxHeight,
-            onSubmit,
-            disabled,
-          }}
-        >
-          <div
-            ref={ref}
-            className={cn(
-              "rounded-[var(--radius-prompt)] bg-[var(--color-prompt-bg)] p-2 shadow-[var(--shadow-lg)] transition-all duration-[var(--transition-slow)]",
-              className
-            )}
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-          >
-            {children}
-          </div>
-        </PromptInputContext.Provider>
-      </TooltipProvider>
-    );
-  }
-);
-PromptInput.displayName = "PromptInput";
-
-interface PromptInputTextareaProps {
-  disableAutosize?: boolean;
-  placeholder?: string;
-}
-const PromptInputTextarea: React.FC<PromptInputTextareaProps & React.ComponentProps<typeof Textarea>> = ({
-  className,
-  onKeyDown,
-  disableAutosize = false,
-  placeholder,
-  ...props
-}) => {
-  const { value, setValue, maxHeight, onSubmit, disabled } = usePromptInput();
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-
-  React.useEffect(() => {
-    if (disableAutosize || !textareaRef.current) return;
-    textareaRef.current.style.height = "auto";
-    textareaRef.current.style.height =
-      typeof maxHeight === "number"
-        ? `${Math.min(textareaRef.current.scrollHeight, maxHeight)}px`
-        : `min(${textareaRef.current.scrollHeight}px, ${maxHeight})`;
-  }, [value, maxHeight, disableAutosize]);
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      onSubmit?.();
-    }
-    onKeyDown?.(e);
-  };
-
-  return (
-    <Textarea
-      ref={textareaRef}
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onKeyDown={handleKeyDown}
-      className={cn("text-base", className)}
-      disabled={disabled}
-      placeholder={placeholder}
-      {...props}
-    />
-  );
-};
-
-
-// Main PromptInputBox Component
 interface PromptInputBoxProps {
   onSend?: (message: string, files?: File[]) => void;
   isLoading?: boolean;
   placeholder?: string;
   className?: string;
+  /** Controlled selected tools state */
+  selectedTools?: string[];
+  /** Callback when selected tools change */
+  onSelectedToolsChange?: (tools: string[]) => void;
 }
-export const PromptInputBox = React.forwardRef((props: PromptInputBoxProps, ref: React.Ref<HTMLDivElement>) => {
-  const { onSend = () => {}, isLoading = false, placeholder = "Type your message here...", className } = props;
-  const [input, setInput] = React.useState("");
-  const [files, setFiles] = React.useState<File[]>([]);
-  const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({});
-  const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
-  const [isRecording, setIsRecording] = React.useState(false);
-  const uploadInputRef = React.useRef<HTMLInputElement>(null);
-  const promptBoxRef = React.useRef<HTMLDivElement>(null);
 
-  // Inject styles on mount
-  React.useEffect(() => {
-    injectStyles();
-  }, []);
-
-  // File type detection helpers
-  const isImageFile = React.useCallback((file: File) => file.type.startsWith("image/"), []);
-  
-  const isPdfFile = React.useCallback((file: File) => 
-    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"), []);
-  
-  const isTextFile = React.useCallback((file: File) => {
-    const textTypes = ["text/plain", "text/markdown", "text/csv"];
-    const textExtensions = [".txt", ".md", ".csv"];
-    return (
-      textTypes.includes(file.type) ||
-      textExtensions.some((ext) => file.name.toLowerCase().endsWith(ext))
-    );
-  }, []);
-
-  const isSupportedFile = React.useCallback((file: File) => 
-    isImageFile(file) || isPdfFile(file) || isTextFile(file), 
-    [isImageFile, isPdfFile, isTextFile]);
-
-  const processFile = React.useCallback((file: File) => {
-    // Validate file type
-    if (!isSupportedFile(file)) {
-      console.log("Unsupported file type. Use images, PDFs, or text files.");
-      return;
-    }
+export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxProps>(
+  ({ onSend = () => {}, isLoading = false, placeholder = "Message...", className, selectedTools: controlledSelectedTools, onSelectedToolsChange }, ref) => {
+    const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const [value, setValue] = React.useState("");
     
-    // Size limits based on file type (following Anthropic best practices)
-    const maxSize = isImageFile(file) ? 5 * 1024 * 1024 : 10 * 1024 * 1024; // 5MB for images, 10MB for documents
-    if (file.size > maxSize) {
-      const maxSizeMB = maxSize / (1024 * 1024);
-      console.log(`File too large (max ${maxSizeMB}MB for ${isImageFile(file) ? 'images' : 'documents'})`);
-      return;
-    }
+    // State from previous implementation
+    const [files, setFiles] = React.useState<File[]>([]);
+    const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({});
+    const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
+    const [isRecording, setIsRecording] = React.useState(false);
     
-    setFiles((prev) => [...prev, file]);
+    // Tools state - support both controlled and uncontrolled modes
+    const [internalSelectedTools, setInternalSelectedTools] = React.useState<string[]>([]);
     
-    // Only create previews for images
-    if (isImageFile(file)) {
-      const reader = new FileReader();
-      reader.onload = (e) => setFilePreviews((prev) => ({ ...prev, [file.name]: e.target?.result as string }));
-      reader.readAsDataURL(file);
-    }
-  }, [isSupportedFile, isImageFile]);
-
-  const handleDragOver = React.useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDragLeave = React.useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDrop = React.useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    // Process all supported files (images, PDFs, text files)
-    const supportedFiles = droppedFiles.filter((file) => isSupportedFile(file));
-    supportedFiles.forEach((file) => processFile(file));
-  }, [isSupportedFile, processFile]);
-
-  const handleRemoveFile = (index: number) => {
-    const fileToRemove = files[index];
-    if (fileToRemove && filePreviews[fileToRemove.name]) {
-      setFilePreviews((prev) => {
-        const newPreviews = { ...prev };
-        delete newPreviews[fileToRemove.name];
-        return newPreviews;
-      });
-    }
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const openImageModal = (imageUrl: string) => setSelectedImage(imageUrl);
-
-  const handlePaste = React.useCallback((e: ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf("image") !== -1) {
-        const file = items[i].getAsFile();
-        if (file) {
-          e.preventDefault();
-          processFile(file);
-          break;
-        }
+    // Use controlled state if provided, otherwise use internal state
+    const selectedTools = controlledSelectedTools ?? internalSelectedTools;
+    const setSelectedTools = React.useCallback((tools: string[] | ((prev: string[]) => string[])) => {
+      const newTools = typeof tools === 'function' ? tools(selectedTools) : tools;
+      if (onSelectedToolsChange) {
+        onSelectedToolsChange(newTools);
+      } else {
+        setInternalSelectedTools(newTools);
       }
-    }
-  }, [processFile]);
+    }, [selectedTools, onSelectedToolsChange]);
+    
+    const [focusedRepo, setFocusedRepo] = React.useState<FocusedRepo | null>(null);
+    const [isLoadingFocusedRepo, setIsLoadingFocusedRepo] = React.useState(false);
+    const [hasFetchedFocusedRepo, setHasFetchedFocusedRepo] = React.useState(false);
 
-  React.useEffect(() => {
-    document.addEventListener("paste", handlePaste);
-    return () => document.removeEventListener("paste", handlePaste);
-  }, [handlePaste]);
+    const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+    const [isImageDialogOpen, setIsImageDialogOpen] = React.useState(false);
 
-  const handleSubmit = () => {
-    if (input.trim() || files.length > 0) {
-      onSend(input, files);
-      setInput("");
-      setFiles([]);
-      setFilePreviews({});
-    }
-  };
+    // Fetch focused repo on mount (once) so it's available when user opens tools popover
+    React.useEffect(() => {
+      if (!hasFetchedFocusedRepo && !isLoadingFocusedRepo) {
+        setIsLoadingFocusedRepo(true);
+        setHasFetchedFocusedRepo(true);
+        getFocusedRepo().then(({ repo }) => {
+          if (repo) setFocusedRepo(repo);
+          setIsLoadingFocusedRepo(false);
+        }).catch(() => {
+          setIsLoadingFocusedRepo(false);
+        });
+      }
+    }, [hasFetchedFocusedRepo, isLoadingFocusedRepo]);
 
-  const handleStartRecording = () => console.log("Started recording");
+    // React.useImperativeHandle(ref, () => internalTextareaRef.current!, []); // This expects ref to be HTMLTextAreaElement but our prop says HTMLDivElement. 
+    // The previous component was a Div, let's keep it compatible or adjust the ref type. 
+    // The parent likely expects a div ref for the container. I'll attach the forwarded ref to the container div.
 
-  const handleStopRecording = (duration: number) => {
-    console.log(`Stopped recording after ${duration} seconds`);
-    setIsRecording(false);
-    onSend(`[Voice message - ${duration} seconds]`, []);
-  };
+    React.useLayoutEffect(() => {
+      const textarea = internalTextareaRef.current;
+      if (textarea) {
+        textarea.style.height = "auto";
+        const newHeight = Math.min(textarea.scrollHeight, 200);
+        textarea.style.height = `${newHeight}px`;
+      }
+    }, [value]);
 
-  const hasContent = input.trim() !== "" || files.length > 0;
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setValue(e.target.value);
+    };
 
-  return (
-    <>
-      <PromptInput
-        value={input}
-        onValueChange={setInput}
-        isLoading={isLoading}
-        onSubmit={handleSubmit}
-        className={cn(
-          "rounded-[var(--radius-prompt)] bg-[var(--color-surface)] dark:bg-[var(--color-prompt-dark-bg)] p-2 shadow-[var(--shadow-lg)] transition-all duration-[var(--transition-slow)] ease-in-out",
-          className
-        )}
-        disabled={isLoading || isRecording}
-        ref={ref || promptBoxRef}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
+    // File handling helpers
+    const isImageFile = React.useCallback((file: File) => file.type.startsWith("image/"), []);
+    const isPdfFile = React.useCallback((file: File) => file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"), []);
+    const isTextFile = React.useCallback((file: File) => {
+        const textTypes = ["text/plain", "text/markdown", "text/csv"];
+        const textExtensions = [".txt", ".md", ".csv"];
+        return textTypes.includes(file.type) || textExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
+    }, []);
+    
+    const isSupportedFile = React.useCallback((file: File) => isImageFile(file) || isPdfFile(file) || isTextFile(file), [isImageFile, isPdfFile, isTextFile]);
+
+    const processFile = React.useCallback((file: File) => {
+        if (!isSupportedFile(file)) return;
+        setFiles((prev) => [...prev, file]);
+        if (isImageFile(file)) {
+            const reader = new FileReader();
+            reader.onload = (e) => setFilePreviews((prev) => ({ ...prev, [file.name]: e.target?.result as string }));
+            reader.readAsDataURL(file);
+        }
+    }, [isSupportedFile, isImageFile]);
+
+    const handlePlusClick = () => {
+      fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (event.target.files) {
+        Array.from(event.target.files).forEach((file) => processFile(file));
+      }
+      event.target.value = "";
+    };
+
+    const handleRemoveFile = (index: number) => {
+        const fileToRemove = files[index];
+        if (fileToRemove && filePreviews[fileToRemove.name]) {
+            setFilePreviews((prev) => {
+                const newPreviews = { ...prev };
+                delete newPreviews[fileToRemove.name];
+                return newPreviews;
+            });
+        }
+        setFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const handlePaste = React.useCallback((e: ClipboardEvent) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf("image") !== -1) {
+                const file = items[i].getAsFile();
+                if (file) {
+                    e.preventDefault();
+                    processFile(file);
+                    break;
+                }
+            }
+        }
+    }, [processFile]);
+
+    React.useEffect(() => {
+        document.addEventListener("paste", handlePaste);
+        return () => document.removeEventListener("paste", handlePaste);
+    }, [handlePaste]);
+
+    const handleSubmit = () => {
+        if (value.trim() || files.length > 0) {
+            onSend(value, files);
+            setValue("");
+            setFiles([]);
+            setFilePreviews({});
+            // Keep selectedTools - don't clear them so the tool choice persists
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit();
+        }
+    };
+
+    const handleSelectTool = (id: string) => {
+        setSelectedTools((prev) => {
+            if (prev.includes(id)) return prev;
+            return [...prev, id];
+        });
+        setIsPopoverOpen(false);
+    };
+
+    const handleRemoveTool = (id: string) => {
+        setSelectedTools((prev) => prev.filter(t => t !== id));
+    };
+
+    // Recording handlers
+    const handleStartRecording = () => console.log("Started recording");
+    const handleStopRecording = (duration: number) => {
+        console.log(`Stopped recording after ${duration} seconds`);
+        setIsRecording(false);
+        onSend(`[Voice message - ${duration} seconds]`, []);
+    };
+
+    const hasValue = value.trim().length > 0 || files.length > 0;
+
+    return (
+      <div ref={ref} className={cn("flex flex-col rounded-[28px] p-2 shadow-lg transition-colors bg-white border dark:bg-[#212121] dark:border-[#333] cursor-text", className)}>
+        <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            className="hidden" 
+            multiple 
+            accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.txt,.md,.csv"
+        />
+        
+        {/* Image Previews Modal */}
+        <ImageViewDialog imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
+
+        {/* File Previews in Input */}
         <AnimatePresence mode="popLayout">
-          {files.length > 0 && !isRecording && (
-            <motion.div
-              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-              animate={{ opacity: 1, height: "auto", marginBottom: 8 }}
-              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="flex flex-wrap gap-2 w-full overflow-hidden"
-            >
-              <AnimatePresence mode="popLayout">
-                {files.map((file, index) => (
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, scale: 0.8, width: 0 }}
-                    animate={{ opacity: 1, scale: 1, width: "auto" }}
-                    exit={{ opacity: 0, scale: 0.8, width: 0 }}
-                    transition={{ 
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 30
-                    }}
-                    key={`${file.name}-${index}`}
-                    className="relative group overflow-hidden"
-                  >
-                    {/* Image preview */}
-                    {isImageFile(file) && filePreviews[file.name] && (
-                      <div
-                        className="w-16 h-16 rounded-[var(--radius-card)] overflow-hidden cursor-pointer transition-all duration-[var(--transition-slow)]"
-                        onClick={() => openImageModal(filePreviews[file.name])}
-                      >
-                        <img
-                          src={filePreviews[file.name]}
-                          alt={file.name}
-                          className="h-full w-full object-cover"
-                        />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveFile(index);
-                          }}
-                          className="absolute top-1 right-1 rounded-full bg-black/70 p-0.5 opacity-100 transition-opacity"
+            {files.length > 0 && !isRecording && (
+                <motion.div 
+                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    animate={{ opacity: 1, height: "auto", marginBottom: 8 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    className="flex flex-wrap gap-2 px-2 pt-2"
+                >
+                    {files.map((file, index) => (
+                        <motion.div
+                            layout
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            key={`${file.name}-${index}`}
+                            className="relative group"
                         >
-                          <X className="h-3 w-3 text-white" />
-                        </button>
-                      </div>
-                    )}
-                    {/* Document preview (PDF and text files) */}
-                    {(isPdfFile(file) || isTextFile(file)) && (
-                      <div className="relative flex items-center gap-2 px-3 py-2 rounded-[var(--radius-card)] bg-[var(--color-surface-hover)] transition-all duration-[var(--transition-slow)]">
-                        <FileText className="h-5 w-5 text-[var(--color-muted-foreground)]" />
-                        <span className="text-sm text-[var(--color-foreground)] max-w-[120px] truncate">
-                          {file.name}
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoveFile(index);
-                          }}
-                          className="ml-1 rounded-[var(--radius-full)] bg-[var(--color-muted)] p-0.5 hover:bg-[var(--color-surface-hover)] transition-colors duration-[var(--transition-base)]"
-                        >
-                          <X className="h-3 w-3 text-[var(--color-muted-foreground)]" />
-                        </button>
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
-          )}
+                            {isImageFile(file) && filePreviews[file.name] ? (
+                                <div className="relative">
+                                    <img 
+                                        src={filePreviews[file.name]} 
+                                        alt={file.name} 
+                                        className="h-14 w-14 rounded-lg object-cover cursor-pointer"
+                                        onClick={() => setSelectedImage(filePreviews[file.name])}
+                                    />
+                                    <button 
+                                        onClick={() => handleRemoveFile(index)}
+                                        className="absolute -top-1.5 -right-1.5 bg-black/70 rounded-full p-0.5 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                    >
+                                        <XIcon className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 bg-[var(--color-surface-hover)] px-3 py-2 rounded-lg border border-[var(--color-border)]">
+                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-xs max-w-[100px] truncate">{file.name}</span>
+                                    <button onClick={() => handleRemoveFile(index)} className="text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <XIcon className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    ))}
+                </motion.div>
+            )}
         </AnimatePresence>
 
-        <div className="flex items-end gap-0 w-full">
-          <div className="flex items-center gap-2 pb-0.5">
-            <button
-              onClick={() => uploadInputRef.current?.click()}
-              className={cn(
-                "flex h-8 w-8 text-[var(--color-muted-foreground)] cursor-pointer items-center justify-center rounded-[var(--radius-full)] transition-all duration-[var(--transition-base)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-foreground)] active:bg-[var(--color-surface-active)] active:scale-95",
-                isRecording && "hidden"
-              )}
-              disabled={isRecording}
-            >
-              <Paperclip className="h-4 w-4 transition-colors" />
-              <input
-                ref={uploadInputRef}
-                type="file"
-                className="hidden"
-                multiple
-                onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) {
-                    Array.from(e.target.files).forEach((file) => processFile(file));
-                  }
-                  if (e.target) e.target.value = "";
-                }}
-                accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,.txt,.md,.csv"
-              />
-            </button>
-          </div>
-
-          <div
-            className={cn(
-              "flex-1 transition-all duration-300 min-w-0",
-              isRecording ? "h-0 overflow-hidden opacity-0" : "opacity-100"
-            )}
-          >
-            <PromptInputTextarea
-              placeholder={placeholder}
-              className="text-base"
-            />
-          </div>
-
-          {isRecording && (
-            <div className="flex-1 min-w-0">
-              <VoiceRecorder
+        {/* Recording UI */}
+        {isRecording ? (
+             <VoiceRecorder
                 isRecording={isRecording}
                 onStartRecording={handleStartRecording}
                 onStopRecording={handleStopRecording}
-              />
+             />
+        ) : (
+             <textarea 
+                ref={internalTextareaRef} 
+                rows={1} 
+                value={value} 
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder={placeholder}
+                disabled={isLoading}
+                className="custom-scrollbar w-full resize-none border-0 bg-transparent p-3 text-[var(--color-foreground)] dark:text-white placeholder:text-[var(--color-muted-foreground)] dark:placeholder:text-zinc-400 focus:ring-0 focus-visible:outline-none min-h-[48px]" 
+            />
+        )}
+
+        <div className="mt-0.5 p-1 pt-0">
+          <TooltipProvider delayDuration={100}>
+            <div className="flex items-center gap-2">
+              <Tooltip> 
+                <TooltipTrigger asChild>
+                    <button 
+                        type="button" 
+                        onClick={handlePlusClick} 
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#27272a] focus-visible:outline-none cursor-pointer"
+                        disabled={isRecording || isLoading}
+                    >
+                        <Plus className="h-5 w-5" />
+                        <span className="sr-only">Attach file</span>
+                    </button>
+                </TooltipTrigger> 
+                {files.length === 0 && <TooltipContent side="top" showArrow={true}><p>Attach file</p></TooltipContent>}
+              </Tooltip>
+              
+              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <button 
+                        type="button" 
+                        className="flex h-8 items-center gap-2 rounded-full p-2 text-sm text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#27272a] focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                        disabled={isRecording || isLoading}
+                      >
+                        <Settings2 className="h-4 w-4" />
+                        {selectedTools.length === 0 && 'Tools'}
+                      </button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  {!isPopoverOpen && selectedTools.length === 0 && <TooltipContent side="top" showArrow={true}><p>Explore Tools</p></TooltipContent>}
+                </Tooltip>
+                <PopoverContent side="top" align="start" className="w-64 dark:bg-[#212121] dark:border-[#333] p-1.5">
+                  <div className="flex flex-col gap-0.5">
+                    {toolsList.map(tool => {
+                        const isGitHub = tool.id === 'github';
+                        const hasFocusedRepo = isGitHub && focusedRepo;
+                        
+                        return (
+                          <button 
+                              key={tool.id} 
+                              onClick={() => handleSelectTool(tool.id)} 
+                              className={cn(
+                                  "flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#2f2f2f] transition-colors cursor-pointer",
+                                  selectedTools.includes(tool.id) && "bg-[var(--color-surface-active)] dark:bg-[#2f2f2f]"
+                              )}
+                          > 
+                              <div className={cn(
+                                "h-7 w-7 rounded-md flex items-center justify-center shrink-0",
+                                hasFocusedRepo 
+                                  ? "bg-[var(--color-accent)]/20" 
+                                  : "bg-[var(--color-surface-hover)] dark:bg-[#2f2f2f]"
+                              )}>
+                                {hasFocusedRepo ? (
+                                  <Github className="h-4 w-4 text-[var(--color-accent)]" />
+                                ) : (
+                                  <tool.icon className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-medium">{tool.name}</span>
+                                </div>
+                                <p className="text-[10px] text-[var(--color-muted-foreground)] truncate leading-tight">
+                                  {hasFocusedRepo ? (
+                                    <span className="flex items-center gap-1">
+                                      <GitBranch className="h-2.5 w-2.5" />
+                                      {focusedRepo.fullName}
+                                    </span>
+                                  ) : (
+                                    tool.description
+                                  )}
+                                </p>
+                              </div>
+                              {selectedTools.includes(tool.id) && (
+                                <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-accent)] flex items-center justify-center shrink-0 self-center">
+                                  <XIcon className="h-2 w-2 text-white" />
+                                </div>
+                              )}
+                          </button>
+                        );
+                    })}
+                  </div>
+                  
+                  {/* GitHub setup hint */}
+                  {!focusedRepo && (
+                    <div className="mt-1.5 pt-1.5 border-t border-[var(--color-border)]/50">
+                      <p className="text-[10px] text-[var(--color-muted-foreground)] text-center">
+                        💡 Focus a repo in your <a href="/profile" className="text-[var(--color-accent)] hover:underline">profile</a> for full GitHub integration
+                      </p>
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+
+              {/* Selected Tools Pills */}
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[300px]">
+                <AnimatePresence>
+                    {selectedTools.map(toolId => {
+                        const tool = toolsList.find(t => t.id === toolId);
+                        if (!tool) return null;
+                        
+                        // Special handling for GitHub with focused repo
+                        if (tool.id === 'github' && focusedRepo) {
+                          return (
+                            <motion.button
+                                key={tool.id}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                onClick={() => handleRemoveTool(tool.id)}
+                                className="flex h-8 items-center gap-2 rounded-full px-2 text-sm bg-[var(--color-accent)]/10 text-[var(--color-accent)] transition-colors flex-shrink-0 border border-[var(--color-accent)]/20 hover:border-[var(--color-accent)]/40 cursor-pointer"
+                            >
+                                <Github className="h-4 w-4" />
+                                <span className="whitespace-nowrap font-medium">
+                                    {focusedRepo.name}
+                                </span>
+                                <XIcon className="h-3 w-3 opacity-50" />
+                            </motion.button>
+                          );
+                        }
+                        
+                        return (
+                            <motion.button
+                                key={tool.id}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                onClick={() => handleRemoveTool(tool.id)}
+                                className="flex h-8 items-center gap-2 rounded-full px-2 text-sm dark:hover:bg-[#27272a] hover:bg-[var(--color-surface-hover)] cursor-pointer dark:text-[var(--color-accent)] text-[var(--color-accent)] transition-colors flex-shrink-0 border border-transparent hover:border-[var(--color-border)]"
+                            >
+                                <tool.icon className="h-4 w-4" />
+                                <span className="whitespace-nowrap">{tool.shortName}</span>
+                                <XIcon className="h-3 w-3 opacity-50" />
+                            </motion.button>
+                        );
+                    })}
+                </AnimatePresence>
+              </div>
+
+              {/* Right-aligned buttons container */}
+              <div className="ml-auto flex items-center gap-2">
+                {!isRecording && (
+                    <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button 
+                            type="button" 
+                            onClick={() => setIsRecording(true)}
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#27272a] focus-visible:outline-none cursor-pointer"
+                            disabled={isLoading}
+                        >
+                        <Mic className="h-5 w-5" />
+                        <span className="sr-only">Record voice</span>
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" showArrow={true}><p>Record voice</p></TooltipContent>
+                    </Tooltip>
+                )}
+
+                {isRecording ? (
+                     <Tooltip>
+                     <TooltipTrigger asChild>
+                         <button 
+                             type="button" 
+                             onClick={() => handleStopRecording(0)} 
+                             className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-destructive)] transition-colors hover:bg-[var(--color-surface-hover)] focus-visible:outline-none cursor-pointer"
+                         >
+                         <StopCircle className="h-6 w-6 fill-current" />
+                         <span className="sr-only">Stop recording</span>
+                         </button>
+                     </TooltipTrigger>
+                     <TooltipContent side="top" showArrow={true}><p>Stop</p></TooltipContent>
+                     </Tooltip>
+                ) : (
+                    <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button 
+                            type="submit" 
+                            onClick={handleSubmit}
+                            disabled={!hasValue || isLoading} 
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] dark:hover:bg-[var(--color-accent-hover)] disabled:bg-zinc-300 dark:disabled:bg-zinc-700 cursor-pointer"
+                        >
+                        {isLoading ? (
+                            <Square className="h-4 w-4 fill-current animate-pulse" />
+                        ) : (
+                            <CornerRightUp className="h-5 w-5" />
+                        )}
+                        <span className="sr-only">Send message</span>
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" showArrow={true}><p>Send</p></TooltipContent>
+                    </Tooltip>
+                )}
+              </div>
             </div>
-          )}
-
-          <div className="flex items-center gap-2 pb-0.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-8 w-8 rounded-[var(--radius-full)] transition-all duration-[var(--transition-base)] cursor-pointer",
-                isRecording
-                  ? "bg-transparent hover:bg-[var(--color-destructive)]/15 active:bg-[var(--color-destructive)]/25 text-[var(--color-destructive)] hover:text-[var(--color-destructive)]"
-                  : hasContent
-                  ? "!bg-[var(--color-accent)] hover:!bg-[var(--color-accent-hover)] hover:shadow-lg active:scale-95 text-white"
-                  : "bg-transparent hover:bg-[var(--color-surface-hover)] active:bg-[var(--color-surface-active)] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
-              )}
-              onClick={() => {
-                if (isRecording) setIsRecording(false);
-                else if (hasContent) handleSubmit();
-              }}
-              disabled={isLoading || (!hasContent && !isRecording)}
-            >
-              {isLoading ? (
-                <Square className="h-4 w-4 fill-current animate-pulse" />
-              ) : isRecording ? (
-                <StopCircle className="h-5 w-5 text-[var(--color-destructive)]" />
-              ) : (
-                <CornerRightUp className="h-4 w-4 text-current" strokeWidth={2.5} />
-              )}
-            </Button>
-          </div>
+          </TooltipProvider>
         </div>
-      </PromptInput>
-
-      <ImageViewDialog imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
-    </>
-  );
-});
+      </div>
+    );
+  }
+);
 PromptInputBox.displayName = "PromptInputBox";
-
