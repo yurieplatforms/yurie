@@ -516,8 +516,8 @@ export async function getRepoContext(owner: string, repo: string): Promise<{
     return {
       repo: repoResult.successful ? repoResult.data as Record<string, unknown> : undefined,
       readme: readmeContent,
-      recentIssues: issuesResult?.successful ? issuesResult.data as Record<string, unknown>[] : undefined,
-      recentPRs: prsResult?.successful ? prsResult.data as Record<string, unknown>[] : undefined,
+      recentIssues: issuesResult?.successful ? issuesResult.data as unknown as Record<string, unknown>[] : undefined,
+      recentPRs: prsResult?.successful ? prsResult.data as unknown as Record<string, unknown>[] : undefined,
     }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
