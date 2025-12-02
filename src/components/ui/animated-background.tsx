@@ -8,6 +8,7 @@ import {
   useEffect,
   useState,
   useId,
+  useRef,
 } from 'react'
 
 export type AnimatedBackgroundProps = {
@@ -31,12 +32,26 @@ export function AnimatedBackground({
 }: AnimatedBackgroundProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
   const uniqueId = useId()
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleSetActiveId = (id: string | null) => {
-    setActiveId(id)
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
 
-    if (onValueChange) {
-      onValueChange(id)
+    if (id === null) {
+      timeoutRef.current = setTimeout(() => {
+        setActiveId(null)
+        if (onValueChange) {
+          onValueChange(null)
+        }
+      }, 50)
+    } else {
+      setActiveId(id)
+      if (onValueChange) {
+        onValueChange(id)
+      }
     }
   }
 
@@ -45,6 +60,14 @@ export function AnimatedBackground({
       setActiveId(defaultValue)
     }
   }, [defaultValue])
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
 
   return Children.map(children, (child) => {
     if (!child || typeof child !== 'object' || !('props' in child)) return null

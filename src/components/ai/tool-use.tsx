@@ -14,8 +14,8 @@ import type { ToolUseEvent } from '@/lib/types'
 
 const toolCompletedLabels: Record<string, string> = {
   web_search: 'Searched',
-  web_fetch: 'Read',
-  exa_search: 'Researched',
+  web_fetch: 'Fetched',
+  exa_search: 'Browsed',
   exa_find_similar: 'Found similar',
   exa_answer: 'Answered',
   calculator: 'Calculated',

@@ -1,5 +1,6 @@
 import type {
   ExaSearchCategory,
+  ExaLivecrawlMode,
   ExaSearchResultItem,
   ExaSearchResult,
 } from '@/lib/types'
@@ -23,22 +24,42 @@ import { getExaClient, DEFAULT_EXA_RETRY_CONFIG } from './client'
 export type ExaFindSimilarInput = {
   /** URL to find similar content for */
   url: string
-  /** Number of similar results to return (1-10, default: 5) */
+  /**
+   * Number of similar results to return.
+   * - Default: 10
+   * - Maximum: 100
+   */
   numResults?: number
-  /** Exclude the source domain from results */
+  /** Exclude the source domain from results (default: true) */
   excludeSourceDomain?: boolean
   /** Only include results from these domains */
   includeDomains?: string[]
   /** Exclude results from these domains */
   excludeDomains?: string[]
-  /** Enable highlights for focused context */
+  /**
+   * Livecrawl mode for content freshness.
+   * - 'always': Always fetch fresh content
+   * - 'preferred': Prefer live crawling, falls back on failure (default)
+   * - 'fallback': Use cache first
+   * - 'never': Only use cached content (fastest)
+   */
+  livecrawl?: ExaLivecrawlMode | boolean
+  /** Enable highlights for focused context (default: true) */
   useHighlights?: boolean
+  /** Number of highlights per URL (default: 3) */
+  highlightsPerUrl?: number
+  /** Number of sentences per highlight (default: 5) */
+  numSentences?: number
   /** Enable AI summaries */
   useSummary?: boolean
-  /** Maximum characters for text content */
+  /** Maximum characters for text content (default: 3000) */
   maxCharacters?: number
   /** Category filter */
   category?: ExaSearchCategory
+  /** Only include results published after this date (ISO 8601) */
+  startPublishedDate?: string
+  /** Only include results published before this date (ISO 8601) */
+  endPublishedDate?: string
 }
 
 /**
@@ -68,23 +89,39 @@ export async function exaFindSimilar(
   try {
     type SimilarOptions = NonNullable<Parameters<typeof client.findSimilarAndContents>[1]>
     
+    // Determine livecrawl mode - 'preferred' for production reliability
+    const livecrawlMode = typeof input.livecrawl === 'string'
+      ? input.livecrawl
+      : input.livecrawl === true
+        ? 'always'
+        : 'preferred'
+
+    // More results by default for better coverage
+    const numResults = Math.min(Math.max(input.numResults ?? 10, 1), 100)
+
     const options: SimilarOptions = {
-      numResults: Math.min(Math.max(input.numResults ?? 5, 1), 10),
+      numResults,
       excludeSourceDomain: input.excludeSourceDomain ?? true,
+      livecrawl: livecrawlMode,
+      // More content for better LLM context
       text: {
-        maxCharacters: input.maxCharacters ?? 1000,
+        maxCharacters: input.maxCharacters ?? 3000,
         includeHtmlTags: false,
       },
+      // More highlights for richer context
       ...(input.useHighlights !== false && {
         highlights: {
-          numSentences: 3,
-          highlightsPerUrl: 1,
+          numSentences: input.numSentences ?? 5,
+          highlightsPerUrl: input.highlightsPerUrl ?? 3,
         },
       }),
       ...(input.useSummary && { summary: {} }),
       ...(input.includeDomains && input.includeDomains.length > 0 && { includeDomains: input.includeDomains }),
       ...(input.excludeDomains && input.excludeDomains.length > 0 && { excludeDomains: input.excludeDomains }),
       ...(input.category && { category: input.category }),
+      // Date filters
+      ...(input.startPublishedDate && { startPublishedDate: input.startPublishedDate }),
+      ...(input.endPublishedDate && { endPublishedDate: input.endPublishedDate }),
     }
 
     // Execute find similar with retry logic

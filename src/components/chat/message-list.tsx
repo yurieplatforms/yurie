@@ -233,8 +233,8 @@ function SuggestionsList({
         className="h-full w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900/80"
         transition={{
           type: 'spring',
-          bounce: 0,
-          duration: 0.2,
+          stiffness: 300,
+          damping: 30,
         }}
       >
         {suggestions.map((suggestion, i) => (

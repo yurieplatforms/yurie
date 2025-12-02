@@ -151,8 +151,8 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
             className="h-full w-full rounded-[var(--radius-card)] bg-[var(--color-surface)]"
             transition={{
               type: 'spring',
-              bounce: 0,
-              duration: 0.2,
+              stiffness: 300,
+              damping: 30,
             }}
           >
             <Link
@@ -204,8 +204,8 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
             className="h-full w-full rounded-[var(--radius-card)] bg-[var(--color-surface)]"
             transition={{
               type: 'spring',
-              bounce: 0,
-              duration: 0.2,
+              stiffness: 300,
+              damping: 30,
             }}
           >
             {chats.map((chat) => (
@@ -213,7 +213,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
                 key={chat.id}
                 data-id={chat.id}
                 variant="ghost"
-                className="w-full relative group overflow-hidden"
+                className="w-full relative group"
               >
                   <Link
                     href={`/?id=${chat.id}`}

@@ -101,9 +101,20 @@ export type ExaSearchCategory =
   | 'news'
   | 'pdf'
   | 'github'
+  | 'tweet'
   | 'personal site'
   | 'linkedin profile'
   | 'financial report'
+
+/**
+ * EXA livecrawl mode for content freshness.
+ * @see https://docs.exa.ai/reference/livecrawling-contents
+ */
+export type ExaLivecrawlMode =
+  | 'always'    // Always fetch fresh content (slowest, freshest) - real-time data
+  | 'preferred' // Prefer live crawling, falls back on failure - production apps
+  | 'fallback'  // Use cache first, live crawl if unavailable (default)
+  | 'never'     // Only use cached content (fastest)
 
 /**
  * Individual search result item from EXA search.

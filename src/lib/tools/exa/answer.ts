@@ -22,10 +22,18 @@ import { getExaClient, DEFAULT_EXA_RETRY_CONFIG } from './client'
 export type ExaAnswerInput = {
   /** The question to answer */
   question: string
-  /** Include full text from sources */
+  /** Include full text from sources (default: true) */
   includeText?: boolean
   /** Category filter for sources */
   category?: ExaSearchCategory
+  /** Only include sources published after this date (ISO 8601) */
+  startPublishedDate?: string
+  /** Only include sources published before this date (ISO 8601) */
+  endPublishedDate?: string
+  /** Only include sources from these domains */
+  includeDomains?: string[]
+  /** Exclude sources from these domains */
+  excludeDomains?: string[]
 }
 
 /**
@@ -66,25 +74,35 @@ export async function exaAnswer(
   }
 
   try {
+    // Build answer options
+    type AnswerOptions = NonNullable<Parameters<typeof client.answer>[1]>
+    
+    const answerOptions: AnswerOptions = {
+      text: input.includeText ?? true,
+      ...(input.category && { category: input.category }),
+      ...(input.startPublishedDate && { startPublishedDate: input.startPublishedDate }),
+      ...(input.endPublishedDate && { endPublishedDate: input.endPublishedDate }),
+      ...(input.includeDomains && input.includeDomains.length > 0 && { includeDomains: input.includeDomains }),
+      ...(input.excludeDomains && input.excludeDomains.length > 0 && { excludeDomains: input.excludeDomains }),
+    }
+
     // Execute answer with retry logic
     // @see https://docs.exa.ai/reference/error-codes
     const response = await retryWithBackoff(
-      () => client.answer(input.question, {
-        text: input.includeText ?? true,
-        ...(input.category && { category: input.category }),
-      }),
+      () => client.answer(input.question, answerOptions),
       retryConfig,
     )
 
     // Extract sources from the response
     // Type assertion needed as the SDK types may not include all fields
-    type CitationWithText = { url: string; title: string | null; text?: string }
+    type CitationWithText = { url: string; title: string | null; text?: string; publishedDate?: string }
     const citations = (response.citations ?? []) as CitationWithText[]
     
     const sources: ExaSearchResultItem[] = citations.map((citation) => ({
       url: citation.url,
       title: citation.title ?? 'Untitled',
       text: citation.text ?? undefined,
+      publishedDate: citation.publishedDate ?? undefined,
     }))
 
     // The answer can be a string or object depending on the response
@@ -124,18 +142,41 @@ export function formatExaAnswerForLLM(result: ExaAnswerResult): string {
   }
 
   const lines: string[] = [
-    `Question: "${result.question}"`,
+    `═══════════════════════════════════════════════════════════`,
+    `EXA ANSWER`,
+    `═══════════════════════════════════════════════════════════`,
     '',
-    `Answer: ${result.answer}`,
+    `QUESTION: "${result.question}"`,
+    '',
+    `ANSWER:`,
+    result.answer,
     '',
   ]
 
   if (result.sources.length > 0) {
-    lines.push(`Sources (${result.sources.length}):`)
+    lines.push(`───────────────────────────────────────────────────────────`)
+    lines.push(`SOURCES (${result.sources.length}):`)
+    lines.push('')
     result.sources.forEach((source, i) => {
-      lines.push(`  ${i + 1}. ${source.title} - ${source.url}`)
+      lines.push(`${i + 1}. ${source.title}`)
+      lines.push(`   URL: ${source.url}`)
+      if (source.publishedDate) {
+        try {
+          const date = new Date(source.publishedDate)
+          lines.push(`   Published: ${date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`)
+        } catch {
+          lines.push(`   Published: ${source.publishedDate}`)
+        }
+      }
+      if (source.text) {
+        const excerpt = source.text.substring(0, 500) + (source.text.length > 500 ? '...' : '')
+        lines.push(`   Excerpt: ${excerpt}`)
+      }
+      lines.push('')
     })
   }
+
+  lines.push(`═══════════════════════════════════════════════════════════`)
 
   return lines.join('\n')
 }

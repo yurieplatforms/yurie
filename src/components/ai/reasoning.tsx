@@ -14,8 +14,8 @@ import type { ToolUseEvent } from "@/lib/types";
 
 const toolLabels: Record<string, string> = {
   web_search: 'Searching',
-  web_fetch: 'Reading',
-  exa_search: 'Researching',
+  web_fetch: 'Fetching',
+  exa_search: 'Browsing',
   exa_find_similar: 'Finding similar',
   exa_answer: 'Answering',
   calculator: 'Calculating',

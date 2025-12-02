@@ -63,7 +63,7 @@ export function createRunnableTools(sseHandler: SSEHandler) {
       },
     }),
 
-    // EXA semantic web search tool
+    // EXA semantic web search tool - POWERFUL research tool
     // Only include if EXA API key is configured
     // @see https://docs.exa.ai/reference/search
     // @see https://docs.exa.ai/reference/how-exa-search-works
@@ -72,7 +72,7 @@ export function createRunnableTools(sseHandler: SSEHandler) {
           betaTool({
             name: 'exa_search',
             description:
-              'Performs semantic/neural web search using the EXA API. Use this for deep research, finding specific content types (news, research papers, companies, GitHub repos), or when web_search returns insufficient results. EXA understands semantic meaning, not just keywords. COMBINE WITH OTHER TOOLS: Use exa_search for initial research → web_fetch for full content from promising URLs → web_search for current verification. Best for: research tasks, specific document types, date-filtered searches, academic/technical content.',
+              'POWERFUL semantic/neural web search using EXA API. Returns up to 100 results with fresh content via livecrawling. Use for: deep research, finding specific content types (news, research papers, companies, GitHub repos, tweets), date-filtered searches, academic/technical content. EXA understands semantic meaning, not keywords. \n\nGUIDELINES:\n- Use "type: neural" (default) for broad concepts, "how to", and research topics.\n- Use "type: keyword" for specific entity names, error codes, or exact phrases.\n- Use "livecrawl: always" for BREAKING news or real-time data.\n- COMBINE: exa_search for research → web_fetch for full content from best URLs.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -85,7 +85,7 @@ export function createRunnableTools(sseHandler: SSEHandler) {
                   type: 'string',
                   enum: ['auto', 'neural', 'keyword', 'fast', 'deep'],
                   description:
-                    'Search type: "auto" (default, best overall), "neural" (AI semantic), "keyword" (exact matching), "fast" (<400ms, for real-time apps), "deep" (comprehensive with query expansion, best for research).',
+                    'Search type: "auto" (default, best overall), "neural" (AI semantic), "keyword" (exact matching), "fast" (<425ms p50, for real-time), "deep" (comprehensive with query expansion, BEST for research).',
                 },
                 category: {
                   type: 'string',
@@ -95,33 +95,44 @@ export function createRunnableTools(sseHandler: SSEHandler) {
                     'news',
                     'pdf',
                     'github',
+                    'tweet',
                     'personal site',
                     'linkedin profile',
                     'financial report',
                   ],
                   description:
-                    'Filter results by content type. Use "research paper" for academic content, "news" for current events, "github" for code.',
+                    'Filter results by content type. Use "research paper" for academic, "news" for current events, "github" for code, "tweet" for social media.',
                 },
                 numResults: {
                   type: 'number',
                   description:
-                    'Number of results to return (1-10). Default is 5.',
+                    'Number of results to return (1-100). Default is 10. Use higher values (20-50) for comprehensive research.',
                 },
                 startPublishedDate: {
                   type: 'string',
                   description:
-                    'Only include results published after this date (ISO 8601 format, e.g., "2024-01-01").',
+                    'Only include results published after this date (ISO 8601 format, e.g., "2024-01-01"). Great for recent content.',
                 },
                 endPublishedDate: {
                   type: 'string',
                   description:
                     'Only include results published before this date (ISO 8601 format).',
                 },
+                startCrawlDate: {
+                  type: 'string',
+                  description:
+                    'Only include results discovered by EXA after this date (ISO 8601). Use for newest indexed content.',
+                },
+                endCrawlDate: {
+                  type: 'string',
+                  description:
+                    'Only include results discovered by EXA before this date (ISO 8601).',
+                },
                 includeDomains: {
                   type: 'array',
                   items: { type: 'string' },
                   description:
-                    'Only search these domains (e.g., ["arxiv.org", "github.com"]).',
+                    'Only search these domains (e.g., ["arxiv.org", "github.com", "nature.com"]).',
                 },
                 excludeDomains: {
                   type: 'array',
@@ -129,10 +140,29 @@ export function createRunnableTools(sseHandler: SSEHandler) {
                   description:
                     'Exclude results from these domains.',
                 },
-                livecrawl: {
-                  type: 'boolean',
+                includeText: {
+                  type: 'array',
+                  items: { type: 'string' },
                   description:
-                    'Enable livecrawling for fresh content. Use when you need very recent information not yet indexed.',
+                    'Required text that MUST appear in results (up to 5 words). Filter for specific terms.',
+                },
+                excludeText: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description:
+                    'Text that must NOT appear in results (up to 5 words). Filter out unwanted content.',
+                },
+                livecrawl: {
+                  type: 'string',
+                  enum: ['always', 'preferred', 'fallback', 'never'],
+                  description:
+                    'Content freshness mode: "always" (slowest but freshest - for real-time/breaking news), "preferred" (default - fresh with fallback), "fallback" (cache first), "never" (fastest, cached only).',
+                },
+                additionalQueries: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description:
+                    'Additional query variations for deep search. Only works with type="deep". Expands search coverage.',
                 },
                 useHighlights: {
                   type: 'boolean',
@@ -147,7 +177,7 @@ export function createRunnableTools(sseHandler: SSEHandler) {
                 maxCharacters: {
                   type: 'number',
                   description:
-                    'Maximum characters for text content (default: 1000). Increase for more context, decrease for efficiency.',
+                    'Maximum characters for text content per result (default: 3000). Increase for more context.',
                 },
               },
               required: ['query'] as const,
@@ -161,9 +191,14 @@ export function createRunnableTools(sseHandler: SSEHandler) {
                 numResults: input.numResults,
                 startPublishedDate: input.startPublishedDate,
                 endPublishedDate: input.endPublishedDate,
+                startCrawlDate: input.startCrawlDate,
+                endCrawlDate: input.endCrawlDate,
                 includeDomains: input.includeDomains,
                 excludeDomains: input.excludeDomains,
-                livecrawl: input.livecrawl,
+                includeText: input.includeText,
+                excludeText: input.excludeText,
+                livecrawl: input.livecrawl as ExaSearchInput['livecrawl'],
+                additionalQueries: input.additionalQueries,
                 useHighlights: input.useHighlights,
                 useSummary: input.useSummary,
                 maxCharacters: input.maxCharacters,
@@ -210,7 +245,7 @@ export function createRunnableTools(sseHandler: SSEHandler) {
           betaTool({
             name: 'exa_find_similar',
             description:
-              'Find content similar to a given URL. Perfect for discovering related articles, research papers, competitors, or alternative sources. Returns semantically similar pages from across the web. Use after finding a great source to expand research.',
+              'Find up to 100 similar pages to a given URL. Perfect for discovering related articles, research papers, competitors, alternative sources, or expanding on a topic. Returns semantically similar pages from across the web with fresh content via livecrawling. Use after finding a great source to expand research.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -222,7 +257,7 @@ export function createRunnableTools(sseHandler: SSEHandler) {
                 numResults: {
                   type: 'number',
                   description:
-                    'Number of similar results to return (1-10). Default is 5.',
+                    'Number of similar results to return (1-100). Default is 10. Use higher values for comprehensive research.',
                 },
                 excludeSourceDomain: {
                   type: 'boolean',
@@ -237,12 +272,41 @@ export function createRunnableTools(sseHandler: SSEHandler) {
                     'news',
                     'pdf',
                     'github',
+                    'tweet',
                     'personal site',
                     'linkedin profile',
                     'financial report',
                   ],
                   description:
                     'Filter similar results by content type.',
+                },
+                livecrawl: {
+                  type: 'string',
+                  enum: ['always', 'preferred', 'fallback', 'never'],
+                  description:
+                    'Content freshness: "always" (freshest), "preferred" (default - fresh with fallback), "fallback" (cache first), "never" (fastest).',
+                },
+                startPublishedDate: {
+                  type: 'string',
+                  description:
+                    'Only include similar content published after this date (ISO 8601).',
+                },
+                endPublishedDate: {
+                  type: 'string',
+                  description:
+                    'Only include similar content published before this date (ISO 8601).',
+                },
+                includeDomains: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description:
+                    'Only find similar content from these domains.',
+                },
+                excludeDomains: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description:
+                    'Exclude similar content from these domains.',
                 },
                 useHighlights: {
                   type: 'boolean',
@@ -254,6 +318,11 @@ export function createRunnableTools(sseHandler: SSEHandler) {
                   description:
                     'Get AI-generated summaries of similar content.',
                 },
+                maxCharacters: {
+                  type: 'number',
+                  description:
+                    'Maximum characters for text content per result (default: 3000).',
+                },
               },
               required: ['url'] as const,
               additionalProperties: false,
@@ -264,8 +333,14 @@ export function createRunnableTools(sseHandler: SSEHandler) {
                 numResults: input.numResults,
                 excludeSourceDomain: input.excludeSourceDomain,
                 category: input.category as ExaSearchCategory | undefined,
+                livecrawl: input.livecrawl as ExaFindSimilarInput['livecrawl'],
+                startPublishedDate: input.startPublishedDate,
+                endPublishedDate: input.endPublishedDate,
+                includeDomains: input.includeDomains,
+                excludeDomains: input.excludeDomains,
                 useHighlights: input.useHighlights,
                 useSummary: input.useSummary,
+                maxCharacters: input.maxCharacters,
               }
 
               try {
@@ -308,7 +383,7 @@ export function createRunnableTools(sseHandler: SSEHandler) {
           betaTool({
             name: 'exa_answer',
             description:
-              'Get a direct, synthesized answer to a question with cited sources. EXA searches the web, analyzes content, and provides a comprehensive answer. Best for complex questions that need synthesis from multiple sources. Returns the answer plus source citations.',
+              'Get a direct, synthesized answer to a question with cited sources. EXA searches the web, analyzes content, and provides a comprehensive answer. Best for: single factual questions ("Who is CEO of X?", "When was Y released?"), summaries of recent events, or quick explanations. NOT for deep multi-faceted research (use exa_search for that). Returns the answer plus source citations.',
             inputSchema: {
               type: 'object',
               properties: {
@@ -325,12 +400,35 @@ export function createRunnableTools(sseHandler: SSEHandler) {
                     'news',
                     'pdf',
                     'github',
+                    'tweet',
                     'personal site',
                     'linkedin profile',
                     'financial report',
                   ],
                   description:
                     'Filter sources by content type for more focused answers.',
+                },
+                startPublishedDate: {
+                  type: 'string',
+                  description:
+                    'Only use sources published after this date (ISO 8601). Great for recent information.',
+                },
+                endPublishedDate: {
+                  type: 'string',
+                  description:
+                    'Only use sources published before this date (ISO 8601).',
+                },
+                includeDomains: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description:
+                    'Only use sources from these domains (e.g., ["wikipedia.org", "arxiv.org"]).',
+                },
+                excludeDomains: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description:
+                    'Exclude sources from these domains.',
                 },
                 includeText: {
                   type: 'boolean',
@@ -345,6 +443,10 @@ export function createRunnableTools(sseHandler: SSEHandler) {
               const answerInput: ExaAnswerInput = {
                 question: input.question,
                 category: input.category as ExaSearchCategory | undefined,
+                startPublishedDate: input.startPublishedDate,
+                endPublishedDate: input.endPublishedDate,
+                includeDomains: input.includeDomains,
+                excludeDomains: input.excludeDomains,
                 includeText: input.includeText,
               }
 
