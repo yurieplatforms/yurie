@@ -21,7 +21,9 @@ import { env } from '@/lib/config/env'
 export interface ComposioToolOutput {
   successful: boolean
   data?: unknown
-  error?: string
+  error?: string | null
+  logId?: string
+  sessionInfo?: unknown
 }
 
 export interface GitHubRepoInfo {
