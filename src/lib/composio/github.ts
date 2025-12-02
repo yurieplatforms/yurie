@@ -7,13 +7,22 @@
  * @see https://docs.composio.dev/toolkits/github
  */
 
-import { Composio, type ComposioOutput } from '@composio/core'
+import { Composio } from '@composio/core'
 import { AnthropicProvider } from '@composio/anthropic'
 import { env } from '@/lib/config/env'
 
 // ============================================================================
 // Types
 // ============================================================================
+
+/**
+ * Output type for Composio tool execution results.
+ */
+export interface ComposioToolOutput {
+  successful: boolean
+  data?: unknown
+  error?: string
+}
 
 export interface GitHubRepoInfo {
   owner: string
@@ -58,13 +67,15 @@ export interface GitHubToolContext {
 // Composio Client with Anthropic Provider
 // ============================================================================
 
-let composioWithAnthropic: Composio | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let composioWithAnthropic: Composio<any> | null = null
 
 /**
  * Get Composio client configured with Anthropic provider for GitHub tools.
  * Returns null if COMPOSIO_API_KEY is not configured.
  */
-export function getComposioAnthropicClient(): Composio | null {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getComposioAnthropicClient(): Composio<any> | null {
   if (!env.COMPOSIO_API_KEY) {
     return null
   }
@@ -148,7 +159,7 @@ export async function findGitHubConnectionId(userId: string): Promise<string | u
 async function executeGitHubTool(
   toolSlug: string,
   args: Record<string, unknown>
-): Promise<ComposioOutput> {
+): Promise<ComposioToolOutput> {
   const composio = getComposioAnthropicClient()
   if (!composio) {
     throw new Error('Composio is not configured. Please set COMPOSIO_API_KEY.')
@@ -191,7 +202,7 @@ async function executeGitHubTool(
  * @example
  * const repo = await getRepository({ owner: 'facebook', repo: 'react' })
  */
-export async function getRepository(params: GitHubRepoInfo): Promise<ComposioOutput> {
+export async function getRepository(params: GitHubRepoInfo): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_GET_A_REPOSITORY', {
     owner: params.owner,
     repo: params.repo,
@@ -204,7 +215,7 @@ export async function getRepository(params: GitHubRepoInfo): Promise<ComposioOut
  * @example
  * const issues = await listIssues({ owner: 'vercel', repo: 'next.js', state: 'open' })
  */
-export async function listIssues(params: GitHubIssueParams): Promise<ComposioOutput> {
+export async function listIssues(params: GitHubIssueParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_REPOSITORY_ISSUES', {
     owner: params.owner,
     repo: params.repo,
@@ -223,7 +234,7 @@ export async function listIssues(params: GitHubIssueParams): Promise<ComposioOut
 export async function getIssue(
   params: GitHubRepoInfo,
   issueNumber: number
-): Promise<ComposioOutput> {
+): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_GET_AN_ISSUE', {
     owner: params.owner,
     repo: params.repo,
@@ -237,7 +248,7 @@ export async function getIssue(
  * @example
  * const prs = await listPullRequests({ owner: 'facebook', repo: 'react', state: 'open' })
  */
-export async function listPullRequests(params: GitHubPRParams): Promise<ComposioOutput> {
+export async function listPullRequests(params: GitHubPRParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_PULL_REQUESTS', {
     owner: params.owner,
     repo: params.repo,
@@ -256,7 +267,7 @@ export async function listPullRequests(params: GitHubPRParams): Promise<Composio
 export async function getPullRequest(
   params: GitHubRepoInfo,
   pullNumber: number
-): Promise<ComposioOutput> {
+): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_GET_A_PULL_REQUEST', {
     owner: params.owner,
     repo: params.repo,
@@ -270,7 +281,7 @@ export async function getPullRequest(
  * @example
  * const commits = await listCommits({ owner: 'vercel', repo: 'next.js', per_page: 20 })
  */
-export async function listCommits(params: GitHubCommitParams): Promise<ComposioOutput> {
+export async function listCommits(params: GitHubCommitParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_COMMITS', {
     owner: params.owner,
     repo: params.repo,
@@ -286,7 +297,7 @@ export async function listCommits(params: GitHubCommitParams): Promise<ComposioO
  * @example
  * const commit = await getCommit({ owner: 'vercel', repo: 'next.js' }, 'abc123')
  */
-export async function getCommit(params: GitHubRepoInfo, sha: string): Promise<ComposioOutput> {
+export async function getCommit(params: GitHubRepoInfo, sha: string): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_GET_A_COMMIT', {
     owner: params.owner,
     repo: params.repo,
@@ -300,7 +311,7 @@ export async function getCommit(params: GitHubRepoInfo, sha: string): Promise<Co
  * @example
  * const readme = await getReadme({ owner: 'facebook', repo: 'react' })
  */
-export async function getReadme(params: GitHubRepoInfo): Promise<ComposioOutput> {
+export async function getReadme(params: GitHubRepoInfo): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_GET_A_REPOSITORY_README', {
     owner: params.owner,
     repo: params.repo,
@@ -313,7 +324,7 @@ export async function getReadme(params: GitHubRepoInfo): Promise<ComposioOutput>
  * @example
  * const file = await getFileContent({ owner: 'vercel', repo: 'next.js', path: 'package.json' })
  */
-export async function getFileContent(params: GitHubFileParams): Promise<ComposioOutput> {
+export async function getFileContent(params: GitHubFileParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_GET_REPOSITORY_CONTENT', {
     owner: params.owner,
     repo: params.repo,
@@ -328,7 +339,7 @@ export async function getFileContent(params: GitHubFileParams): Promise<Composio
  * @example
  * const branches = await listBranches({ owner: 'facebook', repo: 'react' })
  */
-export async function listBranches(params: GitHubRepoInfo): Promise<ComposioOutput> {
+export async function listBranches(params: GitHubRepoInfo): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_BRANCHES', {
     owner: params.owner,
     repo: params.repo,
@@ -341,7 +352,7 @@ export async function listBranches(params: GitHubRepoInfo): Promise<ComposioOutp
  * @example
  * const releases = await listReleases({ owner: 'vercel', repo: 'next.js' })
  */
-export async function listReleases(params: GitHubRepoInfo): Promise<ComposioOutput> {
+export async function listReleases(params: GitHubRepoInfo): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_RELEASES', {
     owner: params.owner,
     repo: params.repo,
@@ -354,7 +365,7 @@ export async function listReleases(params: GitHubRepoInfo): Promise<ComposioOutp
  * @example
  * const latest = await getLatestRelease({ owner: 'vercel', repo: 'next.js' })
  */
-export async function getLatestRelease(params: GitHubRepoInfo): Promise<ComposioOutput> {
+export async function getLatestRelease(params: GitHubRepoInfo): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_GET_THE_LATEST_RELEASE', {
     owner: params.owner,
     repo: params.repo,
@@ -367,7 +378,7 @@ export async function getLatestRelease(params: GitHubRepoInfo): Promise<Composio
  * @example
  * const repos = await searchRepositories({ query: 'react state management stars:>1000' })
  */
-export async function searchRepositories(params: GitHubSearchParams): Promise<ComposioOutput> {
+export async function searchRepositories(params: GitHubSearchParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_SEARCH_REPOSITORIES', {
     q: params.query,
     per_page: params.per_page ?? 10,
@@ -381,7 +392,7 @@ export async function searchRepositories(params: GitHubSearchParams): Promise<Co
  * @example
  * const results = await searchIssues({ query: 'repo:vercel/next.js is:issue is:open' })
  */
-export async function searchIssues(params: GitHubSearchParams): Promise<ComposioOutput> {
+export async function searchIssues(params: GitHubSearchParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_SEARCH_ISSUES_AND_PULL_REQUESTS', {
     q: params.query,
     per_page: params.per_page ?? 10,
@@ -395,7 +406,7 @@ export async function searchIssues(params: GitHubSearchParams): Promise<Composio
  * @example
  * const code = await searchCode({ query: 'filename:package.json react-dom' })
  */
-export async function searchCode(params: GitHubSearchParams): Promise<ComposioOutput> {
+export async function searchCode(params: GitHubSearchParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_SEARCH_CODE', {
     q: params.query,
     per_page: params.per_page ?? 10,
@@ -409,7 +420,7 @@ export async function searchCode(params: GitHubSearchParams): Promise<ComposioOu
  * @example
  * const contributors = await listContributors({ owner: 'facebook', repo: 'react' })
  */
-export async function listContributors(params: GitHubRepoInfo): Promise<ComposioOutput> {
+export async function listContributors(params: GitHubRepoInfo): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_REPOSITORY_CONTRIBUTORS', {
     owner: params.owner,
     repo: params.repo,
@@ -422,7 +433,7 @@ export async function listContributors(params: GitHubRepoInfo): Promise<Composio
  * @example
  * const languages = await getLanguages({ owner: 'vercel', repo: 'next.js' })
  */
-export async function getLanguages(params: GitHubRepoInfo): Promise<ComposioOutput> {
+export async function getLanguages(params: GitHubRepoInfo): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_REPOSITORY_LANGUAGES', {
     owner: params.owner,
     repo: params.repo,
@@ -435,7 +446,7 @@ export async function getLanguages(params: GitHubRepoInfo): Promise<ComposioOutp
  * @example
  * const user = await getUser('octocat')
  */
-export async function getUser(username: string): Promise<ComposioOutput> {
+export async function getUser(username: string): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_GET_A_USER', {
     username,
   })
@@ -450,7 +461,7 @@ export async function getUser(username: string): Promise<ComposioOutput> {
 export async function listUserRepos(
   username: string,
   options?: { per_page?: number; page?: number; sort?: 'created' | 'updated' | 'pushed' | 'full_name' }
-): Promise<ComposioOutput> {
+): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_REPOSITORIES_FOR_A_USER', {
     username,
     per_page: options?.per_page ?? 10,
@@ -476,7 +487,7 @@ export interface CreateIssueParams extends GitHubRepoInfo {
  * @example
  * const issue = await createIssue({ owner: 'vercel', repo: 'next.js', title: 'Bug report', body: 'Description...' })
  */
-export async function createIssue(params: CreateIssueParams): Promise<ComposioOutput> {
+export async function createIssue(params: CreateIssueParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_CREATE_AN_ISSUE', {
     owner: params.owner,
     repo: params.repo,
@@ -498,7 +509,7 @@ export interface CreateIssueCommentParams extends GitHubRepoInfo {
  * @example
  * const comment = await createIssueComment({ owner: 'vercel', repo: 'next.js', issue_number: 123, body: 'Great work!' })
  */
-export async function createIssueComment(params: CreateIssueCommentParams): Promise<ComposioOutput> {
+export async function createIssueComment(params: CreateIssueCommentParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_CREATE_AN_ISSUE_COMMENT', {
     owner: params.owner,
     repo: params.repo,
@@ -521,7 +532,7 @@ export interface CreatePullRequestParams extends GitHubRepoInfo {
  * @example
  * const pr = await createPullRequest({ owner: 'vercel', repo: 'next.js', title: 'Fix bug', head: 'fix-branch', base: 'main' })
  */
-export async function createPullRequest(params: CreatePullRequestParams): Promise<ComposioOutput> {
+export async function createPullRequest(params: CreatePullRequestParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_CREATE_A_PULL_REQUEST', {
     owner: params.owner,
     repo: params.repo,
@@ -548,7 +559,7 @@ export interface UpdateIssueParams extends GitHubRepoInfo {
  * @example
  * const issue = await updateIssue({ owner: 'vercel', repo: 'next.js', issue_number: 123, state: 'closed' })
  */
-export async function updateIssue(params: UpdateIssueParams): Promise<ComposioOutput> {
+export async function updateIssue(params: UpdateIssueParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_UPDATE_AN_ISSUE', {
     owner: params.owner,
     repo: params.repo,
@@ -574,7 +585,7 @@ export interface MergePullRequestParams extends GitHubRepoInfo {
  * @example
  * const result = await mergePullRequest({ owner: 'vercel', repo: 'next.js', pull_number: 456, merge_method: 'squash' })
  */
-export async function mergePullRequest(params: MergePullRequestParams): Promise<ComposioOutput> {
+export async function mergePullRequest(params: MergePullRequestParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_MERGE_A_PULL_REQUEST', {
     owner: params.owner,
     repo: params.repo,
@@ -596,7 +607,7 @@ export interface AddLabelsParams extends GitHubRepoInfo {
  * @example
  * const result = await addLabels({ owner: 'vercel', repo: 'next.js', issue_number: 123, labels: ['bug', 'priority'] })
  */
-export async function addLabels(params: AddLabelsParams): Promise<ComposioOutput> {
+export async function addLabels(params: AddLabelsParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_ADD_LABELS_TO_AN_ISSUE', {
     owner: params.owner,
     repo: params.repo,
@@ -617,7 +628,7 @@ export interface CreatePRReviewParams extends GitHubRepoInfo {
  * @example
  * const review = await createPRReview({ owner: 'vercel', repo: 'next.js', pull_number: 456, event: 'APPROVE', body: 'LGTM!' })
  */
-export async function createPRReview(params: CreatePRReviewParams): Promise<ComposioOutput> {
+export async function createPRReview(params: CreatePRReviewParams): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_CREATE_A_REVIEW_FOR_A_PULL_REQUEST', {
     owner: params.owner,
     repo: params.repo,
@@ -637,7 +648,7 @@ export async function createPRReview(params: CreatePRReviewParams): Promise<Comp
  * @example
  * const result = await starRepository({ owner: 'vercel', repo: 'next.js' })
  */
-export async function starRepository(params: GitHubRepoInfo): Promise<ComposioOutput> {
+export async function starRepository(params: GitHubRepoInfo): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER', {
     owner: params.owner,
     repo: params.repo,
@@ -650,7 +661,7 @@ export async function starRepository(params: GitHubRepoInfo): Promise<ComposioOu
  * @example
  * const result = await unstarRepository({ owner: 'vercel', repo: 'next.js' })
  */
-export async function unstarRepository(params: GitHubRepoInfo): Promise<ComposioOutput> {
+export async function unstarRepository(params: GitHubRepoInfo): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_UNSTAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER', {
     owner: params.owner,
     repo: params.repo,
@@ -667,7 +678,7 @@ export async function forkRepository(params: GitHubRepoInfo & {
   organization?: string
   name?: string
   default_branch_only?: boolean
-}): Promise<ComposioOutput> {
+}): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_CREATE_A_FORK', {
     owner: params.owner,
     repo: params.repo,
@@ -686,7 +697,7 @@ export async function forkRepository(params: GitHubRepoInfo & {
 export async function watchRepository(params: GitHubRepoInfo & { 
   subscribed?: boolean
   ignored?: boolean
-}): Promise<ComposioOutput> {
+}): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_SET_A_REPOSITORY_SUBSCRIPTION', {
     owner: params.owner,
     repo: params.repo,
@@ -701,7 +712,7 @@ export async function watchRepository(params: GitHubRepoInfo & {
  * @example
  * const user = await getAuthenticatedUser()
  */
-export async function getAuthenticatedUser(): Promise<ComposioOutput> {
+export async function getAuthenticatedUser(): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_GET_THE_AUTHENTICATED_USER', {})
 }
 
@@ -717,7 +728,7 @@ export async function listWorkflowRuns(params: GitHubRepoInfo & {
   event?: string
   status?: 'queued' | 'in_progress' | 'completed' | 'waiting' | 'requested' | 'pending'
   per_page?: number
-}): Promise<ComposioOutput> {
+}): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_WORKFLOW_RUNS_FOR_A_REPOSITORY', {
     owner: params.owner,
     repo: params.repo,
@@ -735,7 +746,7 @@ export async function listWorkflowRuns(params: GitHubRepoInfo & {
  * @example
  * const workflows = await listWorkflows({ owner: 'vercel', repo: 'next.js' })
  */
-export async function listWorkflows(params: GitHubRepoInfo): Promise<ComposioOutput> {
+export async function listWorkflows(params: GitHubRepoInfo): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_REPOSITORY_WORKFLOWS', {
     owner: params.owner,
     repo: params.repo,
@@ -752,7 +763,7 @@ export async function triggerWorkflow(params: GitHubRepoInfo & {
   workflow_id: string | number
   ref: string
   inputs?: Record<string, string>
-}): Promise<ComposioOutput> {
+}): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_CREATE_A_WORKFLOW_DISPATCH_EVENT', {
     owner: params.owner,
     repo: params.repo,
@@ -771,7 +782,7 @@ export async function triggerWorkflow(params: GitHubRepoInfo & {
 export async function listIssueComments(params: GitHubRepoInfo & {
   issue_number: number
   per_page?: number
-}): Promise<ComposioOutput> {
+}): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_ISSUE_COMMENTS', {
     owner: params.owner,
     repo: params.repo,
@@ -788,7 +799,7 @@ export async function listIssueComments(params: GitHubRepoInfo & {
  */
 export async function getPullRequestDiff(params: GitHubRepoInfo & {
   pull_number: number
-}): Promise<ComposioOutput> {
+}): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_GET_A_PULL_REQUEST', {
     owner: params.owner,
     repo: params.repo,
@@ -807,7 +818,7 @@ export async function getPullRequestDiff(params: GitHubRepoInfo & {
 export async function listPullRequestFiles(params: GitHubRepoInfo & {
   pull_number: number
   per_page?: number
-}): Promise<ComposioOutput> {
+}): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_PULL_REQUESTS_FILES', {
     owner: params.owner,
     repo: params.repo,
@@ -825,7 +836,7 @@ export async function listPullRequestFiles(params: GitHubRepoInfo & {
 export async function listPullRequestCommits(params: GitHubRepoInfo & {
   pull_number: number
   per_page?: number
-}): Promise<ComposioOutput> {
+}): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_LIST_COMMITS_ON_A_PULL_REQUEST', {
     owner: params.owner,
     repo: params.repo,
@@ -840,7 +851,7 @@ export async function listPullRequestCommits(params: GitHubRepoInfo & {
  * @example
  * const tree = await getRepoTree({ owner: 'vercel', repo: 'next.js' })
  */
-export async function getRepoTree(params: GitHubRepoInfo & { sha?: string; recursive?: boolean }): Promise<ComposioOutput> {
+export async function getRepoTree(params: GitHubRepoInfo & { sha?: string; recursive?: boolean }): Promise<ComposioToolOutput> {
   return executeGitHubTool('GITHUB_GET_A_TREE', {
     owner: params.owner,
     repo: params.repo,
