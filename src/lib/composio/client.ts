@@ -3,7 +3,8 @@ import { AnthropicProvider } from '@composio/anthropic'
 import { env } from '@/lib/config/env'
 
 let composioClient: Composio | null = null
-let composioAnthropicClient: Composio | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let composioAnthropicClient: Composio<any> | null = null
 
 /**
  * Lazily initialized base Composio Client.
@@ -32,7 +33,8 @@ export function getComposioClient(): Composio | null {
  *
  * @see https://docs.composio.dev/providers/anthropic
  */
-export function getComposioAnthropicClient(): Composio | null {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getComposioAnthropicClient(): Composio<any> | null {
   if (!env.COMPOSIO_API_KEY) {
     return null
   }
