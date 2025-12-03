@@ -1,6 +1,6 @@
 import Exa from 'exa-js'
 import { env } from '@/config/env'
-import type { RetryConfig } from '../exa-errors'
+import type { RetryConfig } from './errors'
 
 // ============================================================================
 // EXA Client

@@ -23,7 +23,7 @@ export type {
 } from './errors'
 
 // Memory tool configuration
-export { memoryToolSchema, createMemoryTool } from './memory-tool-config'
+export { memoryToolSchema, createMemoryTool } from './tools/memory'
 
 // Message converter
 export { convertToAnthropicContent } from './message-converter'

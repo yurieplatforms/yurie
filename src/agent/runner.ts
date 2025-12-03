@@ -26,7 +26,7 @@ import {
   logAnthropicError,
 } from '@/agent/errors'
 import { createRunnableTools, type FocusedRepoContext } from '@/agent/runnable-tools'
-import { createMemoryTool } from '@/agent/memory-tool-config'
+import { createMemoryTool } from '@/agent/tools/memory'
 import {
   processCitations,
   processWebFetchResult,

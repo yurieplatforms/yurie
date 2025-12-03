@@ -8,7 +8,7 @@ import {
   retryWithBackoff,
   logExaError,
   type RetryConfig,
-} from '../exa-errors'
+} from './errors'
 import { getExaClient, DEFAULT_EXA_RETRY_CONFIG } from './client'
 
 // ============================================================================
@@ -45,7 +45,7 @@ export type ExaAnswerResult = {
   answer: string
   sources: ExaSearchResultItem[]
   error?: string
-  errorInfo?: import('../exa-errors').ExaErrorInfo
+  errorInfo?: import('./errors').ExaErrorInfo
 }
 
 /**
