@@ -9,10 +9,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { Loader } from '@/components/ai/loader'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 import { Eye, EyeOff } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
-import { authSchema } from '@/lib/supabase/auth-schema'
+import { createClient } from '@/services/supabase/client'
+import { authSchema } from '@/services/supabase/auth-schema'
 
 export function AuthForm({
   message,

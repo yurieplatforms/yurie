@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useAuth } from '@/lib/providers/auth-provider'
+import { useAuth } from '@/providers/auth-provider'
 import { useChat } from '@/hooks/useChat'
 import {
   useStreamResponse,
@@ -10,8 +10,8 @@ import {
 } from '@/hooks/useStreamResponse'
 import { useFileProcessor } from '@/hooks/useFileProcessor'
 import { useGeolocation, buildUserLocation } from '@/hooks/useGeolocation'
-import { parseSuggestions } from '@/lib/chat/suggestion-parser'
-import type { ChatMessage } from '@/lib/types'
+import { parseSuggestions } from '@/utils/suggestion-parser'
+import type { ChatMessage } from '@/types'
 
 // Extracted subcomponents
 import { MessageList } from './message-list'

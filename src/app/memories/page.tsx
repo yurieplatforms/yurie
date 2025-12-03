@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/services/supabase/server'
 import { redirect } from 'next/navigation'
 import { Metadata } from 'next'
 import { MemoriesContent } from './memories-content'

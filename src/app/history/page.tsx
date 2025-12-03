@@ -1,8 +1,8 @@
 import { HistoryList } from '@/components/chat/history-list'
 import { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
-import { getUserChats } from '@/lib/chat/history'
-import { SavedChat } from '@/lib/types'
+import { createClient } from '@/services/supabase/server'
+import { getUserChats } from '@/services/chat/history'
+import { SavedChat } from '@/types'
 
 export const metadata: Metadata = {
   title: 'Threads',

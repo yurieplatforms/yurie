@@ -1,8 +1,8 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/services/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { getComposioClient } from '@/lib/composio'
+import { getComposioClient } from '@/services/composio'
 import { headers } from 'next/headers'
 
 export async function updateProfile(formData: FormData) {
@@ -43,6 +43,12 @@ export async function updateProfile(formData: FormData) {
   return { success: true }
 }
 
+// Environment variable names for auth config IDs (e.g., COMPOSIO_SPOTIFY_AUTH_CONFIG_ID)
+function getAuthConfigEnvVar(appName: string): string | undefined {
+  const envVarName = `COMPOSIO_${appName.toUpperCase()}_AUTH_CONFIG_ID`
+  return process.env[envVarName]
+}
+
 export async function initiateConnection(appName: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -63,42 +69,170 @@ export async function initiateConnection(appName: string) {
     
     console.log(`[Composio] Initiating ${toolkitName} connection for user ${user.id}`)
     
+    if (toolkitName === 'SPOTIFY') {
+      console.log('⚠️  IMPORTANT: Ensure "https://backend.composio.dev/api/v1/auth-apps/add" is added to Redirect URIs in your Spotify Developer Dashboard')
+    }
+
     // Step 1: Find or create an auth config for the toolkit
     // @see https://docs.composio.dev/docs/authenticating-tools
     let authConfigId: string | undefined
     
-    // List existing auth configs
-    const authConfigs = await client.authConfigs.list({})
-    
-    // Find one matching this toolkit (checking various possible field names)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const existingConfig = authConfigs.items?.find((config: any) => {
-      const appSlug = config.appName || config.provider || config.app || ''
-      return appSlug.toUpperCase() === toolkitName
-    })
-    
-    if (existingConfig) {
-      authConfigId = existingConfig.id
-      console.log('[Composio] Using existing auth config:', authConfigId)
-    } else {
-      // Create a new auth config using Composio managed auth
-      console.log('[Composio] Creating new auth config for', toolkitName)
-      const newConfig = await client.authConfigs.create(toolkitName, {
-        type: 'use_composio_managed_auth',
-        name: `${toolkitName} Auth Config`,
-      })
-      authConfigId = newConfig.id
-      console.log('[Composio] Created auth config:', authConfigId)
+    // First, check if auth config ID is set via environment variable
+    // e.g., COMPOSIO_SPOTIFY_AUTH_CONFIG_ID=ac_xxxxx
+    const envAuthConfigId = getAuthConfigEnvVar(appName)
+    if (envAuthConfigId) {
+      authConfigId = envAuthConfigId
+      console.log('[Composio] Using auth config from env var:', authConfigId)
     }
     
-    // Step 2: Initiate the connection using the auth config
+    // If no env var, search for existing auth config
+    if (!authConfigId) {
+      const authConfigs = await client.authConfigs.list({})
+      
+      // Debug: Log all auth configs to see their structure
+      console.log('[Composio] Available auth configs:', JSON.stringify(authConfigs.items?.map((c: Record<string, unknown>) => ({
+        id: c.id,
+        name: c.name,
+        appName: c.appName,
+        app: c.app,
+        appId: c.appId,
+        provider: c.provider,
+        toolkit: c.toolkit,
+      })), null, 2))
+      
+      // Find one matching this toolkit (checking various possible field names)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const existingConfig = authConfigs.items?.find((config: any) => {
+        const appSlug = (
+          config.appName || 
+          config.app || 
+          config.appId ||
+          config.provider || 
+          config.toolkit?.slug ||
+          config.name ||
+          ''
+        ).toString().toUpperCase()
+        
+        // Match against toolkit name (e.g., "SPOTIFY")
+        const matches = appSlug === toolkitName || appSlug.includes(toolkitName)
+        if (matches) {
+          console.log('[Composio] Found matching auth config:', config.id, 'for', toolkitName)
+        }
+        return matches
+      })
+      
+      if (existingConfig) {
+        authConfigId = existingConfig.id
+        console.log('[Composio] Using existing auth config:', authConfigId)
+      }
+    }
+    
+    // If still no auth config, try to create managed auth
+    if (!authConfigId) {
+      console.log('[Composio] No auth config found, trying to create managed auth for', toolkitName)
+      try {
+        const newConfig = await client.authConfigs.create(toolkitName, {
+          type: 'use_composio_managed_auth',
+          name: `${toolkitName} Auth Config`,
+        })
+        authConfigId = newConfig.id
+        console.log('[Composio] Created auth config:', authConfigId)
+      } catch (createError: unknown) {
+        const createErrorMsg = createError instanceof Error ? createError.message : String(createError)
+        console.error('[Composio] Failed to create managed auth config:', createErrorMsg)
+        
+        // Provide helpful guidance
+        return { 
+          error: `${appName} requires setup. Either:\n1. Set COMPOSIO_${toolkitName}_AUTH_CONFIG_ID in your .env file\n2. Or visit composio.dev → Apps → ${appName} to configure OAuth`
+        }
+      }
+    }
+    
+    // Step 2: Check if user already has an active connection for this app
+    const existingConnections = await client.connectedAccounts.list({
+      userIds: [user.id],
+      statuses: ['ACTIVE'],
+    })
+    
+    console.log('[Composio] Existing connections for user:', JSON.stringify(existingConnections.items?.map((c: Record<string, unknown>) => ({
+      id: c.id,
+      authConfigId: c.authConfigId,
+      appName: c.appName,
+      toolkit: c.toolkit,
+      status: c.status,
+    })), null, 2))
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const existingAppConnection = existingConnections.items?.find((conn: any) => {
+      // Match by auth config ID (most reliable)
+      if (conn.authConfigId === authConfigId) {
+        return true
+      }
+      // Or match by toolkit slug
+      const connToolkitSlug = conn.toolkit?.slug || conn.appName?.toLowerCase() || ''
+      return connToolkitSlug === toolkitName.toLowerCase()
+    })
+    
+    if (existingAppConnection) {
+      console.log(`[Composio] User already has ${toolkitName} connection:`, existingAppConnection.id)
+      // User already connected - just return success and let the UI update
+      return { success: true, alreadyConnected: true }
+    }
+    
+    // Also check if there are ANY connections for this auth config (even from other users/entities)
+    // This handles the "multiple connected accounts" error
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const authConfigConnections = await client.connectedAccounts.list({
+        authConfigId: authConfigId,
+      } as any)
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const myConnection = authConfigConnections.items?.find((conn: any) => 
+        conn.entityId === user.id || conn.userId === user.id
+      )
+      
+      if (myConnection) {
+        console.log(`[Composio] Found connection via auth config:`, myConnection.id)
+        return { success: true, alreadyConnected: true }
+      }
+    } catch (e) {
+      console.log('[Composio] Could not check auth config connections:', e)
+    }
+    
+    // Step 3: Initiate the connection using the auth config
     // Use user.id as the entityId so we can filter connections later
+    // Note: For OAuth apps like Spotify, Composio handles the callback through their backend
+    // The default redirect URI is: https://backend.composio.dev/api/v1/auth-apps/add
+    // After OAuth completes, Composio redirects to the redirectUrl we specify
+    
+    // Define scopes based on the app
+    const scopes = toolkitName === 'SPOTIFY' ? [
+      'user-top-read',
+      'user-read-playback-state',
+      'user-modify-playback-state',
+      'user-read-currently-playing',
+      'user-library-read',
+      'user-library-modify',
+      'playlist-read-private',
+      'playlist-read-collaborative',
+      'playlist-modify-public',
+      'playlist-modify-private',
+      'user-read-recently-played',
+      'user-follow-read',
+      'user-follow-modify'
+    ] : undefined
+
     const connectionRequest = await client.connectedAccounts.initiate(
       user.id,
       authConfigId,
       {
-        callbackUrl: `${origin}/profile`,
-      }
+        redirectUrl: `${origin}/profile`,
+        // Allow multiple connections per user (handles reconnection cases)
+        allowMultiple: true,
+        ...(scopes && { scopes }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
     )
     
     console.log('[Composio] Connection request created:', connectionRequest.id)
@@ -108,6 +242,14 @@ export async function initiateConnection(appName: string) {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('[Composio] Connection error:', errorMessage)
+    
+    // Provide helpful error messages for common issues
+    if (errorMessage.includes('auth config not found') || errorMessage.includes('302')) {
+      return { 
+        error: `${appName} requires OAuth setup. Please visit composio.dev → Apps → ${appName} to configure authentication.` 
+      }
+    }
+    
     return { error: `Failed to initiate connection: ${errorMessage}` }
   }
 }
@@ -134,6 +276,7 @@ export async function checkConnectionStatus(appName: string): Promise<Connection
 
   try {
     const toolkitSlug = appName.toLowerCase() // toolkit.slug is lowercase
+    const toolkitUpper = appName.toUpperCase()
     
     // List connected accounts filtered by this user's entity ID
     // @see https://docs.composio.dev/docs/authenticating-tools
@@ -142,11 +285,24 @@ export async function checkConnectionStatus(appName: string): Promise<Connection
       statuses: ['ACTIVE'],
     })
     
+    console.log(`[Composio] Checking ${appName} status. Found ${connections.items?.length || 0} connections`)
+    
     // Find a connection for this specific toolkit
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const matchingConnection = connections.items?.find((conn: any) => {
-      const connToolkitSlug = conn.toolkit?.slug || conn.appName?.toLowerCase() || ''
-      return connToolkitSlug === toolkitSlug
+      const connToolkitSlug = (conn.toolkit?.slug || conn.appName || '').toLowerCase()
+      const connAppName = (conn.appName || '').toUpperCase()
+      
+      // Try multiple matching strategies
+      const matches = connToolkitSlug === toolkitSlug || 
+                      connAppName === toolkitUpper ||
+                      connToolkitSlug.includes(toolkitSlug) ||
+                      connAppName.includes(toolkitUpper)
+      
+      if (matches) {
+        console.log(`[Composio] Found matching ${appName} connection:`, conn.id)
+      }
+      return matches
     })
     
     if (matchingConnection) {
@@ -157,14 +313,21 @@ export async function checkConnectionStatus(appName: string): Promise<Connection
       const metadata = (matchingConnection as any).metadata || {}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const accountInfo = (matchingConnection as any).accountInfo || {}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const connData = matchingConnection as any
       
       return { 
         connected: true,
         connectionId: matchingConnection.id,
-        accountName: accountInfo?.login || accountInfo?.username || accountInfo?.name || metadata?.login,
+        accountName: accountInfo?.login || accountInfo?.username || accountInfo?.name || 
+                     accountInfo?.display_name || metadata?.login || metadata?.display_name ||
+                     connData?.displayName,
         metadata: { ...metadata, ...accountInfo },
       }
     }
+    
+    // If not found by user ID, try checking all connections and match by user
+    console.log(`[Composio] No ${appName} connection found by userId, trying broader search...`)
     
     return { connected: false }
   } catch (error) {

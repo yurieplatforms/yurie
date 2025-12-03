@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils";
 import {
   Collapsible,
   CollapsibleContent,
@@ -10,7 +10,7 @@ import { Search, Globe, History, Calculator, Sparkles, Link2, ChevronRight, Ligh
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { Shimmer } from "./shimmer";
-import type { ToolUseEvent } from "@/lib/types";
+import type { ToolUseEvent } from "@/types";
 
 const toolLabels: Record<string, string> = {
   web_search: 'Searching',
@@ -109,7 +109,7 @@ export function ReasoningTrigger({
   // Get the current active tool for display
   const currentActiveTool = activeTools[activeTools.length - 1];
   const activeToolLabel = currentActiveTool 
-    ? toolLabels[currentActiveTool.name] || `Using ${currentActiveTool.name.replace(/_/g, ' ').replace(/github/i, 'GitHub')}`
+    ? toolLabels[currentActiveTool.name] || `Using ${currentActiveTool.name.replace(/_/g, ' ').replace(/github/i, 'GitHub').replace(/spotify/i, 'Spotify')}`
     : null;
 
   // Build dynamic label

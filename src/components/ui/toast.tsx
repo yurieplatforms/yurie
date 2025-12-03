@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { Check, X, AlertTriangle, Info } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 export type Toast = {
   id: string

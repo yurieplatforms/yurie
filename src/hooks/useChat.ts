@@ -11,9 +11,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getChat, saveChat, createChat } from '@/lib/chat/history'
-import { useAuth } from '@/lib/providers/auth-provider'
-import type { ChatMessage } from '@/lib/types'
+import { getChat, saveChat, createChat } from '@/services/chat/history'
+import { useAuth } from '@/providers/auth-provider'
+import type { ChatMessage } from '@/types'
 
 /**
  * Options for the useChat hook

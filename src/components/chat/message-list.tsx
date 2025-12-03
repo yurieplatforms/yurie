@@ -1,6 +1,6 @@
 'use client'
 
-import type { ChatMessage } from '@/lib/types'
+import type { ChatMessage } from '@/types'
 import { Loader } from '@/components/ai/loader'
 import {
   Message,

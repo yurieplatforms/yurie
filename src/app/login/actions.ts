@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-import { createClient } from '@/lib/supabase/server'
-import { authSchema } from '@/lib/supabase/auth-schema'
+import { createClient } from '@/services/supabase/server'
+import { authSchema } from '@/services/supabase/auth-schema'
 
 export async function signup(formData: FormData) {
   const supabase = await createClient()

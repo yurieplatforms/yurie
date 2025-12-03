@@ -1,19 +1,14 @@
 'use client'
 
 import { memo } from 'react'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 import type {
   MessageCitation,
   CharLocationCitation,
   PageLocationCitation,
   ContentBlockLocationCitation,
   WebSearchCitation,
-} from '@/lib/types'
+} from '@/types'
 import { ExternalLinkIcon, FileTextIcon, BookOpenIcon } from 'lucide-react'
 
 /**
@@ -109,59 +104,22 @@ export const CitationMark = memo(function CitationMark({
   const url = isWebSearch ? (citation as WebSearchCitation).url : undefined
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            'inline-flex items-center justify-center',
-            'h-4 min-w-4 px-1 rounded-sm',
-            'text-[10px] font-medium leading-none',
-            'bg-[#7F91E0]/20 text-[#7F91E0] hover:bg-[#7F91E0]/30',
-            'dark:bg-[#7F91E0]/20 dark:text-[#7F91E0] dark:hover:bg-[#7F91E0]/30',
-            'transition-colors cursor-pointer',
-            'align-super -translate-y-0.5',
-            className
-          )}
-          aria-label={`Citation ${index + 1}: ${location}`}
-        >
-          {index + 1}
-        </button>
-      </TooltipTrigger>
-      <TooltipContent
-        side="top"
-        className="max-w-sm p-3 bg-zinc-900 dark:bg-zinc-800 text-zinc-100"
-      >
-        <div className="space-y-2">
-          {/* Source header */}
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            {icon}
-            <span className="truncate">{location}</span>
-          </div>
-          
-          {/* Cited text */}
-          {citedText && (
-            <blockquote className="text-sm border-l-2 border-[#7F91E0] pl-2 text-zinc-200 italic">
-              &ldquo;{citedText.length > 200 ? `${citedText.slice(0, 200)}...` : citedText}&rdquo;
-            </blockquote>
-          )}
-          
-          {/* Link for web search citations */}
-          {url && (
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-[#7F91E0] hover:text-[#8FA0E8] hover:underline"
-              onClick={(e) => e.stopPropagation()}
-            >
-              View source
-              <ExternalLinkIcon className="h-3 w-3" />
-            </a>
-          )}
-        </div>
-      </TooltipContent>
-    </Tooltip>
+    <button
+      type="button"
+      className={cn(
+        'inline-flex items-center justify-center',
+        'h-4 min-w-4 px-1 rounded-sm',
+        'text-[10px] font-medium leading-none',
+        'bg-[#7F91E0]/20 text-[#7F91E0] hover:bg-[#7F91E0]/30',
+        'dark:bg-[#7F91E0]/20 dark:text-[#7F91E0] dark:hover:bg-[#7F91E0]/30',
+        'transition-colors cursor-pointer',
+        'align-super -translate-y-0.5',
+        className
+      )}
+      aria-label={`Citation ${index + 1}: ${location}`}
+    >
+      {index + 1}
+    </button>
   )
 })
 

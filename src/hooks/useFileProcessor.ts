@@ -6,15 +6,15 @@ import type {
   ImageContentSegment,
   TextContentSegment,
   MessageContentSegment,
-} from '@/lib/types'
-import { readFileAsDataURL, isImageFile, isPdfFile } from '@/lib/utils'
+} from '@/types'
+import { readFileAsDataURL, isImageFile, isPdfFile } from '@/utils'
 import { 
   isTextFile, 
   resizeImageForVision, 
   validateFile, 
   validatePdfFile,
   validateImageCount,
-} from '@/lib/files'
+} from '@/utils/files'
 
 export type FileProcessorResult = {
   textSegment: TextContentSegment

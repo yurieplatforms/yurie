@@ -15,8 +15,8 @@ import type {
   ImageContentSegment,
   ToolUseEvent,
   MessageCitation,
-} from '@/lib/types'
-import { parseSuggestions } from '@/lib/chat/suggestion-parser'
+} from '@/types'
+import { parseSuggestions } from '@/utils/suggestion-parser'
 
 /**
  * SSE error information from the server

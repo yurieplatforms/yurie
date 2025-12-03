@@ -10,7 +10,7 @@ import {
   ExternalLink,
   AlertCircle,
 } from 'lucide-react'
-import type { ToolUseEvent } from '@/lib/types'
+import type { ToolUseEvent } from '@/types'
 
 const toolCompletedLabels: Record<string, string> = {
   web_search: 'Searched',
@@ -49,7 +49,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
             <div className="flex items-center gap-2 px-3 py-2 text-zinc-500 dark:text-zinc-400">
               <Code className="h-4 w-4" />
               <span className="text-base font-medium">
-                {toolCompletedLabels[tool.name] || tool.name.replace(/_/g, ' ').replace(/github/i, 'GitHub')} result
+                {toolCompletedLabels[tool.name] || tool.name.replace(/_/g, ' ').replace(/github/i, 'GitHub').replace(/spotify/i, 'Spotify')} result
               </span>
               {isWebSearch && !tool.webSearch?.errorCode && (
                 <span className="ml-auto text-xs text-[var(--color-success)]">

@@ -2,9 +2,9 @@
 import { TextEffect } from '@/components/ui/text-effect'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useAuth } from '@/lib/providers/auth-provider'
+import { useAuth } from '@/providers/auth-provider'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 
 const NAV_ITEMS = [
   { href: '/history', label: 'Threads' },

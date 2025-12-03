@@ -14,7 +14,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import type { WebSearchUserLocation } from '@/lib/types'
+import type { WebSearchUserLocation } from '@/types'
 
 /**
  * Extended location data with coordinates for future enhancements

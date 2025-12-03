@@ -35,12 +35,29 @@ import {
   Search,
   Target,
   Sparkles,
-  Bot
+  Bot,
+  Code,
+  Book,
+  FileCode,
+  Music
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/services/supabase/client'
 import { ThemeSwitch } from '@/components/layout/footer'
-import { useAuth } from '@/lib/providers/auth-provider'
-import { cn } from '@/lib/utils'
+import { useAuth } from '@/providers/auth-provider'
+import { cn } from '@/utils'
+import { motion, AnimatePresence } from 'motion/react'
+
+// Spotify Icon Component
+const SpotifyIcon = ({ className }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+  </svg>
+)
 
 export function ProfileContent({
   user,
@@ -103,25 +120,41 @@ export function ProfileContent({
         })
       }
     })
+    
+    // Check Spotify connection status
+    checkConnectionStatus('spotify').then(result => {
+      setConnectionInfo(prev => ({ ...prev, spotify: result }))
+    })
   }, [fetchGitHubRepos])
 
   // Re-check connection status when window regains focus (e.g. after returning from auth popup)
   useEffect(() => {
     const handleFocus = () => {
-      if (connectionInfo.github?.connected) return
-
-      checkConnectionStatus('github').then(result => {
-        if (result.connected) {
-          setConnectionInfo(prev => ({ ...prev, github: result }))
-          fetchGitHubRepos()
-          showToast('GitHub connected successfully', 'success')
-        }
-      })
+      // Check GitHub if not connected
+      if (!connectionInfo.github?.connected) {
+        checkConnectionStatus('github').then(result => {
+          if (result.connected) {
+            setConnectionInfo(prev => ({ ...prev, github: result }))
+            fetchGitHubRepos()
+            showToast('GitHub connected successfully', 'success')
+          }
+        })
+      }
+      
+      // Check Spotify if not connected
+      if (!connectionInfo.spotify?.connected) {
+        checkConnectionStatus('spotify').then(result => {
+          if (result.connected) {
+            setConnectionInfo(prev => ({ ...prev, spotify: result }))
+            showToast('Spotify connected successfully', 'success')
+          }
+        })
+      }
     }
 
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
-  }, [connectionInfo.github?.connected, fetchGitHubRepos, showToast])
+  }, [connectionInfo.github?.connected, connectionInfo.spotify?.connected, fetchGitHubRepos, showToast])
 
   const handleFileUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -287,6 +320,15 @@ export function ProfileContent({
     if (result.error) {
       showToast(result.error, 'error')
       authWindow?.close()
+    } else if (result.alreadyConnected) {
+      // Already connected - refresh status and close window
+      authWindow?.close()
+      const status = await checkConnectionStatus(appName)
+      setConnectionInfo(prev => ({ ...prev, [appName]: status }))
+      showToast(`${appName.charAt(0).toUpperCase() + appName.slice(1)} is already connected!`, 'success')
+      if (appName === 'github' && status.connected) {
+        fetchGitHubRepos()
+      }
     } else if (result.url) {
       if (authWindow) {
         authWindow.location.href = result.url
@@ -379,6 +421,7 @@ export function ProfileContent({
   })
 
   const githubInfo = connectionInfo.github
+  const spotifyInfo = connectionInfo.spotify
   
   const filteredRepos = githubRepos.filter(repo => 
     repo.name.toLowerCase().includes(repoSearchTerm.toLowerCase()) ||
@@ -763,7 +806,7 @@ export function ProfileContent({
                       ? githubInfo.accountName 
                         ? `Connected as @${githubInfo.accountName}`
                         : 'Connected to your account'
-                      : 'Connect your repositories'}
+                      : 'Connect your repositories to enable AI features'}
                   </p>
                 </div>
               </div>
@@ -790,11 +833,11 @@ export function ProfileContent({
                 </div>
               ) : (
                 <Button
-                  variant="secondary"
+                  variant="default" 
                   size="sm"
                   onClick={() => handleConnect('github')}
                   disabled={!!isConnecting}
-                  className="min-w-[90px]"
+                  className="min-w-[90px] bg-[#24292f] hover:bg-[#24292f]/90 text-white shadow-md"
                 >
                   {isConnecting === 'github' ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -807,49 +850,79 @@ export function ProfileContent({
                 </Button>
               )}
             </div>
+
+            {/* Spotify Connection */}
+            <div className="flex items-center justify-between px-4 py-3.5">
+              <div className="flex items-center gap-4">
+                <div className={cn(
+                  "h-9 w-9 rounded-full flex items-center justify-center transition-colors",
+                  spotifyInfo?.connected ? "bg-[#1DB954] text-white" : "bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)]"
+                )}>
+                  <SpotifyIcon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-[var(--color-foreground)]">Spotify</p>
+                  <p className="text-xs text-[var(--color-muted-foreground)]">
+                    {spotifyInfo?.connected 
+                      ? spotifyInfo.accountName 
+                        ? `Connected as ${spotifyInfo.accountName}`
+                        : 'Connected to your account'
+                      : 'Control playback and discover music with AI'}
+                  </p>
+                </div>
+              </div>
+              {spotifyInfo?.connected ? (
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-medium">
+                    <Check className="h-3 w-3" />
+                    Active
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleDisconnect('spotify')}
+                    disabled={!!isDisconnecting}
+                    className="text-[var(--color-muted-foreground)] hover:text-red-500 hover:bg-red-500/10"
+                    title="Disconnect Spotify"
+                  >
+                    {isDisconnecting === 'spotify' ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Unlink className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="default" 
+                    size="sm"
+                    onClick={() => handleConnect('spotify')}
+                    disabled={!!isConnecting}
+                    className="min-w-[90px] bg-[#1DB954] hover:bg-[#1DB954]/90 text-white shadow-md"
+                  >
+                    {isConnecting === 'spotify' ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <LinkIcon className="h-3.5 w-3.5 mr-1.5" />
+                        Connect
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
           </Card>
 
           {/* GitHub Repositories */}
           {githubInfo?.connected && (
-            <div className="mt-4 space-y-3">
-              {/* Focused Repository Banner */}
-              {focusedRepo && (
-                <Card variant="default" padding="none" className="overflow-hidden bg-gradient-to-r from-[var(--color-accent)]/5 via-transparent to-purple-500/5 border-[var(--color-accent)]/20">
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[var(--color-accent)] to-purple-500 flex items-center justify-center shrink-0">
-                      <Bot className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-3.5 w-3.5 text-[var(--color-accent)]" />
-                        <p className="text-xs font-medium text-[var(--color-accent)]">AI Agent Focus</p>
-                      </div>
-                      <p className="text-sm font-semibold text-[var(--color-foreground)] truncate">
-                        {focusedRepo.fullName}
-                      </p>
-                      <p className="text-[10px] text-[var(--color-muted-foreground)]">
-                        Full repo context available • Can create issues, PRs & more
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const repo = githubRepos.find(r => r.full_name === focusedRepo.fullName)
-                        if (repo) handleSetFocusedRepo(repo)
-                      }}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface-hover)] transition-colors"
-                    >
-                      <X className="h-3 w-3" />
-                      Unfocus
-                    </button>
-                  </div>
-                </Card>
-              )}
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-medium text-[var(--color-muted-foreground)]">
+            <div className="space-y-3 mt-6">
+              <div className="flex items-center justify-between px-1">
+                 <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-medium text-[var(--color-muted-foreground)]">
                     Repositories {filteredRepos.length > 0 && `(${filteredRepos.length})`}
-                  </p>
+                  </h2>
                   <button
                     onClick={fetchGitHubRepos}
                     disabled={isLoadingRepos}
@@ -861,7 +934,7 @@ export function ProfileContent({
                 </div>
                 
                 {/* Search Input */}
-                <div className="relative w-full sm:w-48">
+                <div className="relative w-40 sm:w-48">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--color-muted-foreground)]" />
                   <input
                     type="text"
@@ -872,129 +945,135 @@ export function ProfileContent({
                   />
                 </div>
               </div>
+
+              <AnimatePresence mode="popLayout">
+                {/* Focused Repository Banner */}
+                {focusedRepo && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: 'auto' }}
+                    exit={{ opacity: 0, y: -10, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Card variant="accent" padding="sm" className="overflow-hidden relative border-[var(--color-accent)]/30 bg-[var(--color-accent)]/5">
+                      <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-accent)]/10 to-transparent opacity-50" />
+                      <div className="relative flex items-center gap-4">
+                        <div className="h-9 w-9 rounded-full bg-[#333] flex items-center justify-center shrink-0 text-white">
+                          <GitBranch className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-sm font-semibold text-[var(--color-foreground)] truncate">
+                              {focusedRepo.fullName}
+                            </p>
+                          </div>
+                          <p className="text-xs text-[var(--color-muted-foreground)]">
+                            AI agent has full context of this repo
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const repo = githubRepos.find(r => r.full_name === focusedRepo.fullName)
+                            if (repo) handleSetFocusedRepo(repo)
+                          }}
+                          className="text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-accent)]/10"
+                        >
+                          Unfocus
+                        </Button>
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               
-              <Card variant="default" padding="none" className="overflow-hidden">
+              <Card variant="default" padding="none" className="overflow-hidden min-h-[100px]">
                 {isLoadingRepos ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-[var(--color-muted-foreground)] mb-2" />
-                    <p className="text-xs text-[var(--color-muted-foreground)]">Loading repositories...</p>
+                   <div className="divide-y divide-[var(--color-border)]/60">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-4 px-4 py-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-1/3 bg-[var(--color-surface-hover)] rounded animate-pulse" />
+                          <div className="h-3 w-2/3 bg-[var(--color-surface-hover)] rounded animate-pulse" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : filteredRepos.length > 0 ? (
                   <div className="divide-y divide-[var(--color-border)]/60 max-h-[400px] overflow-y-auto scrollbar-thin">
+                    <AnimatePresence mode="popLayout" initial={false}>
                     {filteredRepos.map((repo) => {
                       const isFocused = focusedRepo?.fullName === repo.full_name
                       const isSettingThisFocus = isSettingFocus === repo.full_name
                       
                       return (
-                        <div
+                        <motion.div
+                          layout
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
                           key={repo.id}
                           className={cn(
-                            "flex items-start gap-3 px-4 py-3 transition-colors group",
+                            "flex items-center gap-4 px-4 py-3.5 transition-colors group cursor-pointer relative",
                             isFocused ? "bg-[var(--color-accent)]/5" : "hover:bg-[var(--color-surface-hover)]"
                           )}
+                          onClick={() => !isSettingFocus && handleSetFocusedRepo(repo)}
                         >
-                          <div className={cn(
-                            "h-8 w-8 rounded-[var(--radius-md)] border flex items-center justify-center shrink-0 mt-0.5 transition-colors",
-                            isFocused 
-                              ? "bg-[var(--color-accent)] border-[var(--color-accent)] text-white"
-                              : "bg-[var(--color-surface-hover)] border-[var(--color-border)]/50 text-[var(--color-muted-foreground)] group-hover:border-[var(--color-accent)]/30 group-hover:text-[var(--color-accent)]"
-                          )}>
-                            {isFocused ? (
-                              <Target className="h-4 w-4" />
-                            ) : (
-                              <GitBranch className="h-4 w-4" />
-                            )}
-                          </div>
+                          
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 min-w-0">
+                              <div className="flex items-center gap-2 overflow-hidden">
                                 <p className={cn(
                                   "text-sm font-medium truncate transition-colors",
                                   isFocused 
                                     ? "text-[var(--color-accent)]" 
-                                    : "text-[var(--color-foreground)] group-hover:text-[var(--color-accent)]"
+                                    : "text-[var(--color-foreground)]"
                                 )}>
-                                  {repo.name}
+                                  {repo.full_name}
                                 </p>
-                                {isFocused && (
-                                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-[10px] font-medium shrink-0">
-                                    <Sparkles className="h-2.5 w-2.5" />
-                                    Focused
+                                {isSettingThisFocus && <Loader2 className="h-3 w-3 animate-spin text-[var(--color-muted-foreground)]" />}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 mt-1">
+                              <div className="flex items-center gap-2 shrink-0 opacity-70">
+                                {repo.language && (
+                                  <span className="flex items-center gap-1 text-[10px] text-[var(--color-muted-foreground)]">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />
+                                    {repo.language}
                                   </span>
                                 )}
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-[10px] text-[var(--color-muted-foreground)]">
-                                  {timeAgo(repo.updated_at)}
-                                </span>
                                 {repo.private && (
                                   <Lock className="h-3 w-3 text-[var(--color-muted-foreground)]" />
                                 )}
                               </div>
                             </div>
-                            
-                            {repo.description && (
-                              <p className="text-xs text-[var(--color-muted-foreground)] line-clamp-1 mt-0.5">
-                                {repo.description}
-                              </p>
-                            )}
-                            
-                            <div className="flex items-center gap-3 mt-1.5">
-                              {repo.language && (
-                                <span className="flex items-center gap-1.5 text-[10px] text-[var(--color-muted-foreground)] font-medium">
-                                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />
-                                  {repo.language}
-                                </span>
-                              )}
-                              {repo.stargazers_count > 0 && (
-                                <span className="flex items-center gap-1 text-[10px] text-[var(--color-muted-foreground)]">
-                                  <Star className="h-3 w-3" />
-                                  {repo.stargazers_count}
-                                </span>
-                              )}
-                            </div>
                           </div>
                           
-                          {/* Action Buttons */}
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              onClick={() => handleSetFocusedRepo(repo)}
-                              disabled={!!isSettingFocus}
-                              className={cn(
-                                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-[var(--radius-md)] text-xs font-medium transition-all",
-                                isFocused
-                                  ? "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]"
-                                  : "bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface-active)] opacity-0 group-hover:opacity-100"
-                              )}
-                              title={isFocused ? "Unfocus repository" : "Focus for AI Agent"}
-                            >
-                              {isSettingThisFocus ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : isFocused ? (
-                                <>
-                                  <Target className="h-3 w-3" />
-                                  Focused
-                                </>
-                              ) : (
-                                <>
-                                  <Target className="h-3 w-3" />
-                                  Focus
-                                </>
-                              )}
-                            </button>
-                            <a
-                              href={repo.html_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center justify-center h-7 w-7 rounded-[var(--radius-md)] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface-hover)] opacity-0 group-hover:opacity-100 transition-all"
-                              title="Open in GitHub"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
+                          {/* Time & Action Button */}
+                          <div className="flex items-center pl-2 min-w-[60px] justify-end h-7">
+                             <span className="text-[10px] text-[var(--color-muted-foreground)] shrink-0 tabular-nums group-hover:hidden">
+                                {timeAgo(repo.updated_at)}
+                             </span>
+                             <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="hidden group-hover:flex h-7 w-7 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(repo.html_url, '_blank');
+                                }}
+                                title="Open in GitHub"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                             </Button>
                           </div>
-                        </div>
+                        </motion.div>
                       )
                     })}
+                    </AnimatePresence>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 px-4 text-center">

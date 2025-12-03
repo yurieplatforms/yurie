@@ -6,7 +6,7 @@ import './globals.css'
 import { Header } from '@/components/layout/header'
 import { FooterWrapper } from '@/components/layout/footer-wrapper'
 import { ThemeProvider } from 'next-themes'
-import { AuthProvider } from '@/lib/providers/auth-provider'
+import { AuthProvider } from '@/providers/auth-provider'
 
 export const viewport: Viewport = {
   width: 'device-width',

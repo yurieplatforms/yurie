@@ -1,23 +1,24 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/services/supabase/server'
 
 // Agent modules
-import { buildSystemPrompt } from '@/lib/agent/system-prompt'
-import { convertToAnthropicContent } from '@/lib/agent/message-converter'
-import { runAgent } from '@/lib/agent/runner'
+import { buildSystemPrompt } from '@/agent/system-prompt'
+import { convertToAnthropicContent } from '@/agent/message-converter'
+import { runAgent } from '@/agent/runner'
 
 // API types
-import type { AgentRequestBody } from '@/lib/api/types'
-import type { EffortLevel } from '@/lib/agent/types'
+import type { AgentRequestBody } from '@/types/api'
+import type { EffortLevel } from '@/agent/types'
 
 // User context
 import {
   getUserPersonalizationContext,
   getUserName,
   formatMemoriesForPrompt,
-} from '@/lib/agent/user-context'
-import { env } from '@/lib/config/env'
+} from '@/agent/user-context'
+import { env } from '@/config/env'
+import { findSpotifyConnectionId, isSpotifyToolsAvailable } from '@/services/composio'
 
 export async function POST(request: Request) {
   let body: AgentRequestBody
@@ -72,6 +73,7 @@ export async function POST(request: Request) {
     language: string | null
     defaultBranch: string
   } | null = null
+  let spotifyContext: { isConnected: boolean; connectionId?: string } | null = null
   
   try {
     const supabase = await createClient()
@@ -107,6 +109,15 @@ export async function POST(request: Request) {
         focusedRepo = githubFocusedRepo
         console.log(`[agent] Using focused GitHub repo: ${githubFocusedRepo.fullName}`)
       }
+
+      // Get Spotify connection
+      if (isSpotifyToolsAvailable()) {
+        const connectionId = await findSpotifyConnectionId(user.id)
+        if (connectionId) {
+          spotifyContext = { isConnected: true, connectionId }
+          console.log(`[agent] Using Spotify connection: ${connectionId}`)
+        }
+      }
     }
   } catch (e) {
     // Silently continue without personalization if it fails
@@ -120,6 +131,7 @@ export async function POST(request: Request) {
     userPreferences,
     memoriesPrompt,
     focusedRepo,
+    spotifyContext,
   })
 
   // Convert messages to Anthropic format

@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { TextLoop } from '@/components/ui/text-loop'
-import { cn } from '@/lib/utils'
+import { cn } from '@/utils'
 import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
