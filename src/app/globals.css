@@ -45,21 +45,21 @@
 
 @layer base {
   :root {
-    /* Core Colors */
+    /* Core Colors - Clean & Minimal */
     --color-background: rgb(255 255 255 / 1);
     --color-foreground: rgb(9 9 11 / 1);
-    --color-muted: rgb(244 244 245 / 1);
+    --color-muted: rgb(250 250 250 / 1);
     --color-muted-foreground: rgb(113 113 122 / 1);
     --color-accent: #7F91E0;
     --color-accent-foreground: #ffffff;
     --color-accent-hover: #6B7FD6;
     
     /* Surface colors for cards, panels, etc. */
-    --color-surface: rgb(244 244 245 / 0.6);
-    --color-surface-hover: rgb(228 228 231 / 1);
-    --color-surface-active: rgb(212 212 216 / 1);
-    --color-surface-elevated: rgb(250 250 250 / 1);
-    --color-border: rgb(228 228 231 / 1);
+    --color-surface: rgb(250 250 250 / 0.8);
+    --color-surface-hover: rgb(244 244 245 / 1);
+    --color-surface-active: rgb(228 228 231 / 1);
+    --color-surface-elevated: rgb(255 255 255 / 1);
+    --color-border: rgb(228 228 231 / 0.8);
     --color-border-subtle: rgb(244 244 245 / 1);
     
     /* Semantic Colors */
@@ -92,10 +92,10 @@
     --radius-dialog: 1.5rem;
     --radius-prompt: 1.625rem;
     
-    /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
+    /* Shadows - Softer & Cleaner */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.08);
     --shadow-accent: 0 4px 14px rgba(127, 145, 224, 0.25);
     --shadow-destructive: 0 4px 14px rgba(239, 68, 68, 0.2);
     
@@ -113,10 +113,10 @@
 
   .dark {
     /* Core Colors */
-    --color-background: rgb(0 0 0 / 1);
+    --color-background: rgb(9 9 11 / 1);
     --color-foreground: rgb(250 250 250 / 1);
     --color-muted: rgb(39 39 42 / 1);
-    --color-muted-foreground: rgb(113 113 122 / 1);
+    --color-muted-foreground: rgb(161 161 170 / 1);
     --color-accent: #7F91E0;
     --color-accent-foreground: #ffffff;
     --color-accent-hover: #8FA0E8;
@@ -131,8 +131,8 @@
     --color-surface-hover: rgb(39 39 42 / 1);
     --color-surface-active: rgb(52 52 56 / 1);
     --color-surface-elevated: rgb(24 24 27 / 1);
-    --color-border: rgb(39 39 42 / 1);
-    --color-border-subtle: rgb(39 39 42 / 0.5);
+    --color-border: rgb(39 39 42 / 0.5);
+    --color-border-subtle: rgb(39 39 42 / 0.3);
     
     /* Semantic Colors */
     --color-success: #34d399;

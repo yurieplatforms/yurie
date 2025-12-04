@@ -795,7 +795,7 @@ export function ProfileContent({
               <div className="flex items-center gap-4">
                 <div className={cn(
                   "h-9 w-9 rounded-full flex items-center justify-center transition-colors",
-                  githubInfo?.connected ? "bg-[#333] text-white" : "bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)]"
+                  githubInfo?.connected ? "bg-zinc-800 text-white" : "bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)]"
                 )}>
                   <Github className="h-4 w-4" />
                 </div>
@@ -958,7 +958,7 @@ export function ProfileContent({
                     <Card variant="accent" padding="sm" className="overflow-hidden relative border-[var(--color-accent)]/30 bg-[var(--color-accent)]/5">
                       <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-accent)]/10 to-transparent opacity-50" />
                       <div className="relative flex items-center gap-4">
-                        <div className="h-9 w-9 rounded-full bg-[#333] flex items-center justify-center shrink-0 text-white">
+                        <div className="h-9 w-9 rounded-full bg-zinc-800 flex items-center justify-center shrink-0 text-white">
                           <GitBranch className="h-4 w-4" />
                         </div>
                         <div className="flex-1 min-w-0">

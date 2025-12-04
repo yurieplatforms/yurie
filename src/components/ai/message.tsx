@@ -389,6 +389,8 @@ export const MessageResponse = memo(
         components={{
           // Handle custom <suggestions> tags from AI output - suppress React warning
           suggestions: () => null,
+          // Handle custom <thinking> tags from AI output - suppress React warning
+          thinking: () => null,
           blockquote({ children, ...rest }: React.ComponentPropsWithoutRef<'blockquote'>) {
             return <blockquote {...rest}>{children}</blockquote>;
           },

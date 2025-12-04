@@ -12,7 +12,7 @@ function cn(...inputs: ClassValue[]): string { return inputs.filter(Boolean).joi
 
 const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
-const PopoverContent = React.forwardRef<React.ElementRef<typeof PopoverPrimitive.Content>, React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>>(({ className, align = "center", sideOffset = 4, ...props }, ref) => ( <PopoverPrimitive.Portal><PopoverPrimitive.Content ref={ref} align={align} sideOffset={sideOffset} className={cn("z-50 w-64 rounded-xl bg-[var(--color-surface)] dark:bg-[#181818] p-2 text-[var(--color-foreground)] dark:text-white shadow-md outline-none animate-in data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 border border-[var(--color-border)]", className)} {...props} /></PopoverPrimitive.Portal>));
+const PopoverContent = React.forwardRef<React.ElementRef<typeof PopoverPrimitive.Content>, React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>>(({ className, align = "center", sideOffset = 4, ...props }, ref) => ( <PopoverPrimitive.Portal><PopoverPrimitive.Content ref={ref} align={align} sideOffset={sideOffset} className={cn("z-50 w-64 rounded-xl bg-[var(--color-surface)] dark:bg-[var(--color-surface-elevated)] p-2 text-[var(--color-foreground)] dark:text-white shadow-md outline-none animate-in data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 border border-[var(--color-border)]", className)} {...props} /></PopoverPrimitive.Portal>));
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
 const Dialog = DialogPrimitive.Root;
@@ -20,7 +20,7 @@ const DialogPortal = DialogPrimitive.Portal;
 const DialogTrigger = DialogPrimitive.Trigger;
 const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>>(({ className, ...props }, ref) => ( <DialogPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", className)} {...props} />));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
-const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>(({ className, children, ...props }, ref) => ( <DialogPortal><DialogOverlay /><DialogPrimitive.Content ref={ref} className={cn("fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border-none bg-transparent p-0 shadow-none duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95", className)} {...props}><div className="relative bg-[var(--color-surface)] dark:bg-[#181818] rounded-[28px] overflow-hidden shadow-2xl p-1">{children}<DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-full bg-background/50 dark:bg-[#181818] p-1 hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#27272a] transition-all"><XIcon className="h-5 w-5 text-[var(--color-muted-foreground)] dark:text-gray-200 hover:text-[var(--color-foreground)] dark:hover:text-white" /><span className="sr-only">Close</span></DialogPrimitive.Close></div></DialogPrimitive.Content></DialogPortal>));
+const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>(({ className, children, ...props }, ref) => ( <DialogPortal><DialogOverlay /><DialogPrimitive.Content ref={ref} className={cn("fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border-none bg-transparent p-0 shadow-none duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95", className)} {...props}><div className="relative bg-[var(--color-surface)] dark:bg-[var(--color-surface-elevated)] rounded-[28px] overflow-hidden shadow-2xl p-1">{children}<DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-full bg-background/50 dark:bg-[var(--color-background)]/50 p-1 hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-hover)] transition-all"><XIcon className="h-5 w-5 text-[var(--color-muted-foreground)] dark:text-gray-200 hover:text-[var(--color-foreground)] dark:hover:text-white" /><span className="sr-only">Close</span></DialogPrimitive.Close></div></DialogPrimitive.Content></DialogPortal>));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 const DialogTitle = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>>(({ className, ...props }, ref) => ( <DialogPrimitive.Title ref={ref} className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props} />));
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
@@ -41,7 +41,7 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative bg-[var(--color-surface)] dark:bg-[#181818] rounded-[var(--radius-card)] overflow-hidden shadow-2xl"
+          className="relative bg-[var(--color-surface)] dark:bg-[var(--color-surface-elevated)] rounded-[var(--radius-card)] overflow-hidden shadow-2xl"
         >
           <img
             src={imageUrl}
@@ -318,7 +318,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     const hasValue = value.trim().length > 0 || files.length > 0;
 
     return (
-      <div ref={ref} className={cn("flex flex-col rounded-[28px] p-2 shadow-lg transition-colors bg-white border dark:bg-[#212121] dark:border-[#333] cursor-text", className)}>
+      <div ref={ref} className={cn("flex flex-col rounded-[28px] p-2 shadow-lg transition-colors bg-white border dark:bg-[var(--color-surface-elevated)] dark:border-[var(--color-border)] cursor-text", className)}>
         <input 
             type="file" 
             ref={fileInputRef} 
@@ -404,7 +404,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 <button 
                     type="button" 
                     onClick={handlePlusClick} 
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-all duration-300 ease-out hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#3f3f46] active:scale-95 active:bg-[var(--color-surface-active)] dark:active:bg-[#52525b] focus-visible:outline-none cursor-pointer"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-all duration-300 ease-out hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-hover)] active:scale-95 active:bg-[var(--color-surface-active)] dark:active:bg-[var(--color-surface-active)] focus-visible:outline-none cursor-pointer"
                     disabled={isRecording || isLoading}
                 >
                     <Plus className="h-5 w-5" />
@@ -415,14 +415,14 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   <PopoverTrigger asChild>
                     <button 
                       type="button" 
-                      className="flex h-8 items-center gap-2 rounded-full p-2 text-sm text-[var(--color-foreground)] dark:text-white transition-all duration-300 ease-out hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#3f3f46] active:scale-95 active:bg-[var(--color-surface-active)] dark:active:bg-[#52525b] focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                      className="flex h-8 items-center gap-2 rounded-full p-2 text-sm text-[var(--color-foreground)] dark:text-white transition-all duration-300 ease-out hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-hover)] active:scale-95 active:bg-[var(--color-surface-active)] dark:active:bg-[var(--color-surface-active)] focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                       disabled={isRecording || isLoading}
                     >
                       <Settings2 className="h-4 w-4" />
                       {selectedTools.length === 0 && 'Tools'}
                     </button>
                   </PopoverTrigger>
-                <PopoverContent side="top" align="start" className="w-64 dark:bg-[#212121] dark:border-[#333] p-1.5">
+                <PopoverContent side="top" align="start" className="w-64 dark:bg-[var(--color-surface-elevated)] dark:border-[var(--color-border)] p-1.5">
                   <div className="flex flex-col gap-0.5">
                     {toolsList.map(tool => {
                         const isGitHub = tool.id === 'github';
@@ -433,15 +433,15 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                               key={tool.id} 
                               onClick={() => handleSelectTool(tool.id)} 
                               className={cn(
-                                  "flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#2f2f2f] transition-colors cursor-pointer",
-                                  selectedTools.includes(tool.id) && "bg-[var(--color-surface-active)] dark:bg-[#2f2f2f]"
+                                  "flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-hover)] transition-colors cursor-pointer",
+                                  selectedTools.includes(tool.id) && "bg-[var(--color-surface-active)] dark:bg-[var(--color-surface-active)]"
                               )}
                           > 
                               <div className={cn(
                                 "h-7 w-7 rounded-md flex items-center justify-center shrink-0",
                                 hasFocusedRepo 
                                   ? "bg-[var(--color-accent)]/20" 
-                                  : "bg-[var(--color-surface-hover)] dark:bg-[#2f2f2f]"
+                                  : "bg-[var(--color-surface-hover)] dark:bg-[var(--color-surface-hover)]"
                               )}>
                                 {hasFocusedRepo ? (
                                   <Github className="h-4 w-4 text-[var(--color-accent)]" />
@@ -511,7 +511,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.8 }}
                                 onClick={() => handleRemoveTool(tool.id)}
-                                className="flex h-8 items-center gap-2 rounded-full px-2 text-sm dark:hover:bg-[#3f3f46] hover:bg-[var(--color-surface-hover)] cursor-pointer dark:text-[var(--color-accent)] text-[var(--color-accent)] transition-all duration-300 ease-out active:scale-95 active:bg-[var(--color-surface-active)] dark:active:bg-[#52525b] flex-shrink-0 border border-transparent hover:border-[var(--color-border)]"
+                                className="flex h-8 items-center gap-2 rounded-full px-2 text-sm dark:hover:bg-[var(--color-surface-hover)] hover:bg-[var(--color-surface-hover)] cursor-pointer dark:text-[var(--color-accent)] text-[var(--color-accent)] transition-all duration-300 ease-out active:scale-95 active:bg-[var(--color-surface-active)] dark:active:bg-[var(--color-surface-active)] flex-shrink-0 border border-transparent hover:border-[var(--color-border)]"
                             >
                                 <tool.icon className="h-4 w-4" />
                                 <span className="whitespace-nowrap">{tool.shortName}</span>
@@ -528,7 +528,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                         <button 
                             type="button" 
                             onClick={() => setIsRecording(true)}
-                            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-all duration-300 ease-out hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#3f3f46] active:scale-95 active:bg-[var(--color-surface-active)] dark:active:bg-[#52525b] focus-visible:outline-none cursor-pointer"
+                            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-all duration-300 ease-out hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-hover)] active:scale-95 active:bg-[var(--color-surface-active)] dark:active:bg-[var(--color-surface-active)] focus-visible:outline-none cursor-pointer"
                             disabled={isLoading}
                         >
                         <Mic className="h-5 w-5" />

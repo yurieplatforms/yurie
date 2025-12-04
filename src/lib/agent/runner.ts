@@ -16,24 +16,24 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-import { createClient } from '@/services/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 // Agent modules
-import { createSSEHandler, sendDoneSignal } from '@/agent/sse-handler'
+import { createSSEHandler, sendDoneSignal } from '@/lib/agent/sse-handler'
 import {
   parseAnthropicError,
   createSSEErrorPayload,
   logAnthropicError,
-} from '@/agent/errors'
-import { createRunnableTools, type FocusedRepoContext } from '@/agent/runnable-tools'
-import { createMemoryTool } from '@/agent/tools/memory'
+} from '@/lib/agent/errors'
+import { createRunnableTools, type FocusedRepoContext } from '@/lib/agent/runnable-tools'
+import { createMemoryTool } from '@/lib/agent/memory-tool-config'
 import {
   processCitations,
   processWebFetchResult,
   processWebSearchResult,
   type WebFetchResultContent,
   type WebSearchResultContent,
-} from '@/agent/stream-processor'
+} from '@/lib/agent/stream-processor'
 
 // Types
 import type {
@@ -45,12 +45,12 @@ import type {
   ServerToolUseContentBlock,
   RawCitation,
   EffortLevel,
-} from '@/agent/types'
+} from '@/lib/agent/types'
 
 // Tools
-import { createServerTools } from '@/agent/tools'
-import { createMemoryToolHandler } from '@/services/memory'
-import type { WebSearchUserLocation } from '@/types'
+import { createServerTools } from '@/lib/tools'
+import { createMemoryToolHandler } from '@/lib/tools/memory'
+import type { WebSearchUserLocation } from '@/lib/types'
 
 // ============================================================================
 // Extended Thinking Configuration
@@ -98,7 +98,7 @@ const CACHING_CONFIG = {
 /**
  * Sanitizes a content block to only include known Anthropic API fields.
  * This prevents "Extra inputs are not permitted" errors when messages
- * from storage contain extra properties.
+ * from storage contain extra properties (e.g., 'parsed', 'suggestions').
  */
 function sanitizeContentBlock(block: Anthropic.ContentBlockParam): Anthropic.ContentBlockParam {
   if (!block || typeof block !== 'object') return block
@@ -395,7 +395,13 @@ export async function runAgent({
       const isOpusModel = MODEL.includes('opus')
 
       // Build beta headers list
+      // Note: Several betas removed due to causing "Extra inputs are not permitted" errors:
+      // - structured-outputs-2025-11-13: adds 'parsed' field to text blocks
+      // - context-management-2025-06-27: causes issues with tool result handling
+      // - fine-grained-tool-streaming-2025-05-14: may add extra fields during streaming
       const betas = [
+        'advanced-tool-use-2025-11-20',
+        'web-fetch-2025-09-10',
         // Required for extended thinking with tool use
         // Enables Claude to think between tool calls for more sophisticated reasoning
         // @see https://platform.claude.com/docs/en/build-with-claude/extended-thinking#interleaved-thinking

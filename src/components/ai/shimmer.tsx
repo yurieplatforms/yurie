@@ -40,7 +40,8 @@ const ShimmerComponent = ({
       className={cn(
         "relative inline-block bg-[length:250%_100%,auto] bg-clip-text text-transparent",
         "[--bg:linear-gradient(90deg,#0000_calc(50%-var(--spread)),var(--shimmer-color),#0000_calc(50%+var(--spread)))] [background-repeat:no-repeat,padding-box]",
-        "[--shimmer-color:#18181b] dark:[--shimmer-color:#f4f4f5]",
+        "[--shimmer-color:#e4e4e7] dark:[--shimmer-color:#f4f4f5]",
+        "[--base-color:#71717a] dark:[--base-color:#71717a]",
         className
       )}
       initial={{ backgroundPosition: "100% center" }}
@@ -48,7 +49,7 @@ const ShimmerComponent = ({
         {
           "--spread": `${dynamicSpread}px`,
           backgroundImage:
-            "var(--bg), linear-gradient(var(--color-muted-foreground,rgba(113,113,122,1)), var(--color-muted-foreground,rgba(113,113,122,1)))",
+            "var(--bg), linear-gradient(var(--base-color), var(--base-color))",
         } as CSSProperties
       }
       transition={{

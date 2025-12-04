@@ -21,7 +21,7 @@
  */
 
 import type Anthropic from '@anthropic-ai/sdk'
-import type { MessageContentSegment } from '@/types'
+import type { MessageContentSegment } from '@/lib/types'
 
 /**
  * Extracts a filename from a URL for document titles
@@ -74,7 +74,7 @@ export function convertToAnthropicContent(
     // Process each segment and categorize
     // IMPORTANT: Explicitly extract ONLY known fields to avoid API errors like
     // "Extra inputs are not permitted" when messages from storage contain
-    // extra properties.
+    // extra properties (e.g., 'parsed', 'suggestions', etc.)
     for (const segment of content) {
       // Handle text segments - ONLY extract type and text fields
       if (segment.type === 'text') {
