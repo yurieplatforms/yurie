@@ -139,6 +139,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             userContext: { time, date, timeZone },
             containerId,
             userLocation,
+            selectedTools,
           }),
         })
 

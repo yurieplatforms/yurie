@@ -1,7 +1,7 @@
 import React from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { CornerRightUp, Paperclip, Square, X, StopCircle, FileText, Plus, Github, Mic, Settings2, X as XIcon, Target, Sparkles, GitBranch, Music } from "lucide-react";
+import { CornerRightUp, Paperclip, Square, X, StopCircle, FileText, Plus, Github, Mic, Settings2, X as XIcon, Target, Sparkles, GitBranch, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { getFocusedRepo, type FocusedRepo } from "@/app/profile/actions";
 
@@ -134,9 +134,23 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
 // --- Main Component ---
 
+// Spotify Icon Component - Green circle with black stripes
+const SpotifyIcon = ({ className }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    {/* Green circle */}
+    <circle cx="12" cy="12" r="12" fill="#1DB954" />
+    {/* Black stripes */}
+    <path fill="#000" d="M17.9 10.9C14.7 9 9.35 8.8 6.3 9.75c-.5.15-1-.15-1.15-.6-.15-.5.15-1 .6-1.15 3.55-1.1 9.4-.9 13.1 1.35.45.25.6.85.35 1.3-.25.35-.85.5-1.3.25zM17.8 13.7c-.25.35-.7.5-1.05.25-2.7-1.65-6.8-2.15-9.95-1.15-.4.1-.85-.1-.95-.5-.1-.4.1-.85.5-.95 3.65-1.1 8.15-.55 11.25 1.35.3.15.45.65.2 1zM16.6 16.45c-.2.3-.55.4-.85.2-2.35-1.45-5.3-1.75-8.8-.95-.35.1-.65-.15-.75-.45-.1-.35.15-.65.45-.75 3.8-.85 7.1-.5 9.7 1.1.35.15.4.55.25.85z"/>
+  </svg>
+);
+
 const toolsList = [
   { id: 'github', name: 'GitHub', shortName: 'GitHub', icon: Github, description: 'Access GitHub repositories' },
-  { id: 'spotify', name: 'Spotify', shortName: 'Spotify', icon: Music, description: 'Control playback & manage music' },
+  { id: 'spotify', name: 'Spotify', shortName: 'Spotify', icon: SpotifyIcon, description: 'Control playback & manage music' },
 ];
 
 interface PromptInputBoxProps {
@@ -297,8 +311,12 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
 
     const handleSelectTool = (id: string) => {
         setSelectedTools((prev) => {
-            if (prev.includes(id)) return prev;
-            return [...prev, id];
+            // If the tool is already selected, deselect it
+            if (prev.includes(id)) {
+                return [];
+            }
+            // Otherwise, select ONLY this tool (single selection)
+            return [id];
         });
         setIsPopoverOpen(false);
     };
@@ -415,11 +433,16 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   <PopoverTrigger asChild>
                     <button 
                       type="button" 
-                      className="flex h-8 items-center gap-2 rounded-full p-2 text-sm text-[var(--color-foreground)] dark:text-white transition-all duration-300 ease-out hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-hover)] active:scale-95 active:bg-[var(--color-surface-active)] dark:active:bg-[var(--color-surface-active)] focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                      className={cn(
+                        "flex h-8 items-center gap-2 rounded-full p-2 text-sm transition-all duration-300 ease-out hover:bg-[var(--color-surface-hover)] dark:hover:bg-[var(--color-surface-hover)] active:scale-95 active:bg-[var(--color-surface-active)] dark:active:bg-[var(--color-surface-active)] focus-visible:outline-none focus-visible:ring-0 cursor-pointer",
+                        selectedTools.length > 0 
+                          ? "text-[var(--color-accent)] bg-[var(--color-accent)]/10" 
+                          : "text-[var(--color-foreground)] dark:text-white"
+                      )}
                       disabled={isRecording || isLoading}
                     >
                       <Settings2 className="h-4 w-4" />
-                      {selectedTools.length === 0 && 'Tools'}
+                      {selectedTools.length === 0 && 'Apps'}
                     </button>
                   </PopoverTrigger>
                 <PopoverContent side="top" align="start" className="w-64 dark:bg-[var(--color-surface-elevated)] dark:border-[var(--color-border)] p-1.5">
@@ -439,12 +462,14 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                           > 
                               <div className={cn(
                                 "h-7 w-7 rounded-md flex items-center justify-center shrink-0",
-                                hasFocusedRepo 
-                                  ? "bg-[var(--color-accent)]/20" 
-                                  : "bg-[var(--color-surface-hover)] dark:bg-[var(--color-surface-hover)]"
+                                tool.id !== 'spotify' && (hasFocusedRepo 
+                                    ? "bg-[var(--color-accent)]/20" 
+                                    : "bg-[var(--color-surface-hover)] dark:bg-[var(--color-surface-hover)]")
                               )}>
                                 {hasFocusedRepo ? (
                                   <Github className="h-4 w-4 text-[var(--color-accent)]" />
+                                ) : tool.id === 'spotify' ? (
+                                  <tool.icon className="h-7 w-7" />
                                 ) : (
                                   <tool.icon className="h-4 w-4 text-[var(--color-muted-foreground)]" />
                                 )}
@@ -466,7 +491,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                               </div>
                               {selectedTools.includes(tool.id) && (
                                 <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-accent)] flex items-center justify-center shrink-0 self-center">
-                                  <XIcon className="h-2 w-2 text-white" />
+                                  <Check className="h-2 w-2 text-white" />
                                 </div>
                               )}
                           </button>
@@ -499,6 +524,24 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                                 <span className="whitespace-nowrap font-medium">
                                     {focusedRepo.name}
                                 </span>
+                                <XIcon className="h-3 w-3 opacity-50" />
+                            </motion.button>
+                          );
+                        }
+                        
+                        // Special handling for Spotify with green color
+                        if (tool.id === 'spotify') {
+                          return (
+                            <motion.button
+                                key={tool.id}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                onClick={() => handleRemoveTool(tool.id)}
+                                className="flex h-8 items-center gap-2 rounded-full px-2 text-sm bg-[#1DB954]/10 text-[#1DB954] transition-colors flex-shrink-0 border border-[#1DB954]/20 hover:border-[#1DB954]/40 cursor-pointer"
+                            >
+                                <tool.icon className="h-4 w-4" />
+                                <span className="whitespace-nowrap font-medium">{tool.shortName}</span>
                                 <XIcon className="h-3 w-3 opacity-50" />
                             </motion.button>
                           );

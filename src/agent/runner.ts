@@ -298,6 +298,11 @@ export type RunnerParams = {
    * @see https://platform.claude.com/docs/en/build-with-claude/extended-thinking#working-with-thinking-budgets
    */
   thinkingBudget?: number
+  /**
+   * List of tool IDs that the agent is allowed to use.
+   * If provided, only tools in this list (plus default tools) will be available.
+   */
+  selectedTools?: string[]
 }
 
 /**
@@ -345,6 +350,7 @@ export async function runAgent({
   focusedRepo,
   effort = 'high',
   thinkingBudget = THINKING_CONFIG.COMPLEX_TASK_BUDGET,
+  selectedTools,
 }: RunnerParams): Promise<Response> {
   const anthropic = new Anthropic({ apiKey })
 
@@ -365,7 +371,7 @@ export async function runAgent({
   const sseHandler = createSSEHandler(writer)
 
   // Create runnable tools with SSE access, user context, and focused repo
-  const runnableTools = await createRunnableTools(sseHandler, userId, focusedRepo)
+  const runnableTools = await createRunnableTools(sseHandler, userId, focusedRepo, true, selectedTools)
 
   // Run the tool runner in the background
   ;(async () => {

@@ -227,10 +227,10 @@ function SuggestionsList({
   onSuggestionClick,
 }: SuggestionsListProps) {
   return (
-    <div className="mt-2 flex flex-col space-y-0">
+    <div className="-mx-4 mt-2 overflow-hidden">
       <AnimatedBackground
         enableHover
-        className="h-full w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900/80"
+        className="h-full w-full rounded-[var(--radius-card)] bg-[var(--color-surface)]"
         transition={{
           type: 'spring',
           stiffness: 300,
@@ -242,12 +242,12 @@ function SuggestionsList({
             key={`${suggestion}-${i}`}
             type="button"
             onClick={() => onSuggestionClick(suggestion)}
-            className="-mx-3 w-full cursor-pointer rounded-xl px-3 py-3 text-left group"
+            className="w-full cursor-pointer px-4 py-3 text-left group"
             data-id={`${suggestion}-${i}`}
           >
             <div className="flex items-center gap-3">
-              <CornerDownRight className="h-4 w-4 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
-              <span className="text-base font-normal text-zinc-700 dark:text-zinc-300">
+              <CornerDownRight className="h-4 w-4 flex-shrink-0 text-[var(--color-muted-foreground)] transition-colors group-hover:text-[var(--color-foreground)]" />
+              <span className="text-[var(--color-foreground)] transition-colors">
                 {suggestion}
               </span>
             </div>

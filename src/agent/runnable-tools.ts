@@ -10,8 +10,7 @@
 import type { SSEHandler } from './sse-handler'
 import { getCalculatorTool } from '@/agent/tools/calculator'
 import { getExaTools } from '@/agent/tools/exa'
-import { getGitHubTools } from '@/agent/tools/github'
-import { getSpotifyTools } from '@/agent/tools/spotify'
+import { getComposioTools } from '@/agent/tools/composio'
 import type { FocusedRepoContext } from '@/agent/tools/types'
 
 // Helper to avoid TypeScript's overly complex union type error with large tool arrays
@@ -32,12 +31,11 @@ export async function createRunnableTools(
   sseHandler: SSEHandler, 
   userId?: string,
   focusedRepo?: FocusedRepoContext | null,
-  enableToolSearch: boolean = true
+  enableToolSearch: boolean = true,
+  selectedTools?: string[]
 ): Promise<any[]> {
-  const [githubTools, spotifyTools] = await Promise.all([
-    getGitHubTools(sseHandler, userId, focusedRepo),
-    getSpotifyTools(sseHandler, userId)
-  ])
+  // Fetch dynamic tools from Composio (GitHub, Spotify)
+  const composioTools = await getComposioTools(sseHandler, userId, focusedRepo)
 
   // Helper to defer tools if tool search is enabled
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,6 +45,23 @@ export async function createRunnableTools(
     return tools.map((tool: any) => ({ ...tool, defer_loading: true }))
   }
 
+  // Filter composio tools based on selectedTools if provided
+  // GitHub tools usually start with "github_" and Spotify with "spotify_"
+  // The UI sends "github" and "spotify" as IDs
+  let filteredComposioTools = composioTools;
+  if (selectedTools && selectedTools.length > 0) {
+     filteredComposioTools = composioTools.filter((tool: any) => {
+        const name = tool.name.toLowerCase();
+        // Check if tool matches any selected tool ID
+        // GitHub tools: github_issues_create, etc.
+        // Spotify tools: spotify_play, etc.
+        if (name.startsWith('github_') && selectedTools.includes('github')) return true;
+        if (name.startsWith('spotify_') && selectedTools.includes('spotify')) return true;
+        // If it doesn't match known prefixes but was returned by composio, default to exclude if selection exists
+        return false; 
+     });
+  }
+
   return createToolsArray(
     // Calculator tool - Keep active (lightweight, frequently used)
     getCalculatorTool(sseHandler),
@@ -54,11 +69,8 @@ export async function createRunnableTools(
     // EXA search tools - Defer if tool search enabled
     ...maybeDefer(getExaTools(sseHandler)),
 
-    // GitHub Tools - Defer if tool search enabled (large set)
-    ...maybeDefer(githubTools),
-
-    // Spotify tools - Defer if tool search enabled (large set)
-    ...maybeDefer(spotifyTools)
+    // Composio Tools (GitHub, Spotify) - Defer if tool search enabled
+    ...maybeDefer(filteredComposioTools)
   )
 }
 

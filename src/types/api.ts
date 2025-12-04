@@ -42,6 +42,11 @@ export type AgentRequestBody = {
    */
   userLocation?: WebSearchUserLocation
   /**
+   * List of tool IDs that the agent is allowed to use.
+   * If provided, only tools in this list (plus default tools) will be available.
+   */
+  selectedTools?: string[]
+  /**
    * Effort level for controlling token usage and response thoroughness.
    * 
    * **Note: Only supported by Claude Opus 4.5 models.**

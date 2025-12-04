@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const { messages, userContext, userLocation, effort } = body
+  const { messages, userContext, userLocation, effort, selectedTools } = body
 
   // Validate effort level if provided
   const validEffortLevels: EffortLevel[] = ['low', 'medium', 'high']
@@ -149,6 +149,7 @@ export async function POST(request: Request) {
       userId,
       focusedRepo,
       effort: validatedEffort,
+      selectedTools,
     })
   } catch (error) {
     console.error('[agent] Unexpected error', error)
