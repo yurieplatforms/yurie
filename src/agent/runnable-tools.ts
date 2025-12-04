@@ -49,7 +49,12 @@ export async function createRunnableTools(
   // GitHub tools usually start with "github_" and Spotify with "spotify_"
   // The UI sends "github" and "spotify" as IDs
   let filteredComposioTools = composioTools;
+  
+  console.log(`[RunnableTools] Fetched ${composioTools.length} Composio tools`)
+  
   if (selectedTools && selectedTools.length > 0) {
+     console.log(`[RunnableTools] Filtering tools for selected: ${selectedTools.join(', ')}`)
+     
      filteredComposioTools = composioTools.filter((tool: any) => {
         const name = tool.name.toLowerCase();
         // Check if tool matches any selected tool ID
@@ -60,6 +65,13 @@ export async function createRunnableTools(
         // If it doesn't match known prefixes but was returned by composio, default to exclude if selection exists
         return false; 
      });
+     
+     console.log(`[RunnableTools] After filtering: ${filteredComposioTools.length} tools remaining`)
+     if (filteredComposioTools.length === 0 && composioTools.length > 0) {
+       console.warn(`[RunnableTools] Warning: All Composio tools were filtered out. Original tools: ${composioTools.map((t: any) => t.name).join(', ')}`)
+     }
+  } else {
+     console.log('[RunnableTools] No tool filtering applied - using all Composio tools')
   }
 
   return createToolsArray(

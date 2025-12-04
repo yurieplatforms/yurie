@@ -132,13 +132,19 @@ export function getGitHubToolContext(): GitHubToolContext {
  */
 export async function findGitHubConnectionId(userId: string): Promise<string | undefined> {
   const composio = getComposioAnthropicClient()
-  if (!composio) return undefined
+  if (!composio) {
+    console.log('[Composio] Cannot find GitHub connection - Composio client not available')
+    return undefined
+  }
 
   try {
+    console.log(`[Composio] Looking up GitHub connection for userId: ${userId}`)
     const connections = await composio.connectedAccounts.list({
       userIds: [userId],
       statuses: ['ACTIVE'],
     })
+
+    console.log(`[Composio] Found ${connections.items?.length || 0} active connections`)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const githubConnection = connections.items?.find((conn: any) => {
@@ -146,9 +152,16 @@ export async function findGitHubConnectionId(userId: string): Promise<string | u
       return connToolkitSlug === 'github'
     })
 
+    if (githubConnection) {
+      console.log(`[Composio] Found GitHub connection with ID: ${githubConnection.id}`)
+    } else {
+      console.log('[Composio] No GitHub connection found - user may need to connect their GitHub account')
+    }
+
     return githubConnection?.id
   } catch (error) {
-    console.error('[Composio] Failed to find GitHub connection:', error)
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+    console.error('[Composio] Failed to find GitHub connection:', errorMsg)
     return undefined
   }
 }

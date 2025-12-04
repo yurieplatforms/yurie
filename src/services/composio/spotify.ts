@@ -197,13 +197,19 @@ export function getSpotifyToolContext(): SpotifyToolContext {
  */
 export async function findSpotifyConnectionId(userId: string): Promise<string | undefined> {
   const composio = getComposioAnthropicClient()
-  if (!composio) return undefined
+  if (!composio) {
+    console.log('[Composio] Cannot find Spotify connection - Composio client not available')
+    return undefined
+  }
 
   try {
+    console.log(`[Composio] Looking up Spotify connection for userId: ${userId}`)
     const connections = await composio.connectedAccounts.list({
       userIds: [userId],
       statuses: ['ACTIVE'],
     })
+
+    console.log(`[Composio] Found ${connections.items?.length || 0} active connections`)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const spotifyConnection = connections.items?.find((conn: any) => {
@@ -211,9 +217,16 @@ export async function findSpotifyConnectionId(userId: string): Promise<string | 
       return connToolkitSlug === 'spotify'
     })
 
+    if (spotifyConnection) {
+      console.log(`[Composio] Found Spotify connection with ID: ${spotifyConnection.id}`)
+    } else {
+      console.log('[Composio] No Spotify connection found - user may need to connect their Spotify account')
+    }
+
     return spotifyConnection?.id
   } catch (error) {
-    console.error('[Composio] Failed to find Spotify connection:', error)
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+    console.error('[Composio] Failed to find Spotify connection:', errorMsg)
     return undefined
   }
 }

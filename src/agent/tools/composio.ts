@@ -39,14 +39,28 @@ export async function getComposioTools(
   toolkits: string[] = ['github', 'spotify']
 ): Promise<any[]> {
   const client = getComposioAnthropicClient()
-  if (!client || !userId) return []
+  if (!client) {
+    console.log('[Composio] Composio client not available - API key may not be configured')
+    return []
+  }
+  if (!userId) {
+    console.log('[Composio] No userId provided - cannot fetch tools')
+    return []
+  }
 
   try {
+    console.log(`[Composio] Fetching tools for userId: ${userId}, toolkits: ${toolkits.join(', ')}`)
+    
     // Fetch tools from Composio
     // Note: We use the userId here to get tools configured for this user if applicable
     const tools = await client.tools.get(userId, {
       toolkits,
     })
+
+    console.log(`[Composio] Fetched ${tools.length} tools from Composio`)
+    if (tools.length > 0) {
+      console.log(`[Composio] Tool names: ${tools.map((t: any) => t.name).join(', ')}`)
+    }
 
     // Find connection IDs once to avoid lookups on every tool call
     // These might fail if user hasn't connected accounts, which is fine (tools will handle it or fail gracefully)
@@ -54,6 +68,9 @@ export async function getComposioTools(
       findGitHubConnectionId(userId),
       findSpotifyConnectionId(userId)
     ])
+
+    console.log(`[Composio] GitHub connection ID: ${githubConnectionId || 'not found'}`)
+    console.log(`[Composio] Spotify connection ID: ${spotifyConnectionId || 'not found'}`)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return tools.map((tool: any) => {
@@ -136,7 +153,10 @@ export async function getComposioTools(
     })
 
   } catch (error) {
-    console.error('Failed to fetch Composio tools:', error)
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+    console.error('[Composio] Failed to fetch Composio tools:', errorMsg)
+    console.error('[Composio] Full error:', error)
+    console.error('[Composio] This may be due to missing API keys or connection issues')
     return []
   }
 }
