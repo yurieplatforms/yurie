@@ -4,7 +4,7 @@ import type { SSEHandler } from '@/agent/sse-handler'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getCalculatorTool(sseHandler: SSEHandler): any {
-  return betaTool({
+  const tool = betaTool({
     name: 'calculator',
     description:
       'Evaluates mathematical expressions and returns the numerical result. Use this tool for ANY math calculation beyond simple mental arithmetic, including percentages, unit conversions, trigonometry, and complex formulas. The tool supports basic arithmetic operators (+, -, *, /), exponentiation (**), parentheses for grouping, and common math functions (sqrt, sin, cos, tan, asin, acos, atan, log, log10, log2, exp, pow, abs, floor, ceil, round, min, max, random) as well as constants (pi, e, PI, E). Do NOT use this tool for non-numeric operations, string manipulation, or when the user is asking about math concepts rather than computing a specific value.',
@@ -39,5 +39,15 @@ export function getCalculatorTool(sseHandler: SSEHandler): any {
       }
     },
   })
+
+  return {
+    ...tool,
+    input_examples: [
+      { expression: '2 + 2' },
+      { expression: 'sin(pi/2)' },
+      { expression: 'max(10, 20, 5) * 2' },
+      { expression: 'sqrt(144) / 2' },
+    ],
+  }
 }
 

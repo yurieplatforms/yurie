@@ -19,9 +19,11 @@ const toolLabels: Record<string, string> = {
   exa_find_similar: 'Finding similar',
   exa_answer: 'Answering',
   calculator: 'Calculating',
-  memory: 'Remembering',
+  memory: 'Memory',
   memory_save: 'Saving',
   memory_retrieve: 'Recalling',
+  tool_search_tool_bm25: 'Searching tools',
+  tool_search_tool_regex: 'Searching tools',
 };
 
 const toolIcons: Record<string, React.ComponentType<{ className?: string }>> = {

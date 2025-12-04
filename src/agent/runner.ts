@@ -48,7 +48,7 @@ import type {
 } from '@/agent/types'
 
 // Tools
-import { createServerTools } from '@/agent/tools'
+import { createServerTools, type ToolResultBlock } from '@/agent/tools'
 import { createMemoryToolHandler } from '@/services/memory'
 import type { WebSearchUserLocation } from '@/types'
 
@@ -391,7 +391,7 @@ export async function runAgent({
       // Model selection
       // Note: Effort parameter is ONLY supported by Claude Opus 4.5
       // @see https://platform.claude.com/docs/en/build-with-claude/effort
-      const MODEL = 'claude-opus-4-5-20251101'
+      const MODEL = 'claude-sonnet-4-5-20250929'
       const isOpusModel = MODEL.includes('opus')
 
       // Build beta headers list
@@ -403,6 +403,18 @@ export async function runAgent({
         // Only add effort beta header for Opus models
         // @see https://platform.claude.com/docs/en/build-with-claude/effort
         ...(isOpusModel ? ['effort-2025-11-24'] : []),
+        // Enable 1M token context window for Sonnet 4.5
+        // @see https://platform.claude.com/docs/en/build-with-claude/context-windows
+        'context-1m-2025-08-07',
+        // Enable tool use examples (beta)
+        // @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use#providing-tool-use-examples
+        'advanced-tool-use-2025-11-20',
+        // Enable web fetch tool (beta)
+        // @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool
+        'web-fetch-2025-09-10',
+        // Enable memory tool (beta)
+        // @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool
+        'context-management-2025-06-27',
       ]
 
       // Apply prompt caching to messages for multi-turn conversation optimization
@@ -415,9 +427,15 @@ export async function runAgent({
       >[0] = {
         model: MODEL,
         // max_tokens must be greater than budget_tokens for thinking
-        // Using 32k to allow for larger thinking budgets + response
-        max_tokens: 32000,
-        system: systemPrompt,
+        // Using 64k to allow for larger thinking budgets + response
+        max_tokens: 64000,
+        system: [
+          {
+            type: 'text',
+            text: systemPrompt,
+            cache_control: { type: 'ephemeral' },
+          },
+        ],
         messages: cachedMessages,
         tools,
         stream: true,
@@ -464,6 +482,8 @@ export async function runAgent({
       // Track active tool calls for max_tokens handling
       let activeToolName: string | null = null
       let activeToolInput: Record<string, unknown> | null = null
+      // Track pending server tool IDs to match results
+      const pendingToolIds = new Map<string, string>()
 
       for await (const messageStream of runner) {
         for await (const event of messageStream as AsyncIterable<StreamEvent>) {
@@ -476,6 +496,7 @@ export async function runAgent({
             setActiveToolInput: (input) => {
               activeToolInput = input
             },
+            pendingToolIds,
           })
         }
       }
@@ -517,6 +538,7 @@ type StreamContext = {
   activeToolInput: Record<string, unknown> | null
   setActiveToolName: (name: string | null) => void
   setActiveToolInput: (input: Record<string, unknown> | null) => void
+  pendingToolIds: Map<string, string>
 }
 
 async function handleStreamEvent(
@@ -543,6 +565,7 @@ async function handleStreamEvent(
       const serverBlock = block as ServerToolUseContentBlock
       setActiveToolName(serverBlock.name)
       setActiveToolInput(serverBlock.input || null)
+      context.pendingToolIds.set(serverBlock.id, serverBlock.name)
       await sseHandler.sendToolEvent(serverBlock.name, 'start', serverBlock.input)
     }
 
@@ -563,6 +586,19 @@ async function handleStreamEvent(
         activeToolInput,
         sseHandler,
       )
+    }
+
+    // Handle generic tool results (for tool search)
+    if (block.type === 'tool_result') {
+      const resultBlock = block as ToolResultBlock
+      const toolName = context.pendingToolIds.get(resultBlock.tool_use_id)
+      
+      if (toolName) {
+        // It's a server tool we are tracking (like tool search)
+        // We can consider it "done"
+        await sseHandler.sendToolEvent(toolName, 'end', undefined, 'Tools discovered')
+        context.pendingToolIds.delete(resultBlock.tool_use_id)
+      }
     }
   } else if (event.type === 'content_block_stop') {
     setActiveToolName(null)

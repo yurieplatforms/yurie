@@ -16,7 +16,7 @@
 /**
  * Effort level for controlling token usage
  *
- * **Note: Only supported by Claude Opus 4.5 (`claude-opus-4-5-20251101`).**
+ * **Note: Only supported by Claude Opus 4.5.**
  * This parameter is ignored for Sonnet and other models.
  *
  * - `high`: Maximum capability—Claude uses as many tokens as needed (default)

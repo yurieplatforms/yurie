@@ -47,6 +47,7 @@ export function getExaTools(sseHandler: SSEHandler): any[] {
               'personal site',
               'linkedin profile',
               'financial report',
+              'financial report',
             ],
             description:
               'Filter results by content type. Use "research paper" for academic, "news" for current events, "github" for code, "tweet" for social media.',
@@ -131,6 +132,12 @@ export function getExaTools(sseHandler: SSEHandler): any[] {
         required: ['query'] as const,
         additionalProperties: false,
       },
+      input_examples: [
+        { query: 'latest react best practices', type: 'auto', livecrawl: 'preferred' },
+        { query: 'competitors to vercel', category: 'company', numResults: 5 },
+        { query: 'climate change research', type: 'neural', startPublishedDate: '2024-01-01' },
+        { query: 'elon musk tweets', category: 'tweet', numResults: 10 },
+      ],
       run: async (input: any) => {
         const searchInput: ExaSearchInput = {
           query: input.query,
@@ -387,6 +394,11 @@ export function getExaTools(sseHandler: SSEHandler): any[] {
         required: ['question'] as const,
         additionalProperties: false,
       },
+      input_examples: [
+        { question: 'Who is the CEO of OpenAI?' },
+        { question: 'What are the main features of React 19?', startPublishedDate: '2024-01-01' },
+        { question: 'Summarize the latest news about nuclear fusion', category: 'news' },
+      ],
       run: async (input: any) => {
         const answerInput: ExaAnswerInput = {
           question: input.question,

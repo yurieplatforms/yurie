@@ -74,10 +74,8 @@ export function createMemoryTool(
   memoryToolHandler: MemoryToolHandler | null,
 ) {
   return {
+    type: 'memory_20250818',
     name: 'memory',
-    description:
-      'Persistent memory storage for saving and retrieving information across conversations. Use this tool to store notes, track progress, remember user preferences, and maintain context across sessions. The memory is organized as files in a /memories directory.',
-    input_schema: memoryToolSchema,
     run: async (input: Record<string, unknown>) => {
       await sseHandler.sendToolEvent('memory', 'start', input)
       

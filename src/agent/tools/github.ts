@@ -154,51 +154,79 @@ export async function getGitHubTools(
     }),
 
     // List GitHub issues
-    betaTool({
-      name: 'github_list_issues',
-      description:
-        `List issues from a GitHub repository. Returns issue titles, states, labels, authors, and URLs. Use this to understand what problems or feature requests exist for a project.${focusedRepo ? ` Defaults to focused repo: ${focusedRepo.fullName}` : ''}`,
-      inputSchema: {
-        type: 'object',
-        properties: {
-          owner: {
-            type: 'string',
-            description: `The repository owner.${focusedRepo ? ` Optional - defaults to "${focusedRepo.owner}"` : ''}`,
+    {
+      ...betaTool({
+        name: 'github_list_issues',
+        description:
+          `List issues from a GitHub repository. Returns issue titles, states, labels, authors, and URLs. Use this to understand what problems or feature requests exist for a project.${focusedRepo ? ` Defaults to focused repo: ${focusedRepo.fullName}` : ''}`,
+        inputSchema: {
+          type: 'object',
+          properties: {
+            owner: {
+              type: 'string',
+              description: `The repository owner.${focusedRepo ? ` Optional - defaults to "${focusedRepo.owner}"` : ''}`,
+            },
+            repo: {
+              type: 'string',
+              description: `The repository name.${focusedRepo ? ` Optional - defaults to "${focusedRepo.name}"` : ''}`,
+            },
+            state: {
+              type: 'string',
+              enum: ['open', 'closed', 'all'],
+              description:
+                'Filter by issue state. "open" (default) for active issues, "closed" for resolved, "all" for both.',
+            },
+            per_page: {
+              type: 'number',
+              description: 'Number of issues to return (1-100). Default is 10.',
+            },
           },
-          repo: {
-            type: 'string',
-            description: `The repository name.${focusedRepo ? ` Optional - defaults to "${focusedRepo.name}"` : ''}`,
-          },
-          state: {
-            type: 'string',
-            enum: ['open', 'closed', 'all'],
-            description:
-              'Filter by issue state. "open" (default) for active issues, "closed" for resolved, "all" for both.',
-          },
-          per_page: {
-            type: 'number',
-            description: 'Number of issues to return (1-100). Default is 10.',
-          },
+          required: focusedRepo ? [] as const : ['owner', 'repo'] as const,
+          additionalProperties: false,
         },
-        required: focusedRepo ? [] as const : ['owner', 'repo'] as const,
-        additionalProperties: false,
-      },
-      run: async (input) => {
-        try {
-          const { owner, repo } = resolveRepo(input)
-          if (!owner || !repo) {
-            const errorMsg = 'Error: owner and repo are required. No focused repository is set.'
-            await sseHandler.sendToolEvent('github_list_issues', 'end', input as Record<string, unknown>, errorMsg)
-            return errorMsg
-          }
-          const result = await listIssues({
-            owner,
-            repo,
-            state: input.state as 'open' | 'closed' | 'all' | undefined,
-            per_page: input.per_page,
-          })
-          if (!result.successful) {
-            const errorMsg = `GitHub API error: ${result.error || 'Unknown error'}`
+        run: async (input) => {
+          try {
+            const { owner, repo } = resolveRepo(input)
+            if (!owner || !repo) {
+              const errorMsg = 'Error: owner and repo are required. No focused repository is set.'
+              await sseHandler.sendToolEvent('github_list_issues', 'end', input as Record<string, unknown>, errorMsg)
+              return errorMsg
+            }
+            const result = await listIssues({
+              owner,
+              repo,
+              state: input.state as 'open' | 'closed' | 'all' | undefined,
+              per_page: input.per_page,
+            })
+            if (!result.successful) {
+              const errorMsg = `GitHub API error: ${result.error || 'Unknown error'}`
+              await sseHandler.sendToolEvent(
+                'github_list_issues',
+                'end',
+                input as Record<string, unknown>,
+                errorMsg
+              )
+              return errorMsg
+            }
+            const formatted = formatIssuesForLLM(result.data as Record<string, unknown>[])
+            await sseHandler.sendSSE({
+              choices: [
+                {
+                  delta: {
+                    tool_use: {
+                      name: 'github_list_issues',
+                      status: 'end',
+                      input: input as Record<string, unknown>,
+                      result: formatted,
+                      githubIssues: result.data,
+                    },
+                  },
+                },
+              ],
+            })
+            return formatted
+          } catch (error) {
+            const errorMsg = `GitHub error: ${error instanceof Error ? error.message : 'Unknown error'}`
             await sseHandler.sendToolEvent(
               'github_list_issues',
               'end',
@@ -207,35 +235,13 @@ export async function getGitHubTools(
             )
             return errorMsg
           }
-          const formatted = formatIssuesForLLM(result.data as Record<string, unknown>[])
-          await sseHandler.sendSSE({
-            choices: [
-              {
-                delta: {
-                  tool_use: {
-                    name: 'github_list_issues',
-                    status: 'end',
-                    input: input as Record<string, unknown>,
-                    result: formatted,
-                    githubIssues: result.data,
-                  },
-                },
-              },
-            ],
-          })
-          return formatted
-        } catch (error) {
-          const errorMsg = `GitHub error: ${error instanceof Error ? error.message : 'Unknown error'}`
-          await sseHandler.sendToolEvent(
-            'github_list_issues',
-            'end',
-            input as Record<string, unknown>,
-            errorMsg
-          )
-          return errorMsg
-        }
-      },
-    }),
+        },
+      }),
+      input_examples: [
+        { owner: 'vercel', repo: 'next.js', state: 'open', per_page: 5 },
+        { owner: 'facebook', repo: 'react', state: 'closed' },
+      ],
+    },
 
     // Get specific GitHub issue
     betaTool({

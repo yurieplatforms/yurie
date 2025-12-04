@@ -9,6 +9,7 @@ import {
   Code,
   ExternalLink,
   AlertCircle,
+  FileText,
 } from 'lucide-react'
 import type { ToolUseEvent } from '@/types'
 
@@ -40,6 +41,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
       {completedTools.map((tool, index) => {
         const isWebSearch = tool.webSearch !== undefined
         const isExaSearch = tool.exaSearch !== undefined
+        const isWebFetch = tool.webFetch !== undefined
 
         return (
           <div
@@ -239,6 +241,36 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
                   {tool.webSearch?.results && tool.webSearch.results.length === 0 && !tool.webSearch.errorCode && (
                     <div className="text-xs text-zinc-500">
                       No results found for this search.
+                    </div>
+                  )}
+                </div>
+              ) : isWebFetch ? (
+                <div className="space-y-2">
+                  {tool.webFetch?.url ? (
+                    <a
+                      href={tool.webFetch.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group/link flex items-start gap-2 rounded-md p-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    >
+                      <FileText className="mt-0.5 h-3 w-3 flex-shrink-0 text-zinc-400 group-hover/link:text-[#7F91E0]" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-xs font-medium text-zinc-700 group-hover/link:text-[#7F91E0] dark:text-zinc-300 dark:group-hover/link:text-[#7F91E0]">
+                          {tool.webFetch.title || 'Untitled Document'}
+                        </div>
+                        <div className="truncate text-xs text-zinc-400">
+                          {tool.webFetch.url}
+                        </div>
+                        {tool.webFetch.retrievedAt && (
+                          <div className="text-xs text-zinc-400">
+                            Retrieved: {new Date(tool.webFetch.retrievedAt).toLocaleTimeString()}
+                          </div>
+                        )}
+                      </div>
+                    </a>
+                  ) : (
+                    <div className="text-xs text-zinc-500">
+                      {tool.result}
                     </div>
                   )}
                 </div>

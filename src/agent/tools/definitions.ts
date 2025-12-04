@@ -8,6 +8,7 @@
  * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
  * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool
  * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/implement-tool-use
+ * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool
  *
  * @module lib/tools/definitions
  */
@@ -30,19 +31,29 @@ export type ToolUseBlock = {
 }
 
 /**
+ * Represents a server tool use block (for tool search)
+ */
+export type ServerToolUseBlock = {
+  type: 'server_tool_use'
+  id: string
+  name: string
+  input: Record<string, unknown>
+}
+
+/**
  * Represents a tool result to send back to Claude
  */
 export type ToolResultBlock = {
   type: 'tool_result'
   tool_use_id: string
-  content: string
+  content: string | Array<Record<string, unknown>>
   is_error?: boolean
 }
 
 /** Server-side tools executed by Anthropic's infrastructure */
-export type ServerToolType = 'web_search' | 'web_fetch'
+export type ServerToolType = 'web_search' | 'web_fetch' | 'tool_search_tool_bm25_20251119' | 'tool_search_tool_regex_20251119'
 
-/** Client-side tools executed by our application */
+/** Client-side tools executed by us */
 export type ClientToolType = 'calculator' | 'memory' | 'exa_search'
 
 /** GitHub tools via Composio */
@@ -247,6 +258,50 @@ export type WebSearchToolConfig = {
   blockedDomains?: string[]
 }
 
+// ============================================================================
+// Web Fetch Tool Configuration
+// ============================================================================
+
+/**
+ * Configuration options for the web fetch tool.
+ *
+ * The web fetch tool allows Claude to retrieve full content from specified web pages and PDF documents.
+ *
+ * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool
+ */
+export type WebFetchToolConfig = {
+  /**
+   * Maximum number of fetches allowed per request.
+   * If Claude attempts more fetches than allowed, the web_fetch_tool_result
+   * will be an error with the `max_uses_exceeded` error code.
+   */
+  maxUses?: number
+
+  /**
+   * Only fetch from these domains.
+   * Cannot be used with blockedDomains.
+   */
+  allowedDomains?: string[]
+
+  /**
+   * Never fetch from these domains.
+   * Cannot be used with allowedDomains.
+   */
+  blockedDomains?: string[]
+
+  /**
+   * Enable citations for fetched content.
+   * When enabled, Claude can cite specific passages from fetched documents.
+   */
+  citations?: boolean
+
+  /**
+   * Maximum content length in tokens.
+   * If the fetched content exceeds this limit, it will be truncated.
+   */
+  maxContentTokens?: number
+}
+
 /**
  * Creates a web search tool with optional configuration.
  *
@@ -302,7 +357,58 @@ export type WebSearchToolConfig = {
  * ```
  */
 export function createWebSearchTool(config: WebSearchToolConfig = {}): Anthropic.Tool {
-  return {} as Anthropic.Tool
+  return {
+    type: 'web_search_20250305',
+    name: 'web_search',
+    ...(config.maxUses !== undefined && { max_uses: config.maxUses }),
+    ...(config.userLocation && { user_location: config.userLocation }),
+    ...(config.allowedDomains && { allowed_domains: config.allowedDomains }),
+    ...(config.blockedDomains && { blocked_domains: config.blockedDomains }),
+  } as unknown as Anthropic.Tool
+}
+
+/**
+ * Creates a web fetch tool with optional configuration.
+ *
+ * The web fetch tool allows Claude to retrieve full content from specified web pages and PDF documents.
+ *
+ * @param config - Optional configuration for the web fetch tool
+ * @returns Anthropic tool definition for web fetch
+ *
+ * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-fetch-tool
+ */
+export function createWebFetchTool(config: WebFetchToolConfig = {}): Anthropic.Tool {
+  return {
+    type: 'web_fetch_20250910',
+    name: 'web_fetch',
+    ...(config.maxUses !== undefined && { max_uses: config.maxUses }),
+    ...(config.allowedDomains && { allowed_domains: config.allowedDomains }),
+    ...(config.blockedDomains && { blocked_domains: config.blockedDomains }),
+    ...(config.citations !== undefined && { citations: { enabled: config.citations } }),
+    ...(config.maxContentTokens !== undefined && { max_content_tokens: config.maxContentTokens }),
+  } as unknown as Anthropic.Tool
+}
+
+/**
+ * Creates a tool search tool definition.
+ * 
+ * The tool search tool enables Claude to work with hundreds or thousands of tools by 
+ * dynamically discovering and loading them on-demand.
+ * 
+ * Two variants are available:
+ * - 'bm25': Uses natural language queries (recommended for general use)
+ * - 'regex': Uses Python regex patterns
+ * 
+ * @param variant - The search variant to use ('bm25' or 'regex')
+ * @returns Anthropic tool definition for tool search
+ * 
+ * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool
+ */
+export function createToolSearchTool(variant: 'bm25' | 'regex' = 'bm25'): Anthropic.Tool {
+  return {
+    type: variant === 'bm25' ? 'tool_search_tool_bm25_20251119' : 'tool_search_tool_regex_20251119',
+    name: variant === 'bm25' ? 'tool_search_tool_bm25' : 'tool_search_tool_regex',
+  } as unknown as Anthropic.Tool
 }
 
 /**
@@ -315,11 +421,15 @@ export function createWebSearchTool(config: WebSearchToolConfig = {}): Anthropic
  * ## Included tools
  * - **web_search**: Real-time web search with citations
  * - **web_fetch**: Fetch full content from web pages and PDFs
+ * - **tool_search**: Dynamic tool discovery (BM25 variant)
  *
  * @param webSearchConfig - Optional configuration for the web search tool
+ * @param webFetchConfig - Optional configuration for the web fetch tool
+ * @param enableToolSearch - Whether to include the tool search tool (default: true)
  * @returns Array of server-side tools for the API request
  *
  * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
+ * @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool
  *
  * @example
  * ```ts
@@ -342,6 +452,23 @@ export function createWebSearchTool(config: WebSearchToolConfig = {}): Anthropic
  */
 export function createServerTools(
   webSearchConfig?: WebSearchToolConfig,
+  webFetchConfig?: WebFetchToolConfig,
+  enableToolSearch: boolean = true,
 ): Anthropic.Tool[] {
-  return []
+  const tools: Anthropic.Tool[] = []
+
+  // Web Search Tool
+  tools.push(createWebSearchTool(webSearchConfig))
+
+  // Web Fetch Tool
+  // Default to enabled citations if not specified, as it's a best practice
+  const fetchConfig = { citations: true, ...webFetchConfig }
+  tools.push(createWebFetchTool(fetchConfig))
+
+  // Tool Search Tool (BM25)
+  if (enableToolSearch) {
+    tools.push(createToolSearchTool('bm25'))
+  }
+
+  return tools
 }
