@@ -192,7 +192,7 @@ export type SearchResultTextBlock = {
 
 export type SearchResultBlock = {
   type: 'search_result'
-  source: string  // Source URL or identifier (e.g., "/memories/notes.txt")
+  source: string  // Source URL or identifier
   title: string   // Descriptive title for the search result
   content: SearchResultTextBlock[]  // Array of text blocks
   citations?: {

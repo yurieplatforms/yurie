@@ -30,7 +30,6 @@ type SystemPromptParams = {
     timeZone: string
   }
   userPreferences?: UserPreferences
-  memoriesPrompt?: string
   focusedRepo?: FocusedRepoContext | null
 }
 
@@ -144,22 +143,10 @@ function buildGitHubContextSection(focusedRepo: FocusedRepoContext): string {
 }
 
 /**
- * Build the memories section for the system prompt
- */
-function buildMemoriesSection(memoriesPrompt: string): string {
-  return [
-    '<memories>',
-    '      This is what you remember about me. USE THIS. Reference these details naturally to show you know me.',
-    '      ' + memoriesPrompt,
-    '    </memories>',
-  ].join('\n')
-}
-
-/**
  * Builds the complete system prompt for the agent
  */
 export function buildSystemPrompt(params: SystemPromptParams = {}): string {
-  const { userName, userContext, userPreferences, memoriesPrompt, focusedRepo } = params
+  const { userName, userContext, userPreferences, focusedRepo } = params
 
   // Build user info lines
   const userInfoLines: string[] = []
@@ -170,12 +157,9 @@ export function buildSystemPrompt(params: SystemPromptParams = {}): string {
 
   // Build sections separately to avoid template literal parsing issues
   const githubContextSection = focusedRepo ? buildGitHubContextSection(focusedRepo) : ''
-  const memoriesSection = (memoriesPrompt && memoriesPrompt.trim().length > 0) 
-    ? buildMemoriesSection(memoriesPrompt) 
-    : ''
 
   // Combine optional context blocks
-  const optionalContextSections = memoriesSection + githubContextSection
+  const optionalContextSections = githubContextSection
 
   // Build user info string
   const userInfoString = userInfoLines.join('\n      ')

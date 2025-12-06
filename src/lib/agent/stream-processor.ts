@@ -78,7 +78,7 @@ export function processCitations(rawCitations: RawCitation[]): MessageCitation[]
       citedText: c.cited_text || '',
     }))
 
-  // Search result citations (from memory/document search)
+  // Search result citations (from document search)
   const searchResultCitations: SearchResultCitation[] = rawCitations
     .filter(c => c.type === 'search_result_location')
     .map(c => ({

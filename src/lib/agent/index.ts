@@ -44,13 +44,10 @@ export type {
 // User context
 export {
   getUserProfile,
-  getConversationMemories,
   getUserPersonalizationContext,
   getUserName,
-  formatMemoriesForPrompt,
 } from './user-context'
 export type {
   UserProfile,
-  ConversationMemory,
   UserPersonalizationContext,
 } from './user-context'

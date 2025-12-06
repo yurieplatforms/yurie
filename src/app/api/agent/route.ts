@@ -13,7 +13,6 @@ import type { AgentRequestBody } from '@/lib/api/types'
 import {
   getUserPersonalizationContext,
   getUserName,
-  formatMemoriesForPrompt,
 } from '@/lib/agent/user-context'
 import { env } from '@/lib/config/env'
 
@@ -52,7 +51,6 @@ export async function POST(request: Request) {
 
   // Fetch user personalization context if user is authenticated
   let userName: string | null = null
-  let memoriesPrompt = ''
   let userId: string | undefined
   let userPreferences: { birthday?: string | null; location?: string | null; timezone?: string | null } = {}
   let focusedRepo: {
@@ -74,7 +72,6 @@ export async function POST(request: Request) {
       userId = user.id
       const personalizationContext = await getUserPersonalizationContext(supabase, user.id)
       userName = getUserName(personalizationContext)
-      memoriesPrompt = formatMemoriesForPrompt(personalizationContext)
       
       // Extract user preferences from profile
       if (personalizationContext.profile) {
@@ -111,7 +108,6 @@ export async function POST(request: Request) {
     userName,
     userContext,
     userPreferences,
-    memoriesPrompt,
     focusedRepo,
   })
 
