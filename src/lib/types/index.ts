@@ -1,5 +1,4 @@
 import type { UIMessage } from 'ai'
-import type { ExaErrorInfo } from '@/lib/tools/exa-errors'
 
 export type Role = UIMessage['role']
 
@@ -73,119 +72,6 @@ export type WebFetchResult = {
   url: string
   title?: string
   retrievedAt?: string
-}
-
-// ============================================================================
-// EXA Search Types
-// @see https://docs.exa.ai/reference/search
-// ============================================================================
-
-/**
- * EXA search type for controlling search behavior.
- * @see https://docs.exa.ai/reference/how-exa-search-works
- */
-export type ExaSearchType =
-  | 'auto'    // Default - intelligently combines multiple search methods
-  | 'neural'  // AI semantic search using embeddings
-  | 'keyword' // Traditional keyword matching
-  | 'fast'    // Streamlined for speed (<400ms)
-  | 'deep'    // Comprehensive search with query expansion
-
-/**
- * EXA search category for filtering results by content type.
- * @see https://docs.exa.ai/reference/search#category
- */
-export type ExaSearchCategory =
-  | 'company'
-  | 'research paper'
-  | 'news'
-  | 'pdf'
-  | 'github'
-  | 'tweet'
-  | 'personal site'
-  | 'linkedin profile'
-  | 'financial report'
-
-/**
- * EXA livecrawl mode for content freshness.
- * @see https://docs.exa.ai/reference/livecrawling-contents
- */
-export type ExaLivecrawlMode =
-  | 'always'    // Always fetch fresh content (slowest, freshest) - real-time data
-  | 'preferred' // Prefer live crawling, falls back on failure - production apps
-  | 'fallback'  // Use cache first, live crawl if unavailable (default)
-  | 'never'     // Only use cached content (fastest)
-
-/**
- * Individual search result item from EXA search.
- * @see https://docs.exa.ai/reference/contents-retrieval
- */
-export type ExaSearchResultItem = {
-  /** URL of the source page */
-  url: string
-  /** Title of the source page */
-  title: string
-  /** Author of the content, if available */
-  author?: string
-  /** ISO 8601 date when the content was published */
-  publishedDate?: string
-  /** Text content/snippet from the page */
-  text?: string
-  /**
-   * Key highlights/excerpts from the content.
-   * Recommended for LLM context - more focused than full text.
-   * @see https://docs.exa.ai/reference/contents-retrieval
-   */
-  highlights?: string[]
-  /**
-   * Relevance scores for each highlight (0-1).
-   * Higher scores indicate more relevant excerpts.
-   */
-  highlightScores?: number[]
-  /**
-   * AI-generated summary of the content.
-   * Useful for quick understanding without reading full text.
-   */
-  summary?: string
-  /** Relevance score from EXA search ranking */
-  score?: number
-}
-
-/**
- * EXA search result containing the query and all results.
- */
-export type ExaSearchResult = {
-  /** Always 'exa_search' for EXA search results */
-  type: 'exa_search'
-  /** The search query that was executed */
-  query: string
-  /** Category filter applied, if any */
-  category?: ExaSearchCategory
-  /** Array of search result items */
-  results: ExaSearchResultItem[]
-  /** Error message if the search failed */
-  error?: string
-  /** Detailed error information for error handling */
-  errorInfo?: ExaErrorInfo
-}
-
-/**
- * EXA answer result from the direct question answering endpoint.
- * @see https://docs.exa.ai/reference/answer
- */
-export type ExaAnswerResult = {
-  /** Always 'exa_answer' for answer results */
-  type: 'exa_answer'
-  /** The question that was asked */
-  question: string
-  /** The synthesized answer */
-  answer: string
-  /** Source citations for the answer */
-  sources: ExaSearchResultItem[]
-  /** Error message if the request failed */
-  error?: string
-  /** Detailed error information for error handling */
-  errorInfo?: ExaErrorInfo
 }
 
 // ============================================================================
@@ -375,12 +261,6 @@ export type ToolUseEvent = {
   // Web search specific fields
   // See: https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool
   webSearch?: WebSearchResult
-  // EXA search specific fields
-  // See: https://docs.exa.ai/reference/search
-  exaSearch?: ExaSearchResult
-  // EXA answer specific fields
-  // See: https://docs.exa.ai/reference/answer
-  exaAnswer?: ExaAnswerResult
 }
 
 // Citations from search results and documents embedded in text responses

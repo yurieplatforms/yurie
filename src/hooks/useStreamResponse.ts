@@ -243,8 +243,6 @@ export function useStreamResponse(): UseStreamResponseReturn {
                 input: toolUseEvent.input,
                 result: toolUseEvent.result,
                 webSearch: toolUseEvent.webSearch,
-                exaSearch: toolUseEvent.exaSearch,
-                exaAnswer: toolUseEvent.exaAnswer,
               },
             ]
           }

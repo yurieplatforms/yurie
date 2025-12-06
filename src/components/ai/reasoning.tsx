@@ -9,18 +9,14 @@ import type { ToolUseEvent } from "@/lib/types";
 const toolLabels: Record<string, string> = {
   web_search: 'Searching',
   web_fetch: 'Fetching',
-  exa_search: 'Browsing',
-  exa_find_similar: 'Finding similar',
-  exa_answer: 'Answering',
+  composio_search_web: 'Browsing',
   calculator: 'Calculating',
 };
 
 const toolIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   web_search: Search,
   web_fetch: Globe,
-  exa_search: Search,
-  exa_find_similar: Link2,
-  exa_answer: Sparkles,
+  composio_search_web: Search,
   calculator: Calculator,
 };
 
@@ -59,7 +55,7 @@ export function Reasoning({
   return (
     <div
       className={cn(
-        "rounded-lg bg-muted/40",
+        "w-full",
         className
       )}
       {...props}
@@ -119,14 +115,12 @@ export function ReasoningTrigger({
   return (
     <div
       className={cn(
-        "flex w-full items-center gap-2 py-2 text-[11px] font-medium tracking-wide text-zinc-500 select-none",
+        "flex w-full items-start gap-2 py-2 text-base font-medium text-zinc-500 select-none",
         className
       )}
       {...props}
     >
-      <span className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full">
-        <span className="leading-none">{dynamicLabel}</span>
-      </span>
+      {dynamicLabel}
     </div>
   );
 }
@@ -148,7 +142,7 @@ export function ReasoningContent({
       )}
       {...props}
     >
-      <div className="px-3 text-muted-foreground">
+      <div className="text-muted-foreground">
         {children}
       </div>
     </div>

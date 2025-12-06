@@ -36,7 +36,7 @@ export type ToolResultBlock = {
 export type ServerToolType = 'web_search' | 'web_fetch'
 
 /** Client-side tools executed by our application */
-export type ClientToolType = 'exa_search'
+export type ClientToolType = 'composio_search_web' | string
 
 /** GitHub tools via Composio */
 export type GitHubToolType =

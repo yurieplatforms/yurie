@@ -5,13 +5,9 @@
  */
 
 import {
-  exaSearch,
-  exaFindSimilar,
-  exaAnswer,
-  formatExaResultsForLLM,
-  formatExaAnswerForLLM,
-  isExaAvailable,
-} from '@/lib/tools/exa'
+  getSearchTools,
+  executeSearchTool
+} from '@/lib/composio/search'
 import {
   isGitHubToolsAvailable,
   setGitHubToolContext,
@@ -59,8 +55,6 @@ import {
   formatPRsForLLM,
   formatCommitsForLLM,
 } from '@/lib/composio'
-import type { ExaSearchInput, ExaFindSimilarInput, ExaAnswerInput } from '@/lib/tools/exa'
-import type { ExaSearchCategory, ExaSearchType } from '@/lib/types'
 import type { SSEHandler } from './sse-handler'
 
 /**
@@ -94,71 +88,23 @@ export async function createRunnableTools(
 ): Promise<any[]> {
   const tools = []
 
-  // Exa Search Tools (if API key is available)
-  if (isExaAvailable()) {
-    // Search Tool
-    tools.push({
-      type: 'function',
-      function: {
-        name: 'exa_search',
-        description: 'Search for information on the web using Exa. Use this to find relevant documentation, articles, or code snippets.',
-        parameters: {
-          type: 'object',
-          properties: {
-            query: { type: 'string', description: 'The search query' },
-            type: { type: 'string', enum: ['auto', 'neural', 'keyword'], description: 'Search type' },
-            category: { type: 'string', enum: ['all', 'company', 'research_paper', 'news', 'pdf', 'github', 'tweet', 'personal_site', 'linkedin_profile'], description: 'Category filter' },
-            numResults: { type: 'number', description: 'Number of results to return' },
-          },
-          required: ['query'],
-        },
-      },
-      run: async ({ input }: { input: ExaSearchInput }) => {
-        const result = await exaSearch(input)
-        return formatExaResultsForLLM(result)
-      },
-    })
-
-    // Find Similar Tool
-    tools.push({
-      type: 'function',
-      function: {
-        name: 'exa_find_similar',
-        description: 'Find web pages similar to a given URL.',
-        parameters: {
-          type: 'object',
-          properties: {
-            url: { type: 'string', description: 'The URL to find similar pages for' },
-            numResults: { type: 'number', description: 'Number of results to return' },
-          },
-          required: ['url'],
-        },
-      },
-      run: async ({ input }: { input: ExaFindSimilarInput }) => {
-        const result = await exaFindSimilar(input)
-        return formatExaResultsForLLM(result)
-      },
-    })
-
-    // Answer Tool
-    tools.push({
-      type: 'function',
-      function: {
-        name: 'exa_answer',
-        description: 'Ask a question and get an answer from the web.',
-        parameters: {
-          type: 'object',
-          properties: {
-            query: { type: 'string', description: 'The question to answer' },
-          },
-          required: ['query'],
-        },
-      },
-      run: async ({ input }: { input: ExaAnswerInput }) => {
-        const result = await exaAnswer(input)
-        return formatExaAnswerForLLM(result)
-      },
-    })
+  // Composio Search Tools
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const searchTools = await getSearchTools(userId || 'default') as any[]
+    for (const tool of searchTools) {
+      tools.push({
+        ...tool,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        run: async ({ input }: { input: any }) => {
+          const result = await executeSearchTool(tool.function.name, input, userId || 'default')
+          // Return data directly, runner will stringify it
+          return result.data
+        }
+      })
+    }
+  } catch (error) {
+    console.error('Failed to load Composio search tools:', error)
   }
 
   // GitHub Tools (via Composio)
@@ -176,11 +122,7 @@ export async function createRunnableTools(
 
     // Add GitHub tools here...
     // Note: Implementing all would make this file huge.
-    // For now, returning empty for GitHub as user requested removal of Anthropic specific
-    // and I'm doing a minimal functional refactor.
     // Ideally we would wrap each Composio tool like above.
-    // But `getGitHubToolsForXAI` in `github.ts` returns pre-configured tools from Composio.
-    // Those tools might NOT have the `run` method attached if they come from Composio SDK directly as JSON.
     // Composio SDK's `tools.get` returns tool definitions.
     // We need to handle execution separately or wrap them.
     

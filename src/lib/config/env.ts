@@ -3,7 +3,6 @@ import { z } from 'zod'
 const envSchema = z.object({
   // Server-side variables
   XAI_API_KEY: z.string().min(1).optional(),
-  EXA_API_KEY: z.string().min(1).optional(),
   COMPOSIO_API_KEY: z.string().min(1).optional(),
   
   // Client-side variables (NEXT_PUBLIC_)
@@ -16,7 +15,6 @@ const envSchema = z.object({
 // but process.env access is still required for runtime validation in this file.
 const parsed = envSchema.safeParse({
   XAI_API_KEY: process.env.XAI_API_KEY,
-  EXA_API_KEY: process.env.EXA_API_KEY,
   COMPOSIO_API_KEY: process.env.COMPOSIO_API_KEY,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,

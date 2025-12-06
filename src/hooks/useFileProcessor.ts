@@ -37,13 +37,9 @@ export function useFileProcessor(): UseFileProcessorReturn {
   /**
    * Validate all files before processing
    * 
-   * Follows Anthropic best practices:
    * - Validates image count (max 100 per request)
    * - Applies stricter dimension limits when >20 images
    * - Uses specific validation for PDFs
-   * 
-   * @see https://platform.claude.com/docs/en/build-with-claude/vision
-   * @see https://platform.claude.com/docs/en/build-with-claude/pdf-support
    */
   const validateFiles = useCallback(
     async (files: File[]): Promise<{ valid: boolean; error?: string; totalEstimatedTokens?: number }> => {
@@ -189,7 +185,6 @@ export function useFileProcessor(): UseFileProcessorReturn {
 
       // Combine segments if we have rich content
       // Best practice: Images should come before text in the content array
-      // @see https://platform.claude.com/docs/en/build-with-claude/vision
       // Order: 1. Images, 2. Documents (PDFs/text files), 3. Text content
       const richContentSegments =
         imageSegments.length > 0 || fileSegments.length > 0

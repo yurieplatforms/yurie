@@ -26,7 +26,7 @@ import { readFileAsDataURL, isPdfFile } from '@/lib/utils'
 // ============================================================================
 
 /**
- * PDF requirements per Anthropic documentation
+ * PDF requirements
  */
 export const PDF_REQUIREMENTS = {
   /** Maximum total request size in bytes (32MB) */
@@ -190,7 +190,4 @@ export function isPdfUrl(url: string): boolean {
 // Document Block Creation
 // ============================================================================
 
-// PDF document block creation removed as it was specific to Anthropic Claude.
-// xAI Grok 4.1 Fast uses standard OpenAI-compatible image/text inputs.
-
-
+// PDF document block creation uses standard OpenAI-compatible image/text inputs.

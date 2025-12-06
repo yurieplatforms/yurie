@@ -6,6 +6,12 @@ export {
   COMPOSIO_DEFAULT_USER_ID,
 } from './client'
 
+// Search tools
+export {
+  getSearchTools,
+  executeSearchTool,
+} from './search'
+
 // GitHub tools
 export {
   // Availability check
