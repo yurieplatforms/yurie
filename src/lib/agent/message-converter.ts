@@ -7,7 +7,8 @@
  * @see https://platform.openai.com/docs/guides/pdf-files
  *
  * OpenAI Responses API Content Types:
- * - input_text: Text content
+ * - input_text: Text content (for user messages)
+ * - output_text: Text content (for assistant messages)
  * - input_image: Image content (base64 or URL)
  * - input_file: PDF/document content (base64 with filename, file_id, or file_url)
  */
@@ -19,6 +20,11 @@ import type { MessageContentSegment } from '@/lib/types'
  */
 type OpenAIInputText = {
   type: 'input_text'
+  text: string
+}
+
+type OpenAIOutputText = {
+  type: 'output_text'
   text: string
 }
 
@@ -52,6 +58,7 @@ type OpenAIInputFileUrl = {
 
 type OpenAIContentPart =
   | OpenAIInputText
+  | OpenAIOutputText
   | OpenAIInputImage
   | OpenAIInputFile
   | OpenAIInputFileUrl
@@ -60,32 +67,37 @@ type OpenAIContentPart =
  * Converts message content to OpenAI Responses API format
  *
  * Follows OpenAI best practices:
- * - Uses input_text for text content
+ * - Uses input_text for user text content
+ * - Uses output_text for assistant text content
  * - Uses input_image for image content
  * - Uses input_file for PDF files with base64 data or URLs
- * - Places files before text in the content array
  *
  * @param content - String or array of message content segments
+ * @param role - The role of the message sender ('user' or 'assistant')
  * @returns OpenAI-compatible content array or string
  */
 export function convertToOpenAIContent(
   content: string | MessageContentSegment[],
+  role: 'user' | 'assistant' = 'user',
 ): string | OpenAIContentPart[] {
+  // For simple string content, return as-is (OpenAI accepts plain strings)
   if (typeof content === 'string') {
     return content
   }
 
   if (Array.isArray(content)) {
     const result: OpenAIContentPart[] = []
+    const textType = role === 'assistant' ? 'output_text' : 'input_text'
 
     for (const segment of content) {
+      // Handle text segments (type: 'text' from our internal format)
       if (segment.type === 'text') {
         const text = (segment as { text?: string }).text
         if (typeof text === 'string' && text.trim().length > 0) {
           result.push({
-            type: 'input_text',
+            type: textType,
             text: text,
-          })
+          } as OpenAIInputText | OpenAIOutputText)
         }
       } else if (segment.type === 'image_url') {
         // Base64 or URL-based image with optional detail level
@@ -93,7 +105,6 @@ export function convertToOpenAIContent(
           type: 'input_image',
           image_url: segment.image_url.url,
         }
-        // Include detail parameter if specified
         if (segment.image_url.detail) {
           imageInput.detail = segment.image_url.detail
         }
@@ -104,14 +115,12 @@ export function convertToOpenAIContent(
           type: 'input_image',
           image_url: segment.url_image.url,
         }
-        // Include detail parameter if specified
         if (segment.url_image.detail) {
           imageInput.detail = segment.url_image.detail
         }
         result.push(imageInput)
       } else if (segment.type === 'file') {
         // PDF or document file with base64 data
-        // Format: data:application/pdf;base64,{base64string}
         result.push({
           type: 'input_file',
           filename: segment.file.filename,
@@ -124,6 +133,7 @@ export function convertToOpenAIContent(
           file_url: segment.url_document.url,
         })
       }
+      // Silently skip any unrecognized segment types
     }
 
     return result.length > 0 ? result : ''

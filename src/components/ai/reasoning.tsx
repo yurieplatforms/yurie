@@ -2,6 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
+import type { ToolUseStatus } from "@/lib/types";
+import { Shimmer } from "@/components/ai/shimmer";
 
 export type ReasoningProps = React.HTMLAttributes<HTMLDivElement> & {
   /**
@@ -44,7 +46,27 @@ export type ReasoningTriggerProps = React.HTMLAttributes<HTMLDivElement> & {
   label?: ReactNode;
   isLoading?: boolean;
   thinkingLabel?: ReactNode;
+  /** Active tool use status to display */
+  activeToolUse?: ToolUseStatus | null;
+  /** Tool use label component (for custom rendering) */
+  toolUseLabel?: ReactNode;
 };
+
+/**
+ * Get display name for a tool
+ */
+function getToolDisplayName(tool: string): string {
+  switch (tool) {
+    case 'web_search':
+      return 'Searching';
+    case 'code_interpreter':
+      return 'Running code';
+    case 'file_search':
+      return 'Searching files';
+    default:
+      return `Using ${tool}`;
+  }
+}
 
 export function ReasoningTrigger({
   title: _title = "Thought",
@@ -52,16 +74,29 @@ export function ReasoningTrigger({
   label,
   isLoading: _isLoading,
   thinkingLabel,
+  activeToolUse,
+  toolUseLabel,
   ...props
 }: ReasoningTriggerProps) {
   // Suppress unused vars
   void _title;
   void _isLoading;
 
-  // Build dynamic label - only show when actively thinking
+  // Build dynamic label - prioritize tool use over thinking
   let dynamicLabel: ReactNode = null;
 
-  if (thinkingLabel) {
+  if (toolUseLabel) {
+    // Custom tool use label
+    dynamicLabel = toolUseLabel;
+  } else if (activeToolUse && (activeToolUse.status === 'in_progress' || activeToolUse.status === 'searching')) {
+    // Active tool use display - use same shimmer style as Thinking
+    const displayName = getToolDisplayName(activeToolUse.tool);
+    dynamicLabel = (
+      <Shimmer as="span" className="text-base" duration={2.5}>
+        {displayName}
+      </Shimmer>
+    );
+  } else if (thinkingLabel) {
     // Show thinking label (shimmer while thinking)
     dynamicLabel = thinkingLabel;
   } else if (label) {

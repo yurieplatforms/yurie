@@ -130,9 +130,15 @@ function AssistantMessageContent({
   thoughtSeconds,
   isStreamingPlaceholder,
 }: AssistantMessageContentProps) {
+  const hasActiveToolUse = message.activeToolUse && (
+    message.activeToolUse.status === 'in_progress' || 
+    message.activeToolUse.status === 'searching'
+  )
+  const showThinkingSection = hasReasoning || isThinkingStage || hasActiveToolUse
+
   return (
     <>
-      {(hasReasoning || isThinkingStage) && (
+      {showThinkingSection && (
         <div className="mb-2">
           <Reasoning
             className="w-full"
@@ -141,20 +147,21 @@ function AssistantMessageContent({
           >
             <ReasoningTrigger
               isLoading={isActiveAssistant && isLoading}
+              activeToolUse={isActiveAssistant ? message.activeToolUse : null}
               thinkingLabel={
-                isThinkingStage ? (
+                isThinkingStage && !hasActiveToolUse ? (
                   <Loader variant="text-shimmer" size="lg" text="Thinking" />
                 ) : undefined
               }
               label={
-                !isThinkingStage && typeof thoughtSeconds === 'number' ? (
+                !isThinkingStage && !hasActiveToolUse && typeof thoughtSeconds === 'number' ? (
                   <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">
                     Thought for{' '}
                     {thoughtSeconds >= 60
                       ? `${Math.floor(thoughtSeconds / 60)}m ${thoughtSeconds % 60}s`
                       : `${thoughtSeconds}s`}
                   </span>
-                ) : !isThinkingStage ? (
+                ) : !isThinkingStage && !hasActiveToolUse ? (
                   <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">
                     Thought
                   </span>
@@ -167,7 +174,7 @@ function AssistantMessageContent({
                   {message.reasoning}
                 </MessageResponse>
               ) : (
-                isThinkingStage && (
+                isThinkingStage && !hasActiveToolUse && (
                   <span className="inline-flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
                     <Loader variant="text-shimmer" size="sm" text="" />
                   </span>

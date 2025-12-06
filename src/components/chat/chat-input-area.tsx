@@ -39,7 +39,7 @@ export function ChatInputArea({
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 w-full">
       <div className="pointer-events-auto bg-[var(--color-background)]">
-        <div className="mx-auto w-full max-w-2xl px-4 pb-6 pt-3 sm:pb-5">
+        <div className="mx-auto w-full max-w-2xl px-4 pb-3 pt-3 sm:pb-5">
           <PromptInputBox
             isLoading={isLoading}
             onSend={onSend}

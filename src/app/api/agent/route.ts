@@ -113,10 +113,13 @@ export async function POST(request: Request) {
 
   // Convert messages to OpenAI format
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const openAIMessages: any[] = messages.map((msg) => ({
-    role: msg.role === 'user' ? 'user' : 'assistant',
-    content: convertToOpenAIContent(msg.content),
-  }))
+  const openAIMessages: any[] = messages.map((msg) => {
+    const role = msg.role === 'user' ? 'user' : 'assistant'
+    return {
+      role,
+      content: convertToOpenAIContent(msg.content, role),
+    }
+  })
 
   try {
     const response = await openai.responses.create({
@@ -130,9 +133,25 @@ export async function POST(request: Request) {
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder()
+        let isClosed = false
+        
+        const safeEnqueue = (data: string) => {
+          if (!isClosed) {
+            try {
+              controller.enqueue(encoder.encode(data))
+            } catch {
+              // Controller may have been closed
+              isClosed = true
+            }
+          }
+        }
+        
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           for await (const event of response as any) {
+            if (isClosed) break
+            
+            // Handle text content streaming
             if (event.type === 'response.output_text.delta') {
               const content = event.delta
               
@@ -145,17 +164,77 @@ export async function POST(request: Request) {
                     }
                   }]
                 }
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
+                safeEnqueue(`data: ${JSON.stringify(data)}\n\n`)
               }
             }
+            
+            // Handle web search tool use events
+            if (event.type === 'response.web_search_call.in_progress') {
+              const data = {
+                tool_use: {
+                  tool: 'web_search',
+                  status: 'in_progress',
+                  details: 'Starting web search...'
+                }
+              }
+              safeEnqueue(`data: ${JSON.stringify(data)}\n\n`)
+            }
+            
+            if (event.type === 'response.web_search_call.searching') {
+              const data = {
+                tool_use: {
+                  tool: 'web_search',
+                  status: 'searching',
+                  details: 'Searching the web...'
+                }
+              }
+              safeEnqueue(`data: ${JSON.stringify(data)}\n\n`)
+            }
+            
+            if (event.type === 'response.web_search_call.completed') {
+              const data = {
+                tool_use: {
+                  tool: 'web_search',
+                  status: 'completed',
+                  details: 'Search complete'
+                }
+              }
+              safeEnqueue(`data: ${JSON.stringify(data)}\n\n`)
+            }
+            
+            // Handle function call events (for other tools)
+            if (event.type === 'response.function_call_arguments.delta') {
+              const data = {
+                tool_use: {
+                  tool: event.name || 'function',
+                  status: 'in_progress',
+                  details: `Calling ${event.name || 'function'}...`
+                }
+              }
+              safeEnqueue(`data: ${JSON.stringify(data)}\n\n`)
+            }
+            
+            if (event.type === 'response.function_call_arguments.done') {
+              const data = {
+                tool_use: {
+                  tool: event.name || 'function',
+                  status: 'completed',
+                  details: `${event.name || 'Function'} completed`
+                }
+              }
+              safeEnqueue(`data: ${JSON.stringify(data)}\n\n`)
+            }
           }
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          safeEnqueue('data: [DONE]\n\n')
         } catch (err) {
           console.error('Streaming error:', err)
           const errorData = { error: { message: 'Stream processing failed' } }
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorData)}\n\n`))
+          safeEnqueue(`data: ${JSON.stringify(errorData)}\n\n`)
         } finally {
-          controller.close()
+          if (!isClosed) {
+            isClosed = true
+            controller.close()
+          }
         }
       },
     })

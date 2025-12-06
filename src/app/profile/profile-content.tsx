@@ -289,16 +289,6 @@ export function ProfileContent({
             
             {/* Cover upload button */}
             <div className="absolute bottom-3 right-3 flex items-center gap-2 opacity-0 group-hover/cover:opacity-100 transition-all duration-[var(--transition-base)]">
-              {coverUrl && !isUploadingCover && (
-                <button
-                  onClick={handleRemoveCover}
-                  className="flex items-center justify-center h-8 w-8 rounded-[var(--radius-full)] bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white transition-colors cursor-pointer"
-                  title="Remove cover photo"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              )}
-              
               <button 
                 onClick={() => coverInputRef.current?.click()}
                 disabled={isUploadingCover}
@@ -311,6 +301,16 @@ export function ProfileContent({
                 )}
                 Edit cover
               </button>
+              
+              {coverUrl && !isUploadingCover && (
+                <button
+                  onClick={handleRemoveCover}
+                  className="flex items-center justify-center h-8 w-8 rounded-[var(--radius-full)] bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white transition-colors cursor-pointer"
+                  title="Remove cover photo"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
             
             <input 
@@ -365,7 +365,7 @@ export function ProfileContent({
             {avatarUrl && !isUploading && (
               <button
                 onClick={handleRemoveAvatar}
-                className="absolute top-0 -right-2 p-1.5 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white transition-all opacity-0 group-hover/avatar:opacity-100 z-10 cursor-pointer"
+                className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 p-1.5 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white transition-all opacity-0 group-hover/avatar:opacity-100 z-10 cursor-pointer"
                 title="Remove profile photo"
               >
                 <Trash2 className="h-3.5 w-3.5" />

@@ -107,6 +107,18 @@ export type MessageContentSegment =
   | FileContentSegment
   | UrlDocumentContentSegment
 
+/**
+ * Tool use status for agent actions
+ */
+export type ToolUseStatus = {
+  /** Tool name (e.g., 'web_search', 'code_interpreter') */
+  tool: string
+  /** Current status of the tool */
+  status: 'in_progress' | 'searching' | 'completed' | 'failed'
+  /** Optional details (e.g., search query) */
+  details?: string
+}
+
 export type ChatMessage = {
   id: string
   role: Role
@@ -116,6 +128,10 @@ export type ChatMessage = {
   thinkingDurationSeconds?: number
   suggestions?: string[]
   name?: string
+  /** Active tool use during streaming */
+  activeToolUse?: ToolUseStatus | null
+  /** History of completed tool uses */
+  toolUseHistory?: ToolUseStatus[]
 }
 
 export type SavedChat = {

@@ -505,17 +505,17 @@
     border-color: var(--color-border);
   }
 
-  /* Match blockquote left border to line separator color */
+  /* Match blockquote left border to user chat bubble color */
   .prose blockquote,
   .prose-gray blockquote,
   [data-streamdown] blockquote {
-    border-left-color: var(--color-border);
+    border-left-color: var(--muted);
   }
 
   .dark .prose blockquote,
   .dark .prose-gray blockquote,
   .dark [data-streamdown] blockquote {
-    border-left-color: var(--color-border);
+    border-left-color: #404040;
   }
 
   /* Match inline code background to border/separator color */

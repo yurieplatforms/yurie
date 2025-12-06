@@ -163,6 +163,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                     state.reasoning.length > 0 ? state.reasoning : msg.reasoning,
                   thinkingDurationSeconds:
                     state.thinkingTime ?? msg.thinkingDurationSeconds,
+                  activeToolUse: state.activeToolUse,
+                  toolUseHistory: state.toolUseHistory.length > 0 ? state.toolUseHistory : undefined,
                 }
               }),
             )

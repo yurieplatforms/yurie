@@ -4,7 +4,7 @@
  * useStreamResponse Hook
  *
  * Processes Server-Sent Events (SSE) stream responses from the AI agent.
- * Handles real-time content and reasoning.
+ * Handles real-time content, reasoning, and tool use.
  *
  * @module hooks/useStreamResponse
  */
@@ -12,6 +12,7 @@
 import { useCallback, useRef } from 'react'
 import type {
   ChatMessage,
+  ToolUseStatus,
 } from '@/lib/types'
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 
@@ -41,6 +42,10 @@ export type StreamState = {
   thinkingTime: number | undefined
   /** Error information if stream encountered an error */
   error: StreamError | undefined
+  /** Active tool use status */
+  activeToolUse: ToolUseStatus | null
+  /** History of completed tool uses */
+  toolUseHistory: ToolUseStatus[]
 }
 
 /**
@@ -93,6 +98,8 @@ export function useStreamResponse(): UseStreamResponseReturn {
     let accumulatedReasoning = ''
     let accumulatedThinkingTime: number | undefined
     let accumulatedError: StreamError | undefined
+    let activeToolUse: ToolUseStatus | null = null
+    const toolUseHistory: ToolUseStatus[] = []
     
     let lastUpdateTime = 0
     const THROTTLE_MS = 50
@@ -134,6 +141,33 @@ export function useStreamResponse(): UseStreamResponseReturn {
               reasoning: accumulatedReasoning,
               thinkingTime: accumulatedThinkingTime,
               error: accumulatedError,
+              activeToolUse,
+              toolUseHistory,
+            })
+            continue
+          }
+
+          // Handle tool use events
+          if (json.tool_use) {
+            const toolEvent = json.tool_use as ToolUseStatus
+            
+            if (toolEvent.status === 'completed' || toolEvent.status === 'failed') {
+              // Move to history
+              toolUseHistory.push(toolEvent)
+              activeToolUse = null
+            } else {
+              // Update active tool
+              activeToolUse = toolEvent
+            }
+            
+            // Immediately notify of tool use updates
+            callbacks.onUpdate({
+              content: accumulatedContent,
+              reasoning: accumulatedReasoning,
+              thinkingTime: accumulatedThinkingTime,
+              error: accumulatedError,
+              activeToolUse,
+              toolUseHistory,
             })
             continue
           }
@@ -211,6 +245,8 @@ export function useStreamResponse(): UseStreamResponseReturn {
               reasoning: accumulatedReasoning,
               thinkingTime: accumulatedThinkingTime,
               error: accumulatedError,
+              activeToolUse,
+              toolUseHistory,
             })
           }
         } catch {
@@ -225,6 +261,8 @@ export function useStreamResponse(): UseStreamResponseReturn {
       reasoning: accumulatedReasoning,
       thinkingTime: accumulatedThinkingTime,
       error: accumulatedError,
+      activeToolUse: null, // Clear active tool use when done
+      toolUseHistory,
     })
 
     return {
@@ -232,6 +270,8 @@ export function useStreamResponse(): UseStreamResponseReturn {
       reasoning: accumulatedReasoning,
       thinkingTime: accumulatedThinkingTime,
       error: accumulatedError,
+      activeToolUse: null,
+      toolUseHistory,
     }
   }, [])
 
@@ -256,5 +296,7 @@ export function buildMessageFromStreamState(
     suggestions,
     reasoning: state.reasoning.length > 0 ? state.reasoning : undefined,
     thinkingDurationSeconds: state.thinkingTime,
+    activeToolUse: state.activeToolUse,
+    toolUseHistory: state.toolUseHistory.length > 0 ? state.toolUseHistory : undefined,
   }
 }
