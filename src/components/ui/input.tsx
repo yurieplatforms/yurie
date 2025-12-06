@@ -8,10 +8,10 @@ const inputVariants = cva(
     variants: {
       variant: {
         default: [
-          "h-10 rounded-[var(--radius-full)] border border-[var(--color-border)] bg-[var(--color-surface)]",
+          "h-10 rounded-[var(--radius-input)] border border-[var(--color-input-border)] bg-[var(--color-input-bg)]",
           "px-4 py-2 text-[var(--color-foreground)]",
-          "hover:border-[var(--color-muted-foreground)]/50 hover:bg-[var(--color-surface-hover)]",
-          "focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:bg-[var(--color-background)]",
+          "hover:border-[var(--color-muted-foreground)]/50",
+          "focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/30",
         ],
         ghost: [
           "h-10 rounded-[var(--radius-lg)] bg-transparent border-none",
@@ -19,10 +19,10 @@ const inputVariants = cva(
           "hover:bg-[var(--color-surface-hover)] focus:bg-[var(--color-surface-hover)]",
         ],
         filled: [
-          "h-11 rounded-[var(--radius-full)] border-2 border-transparent bg-[var(--color-surface-hover)]",
+          "h-11 rounded-[var(--radius-input)] border border-[var(--color-input-border)] bg-[var(--color-input-bg)]",
           "px-4 py-2 text-[var(--color-foreground)]",
-          "hover:bg-[var(--color-surface-active)]",
-          "focus:border-[var(--color-accent)]/50 focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:bg-[var(--color-surface-hover)]",
+          "hover:border-[var(--color-muted-foreground)]/50",
+          "focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/30",
         ],
       },
       inputSize: {

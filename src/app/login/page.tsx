@@ -11,7 +11,7 @@ export default async function LoginPage(props: {
 }) {
   const searchParams = await props.searchParams
   return (
-    <div className="flex min-h-[calc(80vh-4rem)] flex-col items-center justify-center px-4">
+    <div className="flex min-h-[calc(100vh-6rem)] flex-col items-center justify-center px-4 pb-24">
       <AuthForm 
         message={searchParams?.message} 
         error={searchParams?.error} 

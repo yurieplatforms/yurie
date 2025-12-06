@@ -12,7 +12,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { FileUIPart, UIMessage } from "ai";
+import type { Role } from "@/lib/types";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -27,8 +27,17 @@ import remarkGfm from "remark-gfm";
 import remarkCjkFriendly from "remark-cjk-friendly";
 import remarkCjkFriendlyGfmStrikethrough from "remark-cjk-friendly-gfm-strikethrough";
 
+export type FileUIPart = {
+  type: 'file';
+  url?: string;
+  filename?: string;
+  mediaType?: string;
+  mimetype?: string;
+  content?: string;
+}
+
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
-  from: UIMessage["role"];
+  from: Role;
 };
 
 export const Message = ({ className, from, ...props }: MessageProps) => (
@@ -45,7 +54,7 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
 );
 
 export type MessageContentProps = HTMLAttributes<HTMLDivElement> & {
-  from?: UIMessage["role"];
+  from?: Role;
 };
 
 export const MessageContent = ({
@@ -64,7 +73,7 @@ export const MessageContent = ({
             "w-fit ml-auto rounded-[26px] px-5 py-3.5 text-zinc-900 shadow-sm",
             "bg-zinc-100/90",
             // Dark mode bubble color override
-            "dark:bg-[#262628] dark:text-zinc-50",
+            "dark:bg-[#404040] dark:text-zinc-50",
           ]
         : "w-full text-zinc-900 dark:text-zinc-100",
       className
@@ -229,7 +238,7 @@ export const MessageBranchContent = ({
 };
 
 export type MessageBranchSelectorProps = HTMLAttributes<HTMLDivElement> & {
-  from: UIMessage["role"];
+  from: Role;
 };
 
 export const MessageBranchSelector = ({

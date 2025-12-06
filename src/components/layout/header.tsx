@@ -39,7 +39,7 @@ export function Header() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "relative rounded-[var(--radius-full)] px-3.5 py-1.5 text-base font-medium transition-all duration-[var(--transition-base)]",
+                    "relative inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium transition-all duration-[var(--transition-base)]",
                     isActive
                       ? "bg-[var(--color-surface-hover)] text-[var(--color-foreground)]"
                       : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-foreground)] active:bg-[var(--color-surface-active)]"
@@ -61,10 +61,10 @@ export function Header() {
             <Link
               href="/profile"
               className={cn(
-                "group flex items-center gap-2 rounded-[var(--radius-full)] px-3 py-1.5 text-base font-medium transition-all duration-[var(--transition-base)]",
+                "group relative inline-flex items-center justify-center gap-2 rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium transition-all duration-[var(--transition-base)]",
                 pathname === '/profile'
-                  ? "bg-[var(--color-surface-hover)] text-[var(--color-foreground)]"
-                  : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-foreground)] active:bg-[var(--color-surface-active)]"
+                  ? "bg-[var(--color-surface-hover)] text-[var(--color-foreground)] dark:bg-[#404040]"
+                  : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-foreground)] active:bg-[var(--color-surface-active)] dark:hover:bg-[#404040]"
               )}
             >
               {user.user_metadata?.avatar_url ? (

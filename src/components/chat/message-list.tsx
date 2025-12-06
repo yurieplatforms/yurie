@@ -13,9 +13,8 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from '@/components/ai/reasoning'
-import { CitationsFooter } from '@/components/ai/citations'
 import { CornerDownRight, CheckIcon, CopyIcon } from 'lucide-react'
-import { AnimatedBackground } from '@/components/ui/animated-background'
+import { cn } from '@/lib/utils'
 
 export type MessageListProps = {
   messages: ChatMessage[]
@@ -47,8 +46,6 @@ export function MessageList({
         const isThinkingStage = isReasoningStreaming && !hasAnswerStarted
         const isStreamingPlaceholder =
           isAssistant && isLoading && message.content.length === 0
-        const hasToolUses =
-          Array.isArray(message.toolUses) && message.toolUses.length > 0
 
         return (
           <div key={message.id} className="flex flex-col gap-1">
@@ -59,7 +56,6 @@ export function MessageList({
                     message={message}
                     hasReasoning={hasReasoning}
                     isThinkingStage={isThinkingStage}
-                    hasToolUses={hasToolUses}
                     isReasoningStreaming={isReasoningStreaming}
                     isActiveAssistant={isActiveAssistant}
                     isLoading={isLoading}
@@ -117,7 +113,6 @@ type AssistantMessageContentProps = {
   message: ChatMessage
   hasReasoning: boolean
   isThinkingStage: boolean
-  hasToolUses: boolean
   isReasoningStreaming: boolean
   isActiveAssistant: boolean
   isLoading: boolean
@@ -129,7 +124,6 @@ function AssistantMessageContent({
   message,
   hasReasoning,
   isThinkingStage,
-  hasToolUses,
   isReasoningStreaming,
   isActiveAssistant,
   isLoading,
@@ -138,16 +132,14 @@ function AssistantMessageContent({
 }: AssistantMessageContentProps) {
   return (
     <>
-      {(hasReasoning || isThinkingStage || hasToolUses) && (
+      {(hasReasoning || isThinkingStage) && (
         <div className="mb-2">
           <Reasoning
             className="w-full"
             isStreaming={isReasoningStreaming && hasReasoning}
-            toolUses={message.toolUses}
             isLoading={isActiveAssistant && isLoading}
           >
             <ReasoningTrigger
-              toolUses={message.toolUses}
               isLoading={isActiveAssistant && isLoading}
               thinkingLabel={
                 isThinkingStage ? (
@@ -207,12 +199,6 @@ function AssistantMessageContent({
           })}
         </div>
       )}
-
-      {message.citations &&
-        message.citations.length > 0 &&
-        !isStreamingPlaceholder && (
-          <CitationsFooter citations={message.citations} />
-        )}
     </>
   )
 }
@@ -227,34 +213,26 @@ function SuggestionsList({
   onSuggestionClick,
 }: SuggestionsListProps) {
   return (
-    <div className="mt-2 flex flex-col space-y-0">
-      <AnimatedBackground
-        enableHover
-        className="h-full w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900/80"
-        transition={{
-          type: 'spring',
-          stiffness: 300,
-          damping: 30,
-        }}
-      >
-        {suggestions.map((suggestion, i) => (
-          <button
-            key={`${suggestion}-${i}`}
-            type="button"
-            onClick={() => onSuggestionClick(suggestion)}
-            className="-mx-3 w-full cursor-pointer rounded-xl px-3 py-3 text-left group"
-            data-id={`${suggestion}-${i}`}
-          >
-            <div className="flex items-center gap-3">
-              <CornerDownRight className="h-4 w-4 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
-              <span className="text-base font-normal text-zinc-700 dark:text-zinc-300">
-                {suggestion}
-              </span>
-            </div>
-          </button>
-        ))}
-      </AnimatedBackground>
+    <div className="mt-2 flex flex-col space-y-1">
+      {suggestions.map((suggestion, i) => (
+        <button
+          key={`${suggestion}-${i}`}
+          type="button"
+          onClick={() => onSuggestionClick(suggestion)}
+          className={cn(
+            'group relative w-full cursor-pointer rounded-2xl px-3.5 py-2.5 text-left text-base font-normal transition-all duration-[var(--transition-base)]',
+            'hover:bg-[var(--color-surface-hover)] active:bg-[var(--color-surface-active)]',
+          )}
+          data-id={`${suggestion}-${i}`}
+        >
+          <div className="flex items-center gap-3">
+            <CornerDownRight className="h-4 w-4 shrink-0 text-zinc-500 transition-colors group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100" />
+            <span className="text-zinc-700 transition-colors group-hover:text-zinc-900 dark:text-zinc-300 dark:group-hover:text-zinc-100">
+              {suggestion}
+            </span>
+          </div>
+        </button>
+      ))}
     </div>
   )
 }
-

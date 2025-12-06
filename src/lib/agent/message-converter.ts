@@ -1,7 +1,7 @@
 /**
  * Message Converter
  *
- * Converts chat messages to OpenAI API format (for xAI/Grok).
+ * Converts chat messages to OpenAI API format.
  * Handles text and images.
  */
 

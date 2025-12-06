@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import OpenAI from 'openai'
 
 // Agent modules
 import { buildSystemPrompt } from '@/lib/agent/system-prompt'
 import { convertToOpenAIContent } from '@/lib/agent/message-converter'
-import { runAgent } from '@/lib/agent/runner'
 
 // API types
 import type { AgentRequestBody } from '@/lib/api/types'
@@ -35,23 +35,25 @@ export async function POST(request: Request) {
     )
   }
 
-  const { messages, userContext, userLocation } = body
+  const { messages, userContext } = body
 
-  const apiKey = env.XAI_API_KEY
+  // Check for OpenAI API key
+  const apiKey = env.OPENAI_API_KEY
 
   if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          'XAI_API_KEY is not set. Add it to your environment variables.',
+          'OPENAI_API_KEY is not set. Add it to your environment variables.',
       },
       { status: 500 },
     )
   }
 
+  const openai = new OpenAI({ apiKey })
+
   // Fetch user personalization context if user is authenticated
   let userName: string | null = null
-  let userId: string | undefined
   let userPreferences: { birthday?: string | null; location?: string | null; timezone?: string | null } = {}
   let focusedRepo: {
     owner: string
@@ -69,7 +71,6 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (user) {
-      userId = user.id
       const personalizationContext = await getUserPersonalizationContext(supabase, user.id)
       userName = getUserName(personalizationContext)
       
@@ -108,7 +109,6 @@ export async function POST(request: Request) {
     userName,
     userContext,
     userPreferences,
-    focusedRepo,
   })
 
   // Convert messages to OpenAI format
@@ -119,19 +119,57 @@ export async function POST(request: Request) {
   }))
 
   try {
-    return await runAgent({
-      apiKey,
-      messages: openAIMessages,
-      systemPrompt,
-      userLocation,
-      userId,
-      focusedRepo,
+    const response = await openai.chat.completions.create({
+      model: 'gpt-5.1-2025-11-13',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...openAIMessages,
+      ],
+      stream: true,
+    })
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder()
+        try {
+          for await (const chunk of response) {
+            const content = chunk.choices[0]?.delta?.content
+            
+            if (content) {
+              // Send data in OpenAI-compatible format
+              const data = {
+                choices: [{
+                  delta: {
+                    content: content
+                  }
+                }]
+              }
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
+            }
+          }
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+        } catch (err) {
+          console.error('Streaming error:', err)
+          const errorData = { error: { message: 'Stream processing failed' } }
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorData)}\n\n`))
+        } finally {
+          controller.close()
+        }
+      },
+    })
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     })
   } catch (error) {
     console.error('[agent] Unexpected error', error)
 
     return NextResponse.json(
-      { error: 'Unexpected error while contacting xAI' },
+      { error: 'Unexpected error while contacting agent' },
       { status: 500 },
     )
   }

@@ -4,7 +4,7 @@
  * useStreamResponse Hook
  *
  * Processes Server-Sent Events (SSE) stream responses from the AI agent.
- * Handles real-time content, reasoning, tool use events, citations, and images.
+ * Handles real-time content and reasoning.
  *
  * @module hooks/useStreamResponse
  */
@@ -12,9 +12,6 @@
 import { useCallback, useRef } from 'react'
 import type {
   ChatMessage,
-  ImageContentSegment,
-  ToolUseEvent,
-  MessageCitation,
 } from '@/lib/types'
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 
@@ -40,16 +37,8 @@ export type StreamState = {
   content: string
   /** Accumulated reasoning/thinking content */
   reasoning: string
-  /** Generated images */
-  images: ImageContentSegment[]
   /** Time spent thinking in seconds */
   thinkingTime: number | undefined
-  /** Tool use events (start/end) */
-  toolUses: ToolUseEvent[]
-  /** Citations from web search and documents */
-  citations: MessageCitation[]
-  /** Container ID for code execution persistence */
-  containerId: string | undefined
   /** Error information if stream encountered an error */
   error: StreamError | undefined
 }
@@ -60,8 +49,6 @@ export type StreamState = {
 export type StreamCallbacks = {
   /** Called with updated state on each chunk */
   onUpdate: (state: StreamState) => void
-  /** Called when container ID is received */
-  onContainerId?: (id: string) => void
 }
 
 /**
@@ -81,20 +68,9 @@ export type UseStreamResponseReturn = {
  * Hook for processing SSE stream responses from the agent
  *
  * Reads the response body as a stream, parses SSE events, and
- * accumulates content, reasoning, tool uses, and citations.
+ * accumulates content and reasoning.
  *
  * @returns Stream processing function and thinking timer ref
- *
- * @example
- * ```tsx
- * const { processStream, thinkingStartRef } = useStreamResponse()
- *
- * thinkingStartRef.current = Date.now()
- * const finalState = await processStream(response, {
- *   onUpdate: (state) => updateUI(state),
- *   onContainerId: (id) => saveContainerId(id),
- * })
- * ```
  */
 export function useStreamResponse(): UseStreamResponseReturn {
   const thinkingStartRef = useRef<number | null>(null)
@@ -115,11 +91,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
     // Accumulated state
     let accumulatedContent = ''
     let accumulatedReasoning = ''
-    let accumulatedImages: ImageContentSegment[] = []
     let accumulatedThinkingTime: number | undefined
-    let accumulatedToolUses: ToolUseEvent[] = []
-    const accumulatedCitations: MessageCitation[] = []
-    let responseContainerId: string | undefined
     let accumulatedError: StreamError | undefined
     
     let lastUpdateTime = 0
@@ -160,20 +132,9 @@ export function useStreamResponse(): UseStreamResponseReturn {
             callbacks.onUpdate({
               content: accumulatedContent,
               reasoning: accumulatedReasoning,
-              images: accumulatedImages,
               thinkingTime: accumulatedThinkingTime,
-              toolUses: accumulatedToolUses,
-              citations: accumulatedCitations,
-              containerId: responseContainerId,
               error: accumulatedError,
             })
-            continue
-          }
-
-          // Handle container ID for code execution persistence
-          if (json.containerId) {
-            responseContainerId = json.containerId
-            callbacks.onContainerId?.(json.containerId)
             continue
           }
 
@@ -184,7 +145,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
 
           let deltaReasoning = ''
 
-          // Reasoning fields (OpenRouter-compatible format)
+          // Reasoning fields (OpenRouter-compatible format) or reasoning_details
           const directReasoning = choice?.delta?.reasoning
           if (
             typeof directReasoning === 'string' &&
@@ -215,52 +176,8 @@ export function useStreamResponse(): UseStreamResponseReturn {
           const hasReasoningDelta =
             typeof deltaReasoning === 'string' && deltaReasoning.length > 0
           
-          const deltaImages = choice?.delta?.images
-          const hasImageDelta = Array.isArray(deltaImages) && deltaImages.length > 0
-
-          // Handle tool use events
-          const toolUseEvent = choice?.delta?.tool_use as ToolUseEvent | undefined
-          const hasToolUse = toolUseEvent && toolUseEvent.name && toolUseEvent.status
-
-          // Handle citations
-          const deltaCitations = choice?.delta?.citations as MessageCitation[] | undefined
-          const hasCitations = Array.isArray(deltaCitations) && deltaCitations.length > 0
-
-          if (!hasContentDelta && !hasReasoningDelta && !hasImageDelta && !hasToolUse && !hasCitations) {
+          if (!hasContentDelta && !hasReasoningDelta) {
             continue
-          }
-
-          // Track tool use
-          if (hasToolUse && toolUseEvent) {
-            accumulatedToolUses = [
-              ...accumulatedToolUses.filter(
-                (t) =>
-                  !(t.name === toolUseEvent.name && t.status === 'start' && toolUseEvent.status === 'end'),
-              ),
-              {
-                name: toolUseEvent.name,
-                status: toolUseEvent.status,
-                input: toolUseEvent.input,
-                result: toolUseEvent.result,
-                webSearch: toolUseEvent.webSearch,
-              },
-            ]
-          }
-
-          // Track citations
-          if (hasCitations && deltaCitations) {
-            deltaCitations.forEach((citation) => {
-              const getCitationKey = (c: MessageCitation): string => {
-                if (c.type === 'web_search_result_location') return c.url
-                if (c.type === 'search_result_location') return c.source
-                return `${c.type}:${c.documentIndex}:${c.citedText.slice(0, 50)}`
-              }
-              const citationKey = getCitationKey(citation)
-              const exists = accumulatedCitations.some(c => getCitationKey(c) === citationKey)
-              if (!exists) {
-                accumulatedCitations.push(citation)
-              }
-            })
           }
 
           // Update accumulated values
@@ -270,23 +187,6 @@ export function useStreamResponse(): UseStreamResponseReturn {
           }
           if (hasReasoningDelta) {
             accumulatedReasoning += deltaReasoning
-          }
-          if (hasImageDelta) {
-            deltaImages.forEach((img: { image_url: { url: string } }) => {
-              const exists = accumulatedImages.some(
-                (existing) => existing.image_url.url === img.image_url.url,
-              )
-              if (!exists) {
-                accumulatedImages.push({
-                  type: 'image_url',
-                  image_url: { url: img.image_url.url },
-                })
-              }
-            })
-            // Enforce single image limit
-            if (accumulatedImages.length > 1) {
-              accumulatedImages = [accumulatedImages[0]]
-            }
           }
 
           // Thinking time logic
@@ -309,11 +209,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
             callbacks.onUpdate({
               content: accumulatedContent,
               reasoning: accumulatedReasoning,
-              images: accumulatedImages,
               thinkingTime: accumulatedThinkingTime,
-              toolUses: accumulatedToolUses,
-              citations: accumulatedCitations,
-              containerId: responseContainerId,
               error: accumulatedError,
             })
           }
@@ -327,22 +223,14 @@ export function useStreamResponse(): UseStreamResponseReturn {
     callbacks.onUpdate({
       content: accumulatedContent,
       reasoning: accumulatedReasoning,
-      images: accumulatedImages,
       thinkingTime: accumulatedThinkingTime,
-      toolUses: accumulatedToolUses,
-      citations: accumulatedCitations,
-      containerId: responseContainerId,
       error: accumulatedError,
     })
 
     return {
       content: accumulatedContent,
       reasoning: accumulatedReasoning,
-      images: accumulatedImages,
       thinkingTime: accumulatedThinkingTime,
-      toolUses: accumulatedToolUses,
-      citations: accumulatedCitations,
-      containerId: responseContainerId,
       error: accumulatedError,
     }
   }, [])
@@ -367,10 +255,6 @@ export function buildMessageFromStreamState(
     content,
     suggestions,
     reasoning: state.reasoning.length > 0 ? state.reasoning : undefined,
-    richContent: state.images.length > 0 ? [...state.images] : undefined,
     thinkingDurationSeconds: state.thinkingTime,
-    toolUses: state.toolUses.length > 0 ? [...state.toolUses] : undefined,
-    citations: state.citations.length > 0 ? [...state.citations] : undefined,
   }
 }
-

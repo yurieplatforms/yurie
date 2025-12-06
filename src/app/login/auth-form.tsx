@@ -63,26 +63,23 @@ export function AuthForm({
   return (
     <div className="flex w-full max-w-sm flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-surface)]">
-          <img src="/favicon.ico" alt="Yurie" className="h-8 w-8" />
-        </div>
         <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-foreground)]">
           {mode === 'signin' ? 'Welcome back' : 'Create an account'}
         </h1>
         <p className="text-sm text-[var(--color-muted-foreground)]">
           {mode === 'signin'
-            ? 'Enter your email to sign in to your account'
+            ? 'Enter your email to log in to your account'
             : 'Enter your email to create your account'}
         </p>
       </div>
 
       {/* Tab Switcher */}
-      <div className="relative flex w-full items-center justify-center rounded-[var(--radius-full)] bg-[var(--color-surface)] p-1">
-        <div className="absolute inset-0 rounded-[var(--radius-full)] p-1">
+      <div className="relative flex w-full items-center justify-center rounded-[var(--radius-input)] bg-[var(--color-surface)] border border-[var(--color-input-border)] p-1">
+        <div className="absolute inset-0 rounded-[var(--radius-input)] p-1">
           <motion.div
             layoutId="active-tab"
             className={cn(
-              "absolute inset-y-1 w-[calc(50%-4px)] rounded-[var(--radius-full)] bg-[var(--color-background)] shadow-sm",
+              "absolute inset-y-1 w-[calc(50%-4px)] rounded-[calc(var(--radius-input)-4px)] bg-[var(--color-accent)] shadow-sm",
               mode === 'signup' ? "left-[50%]" : "left-1"
             )}
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
@@ -94,11 +91,11 @@ export function AuthForm({
             setLocalError(null)
           }}
           className={cn(
-            "relative z-10 w-1/2 py-1.5 text-sm font-medium transition-colors duration-[var(--transition-base)] cursor-pointer",
-            mode === 'signin' ? "text-[var(--color-foreground)]" : "text-[var(--color-muted-foreground)]"
+            "relative z-10 w-1/2 py-1.5 text-sm font-semibold transition-colors duration-[var(--transition-base)] cursor-pointer",
+            mode === 'signin' ? "text-white" : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
           )}
         >
-          Sign In
+          Log in
         </button>
         <button
           onClick={() => {
@@ -106,11 +103,11 @@ export function AuthForm({
             setLocalError(null)
           }}
           className={cn(
-            "relative z-10 w-1/2 py-1.5 text-sm font-medium transition-colors duration-[var(--transition-base)] cursor-pointer",
-            mode === 'signup' ? "text-[var(--color-foreground)]" : "text-[var(--color-muted-foreground)]"
+            "relative z-10 w-1/2 py-1.5 text-sm font-semibold transition-colors duration-[var(--transition-base)] cursor-pointer",
+            mode === 'signup' ? "text-white" : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
           )}
         >
-          Sign Up
+          Sign up
         </button>
       </div>
 
@@ -146,13 +143,15 @@ export function AuthForm({
                 Password
               </Label>
               {mode === 'signin' && (
-                <button
+                <Button
                   type="button"
-                  className="text-xs text-[var(--color-muted-foreground)] hover:text-[var(--color-accent)] transition-colors cursor-pointer"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs text-[var(--color-muted-foreground)] hover:text-[var(--color-accent)] hover:no-underline"
                   onClick={() => alert("Password reset not implemented yet.")}
                 >
                   Forgot password?
-                </button>
+                </Button>
               )}
             </div>
             <div className="relative">
@@ -164,17 +163,19 @@ export function AuthForm({
                 disabled={isPending}
                 className="pr-10"
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] transition-colors cursor-pointer"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-transparent"
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" />
                 ) : (
                   <Eye className="h-4 w-4" />
                 )}
-              </button>
+              </Button>
             </div>
           </div>
           
@@ -187,10 +188,10 @@ export function AuthForm({
             {isPending ? (
               <div className="flex items-center justify-center gap-2">
                 <Loader variant="text-shimmer" size="sm" text="" />
-                <span>{mode === 'signin' ? 'Signing In...' : 'Creating Account...'}</span>
+                <span>{mode === 'signin' ? 'Logging in...' : 'Creating Account...'}</span>
               </div>
             ) : (
-              mode === 'signin' ? 'Sign In' : 'Create Account'
+              mode === 'signin' ? 'Log in' : 'Create Account'
             )}
           </Button>
         </div>

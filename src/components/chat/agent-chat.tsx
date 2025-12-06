@@ -9,7 +9,6 @@ import {
   type StreamState,
 } from '@/hooks/useStreamResponse'
 import { useFileProcessor } from '@/hooks/useFileProcessor'
-import { useGeolocation, buildUserLocation } from '@/hooks/useGeolocation'
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 import type { ChatMessage } from '@/lib/types'
 
@@ -22,10 +21,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   const { user } = useAuth()
   const [hasJustCopied, setHasJustCopied] = useState(false)
   const [selectedTools, setSelectedTools] = useState<string[]>([])
-
-  // Get user location for localized web search results
-  // Uses timezone-based inference with comprehensive city/region mapping
-  const geolocationData = useGeolocation()
 
   // Use custom hooks for chat state and stream processing
   const {
@@ -50,7 +45,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   const sendMessage = useCallback(
     async (rawContent: string, filesToSend: File[] = []) => {
       const content = rawContent
-      const useWebSearch = true
 
       const trimmed = content.trim()
       if ((trimmed.length === 0 && filesToSend.length === 0) || isLoading) {
@@ -117,10 +111,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       })
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
-      // Build user location for localized web search results
-      // Uses comprehensive timezone-to-location mapping for accurate city/region detection
-      const userLocation = buildUserLocation(geolocationData)
-
       let finalStreamState: StreamState | null = null
 
       try {
@@ -133,10 +123,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
               role,
               content: richContent ?? content,
             })),
-            useWebSearch,
             userContext: { time, date, timeZone },
             containerId,
-            userLocation,
           }),
         })
 
@@ -173,24 +161,11 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                   suggestions,
                   reasoning:
                     state.reasoning.length > 0 ? state.reasoning : msg.reasoning,
-                  richContent:
-                    state.images.length > 0 ? [...state.images] : msg.richContent,
                   thinkingDurationSeconds:
                     state.thinkingTime ?? msg.thinkingDurationSeconds,
-                  toolUses:
-                    state.toolUses.length > 0
-                      ? [...state.toolUses]
-                      : msg.toolUses,
-                  citations:
-                    state.citations.length > 0
-                      ? [...state.citations]
-                      : msg.citations,
                 }
               }),
             )
-          },
-          onContainerId: (newContainerId) => {
-            setContainerId(newContainerId)
           },
         })
 
@@ -217,7 +192,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             return msg
           })
 
-          await updateChat(currentId, finalMessages, finalStreamState.containerId)
+          await updateChat(currentId, finalMessages)
         }
       }
     },
@@ -227,7 +202,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       id,
       containerId,
       user,
-      geolocationData,
       setError,
       setMessages,
       setIsLoading,
@@ -269,7 +243,13 @@ export function AgentChat({ chatId }: { chatId?: string }) {
           {error && (
             <p className="mb-4 text-xs text-red-500 dark:text-red-400">{error}</p>
           )}
-          <ChatInputArea isLoading={isLoading} onSend={sendMessage} variant="inline" selectedTools={selectedTools} onSelectedToolsChange={setSelectedTools} />
+          <ChatInputArea 
+            isLoading={isLoading} 
+            onSend={sendMessage} 
+            variant="inline" 
+            selectedTools={selectedTools} 
+            onSelectedToolsChange={setSelectedTools} 
+          />
         </div>
       </div>
     )
@@ -294,7 +274,12 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         )}
       </div>
 
-      <ChatInputArea isLoading={isLoading} onSend={sendMessage} selectedTools={selectedTools} onSelectedToolsChange={setSelectedTools} />
+      <ChatInputArea 
+        isLoading={isLoading} 
+        onSend={sendMessage} 
+        selectedTools={selectedTools} 
+        onSelectedToolsChange={setSelectedTools} 
+      />
     </div>
   )
 }

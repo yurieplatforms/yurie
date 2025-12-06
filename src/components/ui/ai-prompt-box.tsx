@@ -2,9 +2,10 @@ import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { CornerRightUp, Paperclip, Square, X, FileText, Plus, Github, LayoutGrid, X as XIcon, Target, Sparkles, GitBranch } from "lucide-react";
+import { CornerRightUp, Square, X as XIcon, FileText, Plus, LayoutGrid, Github } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { getFocusedRepo, type FocusedRepo } from "@/app/profile/actions";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/providers/auth-provider";
 
 // --- Utility Function & Radix Primitives ---
 
@@ -19,15 +20,14 @@ TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
 const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
-const PopoverContent = React.forwardRef<React.ElementRef<typeof PopoverPrimitive.Content>, React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>>(({ className, align = "center", sideOffset = 4, ...props }, ref) => ( <PopoverPrimitive.Portal><PopoverPrimitive.Content ref={ref} align={align} sideOffset={sideOffset} className={cn("z-50 w-64 rounded-xl bg-[var(--color-surface)] dark:bg-[#212121] p-2 text-[var(--color-foreground)] dark:text-white shadow-md outline-none animate-in data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 border border-[var(--color-border)]", className)} {...props} /></PopoverPrimitive.Portal>));
+const PopoverContent = React.forwardRef<React.ElementRef<typeof PopoverPrimitive.Content>, React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>>(({ className, align = "center", sideOffset = 4, ...props }, ref) => ( <PopoverPrimitive.Portal><PopoverPrimitive.Content ref={ref} align={align} sideOffset={sideOffset} className={cn("z-50 w-64 rounded-xl bg-[var(--color-surface)] dark:bg-[var(--color-input-bg)] p-2 text-[var(--color-foreground)] dark:text-white shadow-md outline-none animate-in data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 border border-[var(--color-border)]", className)} {...props} /></PopoverPrimitive.Portal>));
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
 const Dialog = DialogPrimitive.Root;
 const DialogPortal = DialogPrimitive.Portal;
-const DialogTrigger = DialogPrimitive.Trigger;
 const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>>(({ className, ...props }, ref) => ( <DialogPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", className)} {...props} />));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
-const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>(({ className, children, ...props }, ref) => ( <DialogPortal><DialogOverlay /><DialogPrimitive.Content ref={ref} className={cn("fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border-none bg-transparent p-0 shadow-none duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95", className)} {...props}><div className="relative bg-[var(--color-surface)] dark:bg-[#212121] rounded-[28px] overflow-hidden shadow-2xl p-1">{children}<DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-full bg-background/50 dark:bg-[#212121] p-1 hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#404040] transition-all"><XIcon className="h-5 w-5 text-[var(--color-muted-foreground)] dark:text-gray-200 hover:text-[var(--color-foreground)] dark:hover:text-white" /><span className="sr-only">Close</span></DialogPrimitive.Close></div></DialogPrimitive.Content></DialogPortal>));
+const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>(({ className, children, ...props }, ref) => ( <DialogPortal><DialogOverlay /><DialogPrimitive.Content ref={ref} className={cn("fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border-none bg-transparent p-0 shadow-none duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95", className)} {...props}><div className="relative bg-[var(--color-surface)] dark:bg-[var(--color-input-bg)] rounded-[28px] overflow-hidden shadow-2xl p-1">{children}<DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-full bg-background/50 dark:bg-[var(--color-input-bg)] p-1 hover:bg-[var(--color-surface-hover)] transition-all"><XIcon className="h-5 w-5 text-[var(--color-muted-foreground)] dark:text-gray-200 hover:text-[var(--color-foreground)] dark:hover:text-white" /><span className="sr-only">Close</span></DialogPrimitive.Close></div></DialogPrimitive.Content></DialogPortal>));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 const DialogTitle = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>>(({ className, ...props }, ref) => ( <DialogPrimitive.Title ref={ref} className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props} />));
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
@@ -48,7 +48,7 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative bg-[var(--color-surface)] dark:bg-[#212121] rounded-[var(--radius-card)] overflow-hidden shadow-2xl"
+          className="relative bg-[var(--color-surface)] dark:bg-[var(--color-input-bg)] rounded-[var(--radius-card)] overflow-hidden shadow-2xl"
         >
           <img
             src={imageUrl}
@@ -63,6 +63,7 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
 
 // --- Main Component ---
 
+// Mock tools list for UI placeholder
 const toolsList = [
   { id: 'github', name: 'GitHub', shortName: 'GitHub', icon: Github, description: 'Access GitHub repositories' },
 ];
@@ -91,6 +92,10 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     
     // Tools state - support both controlled and uncontrolled modes
     const [internalSelectedTools, setInternalSelectedTools] = React.useState<string[]>([]);
+    const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+    
+    const { user } = useAuth();
+    const router = useRouter();
     
     // Use controlled state if provided, otherwise use internal state
     const selectedTools = controlledSelectedTools ?? internalSelectedTools;
@@ -102,31 +107,6 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
         setInternalSelectedTools(newTools);
       }
     }, [selectedTools, onSelectedToolsChange]);
-    
-    const [focusedRepo, setFocusedRepo] = React.useState<FocusedRepo | null>(null);
-    const [isLoadingFocusedRepo, setIsLoadingFocusedRepo] = React.useState(false);
-    const [hasFetchedFocusedRepo, setHasFetchedFocusedRepo] = React.useState(false);
-
-    const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
-    const [isImageDialogOpen, setIsImageDialogOpen] = React.useState(false);
-
-    // Fetch focused repo on mount (once) so it's available when user opens tools popover
-    React.useEffect(() => {
-      if (!hasFetchedFocusedRepo && !isLoadingFocusedRepo) {
-        setIsLoadingFocusedRepo(true);
-        setHasFetchedFocusedRepo(true);
-        getFocusedRepo().then(({ repo }) => {
-          if (repo) setFocusedRepo(repo);
-          setIsLoadingFocusedRepo(false);
-        }).catch(() => {
-          setIsLoadingFocusedRepo(false);
-        });
-      }
-    }, [hasFetchedFocusedRepo, isLoadingFocusedRepo]);
-
-    // React.useImperativeHandle(ref, () => internalTextareaRef.current!, []); // This expects ref to be HTMLTextAreaElement but our prop says HTMLDivElement. 
-    // The previous component was a Div, let's keep it compatible or adjust the ref type. 
-    // The parent likely expects a div ref for the container. I'll attach the forwarded ref to the container div.
 
     React.useLayoutEffect(() => {
       const textarea = internalTextareaRef.current;
@@ -211,7 +191,6 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
             setValue("");
             setFiles([]);
             setFilePreviews({});
-            // Keep selectedTools - don't clear them so the tool choice persists
         }
     };
 
@@ -237,7 +216,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     const hasValue = value.trim().length > 0 || files.length > 0;
 
     return (
-      <div ref={ref} className={cn("flex flex-col rounded-[28px] p-2 transition-colors bg-white border dark:bg-[#212121] dark:border-[#333] cursor-text", className)}>
+      <div ref={ref} className={cn("flex flex-col rounded-[var(--radius-input)] p-2 transition-colors bg-[var(--color-input-bg)] border border-[var(--color-input-border)] cursor-text", className)}>
         <input 
             type="file" 
             ref={fileInputRef} 
@@ -317,7 +296,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                     <button 
                         type="button" 
                         onClick={handlePlusClick} 
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#404040] focus-visible:outline-none cursor-pointer"
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] focus-visible:outline-none cursor-pointer"
                         disabled={isLoading}
                     >
                         <Plus className="h-5 w-5" />
@@ -327,13 +306,19 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 {files.length === 0 && <TooltipContent side="top" showArrow={true}><p>Attach file</p></TooltipContent>}
               </Tooltip>
               
-              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+              <Popover open={isPopoverOpen} onOpenChange={(open) => {
+                if (open && !user) {
+                  router.push('/login');
+                  return;
+                }
+                setIsPopoverOpen(open);
+              }}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button 
                         type="button" 
-                        className="flex h-8 items-center gap-2 rounded-full p-2 text-sm font-medium text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#404040] focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                        className="flex h-8 items-center gap-2 rounded-full p-2 text-sm font-medium text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                         disabled={isLoading}
                       >
                         <LayoutGrid className="h-4 w-4" />
@@ -343,56 +328,35 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   </TooltipTrigger>
                   {!isPopoverOpen && selectedTools.length === 0 && <TooltipContent side="top" showArrow={true}><p>Explore Apps</p></TooltipContent>}
                 </Tooltip>
-                <PopoverContent side="top" align="start" className="w-64 dark:bg-[#212121] dark:border-[#333] p-1.5">
+                <PopoverContent side="top" align="start" className="w-64 dark:bg-[var(--color-input-bg)] dark:border-[var(--color-input-border)] p-1.5">
                   <div className="flex flex-col gap-0.5">
-                    {toolsList.map(tool => {
-                        const isGitHub = tool.id === 'github';
-                        const hasFocusedRepo = isGitHub && focusedRepo;
-                        
-                        return (
-                          <button 
-                              key={tool.id} 
-                              onClick={() => handleSelectTool(tool.id)} 
-                              className={cn(
-                                  "flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#2f2f2f] transition-colors cursor-pointer",
-                                  selectedTools.includes(tool.id) && "bg-[var(--color-surface-active)] dark:bg-[#2f2f2f]"
-                              )}
-                          > 
-                              <div className={cn(
-                                "h-7 w-7 rounded-md flex items-center justify-center shrink-0",
-                                hasFocusedRepo 
-                                  ? "bg-[var(--color-accent)]/20" 
-                                  : "bg-[var(--color-surface-hover)] dark:bg-[#2f2f2f]"
-                              )}>
-                                {hasFocusedRepo ? (
-                                  <Github className="h-4 w-4 text-[var(--color-accent)]" />
-                                ) : (
-                                  <tool.icon className="h-4 w-4 text-[var(--color-muted-foreground)]" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-medium">{tool.name}</span>
-                                </div>
-                                <p className="text-[10px] text-[var(--color-muted-foreground)] truncate leading-tight">
-                                  {hasFocusedRepo ? (
-                                    <span className="flex items-center gap-1">
-                                      <GitBranch className="h-2.5 w-2.5" />
-                                      {focusedRepo.fullName}
-                                    </span>
-                                  ) : (
-                                    tool.description
-                                  )}
-                                </p>
-                              </div>
-                              {selectedTools.includes(tool.id) && (
-                                <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-accent)] flex items-center justify-center shrink-0 self-center">
-                                  <XIcon className="h-2 w-2 text-white" />
-                                </div>
-                              )}
-                          </button>
-                        );
-                    })}
+                    {toolsList.map(tool => (
+                      <button 
+                          key={tool.id} 
+                          onClick={() => handleSelectTool(tool.id)} 
+                          className={cn(
+                              "flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#2f2f2f] transition-colors cursor-pointer",
+                              selectedTools.includes(tool.id) && "bg-[var(--color-surface-active)] dark:bg-[#2f2f2f]"
+                          )}
+                      > 
+                          <div className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 bg-[var(--color-surface-hover)] dark:bg-[#2f2f2f]">
+                            <tool.icon className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium">{tool.name}</span>
+                            </div>
+                            <p className="text-[10px] text-[var(--color-muted-foreground)] truncate leading-tight">
+                              {tool.description}
+                            </p>
+                          </div>
+                          {selectedTools.includes(tool.id) && (
+                            <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-accent)] flex items-center justify-center shrink-0 self-center">
+                              <XIcon className="h-2 w-2 text-white" />
+                            </div>
+                          )}
+                      </button>
+                    ))}
                   </div>
                 </PopoverContent>
               </Popover>
@@ -404,26 +368,6 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                         const tool = toolsList.find(t => t.id === toolId);
                         if (!tool) return null;
                         
-                        // Special handling for GitHub with focused repo
-                        if (tool.id === 'github' && focusedRepo) {
-                          return (
-                            <motion.button
-                                key={tool.id}
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                onClick={() => handleRemoveTool(tool.id)}
-                                className="flex h-8 items-center gap-2 rounded-full px-2 text-sm bg-[var(--color-accent)]/10 text-[var(--color-accent)] transition-colors flex-shrink-0 border border-[var(--color-accent)]/20 hover:border-[var(--color-accent)]/40 cursor-pointer"
-                            >
-                                <Github className="h-4 w-4" />
-                                <span className="whitespace-nowrap font-medium">
-                                    {focusedRepo.name}
-                                </span>
-                                <XIcon className="h-3 w-3 opacity-50" />
-                            </motion.button>
-                          );
-                        }
-                        
                         return (
                             <motion.button
                                 key={tool.id}
@@ -431,7 +375,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.8 }}
                                 onClick={() => handleRemoveTool(tool.id)}
-                                className="flex h-8 items-center gap-2 rounded-full px-2 text-sm dark:hover:bg-[#404040] hover:bg-[var(--color-surface-hover)] cursor-pointer dark:text-[var(--color-accent)] text-[var(--color-accent)] transition-colors flex-shrink-0 border border-transparent hover:border-[var(--color-border)]"
+                                className="flex h-8 items-center gap-2 rounded-full px-2 text-sm hover:bg-[var(--color-surface-hover)] cursor-pointer dark:text-[var(--color-accent)] text-[var(--color-accent)] transition-colors flex-shrink-0 border border-transparent hover:border-[var(--color-border)]"
                             >
                                 <tool.icon className="h-4 w-4" />
                                 <span className="whitespace-nowrap font-medium">{tool.shortName}</span>

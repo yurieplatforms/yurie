@@ -4,7 +4,7 @@
  * Type definitions specific to API routes and requests.
  */
 
-import type { MessageContentSegment, WebSearchUserLocation } from '@/lib/types'
+import type { MessageContentSegment } from '@/lib/types'
 import type { UserPersonalizationContext } from '@/lib/agent/user-context'
 
 /**
@@ -32,8 +32,4 @@ export type AgentRequestBody = {
     timeZone: string
   }
   userPersonalization?: UserPersonalizationContext
-  /**
-   * User location for localized web search results
-   */
-  userLocation?: WebSearchUserLocation
 }
