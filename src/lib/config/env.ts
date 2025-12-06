@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 const envSchema = z.object({
   // Server-side variables
-  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  XAI_API_KEY: z.string().min(1).optional(),
   EXA_API_KEY: z.string().min(1).optional(),
   COMPOSIO_API_KEY: z.string().min(1).optional(),
   
@@ -15,7 +15,7 @@ const envSchema = z.object({
 // Note: Next.js automatically inlines NEXT_PUBLIC_ variables at build time,
 // but process.env access is still required for runtime validation in this file.
 const parsed = envSchema.safeParse({
-  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+  XAI_API_KEY: process.env.XAI_API_KEY,
   EXA_API_KEY: process.env.EXA_API_KEY,
   COMPOSIO_API_KEY: process.env.COMPOSIO_API_KEY,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,

@@ -1,15 +1,13 @@
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 // Agent modules
 import { buildSystemPrompt } from '@/lib/agent/system-prompt'
-import { convertToAnthropicContent } from '@/lib/agent/message-converter'
+import { convertToOpenAIContent } from '@/lib/agent/message-converter'
 import { runAgent } from '@/lib/agent/runner'
 
 // API types
 import type { AgentRequestBody } from '@/lib/api/types'
-import type { EffortLevel } from '@/lib/agent/types'
 
 // User context
 import {
@@ -38,20 +36,15 @@ export async function POST(request: Request) {
     )
   }
 
-  const { messages, userContext, userLocation, effort } = body
+  const { messages, userContext, userLocation } = body
 
-  // Validate effort level if provided
-  const validEffortLevels: EffortLevel[] = ['low', 'medium', 'high']
-  const validatedEffort: EffortLevel =
-    effort && validEffortLevels.includes(effort) ? effort : 'high'
-
-  const apiKey = env.ANTHROPIC_API_KEY
+  const apiKey = env.XAI_API_KEY
 
   if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          'ANTHROPIC_API_KEY is not set. Add it to your environment variables.',
+          'XAI_API_KEY is not set. Add it to your environment variables.',
       },
       { status: 500 },
     )
@@ -122,27 +115,27 @@ export async function POST(request: Request) {
     focusedRepo,
   })
 
-  // Convert messages to Anthropic format
-  const anthropicMessages: Anthropic.MessageParam[] = messages.map((msg) => ({
+  // Convert messages to OpenAI format
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const openAIMessages: any[] = messages.map((msg) => ({
     role: msg.role === 'user' ? 'user' : 'assistant',
-    content: convertToAnthropicContent(msg.content),
+    content: convertToOpenAIContent(msg.content),
   }))
 
   try {
     return await runAgent({
       apiKey,
-      messages: anthropicMessages,
+      messages: openAIMessages,
       systemPrompt,
       userLocation,
       userId,
       focusedRepo,
-      effort: validatedEffort,
     })
   } catch (error) {
     console.error('[agent] Unexpected error', error)
 
     return NextResponse.json(
-      { error: 'Unexpected error while contacting Claude' },
+      { error: 'Unexpected error while contacting xAI' },
       { status: 500 },
     )
   }

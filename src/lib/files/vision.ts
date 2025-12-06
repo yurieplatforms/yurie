@@ -13,8 +13,8 @@ import { readFileAsDataURL, isImageFile, isPdfFile } from '@/lib/utils'
  */
 export const VISION_CONSTANTS = {
   /**
-   * Maximum dimension for optimal Claude vision performance.
-   * Anthropic recommends resizing images to no more than 1568 pixels on the longest edge
+   * Maximum dimension for optimal vision performance.
+   * Recommended resizing images to no more than 1568 pixels on the longest edge
    * to improve time-to-first-token without sacrificing model performance.
    */
   MAX_OPTIMAL_DIMENSION: 1568,

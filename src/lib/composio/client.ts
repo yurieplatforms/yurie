@@ -1,10 +1,10 @@
 import { Composio } from '@composio/core'
-import { AnthropicProvider } from '@composio/anthropic'
+import { XAIProvider } from './xai-provider'
 import { env } from '@/lib/config/env'
 
 let composioClient: Composio | null = null
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let composioAnthropicClient: Composio<any> | null = null
+let composioXAIClient: Composio<any> | null = null
 
 /**
  * Lazily initialized base Composio Client.
@@ -27,26 +27,24 @@ export function getComposioClient(): Composio | null {
 }
 
 /**
- * Lazily initialized Composio Client with Anthropic provider.
- * Use this when integrating with Anthropic's Claude models.
+ * Lazily initialized Composio Client with xAI provider.
+ * Use this when integrating with xAI's Grok models.
  * Returns null if COMPOSIO_API_KEY is not configured.
- *
- * @see https://docs.composio.dev/providers/anthropic
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getComposioAnthropicClient(): Composio<any> | null {
+export function getComposioXAIClient(): Composio<any> | null {
   if (!env.COMPOSIO_API_KEY) {
     return null
   }
 
-  if (!composioAnthropicClient) {
-    composioAnthropicClient = new Composio({
+  if (!composioXAIClient) {
+    composioXAIClient = new Composio({
       apiKey: env.COMPOSIO_API_KEY,
-      provider: new AnthropicProvider(),
+      provider: new XAIProvider(),
     })
   }
 
-  return composioAnthropicClient
+  return composioXAIClient
 }
 
 /**

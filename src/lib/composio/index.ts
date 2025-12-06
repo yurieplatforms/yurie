@@ -1,7 +1,7 @@
 // Core client
 export {
   getComposioClient,
-  getComposioAnthropicClient,
+  getComposioXAIClient,
   isComposioAvailable,
   COMPOSIO_DEFAULT_USER_ID,
 } from './client'
@@ -71,9 +71,9 @@ export {
   listWorkflowRuns,
   triggerWorkflow,
 
-  // Anthropic integration
-  getGitHubToolsForAnthropic,
-  handleGitHubToolCalls,
+  // xAI integration
+  getGitHubToolsForXAI,
+  handleGitHubToolCallsXAI,
 
   // Formatters
   formatRepoForLLM,

@@ -1,10 +1,7 @@
 /**
- * PDF Support - Best Practices for Claude API
+ * PDF Support
  * 
- * Handles PDF validation, processing, and document block creation following
- * Anthropic's official documentation and recommendations.
- * 
- * @see https://platform.claude.com/docs/en/build-with-claude/pdf-support
+ * Handles PDF validation, processing, and document block creation.
  * 
  * Key PDF Requirements:
  * - Maximum request size: 32MB

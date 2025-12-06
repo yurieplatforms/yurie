@@ -8,7 +8,7 @@
  */
 
 import { Composio } from '@composio/core'
-import { AnthropicProvider } from '@composio/anthropic'
+import { XAIProvider } from './xai-provider'
 import { env } from '@/lib/config/env'
 
 // ============================================================================
@@ -66,30 +66,30 @@ export interface GitHubToolContext {
 }
 
 // ============================================================================
-// Composio Client with Anthropic Provider
+// Composio Client with xAI Provider
 // ============================================================================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let composioWithAnthropic: Composio<any> | null = null
+let composioWithXAI: Composio<any> | null = null
 
 /**
- * Get Composio client configured with Anthropic provider for GitHub tools.
+ * Get Composio client configured with xAI provider for GitHub tools.
  * Returns null if COMPOSIO_API_KEY is not configured.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getComposioAnthropicClient(): Composio<any> | null {
+export function getComposioXAIClient(): Composio<any> | null {
   if (!env.COMPOSIO_API_KEY) {
     return null
   }
 
-  if (!composioWithAnthropic) {
-    composioWithAnthropic = new Composio({
+  if (!composioWithXAI) {
+    composioWithXAI = new Composio({
       apiKey: env.COMPOSIO_API_KEY,
-      provider: new AnthropicProvider(),
+      provider: new XAIProvider(),
     })
   }
 
-  return composioWithAnthropic
+  return composioWithXAI
 }
 
 /**
@@ -131,7 +131,7 @@ export function getGitHubToolContext(): GitHubToolContext {
  * Find the user's GitHub connected account ID.
  */
 export async function findGitHubConnectionId(userId: string): Promise<string | undefined> {
-  const composio = getComposioAnthropicClient()
+  const composio = getComposioXAIClient()
   if (!composio) return undefined
 
   try {
@@ -162,7 +162,7 @@ async function executeGitHubTool(
   toolSlug: string,
   args: Record<string, unknown>
 ): Promise<ComposioToolOutput> {
-  const composio = getComposioAnthropicClient()
+  const composio = getComposioXAIClient()
   if (!composio) {
     throw new Error('Composio is not configured. Please set COMPOSIO_API_KEY.')
   }
@@ -863,25 +863,25 @@ export async function getRepoTree(params: GitHubRepoInfo & { sha?: string; recur
 }
 
 // ============================================================================
-// GitHub Tools for Anthropic
+// GitHub Tools for xAI
 // ============================================================================
 
 /**
- * Get pre-configured GitHub tools formatted for Anthropic's API.
- * These can be passed directly to Anthropic's messages.create() tools parameter.
+ * Get pre-configured GitHub tools formatted for xAI's API.
+ * These can be passed directly to xAI's chat completions tools parameter.
  *
  * @example
- * const tools = await getGitHubToolsForAnthropic()
- * const response = await anthropic.messages.create({
- *   model: 'claude-sonnet-4-20250514',
+ * const tools = await getGitHubToolsForXAI()
+ * const response = await xai.chat.completions.create({
+ *   model: 'grok-4-1-fast-reasoning',
  *   tools: [...otherTools, ...tools],
  *   messages: [...]
  * })
  */
-export async function getGitHubToolsForAnthropic(
+export async function getGitHubToolsForXAI(
   options?: { tools?: string[]; search?: string; limit?: number }
 ): Promise<unknown[]> {
-  const composio = getComposioAnthropicClient()
+  const composio = getComposioXAIClient()
   if (!composio) {
     return []
   }
@@ -902,20 +902,20 @@ export async function getGitHubToolsForAnthropic(
 
     return tools
   } catch (error) {
-    console.error('Failed to get GitHub tools from Composio:', error)
+    console.error('Failed to get GitHub tools from Composio for xAI:', error)
     return []
   }
 }
 
 /**
- * Handle tool calls from Anthropic response using Composio.
+ * Handle tool calls from xAI response using Composio.
  * This executes the tool calls and returns results.
  *
  * @example
- * const result = await handleGitHubToolCalls(response)
+ * const result = await handleGitHubToolCallsXAI(response)
  */
-export async function handleGitHubToolCalls(response: unknown): Promise<unknown> {
-  const composio = getComposioAnthropicClient()
+export async function handleGitHubToolCallsXAI(response: unknown): Promise<unknown> {
+  const composio = getComposioXAIClient()
   if (!composio) {
     throw new Error('Composio is not configured')
   }

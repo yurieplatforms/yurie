@@ -2,7 +2,7 @@ import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { CornerRightUp, Paperclip, Square, X, StopCircle, FileText, Plus, Globe, Github, Mic, Settings2, X as XIcon, Target, Sparkles, GitBranch } from "lucide-react";
+import { CornerRightUp, Paperclip, Square, X, FileText, Plus, Github, LayoutGrid, X as XIcon, Target, Sparkles, GitBranch } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { getFocusedRepo, type FocusedRepo } from "@/app/profile/actions";
 
@@ -19,7 +19,7 @@ TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
 const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
-const PopoverContent = React.forwardRef<React.ElementRef<typeof PopoverPrimitive.Content>, React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>>(({ className, align = "center", sideOffset = 4, ...props }, ref) => ( <PopoverPrimitive.Portal><PopoverPrimitive.Content ref={ref} align={align} sideOffset={sideOffset} className={cn("z-50 w-64 rounded-xl bg-[var(--color-surface)] dark:bg-[#181818] p-2 text-[var(--color-foreground)] dark:text-white shadow-md outline-none animate-in data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 border border-[var(--color-border)]", className)} {...props} /></PopoverPrimitive.Portal>));
+const PopoverContent = React.forwardRef<React.ElementRef<typeof PopoverPrimitive.Content>, React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>>(({ className, align = "center", sideOffset = 4, ...props }, ref) => ( <PopoverPrimitive.Portal><PopoverPrimitive.Content ref={ref} align={align} sideOffset={sideOffset} className={cn("z-50 w-64 rounded-xl bg-[var(--color-surface)] dark:bg-[#212121] p-2 text-[var(--color-foreground)] dark:text-white shadow-md outline-none animate-in data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 border border-[var(--color-border)]", className)} {...props} /></PopoverPrimitive.Portal>));
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
 const Dialog = DialogPrimitive.Root;
@@ -27,7 +27,7 @@ const DialogPortal = DialogPrimitive.Portal;
 const DialogTrigger = DialogPrimitive.Trigger;
 const DialogOverlay = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Overlay>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>>(({ className, ...props }, ref) => ( <DialogPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0", className)} {...props} />));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
-const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>(({ className, children, ...props }, ref) => ( <DialogPortal><DialogOverlay /><DialogPrimitive.Content ref={ref} className={cn("fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border-none bg-transparent p-0 shadow-none duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95", className)} {...props}><div className="relative bg-[var(--color-surface)] dark:bg-[#181818] rounded-[28px] overflow-hidden shadow-2xl p-1">{children}<DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-full bg-background/50 dark:bg-[#181818] p-1 hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#27272a] transition-all"><XIcon className="h-5 w-5 text-[var(--color-muted-foreground)] dark:text-gray-200 hover:text-[var(--color-foreground)] dark:hover:text-white" /><span className="sr-only">Close</span></DialogPrimitive.Close></div></DialogPrimitive.Content></DialogPortal>));
+const DialogContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Content>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>>(({ className, children, ...props }, ref) => ( <DialogPortal><DialogOverlay /><DialogPrimitive.Content ref={ref} className={cn("fixed left-[50%] top-[50%] z-50 grid w-full max-w-[90vw] md:max-w-[800px] translate-x-[-50%] translate-y-[-50%] gap-4 border-none bg-transparent p-0 shadow-none duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95", className)} {...props}><div className="relative bg-[var(--color-surface)] dark:bg-[#212121] rounded-[28px] overflow-hidden shadow-2xl p-1">{children}<DialogPrimitive.Close className="absolute right-3 top-3 z-10 rounded-full bg-background/50 dark:bg-[#212121] p-1 hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#404040] transition-all"><XIcon className="h-5 w-5 text-[var(--color-muted-foreground)] dark:text-gray-200 hover:text-[var(--color-foreground)] dark:hover:text-white" /><span className="sr-only">Close</span></DialogPrimitive.Close></div></DialogPrimitive.Content></DialogPortal>));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 const DialogTitle = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Title>, React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>>(({ className, ...props }, ref) => ( <DialogPrimitive.Title ref={ref} className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props} />));
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
@@ -48,7 +48,7 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative bg-[var(--color-surface)] dark:bg-[#181818] rounded-[var(--radius-card)] overflow-hidden shadow-2xl"
+          className="relative bg-[var(--color-surface)] dark:bg-[#212121] rounded-[var(--radius-card)] overflow-hidden shadow-2xl"
         >
           <img
             src={imageUrl}
@@ -61,88 +61,9 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
   );
 };
 
-// --- VoiceRecorder Component ---
-interface VoiceRecorderProps {
-  isRecording: boolean;
-  onStartRecording: () => void;
-  onStopRecording: (duration: number) => void;
-  visualizerBars?: number;
-}
-const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
-  isRecording,
-  onStartRecording,
-  onStopRecording,
-  visualizerBars = 32,
-}) => {
-  const [time, setTime] = React.useState(0);
-  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
-  const wasRecordingRef = React.useRef(false);
-  const finalTimeRef = React.useRef(0);
-
-  // Track time for stop callback
-  React.useEffect(() => {
-    finalTimeRef.current = time;
-  }, [time]);
-
-  React.useEffect(() => {
-    if (isRecording && !wasRecordingRef.current) {
-      // Started recording
-      wasRecordingRef.current = true;
-      onStartRecording();
-      timerRef.current = setInterval(() => setTime((t) => t + 1), 1000);
-    } else if (!isRecording && wasRecordingRef.current) {
-      // Stopped recording
-      wasRecordingRef.current = false;
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      onStopRecording(finalTimeRef.current);
-      setTime(0);
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isRecording, onStartRecording, onStopRecording]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-center w-full transition-all duration-300 px-3",
-        isRecording ? "opacity-100" : "opacity-0 hidden"
-      )}
-    >
-      <div className="flex items-center gap-2 mr-3">
-        <div className="h-2 w-2 rounded-full bg-[var(--color-destructive)] animate-pulse" />
-        <span className="font-mono text-sm text-[var(--color-foreground)]/80">{formatTime(time)}</span>
-      </div>
-      <div className="flex-1 h-8 flex items-center gap-0.5">
-        {[...Array(visualizerBars)].map((_, i) => (
-          <div
-            key={i}
-            className="w-0.5 rounded-full bg-[var(--color-foreground)]/50 animate-pulse"
-            style={{
-              height: `${Math.max(20, Math.random() * 100)}%`,
-              animationDelay: `${i * 0.05}s`,
-              animationDuration: `${0.5 + Math.random() * 0.5}s`,
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
 // --- Main Component ---
 
 const toolsList = [
-  { id: 'web_search', name: 'Web Search', shortName: 'Search', icon: Globe, description: 'Search the web for information' },
   { id: 'github', name: 'GitHub', shortName: 'GitHub', icon: Github, description: 'Access GitHub repositories' },
 ];
 
@@ -167,7 +88,6 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     const [files, setFiles] = React.useState<File[]>([]);
     const [filePreviews, setFilePreviews] = React.useState<{ [key: string]: string }>({});
     const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
-    const [isRecording, setIsRecording] = React.useState(false);
     
     // Tools state - support both controlled and uncontrolled modes
     const [internalSelectedTools, setInternalSelectedTools] = React.useState<string[]>([]);
@@ -314,18 +234,10 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
         setSelectedTools((prev) => prev.filter(t => t !== id));
     };
 
-    // Recording handlers
-    const handleStartRecording = () => console.log("Started recording");
-    const handleStopRecording = (duration: number) => {
-        console.log(`Stopped recording after ${duration} seconds`);
-        setIsRecording(false);
-        onSend(`[Voice message - ${duration} seconds]`, []);
-    };
-
     const hasValue = value.trim().length > 0 || files.length > 0;
 
     return (
-      <div ref={ref} className={cn("flex flex-col rounded-[28px] p-2 shadow-lg transition-colors bg-white border dark:bg-[#212121] dark:border-[#333] cursor-text", className)}>
+      <div ref={ref} className={cn("flex flex-col rounded-[28px] p-2 transition-colors bg-white border dark:bg-[#212121] dark:border-[#333] cursor-text", className)}>
         <input 
             type="file" 
             ref={fileInputRef} 
@@ -340,7 +252,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
 
         {/* File Previews in Input */}
         <AnimatePresence mode="popLayout">
-            {files.length > 0 && !isRecording && (
+            {files.length > 0 && (
                 <motion.div 
                     initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                     animate={{ opacity: 1, height: "auto", marginBottom: 8 }}
@@ -386,15 +298,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
             )}
         </AnimatePresence>
 
-        {/* Recording UI */}
-        {isRecording ? (
-             <VoiceRecorder
-                isRecording={isRecording}
-                onStartRecording={handleStartRecording}
-                onStopRecording={handleStopRecording}
-             />
-        ) : (
-             <textarea 
+        <textarea 
                 ref={internalTextareaRef} 
                 rows={1} 
                 value={value} 
@@ -404,7 +308,6 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 disabled={isLoading}
                 className="custom-scrollbar w-full resize-none border-0 bg-transparent p-3 text-[var(--color-foreground)] dark:text-white placeholder:text-[var(--color-muted-foreground)] dark:placeholder:text-zinc-400 focus:ring-0 focus-visible:outline-none min-h-[48px]" 
             />
-        )}
 
         <div className="mt-0.5 p-1 pt-0">
           <TooltipProvider delayDuration={100}>
@@ -414,8 +317,8 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                     <button 
                         type="button" 
                         onClick={handlePlusClick} 
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#27272a] focus-visible:outline-none cursor-pointer"
-                        disabled={isRecording || isLoading}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#404040] focus-visible:outline-none cursor-pointer"
+                        disabled={isLoading}
                     >
                         <Plus className="h-5 w-5" />
                         <span className="sr-only">Attach file</span>
@@ -430,15 +333,15 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                     <PopoverTrigger asChild>
                       <button 
                         type="button" 
-                        className="flex h-8 items-center gap-2 rounded-full p-2 text-sm text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#27272a] focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
-                        disabled={isRecording || isLoading}
+                        className="flex h-8 items-center gap-2 rounded-full p-2 text-sm font-medium text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#404040] focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                        disabled={isLoading}
                       >
-                        <Settings2 className="h-4 w-4" />
-                        {selectedTools.length === 0 && 'Tools'}
+                        <LayoutGrid className="h-4 w-4" />
+                        {selectedTools.length === 0 && 'Apps'}
                       </button>
                     </PopoverTrigger>
                   </TooltipTrigger>
-                  {!isPopoverOpen && selectedTools.length === 0 && <TooltipContent side="top" showArrow={true}><p>Explore Tools</p></TooltipContent>}
+                  {!isPopoverOpen && selectedTools.length === 0 && <TooltipContent side="top" showArrow={true}><p>Explore Apps</p></TooltipContent>}
                 </Tooltip>
                 <PopoverContent side="top" align="start" className="w-64 dark:bg-[#212121] dark:border-[#333] p-1.5">
                   <div className="flex flex-col gap-0.5">
@@ -491,19 +394,10 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                         );
                     })}
                   </div>
-                  
-                  {/* GitHub setup hint */}
-                  {!focusedRepo && (
-                    <div className="mt-1.5 pt-1.5 border-t border-[var(--color-border)]/50">
-                      <p className="text-[10px] text-[var(--color-muted-foreground)] text-center">
-                        💡 Focus a repo in your <a href="/profile" className="text-[var(--color-accent)] hover:underline">profile</a> for full GitHub integration
-                      </p>
-                    </div>
-                  )}
                 </PopoverContent>
               </Popover>
 
-              {/* Selected Tools Pills */}
+              {/* Selected Apps Pills */}
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[300px]">
                 <AnimatePresence>
                     {selectedTools.map(toolId => {
@@ -537,10 +431,10 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.8 }}
                                 onClick={() => handleRemoveTool(tool.id)}
-                                className="flex h-8 items-center gap-2 rounded-full px-2 text-sm dark:hover:bg-[#27272a] hover:bg-[var(--color-surface-hover)] cursor-pointer dark:text-[var(--color-accent)] text-[var(--color-accent)] transition-colors flex-shrink-0 border border-transparent hover:border-[var(--color-border)]"
+                                className="flex h-8 items-center gap-2 rounded-full px-2 text-sm dark:hover:bg-[#404040] hover:bg-[var(--color-surface-hover)] cursor-pointer dark:text-[var(--color-accent)] text-[var(--color-accent)] transition-colors flex-shrink-0 border border-transparent hover:border-[var(--color-border)]"
                             >
                                 <tool.icon className="h-4 w-4" />
-                                <span className="whitespace-nowrap">{tool.shortName}</span>
+                                <span className="whitespace-nowrap font-medium">{tool.shortName}</span>
                                 <XIcon className="h-3 w-3 opacity-50" />
                             </motion.button>
                         );
@@ -548,59 +442,26 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 </AnimatePresence>
               </div>
 
-              {/* Right-aligned buttons container */}
-              <div className="ml-auto flex items-center gap-2">
-                {!isRecording && (
-                    <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button 
-                            type="button" 
-                            onClick={() => setIsRecording(true)}
-                            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#27272a] focus-visible:outline-none cursor-pointer"
-                            disabled={isLoading}
-                        >
-                        <Mic className="h-5 w-5" />
-                        <span className="sr-only">Record voice</span>
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" showArrow={true}><p>Record voice</p></TooltipContent>
-                    </Tooltip>
-                )}
-
-                {isRecording ? (
-                     <Tooltip>
-                     <TooltipTrigger asChild>
-                         <button 
-                             type="button" 
-                             onClick={() => handleStopRecording(0)} 
-                             className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-destructive)] transition-colors hover:bg-[var(--color-surface-hover)] focus-visible:outline-none cursor-pointer"
-                         >
-                         <StopCircle className="h-6 w-6 fill-current" />
-                         <span className="sr-only">Stop recording</span>
-                         </button>
-                     </TooltipTrigger>
-                     <TooltipContent side="top" showArrow={true}><p>Stop</p></TooltipContent>
-                     </Tooltip>
-                ) : (
-                    <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button 
-                            type="submit" 
-                            onClick={handleSubmit}
-                            disabled={!hasValue || isLoading} 
-                            className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] dark:hover:bg-[var(--color-accent-hover)] disabled:bg-zinc-300 dark:disabled:bg-zinc-700 cursor-pointer"
-                        >
-                        {isLoading ? (
-                            <Square className="h-4 w-4 fill-current animate-pulse" />
-                        ) : (
-                            <CornerRightUp className="h-5 w-5" />
-                        )}
-                        <span className="sr-only">Send message</span>
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" showArrow={true}><p>Send</p></TooltipContent>
-                    </Tooltip>
-                )}
+              {/* Send button */}
+              <div className="ml-auto">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button 
+                      type="submit" 
+                      onClick={handleSubmit}
+                      disabled={!hasValue || isLoading} 
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] dark:hover:bg-[var(--color-accent-hover)] disabled:bg-zinc-300 dark:disabled:bg-zinc-700 cursor-pointer"
+                    >
+                      {isLoading ? (
+                        <Square className="h-4 w-4 fill-current animate-pulse" />
+                      ) : (
+                        <CornerRightUp className="h-5 w-5" />
+                      )}
+                      <span className="sr-only">Send message</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" showArrow={true}><p>Send</p></TooltipContent>
+                </Tooltip>
               </div>
             </div>
           </TooltipProvider>

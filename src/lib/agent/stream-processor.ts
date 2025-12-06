@@ -1,7 +1,7 @@
 /**
  * Stream Processor
  * 
- * Handles processing of SSE stream events from the Anthropic API.
+ * Handles processing of SSE stream events.
  * Extracts citations, web search results, and web fetch results.
  */
 

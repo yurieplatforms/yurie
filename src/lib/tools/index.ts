@@ -18,18 +18,6 @@ export {
   createServerTools,
 } from './definitions'
 
-// Tool execution handlers
-export { evaluateMathExpression } from './handlers'
-
-// Memory tool
-export {
-  type MemoryCommand,
-  type MemoryToolInput,
-  type MemoryToolResult,
-  MemoryToolHandler,
-  createMemoryToolHandler,
-} from './memory'
-
 // EXA search tools
 // @see https://docs.exa.ai/reference/search
 // @see https://docs.exa.ai/reference/find-similar-links

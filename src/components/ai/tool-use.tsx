@@ -19,9 +19,6 @@ const toolCompletedLabels: Record<string, string> = {
   exa_find_similar: 'Found similar',
   exa_answer: 'Answered',
   calculator: 'Calculated',
-  memory: 'Remembered',
-  memory_save: 'Saved',
-  memory_retrieve: 'Recalled',
 }
 
 interface ToolResultsProps {

@@ -75,7 +75,7 @@
     /* Unified Design Tokens */
     --color-surface-dark: #202020;
     --color-prompt-bg: #1F2023;
-    --color-prompt-dark-bg: #181818;
+    --color-prompt-dark-bg: #212121;
 
     /* Profile Gradients */
     --color-gradient-mid-1: #9683D8;
@@ -113,7 +113,7 @@
 
   .dark {
     /* Core Colors */
-    --color-background: rgb(0 0 0 / 1);
+    --color-background: #141414;
     --color-foreground: rgb(250 250 250 / 1);
     --color-muted: rgb(39 39 42 / 1);
     --color-muted-foreground: rgb(113 113 122 / 1);
