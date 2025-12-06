@@ -225,28 +225,29 @@
     --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.4);
     --shadow-accent: 0 4px 14px rgba(217, 119, 87, 0.15);
     --shadow-destructive: 0 4px 14px rgba(239, 68, 68, 0.15);
-
-    /* Syntax Highlighting (Dark Mode) - Adjusted to fit earthy dark theme */
-    --sh-class: var(--chart-2);
-    --sh-sign: #c8d0d8;
-    --sh-string: #98d89c;
-    --sh-keyword: var(--chart-1);
-    --sh-comment: var(--muted-foreground);
-    --sh-jsxliterals: var(--chart-2);
-    --sh-property: var(--chart-5);
-    --sh-entity: var(--ring);
   }
 }
 
 :root {
-  --sh-class: #7aa2f7;
-  --sh-sign: #89ddff;
-  --sh-string: #9ece6a;
-  --sh-keyword: #bb9af7;
-  --sh-comment: #565f89;
-  --sh-jsxliterals: #7aa2f7;
-  --sh-property: #73daca;
-  --sh-entity: #e0af68;
+  --sh-class: #61afef;
+  --sh-sign: #56b6c2;
+  --sh-string: #98c379;
+  --sh-keyword: #c678dd;
+  --sh-comment: #7f848e;
+  --sh-jsxliterals: #61afef;
+  --sh-property: #e5c07b;
+  --sh-entity: #e06c75;
+}
+
+.dark {
+  --sh-class: #79c0ff;
+  --sh-sign: #a5d6ff;
+  --sh-string: #a5d6a7;
+  --sh-keyword: #ff7eb6;
+  --sh-comment: #8b949e;
+  --sh-jsxliterals: #79c0ff;
+  --sh-property: #ffa657;
+  --sh-entity: #ff7b72;
 }
 
 @theme inline {
@@ -296,7 +297,19 @@
   [data-streamdown="table"] tbody,
   [data-streamdown="table"] tr,
   [data-streamdown="table"] th,
-  [data-streamdown="table"] td {
+  [data-streamdown="table"] td,
+  .prose table,
+  .prose thead,
+  .prose tbody,
+  .prose tr,
+  .prose th,
+  .prose td,
+  .prose-gray table,
+  .prose-gray thead,
+  .prose-gray tbody,
+  .prose-gray tr,
+  .prose-gray th,
+  .prose-gray td {
     border-color: var(--color-border);
   }
 
@@ -304,7 +317,19 @@
   .dark [data-streamdown="table"] tbody,
   .dark [data-streamdown="table"] tr,
   .dark [data-streamdown="table"] th,
-  .dark [data-streamdown="table"] td {
+  .dark [data-streamdown="table"] td,
+  .dark .prose table,
+  .dark .prose thead,
+  .dark .prose tbody,
+  .dark .prose tr,
+  .dark .prose th,
+  .dark .prose td,
+  .dark .prose-gray table,
+  .dark .prose-gray thead,
+  .dark .prose-gray tbody,
+  .dark .prose-gray tr,
+  .dark .prose-gray th,
+  .dark .prose-gray td {
     border-color: var(--color-border);
   }
 
@@ -315,17 +340,17 @@
     border-width: 0 !important;
   }
 
-  /* Match code block border + background colors to user chat bubble */
+  /* Match code block border + background colors to user chat bubble (muted) */
   [data-streamdown="code-block"],
   [data-code-block-container="true"],
   [data-code-block-container] {
-    background-color: var(--color-surface) !important; 
+    background-color: var(--muted) !important; 
   }
 
   .dark [data-streamdown="code-block"],
   .dark [data-code-block-container="true"],
   .dark [data-code-block-container] {
-    background-color: var(--color-surface) !important;
+    background-color: var(--popover) !important;
   }
 
   /* Inner code area border + background */
@@ -333,13 +358,13 @@
   [data-code-block] {
     border-top-width: 0 !important; /* remove separator line under header */
     border-color: var(--color-border);
-    background-color: var(--color-surface) !important;
+    background-color: var(--muted) !important;
   }
 
   .dark [data-streamdown="code-block-body"],
   .dark [data-code-block] {
     border-color: var(--color-border);
-    background-color: var(--color-surface) !important;
+    background-color: var(--popover) !important;
   }
 
   /* Remove extra space between header and code, and force unified background */
@@ -351,7 +376,7 @@
   [data-code-block] pre code {
     margin-top: 0;
     margin-bottom: 0;
-    background-color: var(--color-surface) !important;
+    background-color: var(--muted) !important;
   }
 
   .dark [data-streamdown="code-block-body"] pre,
@@ -360,20 +385,24 @@
   .dark [data-streamdown="code-block"] pre code,
   .dark [data-code-block] pre,
   .dark [data-code-block] pre code {
-    background-color: var(--color-surface) !important;
+    background-color: var(--popover) !important;
   }
 
   /* Code block header surface + text (match code background) */
   [data-streamdown="code-block-header"],
-  [data-code-block-header] {
-    background-color: var(--color-surface) !important;
+  [data-code-block-header],
+  [data-streamdown="code-block"] > div:first-child,
+  [data-code-block-container] > div:first-child {
+    background-color: var(--muted) !important;
     color: var(--color-foreground);
     border-bottom: 1px solid var(--color-border);
   }
 
   .dark [data-streamdown="code-block-header"],
-  .dark [data-code-block-header] {
-    background-color: var(--color-surface) !important;
+  .dark [data-code-block-header],
+  .dark [data-streamdown="code-block"] > div:first-child,
+  .dark [data-code-block-container] > div:first-child {
+    background-color: var(--popover) !important;
     color: var(--color-foreground);
     border-bottom: 1px solid var(--color-border);
   }
@@ -385,44 +414,37 @@
     opacity: 1 !important;
   }
 
-  /* Dark mode code block text - enhance readability */
+  /* Dark mode code block text - force high contrast readable colors */
   .dark [data-streamdown="code-block-body"] pre code,
   .dark [data-streamdown="code-block"] pre code,
   .dark [data-code-block] pre code,
   .dark pre code,
   .dark pre.shiki code {
-    /* Ensure base text is bright white */
-    color: var(--color-foreground) !important;
+    color: #e6edf3 !important;
   }
 
-  /* Override ALL Shiki token colors in dark mode - colorful and bright */
-  .dark [data-streamdown="code-block-body"] pre code span,
-  .dark [data-streamdown="code-block"] pre code span,
-  .dark [data-code-block] pre code span,
-  .dark pre code span,
+  /* Boost text brightness only, not background */
+  .dark pre.shiki span,
   .dark pre.shiki code span,
-  .dark pre.shiki span {
-    /* High brightness with good saturation for colorful look */
-    filter: brightness(1.6) saturate(1.1);
+  .dark [data-streamdown] pre span,
+  .dark [data-streamdown] pre code span,
+  .dark [data-streamdown="code-block"] pre span,
+  .dark [data-streamdown="code-block-body"] pre span {
+    filter: brightness(1.7) saturate(1.15) !important;
   }
 
-  /* Force colorful bright colors on Shiki spans with inline styles */
-  .dark pre.shiki span[style],
-  .dark [data-streamdown] pre span[style],
-  .dark code span[style] {
-    filter: brightness(1.6) saturate(1.1) !important;
-  }
 
-  /* Specific token color overrides for dark mode - colorful */
+  /* Specific token color overrides for dark mode - vibrant palette */
   .dark pre code .token.comment,
   .dark pre code .token.prolog,
   .dark pre code .token.doctype,
   .dark pre code .token.cdata {
-    color: var(--color-muted-foreground) !important;
+    color: #8b949e !important;
+    font-style: italic;
   }
 
   .dark pre code .token.punctuation {
-    color: #b8c0c8 !important; /* silver */
+    color: #c9d1d9 !important;
   }
 
   .dark pre code .token.property,
@@ -430,12 +452,12 @@
   .dark pre code .token.constant,
   .dark pre code .token.symbol,
   .dark pre code .token.deleted {
-    color: var(--chart-5) !important;
+    color: #ff7b72 !important;
   }
 
   .dark pre code .token.boolean,
   .dark pre code .token.number {
-    color: var(--chart-1) !important;
+    color: #79c0ff !important;
   }
 
   .dark pre code .token.selector,
@@ -444,30 +466,30 @@
   .dark pre code .token.char,
   .dark pre code .token.builtin,
   .dark pre code .token.inserted {
-    color: var(--chart-4) !important;
+    color: #a5d6a7 !important;
   }
 
   .dark pre code .token.operator,
   .dark pre code .token.entity,
   .dark pre code .token.url,
   .dark pre code .token.variable {
-    color: var(--chart-2) !important;
+    color: #a5d6ff !important;
   }
 
   .dark pre code .token.atrule,
   .dark pre code .token.attr-value,
   .dark pre code .token.function,
   .dark pre code .token.class-name {
-    color: var(--chart-3) !important;
+    color: #d2a8ff !important;
   }
 
   .dark pre code .token.keyword {
-    color: var(--primary) !important;
+    color: #ff7eb6 !important;
   }
 
   .dark pre code .token.regex,
   .dark pre code .token.important {
-    color: var(--warning) !important;
+    color: #ffa657 !important;
   }
 
   /* Match AI-generated horizontal rule separators to PromptInput outline color */
@@ -481,6 +503,32 @@
   .dark .prose hr,
   .dark .prose-gray hr {
     border-color: var(--color-border);
+  }
+
+  /* Match blockquote left border to line separator color */
+  .prose blockquote,
+  .prose-gray blockquote,
+  [data-streamdown] blockquote {
+    border-left-color: var(--color-border);
+  }
+
+  .dark .prose blockquote,
+  .dark .prose-gray blockquote,
+  .dark [data-streamdown] blockquote {
+    border-left-color: var(--color-border);
+  }
+
+  /* Match inline code background to border/separator color */
+  .prose code:not(pre code),
+  .prose-gray code:not(pre code),
+  [data-streamdown] code:not(pre code) {
+    background-color: var(--color-border);
+  }
+
+  .dark .prose code:not(pre code),
+  .dark .prose-gray code:not(pre code),
+  .dark [data-streamdown] code:not(pre code) {
+    background-color: var(--color-border);
   }
   
   /* Bullet points - force them to use the muted-foreground color */
@@ -555,7 +603,7 @@
 
   .dark .prose .math-display,
   .dark [data-streamdown] .math-display {
-    background-color: var(--color-surface);
+    background-color: var(--popover);
   }
 
   /* Inline math styling - subtle background for readability */

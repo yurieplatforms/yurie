@@ -34,7 +34,7 @@ export {
 } from './vision'
 
 // Types
-export type { SupportedImageFormat } from './vision'
+export type { SupportedImageFormat, ImageDetailLevel } from './vision'
 
 // PDF-specific utilities
 export {

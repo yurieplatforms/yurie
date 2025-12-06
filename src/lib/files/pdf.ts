@@ -1,43 +1,56 @@
 /**
  * PDF Support
- * 
+ *
  * Handles PDF validation, processing, and document block creation.
- * 
- * Key PDF Requirements:
- * - Maximum request size: 32MB
- * - Maximum pages per request: 100
+ * Implements OpenAI best practices for PDF file inputs.
+ *
+ * @see https://platform.openai.com/docs/guides/pdf-files
+ *
+ * Key PDF Requirements (per OpenAI docs):
+ * - Maximum file size: 50MB per file
+ * - Maximum total content: 50MB across all files in a single request
  * - Format: Standard PDF (no passwords/encryption)
- * 
+ *
+ * How OpenAI processes PDFs:
+ * - Extracts text from each page
+ * - Creates an image of each page for visual understanding
+ * - Both text and images are added to the model's context
+ *
  * Best Practices:
- * - Place PDFs before text in requests
+ * - Place PDFs before text in requests (handled by message converter)
  * - Use standard fonts for better text extraction
  * - Ensure text is clear and legible
  * - Rotate pages to proper upright orientation
  * - Use logical page numbers in prompts
- * - Split large PDFs into chunks when needed
- * - Enable prompt caching for repeated analysis
- * - Enable citations for full visual understanding
+ * - Upload files with purpose "user_data" when using Files API
+ *
+ * Supported input methods:
+ * 1. Base64-encoded: data:application/pdf;base64,{base64string}
+ * 2. File URL: External URL pointing to a PDF
+ * 3. File ID: ID from uploading to /v1/files endpoint
  */
 
-import { readFileAsDataURL, isPdfFile } from '@/lib/utils'
+import { isPdfFile } from '@/lib/utils'
 
 // ============================================================================
 // Constants
 // ============================================================================
 
 /**
- * PDF requirements
+ * PDF requirements per OpenAI documentation
  */
 export const PDF_REQUIREMENTS = {
-  /** Maximum total request size in bytes (32MB) */
-  MAX_REQUEST_SIZE: 32 * 1024 * 1024,
-  /** Maximum pages per PDF request */
-  MAX_PAGES: 100,
+  /** Maximum file size in bytes (50MB per file) */
+  MAX_FILE_SIZE: 50 * 1024 * 1024,
+  /** Maximum total content size across all files (50MB) */
+  MAX_TOTAL_SIZE: 50 * 1024 * 1024,
   /** Approximate tokens per page (for cost estimation) */
   TOKENS_PER_PAGE_TEXT: 1500, // 1,500-3,000 tokens per page for text
   TOKENS_PER_PAGE_IMAGE: 2333, // ~7,000 tokens for 3 pages (visual analysis)
   /** Supported media type */
   MEDIA_TYPE: 'application/pdf' as const,
+  /** Recommended file upload purpose */
+  UPLOAD_PURPOSE: 'user_data' as const,
 } as const
 
 /**
@@ -61,13 +74,13 @@ export type PdfValidationResult = {
 }
 
 /**
- * Validates a PDF file for use with Claude API
- * 
+ * Validates a PDF file for use with OpenAI API
+ *
  * Checks:
  * - File is a valid PDF (by type or extension)
- * - File size is within limits (32MB)
- * - File is not password-protected (basic check via signature)
- * 
+ * - File size is within limits (50MB per file)
+ * - File has valid PDF signature
+ *
  * @param file - The PDF file to validate
  * @returns Validation result with error messages if invalid
  */
@@ -85,11 +98,11 @@ export async function validatePdfFile(file: File): Promise<PdfValidationResult> 
     }
   }
 
-  // Check file size
-  if (file.size > PDF_REQUIREMENTS.MAX_REQUEST_SIZE) {
+  // Check file size (50MB per file limit per OpenAI docs)
+  if (file.size > PDF_REQUIREMENTS.MAX_FILE_SIZE) {
     return {
       valid: false,
-      error: `PDF "${file.name}" (${sizeMB.toFixed(1)}MB) exceeds the 32MB limit. Consider splitting the document.`,
+      error: `PDF "${file.name}" (${sizeMB.toFixed(1)}MB) exceeds the 50MB file size limit.`,
       metadata,
     }
   }
@@ -98,7 +111,7 @@ export async function validatePdfFile(file: File): Promise<PdfValidationResult> 
   try {
     const header = await readFileHeader(file, 8)
     const signature = new Uint8Array(header.slice(0, 5))
-    
+
     let signatureMatch = true
     for (let i = 0; i < PDF_SIGNATURE.length; i++) {
       if (signature[i] !== PDF_SIGNATURE[i]) {
@@ -119,10 +132,10 @@ export async function validatePdfFile(file: File): Promise<PdfValidationResult> 
     warnings.push('Could not verify PDF header. File may be invalid or corrupted.')
   }
 
-  // Add warning for large files that might be close to the limit
-  if (sizeMB > 25) {
+  // Add warning for large files that might be close to the total limit
+  if (sizeMB > 40) {
     warnings.push(
-      `PDF is ${sizeMB.toFixed(1)}MB. Consider that the total request size (including other content) must be under 32MB.`
+      `PDF is ${sizeMB.toFixed(1)}MB. The total content across all files must be under 50MB.`
     )
   }
 

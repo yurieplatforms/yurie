@@ -119,12 +119,11 @@ export async function POST(request: Request) {
   }))
 
   try {
-    const response = await openai.chat.completions.create({
+    const response = await openai.responses.create({
       model: 'gpt-5.1-2025-11-13',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...openAIMessages,
-      ],
+      instructions: systemPrompt,
+      input: openAIMessages,
+      tools: [{ type: 'web_search' }],
       stream: true,
     })
 
@@ -132,19 +131,22 @@ export async function POST(request: Request) {
       async start(controller) {
         const encoder = new TextEncoder()
         try {
-          for await (const chunk of response) {
-            const content = chunk.choices[0]?.delta?.content
-            
-            if (content) {
-              // Send data in OpenAI-compatible format
-              const data = {
-                choices: [{
-                  delta: {
-                    content: content
-                  }
-                }]
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          for await (const event of response as any) {
+            if (event.type === 'response.output_text.delta') {
+              const content = event.delta
+              
+              if (content) {
+                // Send data in OpenAI-compatible format
+                const data = {
+                  choices: [{
+                    delta: {
+                      content: content
+                    }
+                  }]
+                }
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
               }
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
             }
           }
           controller.enqueue(encoder.encode('data: [DONE]\n\n'))

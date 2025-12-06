@@ -56,33 +56,26 @@ export function Header() {
           <div className="mx-2 h-4 w-px bg-[var(--color-border)]" />
 
           {isLoading ? (
-            <div className="h-8 w-20 animate-pulse rounded-[var(--radius-full)] bg-[var(--color-surface)]" />
+            <div className="h-10 w-10 animate-pulse rounded-full bg-[var(--color-surface)]" />
           ) : user ? (
             <Link
               href="/profile"
               className={cn(
-                "group relative inline-flex items-center justify-center gap-2 rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium transition-all duration-[var(--transition-base)]",
+                "group relative inline-flex items-center justify-center rounded-full h-10 w-10 transition-all duration-[var(--transition-base)]",
                 pathname === '/profile'
-                  ? "bg-[var(--color-surface-hover)] text-[var(--color-foreground)] dark:bg-[#404040]"
-                  : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-foreground)] active:bg-[var(--color-surface-active)] dark:hover:bg-[#404040]"
+                  ? "ring-1 ring-primary ring-offset-2 ring-offset-[var(--color-background)]"
+                  : "hover:opacity-80"
               )}
             >
               {user.user_metadata?.avatar_url ? (
                 <img
                   src={user.user_metadata.avatar_url}
                   alt="Profile"
-                  className="h-5 w-5 rounded-full object-cover ring-1 ring-[var(--color-border)] transition-all group-hover:ring-[var(--color-accent)]/30"
+                  className="h-full w-full rounded-full object-cover shadow-sm"
                 />
               ) : (
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-hover)] text-[10px] font-semibold text-white">
-                  {(user.user_metadata?.full_name || user.email || 'U')[0].toUpperCase()}
-                </div>
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-info)]" />
               )}
-              <TextEffect as="span" preset="fade" per="char">
-                {user.user_metadata?.full_name
-                  ? user.user_metadata.full_name.split(' ')[0]
-                  : 'Profile'}
-              </TextEffect>
             </Link>
           ) : (
             <Button asChild size="sm" className="text-sm">

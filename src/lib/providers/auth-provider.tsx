@@ -10,6 +10,7 @@ type AuthContextType = {
   session: Session | null
   isLoading: boolean
   signOut: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   isLoading: true,
   signOut: async () => {},
+  refreshUser: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -48,8 +50,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.refresh()
   }
 
+  const refreshUser = async () => {
+    const { data: { session }, error } = await supabase.auth.refreshSession()
+    if (session && !error) {
+      setSession(session)
+      setUser(session.user)
+      router.refresh()
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signOut }}>
+    <AuthContext.Provider value={{ user, session, isLoading, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

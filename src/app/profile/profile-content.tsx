@@ -23,7 +23,8 @@ import {
   MapPin,
   Globe,
   Settings,
-  Palette
+  Palette,
+  Trash2
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { ThemeSwitch } from '@/components/layout/footer'
@@ -35,7 +36,7 @@ export function ProfileContent({
 }: {
   user: User
 }) {
-  const { signOut } = useAuth()
+  const { signOut, refreshUser } = useAuth()
   const [fullName, setFullName] = useState(user.user_metadata?.full_name || '')
   const [avatarUrl, setAvatarUrl] = useState(user.user_metadata?.avatar_url || null)
   const [coverUrl, setCoverUrl] = useState(user.user_metadata?.cover_url || null)
@@ -58,6 +59,54 @@ export function ProfileContent({
   const [editingLocation, setEditingLocation] = useState(location)
   const [timezone, setTimezone] = useState(user.user_metadata?.timezone || '')
   const [editingTimezone, setEditingTimezone] = useState(timezone)
+
+  const handleRemoveAvatar = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!confirm('Are you sure you want to remove your profile photo?')) return
+
+    const previousUrl = avatarUrl
+    setAvatarUrl(null)
+    
+    const formData = new FormData()
+    formData.append('fullName', fullName)
+    formData.append('avatarUrl', '')
+    
+    const result = await updateProfile(formData)
+    
+    if (result.error) {
+      setAvatarUrl(previousUrl)
+      showToast('Failed to remove profile photo', 'error')
+    } else {
+      await refreshUser()
+      showToast('Profile photo removed', 'success')
+    }
+  }
+
+  const handleRemoveCover = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!confirm('Are you sure you want to remove your cover photo?')) return
+
+    const previousUrl = coverUrl
+    setCoverUrl(null)
+    
+    const formData = new FormData()
+    formData.append('fullName', fullName)
+    formData.append('coverUrl', '')
+    
+    const result = await updateProfile(formData)
+    
+    if (result.error) {
+      setCoverUrl(previousUrl)
+      showToast('Failed to remove cover photo', 'error')
+    } else {
+      await refreshUser()
+      showToast('Cover photo removed', 'success')
+    }
+  }
 
   const handleFileUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -91,6 +140,7 @@ export function ProfileContent({
     formData.append('fullName', fullName)
     formData.append('avatarUrl', data.publicUrl)
     await updateProfile(formData)
+    await refreshUser()
     showToast('Profile photo updated', 'success')
   }
 
@@ -127,6 +177,7 @@ export function ProfileContent({
     if (avatarUrl) formData.append('avatarUrl', avatarUrl)
     formData.append('coverUrl', data.publicUrl)
     await updateProfile(formData)
+    await refreshUser()
     showToast('Cover photo updated', 'success')
   }
 
@@ -201,6 +252,7 @@ export function ProfileContent({
       setBirthday(editingBirthday)
       setLocation(editingLocation.trim())
       setTimezone(editingTimezone)
+      await refreshUser()
       showToast('Preferences updated', 'success')
     }
     
@@ -232,27 +284,34 @@ export function ProfileContent({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent)] dark:from-[var(--color-gradient-dark-start)] via-[var(--color-gradient-mid-1)] via-[45%] to-[var(--color-gradient-mid-2)]">
-                {/* Decorative elements */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(127,145,224,0.25)_0%,transparent_45%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_75%,rgba(210,165,200,0.2)_0%,transparent_45%)]" />
-                <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/10 to-transparent" />
-              </div>
+              <div className="w-full h-full bg-[var(--color-background)]" />
             )}
             
             {/* Cover upload button */}
-            <button 
-              onClick={() => coverInputRef.current?.click()}
-              disabled={isUploadingCover}
-              className="absolute bottom-3 right-3 flex items-center gap-2 px-4 py-2 rounded-[var(--radius-full)] bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white text-xs font-medium opacity-0 group-hover/cover:opacity-100 transition-all duration-[var(--transition-base)] cursor-pointer"
-            >
-              {isUploadingCover ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Camera className="h-3.5 w-3.5" />
+            <div className="absolute bottom-3 right-3 flex items-center gap-2 opacity-0 group-hover/cover:opacity-100 transition-all duration-[var(--transition-base)]">
+              {coverUrl && !isUploadingCover && (
+                <button
+                  onClick={handleRemoveCover}
+                  className="flex items-center justify-center h-8 w-8 rounded-[var(--radius-full)] bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white transition-colors cursor-pointer"
+                  title="Remove cover photo"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               )}
-              Edit cover
-            </button>
+              
+              <button 
+                onClick={() => coverInputRef.current?.click()}
+                disabled={isUploadingCover}
+                className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius-full)] bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white text-xs font-medium cursor-pointer"
+              >
+                {isUploadingCover ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Camera className="h-3.5 w-3.5" />
+                )}
+                Edit cover
+              </button>
+            </div>
             
             <input 
               ref={coverInputRef}
@@ -266,7 +325,7 @@ export function ProfileContent({
 
           {/* Avatar - Overlapping Cover */}
           <div 
-            className="relative -mt-14 mb-3"
+            className="relative -mt-14 mb-3 group/avatar w-fit mx-auto"
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -284,11 +343,7 @@ export function ProfileContent({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="h-full w-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-info)] flex items-center justify-center">
-                  <span className="text-3xl font-bold text-white">
-                    {displayName.charAt(0).toUpperCase()}
-                  </span>
-                </div>
+                <div className="h-full w-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-info)] flex items-center justify-center" />
               )}
               
               {/* Upload overlay */}
@@ -307,6 +362,16 @@ export function ProfileContent({
               </button>
             </div>
             
+            {avatarUrl && !isUploading && (
+              <button
+                onClick={handleRemoveAvatar}
+                className="absolute top-0 -right-2 p-1.5 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white transition-all opacity-0 group-hover/avatar:opacity-100 z-10 cursor-pointer"
+                title="Remove profile photo"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+
             <input 
               ref={fileInputRef}
               type="file" 

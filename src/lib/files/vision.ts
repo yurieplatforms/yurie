@@ -1,43 +1,63 @@
 /**
  * Vision Best Practices - Image Processing
- * 
- * Handles image resizing, validation, and optimization for Vision API.
+ *
+ * Handles image resizing, validation, and optimization for OpenAI Vision API.
+ *
+ * @see https://platform.openai.com/docs/guides/images-vision
+ *
+ * OpenAI Image Input Requirements:
+ * - Supported formats: PNG, JPEG, WEBP, non-animated GIF
+ * - Size limits: Up to 50MB total payload per request
+ * - Max images: Up to 500 individual image inputs per request
+ *
+ * Image Input Methods:
+ * 1. Fully qualified URL to an image file
+ * 2. Base64-encoded data URL
+ * 3. File ID (created with Files API)
+ *
+ * Detail Parameter:
+ * - "low": 85 tokens budget, 512x512px low-res version
+ * - "high": Better understanding, more tokens
+ * - "auto": Model decides (default)
  */
 
 import { readFileAsDataURL, isImageFile, isPdfFile } from '@/lib/utils'
 
 /**
- * Vision API Constants
+ * Image detail levels for OpenAI Vision API
+ * @see https://platform.openai.com/docs/guides/images-vision#specify-image-input-detail-level
+ */
+export type ImageDetailLevel = 'low' | 'high' | 'auto'
+
+/**
+ * Vision API Constants per OpenAI documentation
  */
 export const VISION_CONSTANTS = {
   /**
    * Maximum dimension for optimal vision performance.
-   * Recommended resizing images to no more than 1568 pixels on the longest edge
-   * to improve time-to-first-token without sacrificing model performance.
+   * Recommended resizing images to improve time-to-first-token.
    */
   MAX_OPTIMAL_DIMENSION: 1568,
 
   /**
    * Target megapixels for optimal performance (~1.15 megapixels)
-   * Images larger than this will be resized by Claude anyway, so we do it client-side
-   * to reduce upload time and improve latency.
+   * We resize client-side to reduce upload time and improve latency.
    */
   TARGET_MEGAPIXELS: 1.15 * 1000000,
 
   /**
    * Minimum recommended image dimension.
-   * Very small images under 200 pixels on any given edge may degrade performance.
+   * Very small images may degrade performance.
    */
   MIN_RECOMMENDED_DIMENSION: 200,
 
   /**
-   * Maximum absolute image dimension (will be rejected by API)
+   * Maximum absolute image dimension
    */
   MAX_ABSOLUTE_DIMENSION: 8000,
 
   /**
    * Maximum dimension when more than 20 images are in a single request.
-   * If you submit more than 20 images in one API request, the limit becomes 2000x2000 px.
    */
   MAX_DIMENSION_MULTI_IMAGE: 2000,
 
@@ -47,14 +67,24 @@ export const VISION_CONSTANTS = {
   MULTI_IMAGE_THRESHOLD: 20,
 
   /**
-   * Maximum number of images per API request
+   * Maximum number of images per API request (per OpenAI docs)
    */
-  MAX_IMAGES_PER_REQUEST: 100,
+  MAX_IMAGES_PER_REQUEST: 500,
 
   /**
-   * Maximum file size per image (5MB for API)
+   * Maximum total payload size per request (50MB per OpenAI docs)
    */
-  MAX_FILE_SIZE: 5 * 1024 * 1024,
+  MAX_TOTAL_PAYLOAD_SIZE: 50 * 1024 * 1024,
+
+  /**
+   * Tokens for low detail mode (fixed budget)
+   */
+  LOW_DETAIL_TOKENS: 85,
+
+  /**
+   * Low detail image resolution
+   */
+  LOW_DETAIL_RESOLUTION: 512,
 
   /**
    * Token divisor for estimating image token usage.
@@ -68,7 +98,11 @@ const MAX_IMAGE_DIMENSION = VISION_CONSTANTS.MAX_OPTIMAL_DIMENSION
 const TARGET_MEGAPIXELS = VISION_CONSTANTS.TARGET_MEGAPIXELS
 
 /**
- * Supported image formats for Vision API
+ * Supported image formats for Vision API (per OpenAI docs)
+ * - PNG (.png)
+ * - JPEG (.jpeg and .jpg)
+ * - WEBP (.webp)
+ * - Non-animated GIF (.gif)
  */
 export const SUPPORTED_IMAGE_FORMATS: readonly string[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 export type SupportedImageFormat = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
@@ -80,16 +114,16 @@ export const isSupportedImageFormat = (mediaType: string): mediaType is Supporte
   SUPPORTED_IMAGE_FORMATS.includes(mediaType)
 
 /**
- * File size limits
- * 
- * - API: Maximum 5MB per image
- * - Documents: Maximum 32MB total request size
- * - PDF pages: Maximum 100 pages per request
+ * File size limits per OpenAI documentation
+ *
+ * - Total payload: Maximum 50MB per request
+ * - Max images: 500 per request
+ * - Documents: Maximum 50MB per file
  */
-export const MAX_IMAGE_FILE_SIZE = VISION_CONSTANTS.MAX_FILE_SIZE
-export const MAX_DOCUMENT_FILE_SIZE = 32 * 1024 * 1024 // 32MB max request size for PDFs
+export const MAX_IMAGE_FILE_SIZE = VISION_CONSTANTS.MAX_TOTAL_PAYLOAD_SIZE
+export const MAX_DOCUMENT_FILE_SIZE = 50 * 1024 * 1024 // 50MB per OpenAI docs
 export const MAX_IMAGE_DIMENSION_LIMIT = VISION_CONSTANTS.MAX_ABSOLUTE_DIMENSION
-export const MAX_PDF_PAGES = 100 // Max pages per PDF request
+export const MAX_PDF_PAGES = 100 // Reasonable default for PDF processing
 
 // ============================================================================
 // Token Estimation
@@ -285,16 +319,17 @@ export const isTextFile = (file: File): boolean => {
 }
 
 /**
- * Validates file size against API limits
+ * Validates file size against API limits (50MB total payload per OpenAI docs)
  * @param file - The file to validate
- * @param isImage - Whether the file is an image (stricter limit)
+ * @param _isImage - Deprecated, kept for backwards compatibility
  * @returns Object with valid status and error message if invalid
  */
 export const validateFileSize = (
   file: File,
-  isImage: boolean = false
+  _isImage: boolean = false
 ): { valid: boolean; error?: string } => {
-  const maxSize = isImage ? MAX_IMAGE_FILE_SIZE : MAX_DOCUMENT_FILE_SIZE
+  // Per OpenAI: 50MB total payload per request
+  const maxSize = MAX_DOCUMENT_FILE_SIZE
   const maxSizeMB = maxSize / (1024 * 1024)
 
   if (file.size > maxSize) {
@@ -393,7 +428,8 @@ export const validateImageDimensions = async (
 
 /**
  * Validates the number of images in a request against API limits.
- * 
+ * Per OpenAI docs: Up to 500 individual image inputs per request
+ *
  * @param imageCount - Number of images in the request
  * @returns Validation result
  */
@@ -402,6 +438,7 @@ export const validateImageCount = (
 ): { valid: boolean; error?: string; warnings?: string[] } => {
   const warnings: string[] = []
 
+  // Per OpenAI: Up to 500 individual image inputs per request
   if (imageCount > VISION_CONSTANTS.MAX_IMAGES_PER_REQUEST) {
     return {
       valid: false,
@@ -412,7 +449,7 @@ export const validateImageCount = (
   // Warn about multi-image mode restrictions
   if (imageCount > VISION_CONSTANTS.MULTI_IMAGE_THRESHOLD) {
     warnings.push(
-      `With ${imageCount} images, maximum dimension per image is ${VISION_CONSTANTS.MAX_DIMENSION_MULTI_IMAGE}x${VISION_CONSTANTS.MAX_DIMENSION_MULTI_IMAGE}px (not ${VISION_CONSTANTS.MAX_ABSOLUTE_DIMENSION}x${VISION_CONSTANTS.MAX_ABSOLUTE_DIMENSION}px).`
+      `With ${imageCount} images, maximum dimension per image is ${VISION_CONSTANTS.MAX_DIMENSION_MULTI_IMAGE}x${VISION_CONSTANTS.MAX_DIMENSION_MULTI_IMAGE}px.`
     )
   }
 

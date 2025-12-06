@@ -69,9 +69,9 @@ export const MessageContent = ({
       "flex max-w-full flex-col gap-2 overflow-hidden text-base",
       from === "user"
         ? [
-            // User bubble: align with blog card surfaces
-            "w-fit ml-auto rounded-[26px] px-5 py-3.5 text-zinc-900 shadow-sm",
-            "bg-zinc-100/90",
+            // User bubble: matches blockquote/muted surface color
+            "w-fit ml-auto rounded-[26px] px-5 py-3.5 shadow-sm",
+            "bg-muted text-foreground",
             // Dark mode bubble color override
             "dark:bg-[#404040] dark:text-zinc-50",
           ]
@@ -410,8 +410,8 @@ export const MessageResponse = memo(
         )}
         // Enable LaTeX math rendering with single dollar signs ($...$)
         remarkPlugins={customRemarkPlugins as ComponentProps<typeof Streamdown>['remarkPlugins']}
-        // Use high-contrast themes for better readability in both modes
-        shikiTheme={['github-light', 'github-dark']}
+        // Use high-contrast themes for better readability in both modes  
+        shikiTheme={['github-light', 'monokai']}
         // Keep Streamdown's rich code block UI (header, controls), but make
         // structural elements match blog-style prose.
         components={{

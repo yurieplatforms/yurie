@@ -22,7 +22,7 @@ export async function updateProfile(formData: FormData) {
   } = {}
   
   if (fullName) updates.full_name = fullName
-  if (avatarUrl) updates.avatar_url = avatarUrl
+  if (avatarUrl !== null) updates.avatar_url = avatarUrl
   if (coverUrl !== null) updates.cover_url = coverUrl
   if (birthday !== null) updates.birthday = birthday
   if (location !== null) updates.location = location
