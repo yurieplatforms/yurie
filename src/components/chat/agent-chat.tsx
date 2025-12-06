@@ -25,7 +25,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
   // Get user location for localized web search results
   // Uses timezone-based inference with comprehensive city/region mapping
-  // @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool#localization
   const geolocationData = useGeolocation()
 
   // Use custom hooks for chat state and stream processing
@@ -120,7 +119,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
       // Build user location for localized web search results
       // Uses comprehensive timezone-to-location mapping for accurate city/region detection
-      // @see https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool#localization
       const userLocation = buildUserLocation(geolocationData)
 
       let finalStreamState: StreamState | null = null

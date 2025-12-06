@@ -150,14 +150,6 @@ export async function runAgent({
             await sseHandler.sendToolEvent(toolName, 'start', args)
 
             // Find tool implementation
-            // Note: runnableTools has 'run' method, but structure might be different now
-            // We need to match standard OpenAI tool execution
-            // The runnableTools from `createRunnableTools` are likely Objects with `run`
-            // But here `tools` is a list of definitions.
-            // Wait, `createRunnableTools` likely returns the definitions WITH `run` attached or we need a map.
-            // Looking at `runnable-tools.ts` (I couldn't read it all), it likely mimics Anthropic SDK structure.
-            // I need to find the tool definition in `tools` array that matches `toolName`.
-            
             const toolDef = tools.find((t: any) => (t.function?.name === toolName || t.name === toolName))
             
             let result = ''
@@ -165,19 +157,15 @@ export async function runAgent({
                try {
                  // @ts-ignore
                  const output = await (toolDef as any).run({ input: args })
-                 if (typeof output === 'string') result = output
-                 else if (output && output.content) {
-                    // Handle Anthropic tool result structure if it persists
-                    result = Array.isArray(output.content) ? JSON.stringify(output.content) : String(output.content)
+                 if (typeof output === 'string') {
+                   result = output
                  } else {
-                    result = JSON.stringify(output)
+                   result = JSON.stringify(output)
                  }
                } catch (e: any) {
                  result = `Error: ${e.message}`
                }
             } else {
-               // Fallback or handled by server tools? 
-               // For now, just return placeholder if not found
                result = "Tool implementation not found"
             }
 

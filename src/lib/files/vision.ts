@@ -1,15 +1,13 @@
 /**
- * Vision Best Practices - Image Processing for Claude API
+ * Vision Best Practices - Image Processing
  * 
- * Handles image resizing, validation, and optimization for Claude's vision API.
- * @see https://platform.claude.com/docs/en/build-with-claude/vision
+ * Handles image resizing, validation, and optimization for Vision API.
  */
 
 import { readFileAsDataURL, isImageFile, isPdfFile } from '@/lib/utils'
 
 /**
  * Vision API Constants
- * @see https://platform.claude.com/docs/en/build-with-claude/vision
  */
 export const VISION_CONSTANTS = {
   /**
@@ -70,7 +68,7 @@ const MAX_IMAGE_DIMENSION = VISION_CONSTANTS.MAX_OPTIMAL_DIMENSION
 const TARGET_MEGAPIXELS = VISION_CONSTANTS.TARGET_MEGAPIXELS
 
 /**
- * Supported image formats for Claude vision API
+ * Supported image formats for Vision API
  */
 export const SUPPORTED_IMAGE_FORMATS: readonly string[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 export type SupportedImageFormat = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
@@ -82,8 +80,7 @@ export const isSupportedImageFormat = (mediaType: string): mediaType is Supporte
   SUPPORTED_IMAGE_FORMATS.includes(mediaType)
 
 /**
- * File size limits based on Anthropic documentation
- * @see https://platform.claude.com/docs/en/build-with-claude/pdf-support
+ * File size limits
  * 
  * - API: Maximum 5MB per image
  * - Documents: Maximum 32MB total request size
@@ -101,9 +98,7 @@ export const MAX_PDF_PAGES = 100 // Max pages per PDF request
 /**
  * Estimates the number of tokens an image will consume.
  * 
- * Formula from Anthropic documentation: tokens = (width * height) / 750
- * 
- * @see https://platform.claude.com/docs/en/build-with-claude/vision#calculate-image-costs
+ * Formula: tokens = (width * height) / 750
  * 
  * @param width - Image width in pixels
  * @param height - Image height in pixels
@@ -117,7 +112,7 @@ export const estimateImageTokens = (width: number, height: number): number =>
  * 
  * @param width - Image width in pixels
  * @param height - Image height in pixels
- * @param pricePerMillionTokens - Model's price per million input tokens (default: $3 for Claude Sonnet)
+ * @param pricePerMillionTokens - Model's price per million input tokens
  * @returns Estimated cost in USD
  */
 export const estimateImageCost = (
@@ -130,10 +125,8 @@ export const estimateImageCost = (
 }
 
 /**
- * Optimal image sizes by aspect ratio that won't be resized by Claude.
+ * Optimal image sizes by aspect ratio that won't be resized.
  * These use approximately 1,600 tokens each.
- * 
- * @see https://platform.claude.com/docs/en/build-with-claude/vision#evaluate-image-size
  */
 export const OPTIMAL_IMAGE_SIZES: Record<string, { width: number; height: number }> = {
   '1:1': { width: 1092, height: 1092 },
@@ -169,9 +162,9 @@ export const getImageDimensions = (file: File): Promise<{ width: number; height:
   })
 
 /**
- * Resizes an image file to optimize for Claude's vision API.
+ * Resizes an image file to optimize for Vision API.
  * 
- * Best practices from Anthropic documentation:
+ * Best practices:
  * - Resize images to no more than 1568 pixels on the longest edge
  * - Target ~1.15 megapixels for optimal time-to-first-token
  * - Maintains aspect ratio
@@ -273,7 +266,7 @@ export const resizeImageForVision = (
 // ============================================================================
 
 /**
- * Validates if the file format is supported for Claude vision
+ * Validates if the file format is supported for Vision API
  */
 export const isValidImageFormat = (file: File): boolean =>
   SUPPORTED_IMAGE_FORMATS.includes(file.type)
@@ -292,7 +285,7 @@ export const isTextFile = (file: File): boolean => {
 }
 
 /**
- * Validates file size against Claude API limits
+ * Validates file size against API limits
  * @param file - The file to validate
  * @param isImage - Whether the file is an image (stricter limit)
  * @returns Object with valid status and error message if invalid
@@ -315,7 +308,7 @@ export const validateFileSize = (
 }
 
 /**
- * Validates image dimensions against Claude API limits
+ * Validates image dimensions against API limits
  * 
  * Checks:
  * - Images larger than 8000x8000 px will be rejected
@@ -376,7 +369,7 @@ export const validateImageDimensions = async (
       )
     }
 
-    // Warn if image will be resized by Claude
+    // Warn if image will be resized
     if (width > VISION_CONSTANTS.MAX_OPTIMAL_DIMENSION || 
         height > VISION_CONSTANTS.MAX_OPTIMAL_DIMENSION) {
       warnings.push(
@@ -427,7 +420,7 @@ export const validateImageCount = (
 }
 
 /**
- * Comprehensive file validation for Claude vision/document API
+ * Comprehensive file validation for Vision/Document API
  * Validates format, size, and dimensions (for images)
  * 
  * @param file - The file to validate

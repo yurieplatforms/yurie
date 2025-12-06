@@ -43,8 +43,6 @@ export function convertToOpenAIContent(
           },
         })
       }
-      // Note: PDF/Document support removed as it was specific to Anthropic
-      // Text files might still be supported if converted to text segments upstream
     }
 
     return result.length > 0 ? result : ''

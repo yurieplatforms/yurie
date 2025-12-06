@@ -4,8 +4,7 @@
  * Re-exports file handling utilities from a single entry point.
  * Includes vision processing, PDF support, file validation, and file type helpers.
  * 
- * @see https://platform.claude.com/docs/en/build-with-claude/pdf-support
- * @see https://platform.claude.com/docs/en/build-with-claude/vision
+ * @see https://docs.x.ai/docs
  */
 
 // Vision and image processing
@@ -42,8 +41,6 @@ export {
   PDF_REQUIREMENTS,
   validatePdfFile,
   isPdfUrl,
-  createPdfDocumentSegment,
-  createUrlPdfDocumentSegment,
 } from './pdf'
 
 // Re-export file helpers from utils for convenience
