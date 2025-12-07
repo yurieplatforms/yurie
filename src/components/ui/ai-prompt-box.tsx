@@ -2,7 +2,7 @@ import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { CornerRightUp, Square, X as XIcon, FileText, Plus, LayoutGrid, Mail, Check } from "lucide-react";
+import { CornerRightUp, Square, X as XIcon, FileText, Plus, LayoutGrid, Mail, Music, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/providers/auth-provider";
@@ -63,9 +63,10 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
 
 // --- Main Component ---
 
-// Mock tools list for UI placeholder
+// Tools list for app selection
 const toolsList = [
   { id: 'gmail', name: 'Gmail', shortName: 'Gmail', icon: Mail, iconUrl: '/Gmail.svg', description: 'Send emails on your behalf' },
+  { id: 'spotify', name: 'Spotify', shortName: 'Spotify', icon: Music, iconUrl: '/Spotify.png', description: 'Control music playback' },
 ];
 
 interface PromptInputBoxProps {
@@ -341,11 +342,11 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                               selectedTools.includes(tool.id) && "bg-[var(--color-surface-active)]"
                           )}
                       > 
-                          <div className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 bg-[var(--color-surface-hover)]">
+                          <div className="h-8 w-8 flex items-center justify-center shrink-0">
                             {tool.iconUrl ? (
-                              <img src={tool.iconUrl} alt={tool.name} className="h-4 w-4 object-contain" />
+                              <img src={tool.iconUrl} alt={tool.name} className="h-6 w-6 object-contain" />
                             ) : tool.icon ? (
-                              <tool.icon className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+                              <tool.icon className="h-6 w-6 text-[var(--color-muted-foreground)]" />
                             ) : null}
                           </div>
                           <div className="flex-1 min-w-0">

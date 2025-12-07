@@ -2,7 +2,7 @@
  * Composio Authentication Utilities
  *
  * Handles user authentication flows for connecting external accounts
- * (e.g., Gmail) via Composio's OAuth integration.
+ * (e.g., Gmail, Spotify) via Composio's OAuth integration.
  *
  * @see https://docs.composio.dev/docs/authenticating-tools
  */
@@ -12,6 +12,25 @@ import { env } from '@/lib/config/env'
 import type { ConnectionStatus, ConnectedAccount, ConnectionRequest } from './types'
 
 export type { ConnectionRequest, ConnectedAccount }
+
+/**
+ * Supported app types for Composio integration
+ */
+export type ComposioApp = 'gmail' | 'spotify'
+
+/**
+ * Get the auth config ID for a specific app
+ */
+export function getAuthConfigId(app: ComposioApp): string | undefined {
+  switch (app) {
+    case 'gmail':
+      return env.COMPOSIO_AUTH_CONFIG_ID
+    case 'spotify':
+      return env.COMPOSIO_SPOTIFY_AUTH_CONFIG_ID
+    default:
+      return undefined
+  }
+}
 
 /**
  * Connection status constants matching Composio API
@@ -36,26 +55,44 @@ export const ConnectionStatuses = {
  * Initiate a connection request for a user to authenticate with an external service
  *
  * @param externalUserId - Unique identifier for the user in your system
- * @param authConfigId - Optional auth config ID (defaults to COMPOSIO_AUTH_CONFIG_ID env var)
+ * @param options - Connection options including app type or custom auth config ID
  * @returns Connection request with redirect URL and wait function
  *
  * @example
+ * // Connect Gmail (default)
  * const request = await connectUserAccount('user-123')
- * // Redirect user to: request.redirectUrl
- * const account = await request.waitForConnection()
+ * 
+ * @example
+ * // Connect Spotify
+ * const request = await connectUserAccount('user-123', { app: 'spotify' })
+ * 
+ * @example
+ * // Use custom auth config ID
+ * const request = await connectUserAccount('user-123', { authConfigId: 'ac_custom' })
  *
  * @see https://docs.composio.dev/docs/authenticating-tools#connecting-an-account
  */
 export async function connectUserAccount(
   externalUserId: string,
-  authConfigId?: string
+  options?: { app?: ComposioApp; authConfigId?: string }
 ): Promise<ConnectionRequest> {
   const composio = getComposioClient()
-  const configId = authConfigId ?? env.COMPOSIO_AUTH_CONFIG_ID
+  
+  // Determine the app type (defaults to gmail for backwards compatibility)
+  const app = options?.app ?? 'gmail'
+  
+  // Determine the config ID: explicit authConfigId > app-based config
+  let configId = options?.authConfigId
+  if (!configId) {
+    configId = getAuthConfigId(app)
+  }
 
   if (!configId) {
+    const envVarName = app === 'gmail' 
+      ? 'COMPOSIO_AUTH_CONFIG_ID' 
+      : `COMPOSIO_${app.toUpperCase()}_AUTH_CONFIG_ID`
     throw new Error(
-      'COMPOSIO_AUTH_CONFIG_ID is not set. Please add it to your environment variables or provide an authConfigId.'
+      `Auth config ID for ${app} is not set. Please add ${envVarName} to your environment variables.`
     )
   }
 
@@ -99,12 +136,22 @@ export async function connectUserAccount(
  * @param options - Optional filtering options
  * @returns Connected account info or null if not connected
  *
+ * @example
+ * // Get Gmail connection (default)
+ * const account = await getConnectedAccount('user-123')
+ * 
+ * @example
+ * // Get Spotify connection
+ * const account = await getConnectedAccount('user-123', { app: 'spotify' })
+ *
  * @see https://docs.composio.dev/docs/authenticating-tools#checking-connection-status
  */
 export async function getConnectedAccount(
   externalUserId: string,
   options?: {
-    /** Filter by specific auth config ID */
+    /** Filter by specific app type */
+    app?: ComposioApp
+    /** Filter by specific auth config ID (overrides app) */
     authConfigId?: string
     /** Include non-active connections (default: false) */
     includeInactive?: boolean
@@ -122,9 +169,15 @@ export async function getConnectedAccount(
       userIds: [externalUserId],
     }
 
-    // Add auth config filter if provided
-    if (options?.authConfigId) {
-      listOptions.authConfigIds = [options.authConfigId]
+    // Determine auth config ID: explicit > app-based
+    let authConfigId = options?.authConfigId
+    if (!authConfigId && options?.app) {
+      authConfigId = getAuthConfigId(options.app)
+    }
+    
+    // Add auth config filter if we have one
+    if (authConfigId) {
+      listOptions.authConfigIds = [authConfigId]
     }
 
     // Only return ACTIVE accounts unless explicitly including inactive
@@ -162,6 +215,8 @@ export async function getConnectedAccount(
 export async function listConnectedAccounts(
   externalUserId: string,
   options?: {
+    /** Filter by specific app type */
+    app?: ComposioApp
     /** Filter by specific auth config IDs */
     authConfigIds?: string[]
     /** Filter by specific statuses */
@@ -171,9 +226,18 @@ export async function listConnectedAccounts(
   try {
     const composio = getComposioClient()
 
+    // Build auth config IDs list
+    let authConfigIds = options?.authConfigIds
+    if (!authConfigIds && options?.app) {
+      const configId = getAuthConfigId(options.app)
+      if (configId) {
+        authConfigIds = [configId]
+      }
+    }
+
     const response = await composio.connectedAccounts.list({
       userIds: [externalUserId],
-      ...(options?.authConfigIds && { authConfigIds: options.authConfigIds }),
+      ...(authConfigIds && { authConfigIds }),
       ...(options?.statuses && { statuses: options.statuses }),
     })
 
@@ -196,12 +260,21 @@ export async function listConnectedAccounts(
  * Check if a user has an active connection ready for tool execution
  *
  * @param externalUserId - Unique identifier for the user in your system
+ * @param app - Optional app type to check (defaults to gmail)
  * @returns True if the user has an ACTIVE connection
+ *
+ * @example
+ * // Check Gmail connection
+ * const isGmailConnected = await isUserConnected('user-123')
+ * 
+ * @example
+ * // Check Spotify connection
+ * const isSpotifyConnected = await isUserConnected('user-123', 'spotify')
  *
  * @see https://docs.composio.dev/docs/authenticating-tools#connection-statuses
  */
-export async function isUserConnected(externalUserId: string): Promise<boolean> {
-  const account = await getConnectedAccount(externalUserId)
+export async function isUserConnected(externalUserId: string, app?: ComposioApp): Promise<boolean> {
+  const account = await getConnectedAccount(externalUserId, { app })
   // Only ACTIVE connections can execute tools
   return account !== null && account.status === ConnectionStatuses.ACTIVE
 }

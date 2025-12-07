@@ -2,7 +2,7 @@
  * Composio Integration Module
  *
  * Provides utilities for authenticating users and accessing Composio tools.
- * Supports Gmail integration for sending/receiving emails on behalf of users.
+ * Supports Gmail and Spotify integration.
  *
  * @see https://docs.composio.dev/docs/quickstart
  *
@@ -15,12 +15,25 @@
  * const account = await request.waitForConnection()
  *
  * @example
+ * // Connect a user to Spotify
+ * const request = await connectUserAccount(userId, { app: 'spotify' })
+ *
+ * @example
  * // Get Gmail tools for an agent
  * import { getGmailTools, GmailTools } from '@/lib/ai/integrations/composio'
  *
  * const tools = await getGmailTools(userId, [
  *   GmailTools.SEND_EMAIL,
  *   GmailTools.FETCH_EMAILS,
+ * ])
+ *
+ * @example
+ * // Get Spotify tools for an agent
+ * import { getSpotifyTools, SpotifyTools } from '@/lib/ai/integrations/composio'
+ *
+ * const tools = await getSpotifyTools(userId, [
+ *   SpotifyTools.SEARCH,
+ *   SpotifyTools.START_RESUME_PLAYBACK,
  * ])
  */
 
@@ -50,7 +63,9 @@ export {
   listConnectedAccounts,
   isUserConnected,
   disconnectAccount,
+  getAuthConfigId,
   ConnectionStatuses,
+  type ComposioApp,
 } from './auth'
 
 // Tools
@@ -59,13 +74,20 @@ export {
   getGmailTools,
   getGmailToolsForAgents,
   getGmailToolsByGroup,
+  getSpotifyTools,
+  getSpotifyToolsForAgents,
+  getSpotifyToolsByGroup,
   getToolkitTools,
   searchTools,
   getToolSchemas,
   GmailTools,
   GmailToolGroups,
   DEFAULT_GMAIL_TOOLS,
+  SpotifyTools,
+  SpotifyToolGroups,
+  DEFAULT_SPOTIFY_TOOLS,
   type GmailToolName,
+  type SpotifyToolName,
 } from './tools'
 
 // Agents

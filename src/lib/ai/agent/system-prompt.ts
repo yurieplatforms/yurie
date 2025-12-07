@@ -105,9 +105,10 @@ function buildDynamicContext(params: SystemPromptParams): string {
 </context>`)
 
   // Capabilities section (only if any are enabled)
+  const capabilities: string[] = []
+  
   if (enabledCapabilities.includes('gmail')) {
-    sections.push(`<capabilities>
-  Gmail Integration (ACTIVE):
+    capabilities.push(`Gmail Integration (ACTIVE):
   - You can send emails on behalf of the user using GMAIL_SEND_EMAIL
   - You can fetch and read emails using GMAIL_FETCH_EMAILS
   - You can create email drafts using GMAIL_CREATE_EMAIL_DRAFT
@@ -115,8 +116,35 @@ function buildDynamicContext(params: SystemPromptParams): string {
   When the user asks you to send an email, compose a draft, or check their inbox:
   - Use the appropriate Gmail tool
   - Confirm the action with the user before sending
-  - Be helpful in composing professional, friendly, or appropriate emails based on context
-</capabilities>`)
+  - Be helpful in composing professional, friendly, or appropriate emails based on context`)
+  }
+  
+  if (enabledCapabilities.includes('spotify')) {
+    capabilities.push(`Spotify Integration (ACTIVE):
+  - You can control music playback: play, pause, skip, previous, volume
+  - You can search for songs, artists, albums, and playlists
+  - You can get what's currently playing and manage the queue
+  - You can access and create playlists, get recommendations
+  - Note: Playback control requires Spotify Premium
+  
+  Key tools:
+  - SPOTIFY_SEARCH_FOR_ITEM: Search for music (use type: ["track", "artist", "album", "playlist"])
+  - SPOTIFY_START_RESUME_PLAYBACK: Play music (use context_uri for album/playlist, uris for tracks)
+  - SPOTIFY_PAUSE_PLAYBACK: Pause the music
+  - SPOTIFY_SKIP_TO_NEXT / SPOTIFY_SKIP_TO_PREVIOUS: Skip tracks
+  - SPOTIFY_GET_CURRENTLY_PLAYING_TRACK: See what's playing now
+  - SPOTIFY_ADD_ITEM_TO_PLAYBACK_QUEUE: Add songs to queue (use uri like "spotify:track:...")
+  - SPOTIFY_GET_CURRENT_USER_S_PLAYLISTS: List user's playlists
+  - SPOTIFY_GET_RECOMMENDATIONS: Get personalized recommendations
+  
+  When playing music:
+  - Search first to get the Spotify URI, then use it to play
+  - For tracks, use "uris" array with track URIs
+  - For albums/playlists, use "context_uri" with the URI`)
+  }
+  
+  if (capabilities.length > 0) {
+    sections.push(`<capabilities>\n  ${capabilities.join('\n\n  ')}\n</capabilities>`)
   }
 
   return sections.join('\n\n')

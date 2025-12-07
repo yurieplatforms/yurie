@@ -219,26 +219,46 @@ export function ProfileContent({
   const [isConnectingGmail, setIsConnectingGmail] = useState(false)
   const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false)
 
-  // Check Gmail connection status on mount
+  // Spotify connection state
+  const [isSpotifyConnected, setIsSpotifyConnected] = useState(false)
+  const [isCheckingSpotify, setIsCheckingSpotify] = useState(true)
+  const [isConnectingSpotify, setIsConnectingSpotify] = useState(false)
+  const [isDisconnectingSpotify, setIsDisconnectingSpotify] = useState(false)
+
+  // Check Gmail and Spotify connection status on mount
   useEffect(() => {
-    const checkGmailStatus = async () => {
+    const checkConnectionStatus = async () => {
+      // Check Gmail
       try {
-        const response = await fetch(`/api/composio/status?userId=${user.id}`)
-        const data = await response.json()
-        // Only mark as connected if status is ACTIVE (the API handles this)
-        setIsGmailConnected(data.connected === true)
+        const gmailResponse = await fetch(`/api/composio/status?userId=${user.id}&app=gmail`)
+        const gmailData = await gmailResponse.json()
+        setIsGmailConnected(gmailData.connected === true)
         
-        // Log if there's a non-active connection that needs attention
-        if (!data.connected && data.requiresReauth) {
-          console.log('[Gmail] Connection requires re-authentication:', data.status)
+        if (!gmailData.connected && gmailData.requiresReauth) {
+          console.log('[Gmail] Connection requires re-authentication:', gmailData.status)
         }
       } catch (error) {
         console.error('Failed to check Gmail status:', error)
       } finally {
         setIsCheckingGmail(false)
       }
+
+      // Check Spotify
+      try {
+        const spotifyResponse = await fetch(`/api/composio/status?userId=${user.id}&app=spotify`)
+        const spotifyData = await spotifyResponse.json()
+        setIsSpotifyConnected(spotifyData.connected === true)
+        
+        if (!spotifyData.connected && spotifyData.requiresReauth) {
+          console.log('[Spotify] Connection requires re-authentication:', spotifyData.status)
+        }
+      } catch (error) {
+        console.error('Failed to check Spotify status:', error)
+      } finally {
+        setIsCheckingSpotify(false)
+      }
     }
-    checkGmailStatus()
+    checkConnectionStatus()
   }, [user.id])
 
   const handleConnectGmail = async () => {
@@ -247,7 +267,7 @@ export function ProfileContent({
       const response = await fetch('/api/composio/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ userId: user.id, app: 'gmail' }),
       })
       const data = await response.json()
       
@@ -258,7 +278,7 @@ export function ProfileContent({
         // Poll for connection status
         const pollInterval = setInterval(async () => {
           try {
-            const statusResponse = await fetch(`/api/composio/status?userId=${user.id}`)
+            const statusResponse = await fetch(`/api/composio/status?userId=${user.id}&app=gmail`)
             const statusData = await statusResponse.json()
             if (statusData.connected) {
               setIsGmailConnected(true)
@@ -295,7 +315,7 @@ export function ProfileContent({
       const response = await fetch('/api/composio/disconnect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ userId: user.id, app: 'gmail' }),
       })
       const data = await response.json()
       
@@ -310,6 +330,78 @@ export function ProfileContent({
       showToast('Failed to disconnect Gmail', 'error')
     } finally {
       setIsDisconnectingGmail(false)
+    }
+  }
+
+  const handleConnectSpotify = async () => {
+    setIsConnectingSpotify(true)
+    try {
+      const response = await fetch('/api/composio/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, app: 'spotify' }),
+      })
+      const data = await response.json()
+      
+      if (data.redirectUrl) {
+        window.open(data.redirectUrl, '_blank', 'noopener,noreferrer')
+        showToast('Complete the authorization in the new tab', 'info')
+        
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          try {
+            const statusResponse = await fetch(`/api/composio/status?userId=${user.id}&app=spotify`)
+            const statusData = await statusResponse.json()
+            if (statusData.connected) {
+              setIsSpotifyConnected(true)
+              clearInterval(pollInterval)
+              showToast('Spotify connected successfully!', 'success')
+              setIsConnectingSpotify(false)
+            }
+          } catch {
+            // Continue polling
+          }
+        }, 2000)
+        
+        // Stop polling after 5 minutes
+        setTimeout(() => {
+          clearInterval(pollInterval)
+          setIsConnectingSpotify(false)
+        }, 300000)
+      } else {
+        showToast('Failed to initiate Spotify connection', 'error')
+        setIsConnectingSpotify(false)
+      }
+    } catch (error) {
+      console.error('Spotify connect error:', error)
+      showToast('Failed to connect Spotify', 'error')
+      setIsConnectingSpotify(false)
+    }
+  }
+
+  const handleDisconnectSpotify = async () => {
+    if (!confirm('Are you sure you want to disconnect Spotify?')) return
+    
+    setIsDisconnectingSpotify(true)
+    try {
+      const response = await fetch('/api/composio/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, app: 'spotify' }),
+      })
+      const data = await response.json()
+      
+      if (data.success) {
+        setIsSpotifyConnected(false)
+        showToast('Spotify disconnected', 'success')
+      } else {
+        showToast(data.error || 'Failed to disconnect Spotify', 'error')
+      }
+    } catch (error) {
+      console.error('Spotify disconnect error:', error)
+      showToast('Failed to disconnect Spotify', 'error')
+    } finally {
+      setIsDisconnectingSpotify(false)
     }
   }
   
@@ -726,11 +818,11 @@ export function ProfileContent({
             <div className="divide-y divide-[var(--color-border)]">
               {/* Gmail Connection Row */}
               <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
-                <div className="relative h-10 w-10 flex items-center justify-center shrink-0 p-1 bg-white rounded-lg border border-[var(--color-border)]">
+                <div className="relative h-10 w-10 flex items-center justify-center shrink-0">
                   <img 
                     src="/Gmail.svg" 
                     alt="Gmail" 
-                    className="h-full w-full object-contain"
+                    className="h-8 w-8 object-contain"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -766,6 +858,62 @@ export function ProfileContent({
                     className="gap-1.5 h-8"
                   >
                     {isConnectingGmail ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Connect
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+
+              {/* Spotify Connection Row */}
+              <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
+                <div className="relative h-10 w-10 flex items-center justify-center shrink-0">
+                  <img 
+                    src="/Spotify.png" 
+                    alt="Spotify" 
+                    className="h-8 w-8 object-contain"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-[var(--color-foreground)]">Spotify</p>
+                  </div>
+                  <p className="text-xs text-[var(--color-muted-foreground)]">
+                    {isCheckingSpotify 
+                      ? 'Checking status...' 
+                      : 'Control music playback'}
+                  </p>
+                </div>
+                {isCheckingSpotify ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-[var(--color-muted-foreground)]" />
+                ) : isSpotifyConnected ? (
+                  <button
+                    onClick={handleDisconnectSpotify}
+                    disabled={isDisconnectingSpotify}
+                    className="inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] hover:bg-red-500/10 hover:text-red-500 transition-all cursor-pointer"
+                  >
+                    {isDisconnectingSpotify ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      'Connected'
+                    )}
+                  </button>
+                ) : (
+                  <Button
+                    onClick={handleConnectSpotify}
+                    disabled={isConnectingSpotify}
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 h-8"
+                  >
+                    {isConnectingSpotify ? (
                       <>
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         Connecting...

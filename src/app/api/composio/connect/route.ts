@@ -1,17 +1,18 @@
 /**
  * Composio Connect API Route
  *
- * Initiates a connection request for a user to authenticate with Gmail via Composio.
+ * Initiates a connection request for a user to authenticate with external services via Composio.
+ * Supports Gmail and Spotify.
  *
  * POST /api/composio/connect
- * Body: { userId: string, authConfigId?: string }
+ * Body: { userId: string, app?: 'gmail' | 'spotify', authConfigId?: string, forceReconnect?: boolean }
  * Returns: { redirectUrl: string, connectionId: string }
  *
  * @see https://docs.composio.dev/docs/authenticating-tools#connecting-an-account
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { connectUserAccount, getConnectedAccount, ConnectionStatuses } from '@/lib/ai/integrations/composio'
+import { connectUserAccount, getConnectedAccount, ConnectionStatuses, type ComposioApp } from '@/lib/ai/integrations/composio'
 
 /**
  * Initiate a connection for a user
@@ -19,8 +20,9 @@ import { connectUserAccount, getConnectedAccount, ConnectionStatuses } from '@/l
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, authConfigId, forceReconnect } = body as {
+    const { userId, app = 'gmail', authConfigId, forceReconnect } = body as {
       userId?: string
+      app?: ComposioApp
       authConfigId?: string
       forceReconnect?: boolean
     }
@@ -35,25 +37,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user already has an active connection
+    // Validate app type
+    if (app !== 'gmail' && app !== 'spotify') {
+      return NextResponse.json(
+        {
+          error: 'Invalid app type. Must be "gmail" or "spotify"',
+          code: 'INVALID_APP',
+        },
+        { status: 400 }
+      )
+    }
+
+    // Check if user already has an active connection for this app
     if (!forceReconnect) {
-      const existingAccount = await getConnectedAccount(userId)
+      const existingAccount = await getConnectedAccount(userId, { app })
 
       if (existingAccount?.status === ConnectionStatuses.ACTIVE) {
         return NextResponse.json({
           alreadyConnected: true,
           accountId: existingAccount.id,
-          message: 'User already has an active connection',
+          app,
+          message: `User already has an active ${app} connection`,
         })
       }
     }
 
     // Create a new connection request
-    const connectionRequest = await connectUserAccount(userId, authConfigId)
+    const connectionRequest = await connectUserAccount(userId, { app, authConfigId })
 
     return NextResponse.json({
       redirectUrl: connectionRequest.redirectUrl,
       connectionId: connectionRequest.id,
+      app,
       message: 'Redirect user to the provided URL to complete authentication',
     })
   } catch (error) {
@@ -62,7 +77,7 @@ export async function POST(request: NextRequest) {
     // Handle specific error types
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
-    if (errorMessage.includes('COMPOSIO_AUTH_CONFIG_ID')) {
+    if (errorMessage.includes('AUTH_CONFIG_ID')) {
       return NextResponse.json(
         {
           error: 'Composio auth config is not configured. Please contact support.',

@@ -1,23 +1,24 @@
 /**
  * Composio Disconnect API Route
  *
- * Disconnects a user's Gmail connection.
+ * Disconnects a user's connection for a specific app.
+ * Supports Gmail and Spotify.
  *
  * POST /api/composio/disconnect
- * Body: { userId: string }
- * Returns: { success: boolean }
+ * Body: { userId: string, app?: 'gmail' | 'spotify' }
+ * Returns: { success: boolean, app: string }
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getConnectedAccount, disconnectAccount } from '@/lib/ai/integrations/composio'
+import { getConnectedAccount, disconnectAccount, type ComposioApp } from '@/lib/ai/integrations/composio'
 
 /**
- * Disconnect a user's Gmail account
+ * Disconnect a user's account
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId } = body as { userId?: string }
+    const { userId, app = 'gmail' } = body as { userId?: string; app?: ComposioApp }
 
     if (!userId) {
       return NextResponse.json(
@@ -29,13 +30,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get the connected account to find its ID
-    const account = await getConnectedAccount(userId, { includeInactive: true })
+    // Validate app type
+    if (app !== 'gmail' && app !== 'spotify') {
+      return NextResponse.json(
+        {
+          error: 'Invalid app type. Must be "gmail" or "spotify"',
+          code: 'INVALID_APP',
+        },
+        { status: 400 }
+      )
+    }
+
+    // Get the connected account for this app to find its ID
+    const account = await getConnectedAccount(userId, { app, includeInactive: true })
 
     if (!account) {
       return NextResponse.json(
         {
-          error: 'No connection found for this user',
+          error: `No ${app} connection found for this user`,
           code: 'NO_CONNECTION',
         },
         { status: 404 }
@@ -48,7 +60,7 @@ export async function POST(request: NextRequest) {
     if (!success) {
       return NextResponse.json(
         {
-          error: 'Failed to disconnect account',
+          error: `Failed to disconnect ${app} account`,
           code: 'DISCONNECT_ERROR',
         },
         { status: 500 }
@@ -57,7 +69,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Account disconnected successfully',
+      app,
+      message: `${app.charAt(0).toUpperCase() + app.slice(1)} account disconnected successfully`,
     })
   } catch (error) {
     console.error('[api/composio/disconnect] Error:', error)

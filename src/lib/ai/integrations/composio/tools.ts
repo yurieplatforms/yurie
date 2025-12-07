@@ -93,6 +93,171 @@ export const GmailToolGroups = {
 }
 
 /**
+ * Available Spotify tools
+ *
+ * @see https://docs.composio.dev/toolkits/spotify
+ */
+export const SpotifyTools = {
+  // Playback Control
+  /** Start or resume playback */
+  START_RESUME_PLAYBACK: 'SPOTIFY_START_RESUME_PLAYBACK',
+  /** Pause playback */
+  PAUSE_PLAYBACK: 'SPOTIFY_PAUSE_PLAYBACK',
+  /** Skip to next track */
+  SKIP_TO_NEXT: 'SPOTIFY_SKIP_TO_NEXT',
+  /** Skip to previous track */
+  SKIP_TO_PREVIOUS: 'SPOTIFY_SKIP_TO_PREVIOUS',
+  /** Seek to position in track */
+  SEEK_TO_POSITION: 'SPOTIFY_SEEK_TO_POSITION',
+  /** Set playback volume */
+  SET_PLAYBACK_VOLUME: 'SPOTIFY_SET_PLAYBACK_VOLUME',
+  /** Set repeat mode */
+  SET_REPEAT_MODE: 'SPOTIFY_SET_REPEAT_MODE',
+  /** Toggle shuffle */
+  TOGGLE_SHUFFLE: 'SPOTIFY_TOGGLE_PLAYBACK_SHUFFLE',
+  /** Transfer playback to device */
+  TRANSFER_PLAYBACK: 'SPOTIFY_TRANSFER_PLAYBACK',
+  
+  // Queue Management
+  /** Add item to queue */
+  ADD_TO_QUEUE: 'SPOTIFY_ADD_TO_QUEUE',
+  /** Get user's queue */
+  GET_QUEUE: 'SPOTIFY_GET_QUEUE',
+  
+  // Playback State
+  /** Get current playback state */
+  GET_PLAYBACK_STATE: 'SPOTIFY_GET_PLAYBACK_STATE',
+  /** Get currently playing track */
+  GET_CURRENTLY_PLAYING: 'SPOTIFY_GET_CURRENTLY_PLAYING',
+  /** Get available devices */
+  GET_DEVICES: 'SPOTIFY_GET_AVAILABLE_DEVICES',
+  /** Get recently played tracks */
+  GET_RECENTLY_PLAYED: 'SPOTIFY_GET_RECENTLY_PLAYED',
+  
+  // Search & Browse
+  /** Search for tracks, albums, artists, playlists */
+  SEARCH: 'SPOTIFY_SEARCH',
+  /** Get track details */
+  GET_TRACK: 'SPOTIFY_GET_TRACK',
+  /** Get album details */
+  GET_ALBUM: 'SPOTIFY_GET_ALBUM',
+  /** Get artist details */
+  GET_ARTIST: 'SPOTIFY_GET_ARTIST',
+  /** Get artist's top tracks */
+  GET_ARTIST_TOP_TRACKS: 'SPOTIFY_GET_ARTIST_TOP_TRACKS',
+  
+  // Playlists
+  /** Get user's playlists */
+  GET_USER_PLAYLISTS: 'SPOTIFY_GET_USER_PLAYLISTS',
+  /** Get playlist details */
+  GET_PLAYLIST: 'SPOTIFY_GET_PLAYLIST',
+  /** Create a playlist */
+  CREATE_PLAYLIST: 'SPOTIFY_CREATE_PLAYLIST',
+  /** Add items to playlist */
+  ADD_ITEMS_TO_PLAYLIST: 'SPOTIFY_ADD_ITEMS_TO_PLAYLIST',
+  /** Remove items from playlist */
+  REMOVE_ITEMS_FROM_PLAYLIST: 'SPOTIFY_REMOVE_ITEMS_FROM_PLAYLIST',
+  /** Update playlist details */
+  UPDATE_PLAYLIST: 'SPOTIFY_UPDATE_PLAYLIST',
+  
+  // Library
+  /** Get user's saved tracks */
+  GET_SAVED_TRACKS: 'SPOTIFY_GET_SAVED_TRACKS',
+  /** Save tracks to library */
+  SAVE_TRACKS: 'SPOTIFY_SAVE_TRACKS',
+  /** Remove tracks from library */
+  REMOVE_SAVED_TRACKS: 'SPOTIFY_REMOVE_SAVED_TRACKS',
+  /** Check if tracks are saved */
+  CHECK_SAVED_TRACKS: 'SPOTIFY_CHECK_SAVED_TRACKS',
+  /** Get user's saved albums */
+  GET_SAVED_ALBUMS: 'SPOTIFY_GET_SAVED_ALBUMS',
+  
+  // User Profile
+  /** Get current user's profile */
+  GET_CURRENT_USER_PROFILE: 'SPOTIFY_GET_CURRENT_USER_PROFILE',
+  /** Get user's top artists */
+  GET_TOP_ARTISTS: 'SPOTIFY_GET_TOP_ARTISTS',
+  /** Get user's top tracks */
+  GET_TOP_TRACKS: 'SPOTIFY_GET_TOP_TRACKS',
+  
+  // Following
+  /** Follow artists or users */
+  FOLLOW_ARTISTS_USERS: 'SPOTIFY_FOLLOW_ARTISTS_OR_USERS',
+  /** Unfollow artists or users */
+  UNFOLLOW_ARTISTS_USERS: 'SPOTIFY_UNFOLLOW_ARTISTS_OR_USERS',
+  /** Follow a playlist */
+  FOLLOW_PLAYLIST: 'SPOTIFY_FOLLOW_PLAYLIST',
+  /** Unfollow a playlist */
+  UNFOLLOW_PLAYLIST: 'SPOTIFY_UNFOLLOW_PLAYLIST',
+} as const
+
+export type SpotifyToolName = (typeof SpotifyTools)[keyof typeof SpotifyTools]
+
+/**
+ * Default Spotify tools for common music operations
+ */
+export const DEFAULT_SPOTIFY_TOOLS: SpotifyToolName[] = [
+  SpotifyTools.GET_CURRENTLY_PLAYING,
+  SpotifyTools.SEARCH,
+  SpotifyTools.START_RESUME_PLAYBACK,
+  SpotifyTools.PAUSE_PLAYBACK,
+  SpotifyTools.SKIP_TO_NEXT,
+  SpotifyTools.SKIP_TO_PREVIOUS,
+  SpotifyTools.ADD_TO_QUEUE,
+  SpotifyTools.GET_USER_PLAYLISTS,
+]
+
+/**
+ * Spotify tools grouped by operation type
+ */
+export const SpotifyToolGroups = {
+  /** Tools for controlling playback */
+  playback: [
+    SpotifyTools.START_RESUME_PLAYBACK,
+    SpotifyTools.PAUSE_PLAYBACK,
+    SpotifyTools.SKIP_TO_NEXT,
+    SpotifyTools.SKIP_TO_PREVIOUS,
+    SpotifyTools.SEEK_TO_POSITION,
+    SpotifyTools.SET_PLAYBACK_VOLUME,
+    SpotifyTools.SET_REPEAT_MODE,
+    SpotifyTools.TOGGLE_SHUFFLE,
+    SpotifyTools.TRANSFER_PLAYBACK,
+  ] as SpotifyToolName[],
+  /** Tools for searching and browsing */
+  browse: [
+    SpotifyTools.SEARCH,
+    SpotifyTools.GET_TRACK,
+    SpotifyTools.GET_ALBUM,
+    SpotifyTools.GET_ARTIST,
+    SpotifyTools.GET_ARTIST_TOP_TRACKS,
+  ] as SpotifyToolName[],
+  /** Tools for playlist management */
+  playlists: [
+    SpotifyTools.GET_USER_PLAYLISTS,
+    SpotifyTools.GET_PLAYLIST,
+    SpotifyTools.CREATE_PLAYLIST,
+    SpotifyTools.ADD_ITEMS_TO_PLAYLIST,
+    SpotifyTools.REMOVE_ITEMS_FROM_PLAYLIST,
+    SpotifyTools.UPDATE_PLAYLIST,
+  ] as SpotifyToolName[],
+  /** Tools for library management */
+  library: [
+    SpotifyTools.GET_SAVED_TRACKS,
+    SpotifyTools.SAVE_TRACKS,
+    SpotifyTools.REMOVE_SAVED_TRACKS,
+    SpotifyTools.GET_SAVED_ALBUMS,
+  ] as SpotifyToolName[],
+  /** Tools for getting playback info */
+  info: [
+    SpotifyTools.GET_PLAYBACK_STATE,
+    SpotifyTools.GET_CURRENTLY_PLAYING,
+    SpotifyTools.GET_DEVICES,
+    SpotifyTools.GET_RECENTLY_PLAYED,
+    SpotifyTools.GET_QUEUE,
+  ] as SpotifyToolName[],
+}
+
+/**
  * Get specific tools from Composio for a user
  *
  * @param externalUserId - Unique identifier for the user in your system
@@ -214,6 +379,75 @@ export async function getGmailToolsByGroup(
   group: keyof typeof GmailToolGroups
 ): Promise<ComposioTool[]> {
   return getGmailTools(externalUserId, GmailToolGroups[group])
+}
+
+/**
+ * Get Spotify-specific tools for a user (uses Responses provider by default)
+ *
+ * @param externalUserId - Unique identifier for the user in your system
+ * @param toolNames - Optional specific Spotify tools to fetch (defaults to DEFAULT_SPOTIFY_TOOLS)
+ * @param options - Additional options including provider type
+ * @returns Array of Spotify tools ready for use with agents
+ *
+ * @example
+ * // Get default Spotify tools (for Responses API)
+ * const tools = await getSpotifyTools('user-123')
+ *
+ * @example
+ * // Get specific tools
+ * const tools = await getSpotifyTools('user-123', ['SPOTIFY_SEARCH', 'SPOTIFY_START_RESUME_PLAYBACK'])
+ *
+ * @example
+ * // Get playback tools only
+ * const tools = await getSpotifyTools('user-123', SpotifyToolGroups.playback)
+ */
+export async function getSpotifyTools(
+  externalUserId: string,
+  toolNames: SpotifyToolName[] = DEFAULT_SPOTIFY_TOOLS,
+  options?: { limit?: number; provider?: ProviderType }
+): Promise<ComposioTool[]> {
+  return getTools(externalUserId, {
+    tools: toolNames,
+  }, options?.provider ?? 'responses')
+}
+
+/**
+ * Get Spotify-specific tools for use with @openai/agents SDK
+ *
+ * @param externalUserId - Unique identifier for the user in your system
+ * @param toolNames - Optional specific Spotify tools to fetch (defaults to DEFAULT_SPOTIFY_TOOLS)
+ * @returns Array of Spotify tools formatted for OpenAI Agents SDK
+ *
+ * @example
+ * import { Agent, run } from '@openai/agents'
+ * const tools = await getSpotifyToolsForAgents('user-123')
+ * const agent = new Agent({ tools })
+ * const result = await run(agent, 'Play my favorite playlist...')
+ */
+export async function getSpotifyToolsForAgents(
+  externalUserId: string,
+  toolNames: SpotifyToolName[] = DEFAULT_SPOTIFY_TOOLS
+): Promise<ComposioTool[]> {
+  return getTools(externalUserId, {
+    tools: toolNames,
+  }, 'agents')
+}
+
+/**
+ * Get Spotify tools by group
+ *
+ * @param externalUserId - Unique identifier for the user in your system
+ * @param group - Tool group: 'playback', 'browse', 'playlists', 'library', or 'info'
+ * @returns Array of Spotify tools for the specified group
+ *
+ * @example
+ * const playbackTools = await getSpotifyToolsByGroup('user-123', 'playback')
+ */
+export async function getSpotifyToolsByGroup(
+  externalUserId: string,
+  group: keyof typeof SpotifyToolGroups
+): Promise<ComposioTool[]> {
+  return getSpotifyTools(externalUserId, SpotifyToolGroups[group])
 }
 
 /**

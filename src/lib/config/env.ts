@@ -6,7 +6,10 @@ const envSchema = z.object({
 
   // Composio integration
   COMPOSIO_API_KEY: z.string().min(1).optional(),
+  /** Gmail auth config ID from Composio dashboard */
   COMPOSIO_AUTH_CONFIG_ID: z.string().min(1).optional(),
+  /** Spotify auth config ID from Composio dashboard */
+  COMPOSIO_SPOTIFY_AUTH_CONFIG_ID: z.string().min(1).optional(),
   /** Webhook signing secret for verifying Composio webhook payloads */
   COMPOSIO_WEBHOOK_SECRET: z.string().min(1).optional(),
 
@@ -22,6 +25,7 @@ const parsed = envSchema.safeParse({
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   COMPOSIO_API_KEY: process.env.COMPOSIO_API_KEY,
   COMPOSIO_AUTH_CONFIG_ID: process.env.COMPOSIO_AUTH_CONFIG_ID,
+  COMPOSIO_SPOTIFY_AUTH_CONFIG_ID: process.env.COMPOSIO_SPOTIFY_AUTH_CONFIG_ID,
   COMPOSIO_WEBHOOK_SECRET: process.env.COMPOSIO_WEBHOOK_SECRET,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,

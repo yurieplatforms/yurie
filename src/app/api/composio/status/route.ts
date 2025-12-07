@@ -1,10 +1,11 @@
 /**
  * Composio Status API Route
  *
- * Check if a user has an active Composio connection.
+ * Check if a user has an active Composio connection for a specific app.
+ * Supports Gmail and Spotify.
  *
- * GET /api/composio/status?userId=xxx
- * Returns: { connected: boolean, accountId?: string, status?: string }
+ * GET /api/composio/status?userId=xxx&app=gmail
+ * Returns: { connected: boolean, accountId?: string, status?: string, app: string }
  *
  * @see https://docs.composio.dev/docs/authenticating-tools#checking-connection-status
  */
@@ -14,6 +15,7 @@ import {
   getConnectedAccount,
   listConnectedAccounts,
   ConnectionStatuses,
+  type ComposioApp,
 } from '@/lib/ai/integrations/composio'
 
 /**
@@ -23,6 +25,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
+    const app = (searchParams.get('app') || 'gmail') as ComposioApp
     const includeInactive = searchParams.get('includeInactive') === 'true'
 
     if (!userId) {
@@ -35,8 +38,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Validate app type
+    if (app !== 'gmail' && app !== 'spotify') {
+      return NextResponse.json(
+        {
+          error: 'Invalid app type. Must be "gmail" or "spotify"',
+          code: 'INVALID_APP',
+        },
+        { status: 400 }
+      )
+    }
+
     // Get connection with ACTIVE status filter by default
     const account = await getConnectedAccount(userId, {
+      app,
       includeInactive,
     })
 
@@ -48,14 +63,15 @@ export async function GET(request: NextRequest) {
         connected: isActive,
         accountId: account.id,
         status: account.status,
+        app,
         ...(account.createdAt && { createdAt: account.createdAt }),
         ...(account.updatedAt && { updatedAt: account.updatedAt }),
       })
     }
 
-    // Check if there are any non-active connections
+    // Check if there are any non-active connections for this app
     if (!includeInactive) {
-      const allAccounts = await listConnectedAccounts(userId)
+      const allAccounts = await listConnectedAccounts(userId, { app })
 
       if (allAccounts.length > 0) {
         // User has connections but none are active
@@ -63,7 +79,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
           connected: false,
           status: latestAccount.status,
-          message: getStatusMessage(latestAccount.status),
+          app,
+          message: getStatusMessage(latestAccount.status, app),
           requiresReauth: ['FAILED', 'EXPIRED'].includes(latestAccount.status),
         })
       }
@@ -71,7 +88,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       connected: false,
-      message: 'No connection found for this user',
+      app,
+      message: `No ${app} connection found for this user`,
     })
   } catch (error) {
     console.error('[api/composio/status] Error:', error)
@@ -90,19 +108,20 @@ export async function GET(request: NextRequest) {
 /**
  * Get a human-readable message for connection status
  */
-function getStatusMessage(status: string): string {
+function getStatusMessage(status: string, app: string): string {
+  const appName = app.charAt(0).toUpperCase() + app.slice(1)
   switch (status) {
     case 'ACTIVE':
-      return 'Connection is active and ready'
+      return `${appName} connection is active and ready`
     case 'INITIATED':
-      return 'Connection started but not completed. Please complete the authorization.'
+      return `${appName} connection started but not completed. Please complete the authorization.`
     case 'PROCESSING':
-      return 'Connection is being processed. Please wait.'
+      return `${appName} connection is being processed. Please wait.`
     case 'FAILED':
-      return 'Connection failed. Please reconnect your account.'
+      return `${appName} connection failed. Please reconnect your account.`
     case 'EXPIRED':
-      return 'Connection has expired. Please reconnect your account.'
+      return `${appName} connection has expired. Please reconnect your account.`
     default:
-      return `Connection status: ${status}`
+      return `${appName} connection status: ${status}`
   }
 }

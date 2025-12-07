@@ -44,8 +44,8 @@ function formatToolName(name: string): string {
   // Handle web_search specially
   if (name === 'web_search') return 'Web search'
   
-  // Remove common prefixes like GMAIL_, SLACK_, etc.
-  const withoutPrefix = name.replace(/^(GMAIL|SLACK|NOTION|GOOGLE)_/i, '')
+  // Remove common prefixes like GMAIL_, SPOTIFY_, SLACK_, etc.
+  const withoutPrefix = name.replace(/^(GMAIL|SPOTIFY|SLACK|NOTION|GOOGLE)_/i, '')
   
   // Convert SCREAMING_SNAKE_CASE to Title case
   return withoutPrefix
@@ -120,9 +120,11 @@ export async function POST(request: Request) {
     console.error('[agent] Failed to fetch user personalization', e)
   }
 
-  // Fetch Gmail tools from Composio if Gmail is selected
+  // Fetch tools from Composio based on selected apps
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let gmailTools: any[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let spotifyTools: any[] = []
   let userId: string | null = null
   
   try {
@@ -150,10 +152,11 @@ export async function POST(request: Request) {
     )
   }
   
+  // Fetch Gmail tools if Gmail is selected
   if (selectedTools.includes('gmail') && userId) {
     try {
       // Check if user is connected to Gmail
-      const connected = await isUserConnected(userId)
+      const connected = await isUserConnected(userId, 'gmail')
       
       if (connected) {
         console.log('[agent] Fetching Gmail tools from Composio for user:', userId)
@@ -170,10 +173,51 @@ export async function POST(request: Request) {
     }
   }
 
+  // Fetch Spotify tools if Spotify is selected
+  if (selectedTools.includes('spotify') && userId) {
+    try {
+      // Check if user is connected to Spotify
+      const connected = await isUserConnected(userId, 'spotify')
+      
+      if (connected) {
+        console.log('[agent] Fetching Spotify tools from Composio for user:', userId)
+        const composio = getComposioClient('responses')
+        // Fetch commonly used Spotify tools
+        spotifyTools = await composio.tools.get(userId, {
+          tools: [
+            'SPOTIFY_GET_CURRENTLY_PLAYING_TRACK',
+            'SPOTIFY_SEARCH_FOR_ITEM',
+            'SPOTIFY_START_RESUME_PLAYBACK',
+            'SPOTIFY_PAUSE_PLAYBACK',
+            'SPOTIFY_SKIP_TO_NEXT',
+            'SPOTIFY_SKIP_TO_PREVIOUS',
+            'SPOTIFY_ADD_ITEM_TO_PLAYBACK_QUEUE',
+            'SPOTIFY_GET_CURRENT_USER_S_PLAYLISTS',
+            'SPOTIFY_GET_PLAYLIST',
+            'SPOTIFY_CREATE_PLAYLIST',
+            'SPOTIFY_ADD_ITEMS_TO_PLAYLIST',
+            'SPOTIFY_GET_AVAILABLE_DEVICES',
+            'SPOTIFY_SET_PLAYBACK_VOLUME',
+            'SPOTIFY_GET_USER_S_SAVED_TRACKS',
+            'SPOTIFY_GET_RECOMMENDATIONS',
+          ],
+        })
+        console.log('[agent] Loaded Spotify tools:', spotifyTools.length)
+      } else {
+        console.log('[agent] User not connected to Spotify, skipping Spotify tools')
+      }
+    } catch (error) {
+      console.error('[agent] Failed to fetch Spotify tools:', error)
+    }
+  }
+
   // Build enabled capabilities list
   const enabledCapabilities: string[] = []
   if (gmailTools.length > 0) {
     enabledCapabilities.push('gmail')
+  }
+  if (spotifyTools.length > 0) {
+    enabledCapabilities.push('spotify')
   }
 
   // Build system prompt with user context and preferences
@@ -202,6 +246,14 @@ export async function POST(request: Request) {
     // Add Gmail tools if available
     if (gmailTools.length > 0) {
       tools.push(...gmailTools)
+    }
+    
+    // Add Spotify tools if available
+    if (spotifyTools.length > 0) {
+      tools.push(...spotifyTools)
+    }
+    
+    if (gmailTools.length > 0 || spotifyTools.length > 0) {
       console.log('[agent] Using tools:', tools.map(t => t.type || t.function?.name || 'unknown').join(', '))
     }
 
