@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 // Agent modules
 import { buildSystemPrompt } from '@/lib/ai/agent/system-prompt'
 import { convertToOpenAIContent } from '@/lib/ai/agent/message-converter'
+import { classifyRequest, type RequestMode } from '@/lib/ai/agent/classifier'
 
 // API types
 import type { AgentRequestBody } from '@/lib/ai/api/types'
@@ -220,12 +221,26 @@ export async function POST(request: Request) {
     enabledCapabilities.push('spotify')
   }
 
-  // Build system prompt with user context and preferences
+  // ==========================================================================
+  // ADAPTIVE MODE CLASSIFICATION
+  // Analyze the request to determine optimal processing mode
+  // ==========================================================================
+  const classification = classifyRequest(messages, {
+    selectedTools,
+    connectedIntegrations: enabledCapabilities,
+  })
+  
+  const mode: RequestMode = classification.mode
+  console.log(`[agent] Mode: ${mode} (${classification.reason}, confidence: ${classification.confidence})`)
+  console.log(`[agent] Reasoning effort: ${classification.reasoningEffort}, tools recommended: ${classification.toolsRecommended.join(', ') || 'none'}`)
+
+  // Build system prompt with user context, preferences, and mode
   const systemPrompt = buildSystemPrompt({
     userName,
     userContext,
     userPreferences,
     enabledCapabilities,
+    mode,
   })
 
   // Convert messages to OpenAI format
@@ -239,22 +254,39 @@ export async function POST(request: Request) {
   })
 
   try {
-    // Build tools array with web search and any Composio tools
+    // ==========================================================================
+    // ADAPTIVE TOOL CONFIGURATION
+    // Chat mode: minimal or no tools for faster responses
+    // Agent mode: full tool suite for complex tasks
+    // ==========================================================================
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tools: any[] = [{ type: 'web_search' }]
+    let tools: any[] | undefined
     
-    // Add Gmail tools if available
-    if (gmailTools.length > 0) {
-      tools.push(...gmailTools)
-    }
-    
-    // Add Spotify tools if available
-    if (spotifyTools.length > 0) {
-      tools.push(...spotifyTools)
-    }
-    
-    if (gmailTools.length > 0 || spotifyTools.length > 0) {
-      console.log('[agent] Using tools:', tools.map(t => t.type || t.function?.name || 'unknown').join(', '))
+    if (mode === 'agent') {
+      // Agent mode: Include all relevant tools
+      tools = [{ type: 'web_search' }]
+      
+      // Add Gmail tools if available
+      if (gmailTools.length > 0) {
+        tools.push(...gmailTools)
+      }
+      
+      // Add Spotify tools if available
+      if (spotifyTools.length > 0) {
+        tools.push(...spotifyTools)
+      }
+      
+      console.log('[agent] Agent mode tools:', tools.map(t => t.type || t.function?.name || 'unknown').join(', '))
+    } else {
+      // Chat mode: Only include tools if explicitly recommended by classifier
+      if (classification.toolsRecommended.includes('web_search')) {
+        tools = [{ type: 'web_search' }]
+        console.log('[agent] Chat mode with web_search enabled')
+      } else {
+        // No tools in pure chat mode for fastest response
+        tools = undefined
+        console.log('[agent] Chat mode without tools')
+      }
     }
 
     const stream = new ReadableStream({
@@ -284,10 +316,22 @@ export async function POST(request: Request) {
         console.log(`[agent] Service tier: ${serviceTier} (${tierReason})`)
         
         try {
+          // Send mode indicator to frontend for UI feedback
+          safeEnqueue(`data: ${JSON.stringify({
+            mode: {
+              type: mode,
+              reason: classification.reason,
+              confidence: classification.confidence,
+              reasoningEffort: classification.reasoningEffort,
+            }
+          })}\n\n`)
+          
           // Agentic loop - continue until we get a text response (no more tool calls)
+          // In chat mode, we typically only do one iteration
+          // In agent mode, we loop until all tool calls are resolved
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let toolResultsInput: any[] | null = null
-          let maxIterations = 10 // Safety limit
+          const maxIterations = mode === 'chat' ? 3 : 10 // Fewer iterations for chat mode
           let iteration = 0
           
           while (iteration < maxIterations) {
@@ -297,20 +341,28 @@ export async function POST(request: Request) {
             // Build input for this iteration
             // Latency optimization: https://platform.openai.com/docs/guides/latency-optimization
             // Priority processing: https://platform.openai.com/docs/guides/priority-processing
+            
+            // GPT-5.1 with high reasoning for best quality responses
+            const selectedModel = 'gpt-5.1-2025-11-13'
+            
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const baseParams: any = {
-              model: 'gpt-5.1-2025-11-13',
+              model: selectedModel,
               instructions: systemPrompt,
-              tools,
               stream: true,
-              // GPT-5.1 reasoning config: 'high' for most thorough reasoning
-              // Options: 'none' (fastest), 'low', 'medium', 'high' (most thorough)
-              reasoning: { effort: 'high' },
               // Latency optimizations
-              max_output_tokens: 4096, // Limit output tokens for faster responses
-              parallel_tool_calls: true, // Execute multiple tool calls in parallel
+              max_output_tokens: mode === 'chat' ? 2048 : 4096, // Shorter for chat mode
               store: true, // Enable prompt caching for repeated requests
             }
+            
+            // Add tools only if we have them (undefined = no tools)
+            if (tools && tools.length > 0) {
+              baseParams.tools = tools
+              baseParams.parallel_tool_calls = true // Execute multiple tool calls in parallel
+            }
+            
+            // GPT-5.1 supports reasoning - use high effort for best quality
+            baseParams.reasoning = { effort: 'high' }
             
             // Add service tier for priority processing
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -505,7 +557,7 @@ export async function POST(request: Request) {
           
           // Get latency metrics and log successful request
           const latencyMetrics = latencyTracker.getMetrics()
-          console.log(`[agent] Latency: TTFT=${latencyMetrics.ttft}ms, Total=${latencyMetrics.totalDuration}ms`)
+          console.log(`[agent] Mode: ${mode}, Latency: TTFT=${latencyMetrics.ttft}ms, Total=${latencyMetrics.totalDuration}ms`)
           
           logRequest({
             requestId,

@@ -166,6 +166,12 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                     state.thinkingTime ?? msg.thinkingDurationSeconds,
                   activeToolUse: state.activeToolUse,
                   toolUseHistory: state.toolUseHistory.length > 0 ? state.toolUseHistory : undefined,
+                  // Include mode info for UI feedback
+                  mode: state.mode ? {
+                    type: state.mode.type,
+                    reason: state.mode.reason,
+                    confidence: state.mode.confidence,
+                  } : msg.mode,
                 }
               }),
             )

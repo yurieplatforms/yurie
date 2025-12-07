@@ -4,14 +4,29 @@
  * Re-exports all agent utilities for convenient importing.
  *
  * @example
- * import { buildSystemPrompt, convertToOpenAIContent } from '@/lib/agent'
+ * import { buildSystemPrompt, convertToOpenAIContent, classifyRequest } from '@/lib/agent'
  */
 
 // Message converter
 export { convertToOpenAIContent } from './message-converter'
 
 // System prompt
-export { buildSystemPrompt } from './system-prompt'
+export { 
+  buildSystemPrompt, 
+  getStaticPromptForMode,
+  getStaticPromptTokenEstimate,
+} from './system-prompt'
+
+// Request classifier
+export {
+  classifyRequest,
+  likelyNeedsWebSearch,
+  isSimpleGreeting,
+} from './classifier'
+export type {
+  RequestMode,
+  ClassificationResult,
+} from './classifier'
 
 // User context
 export {

@@ -119,6 +119,18 @@ export type ToolUseStatus = {
   details?: string
 }
 
+/**
+ * Processing mode information for a message
+ */
+export type MessageMode = {
+  /** Processing mode: 'chat' for simple queries, 'agent' for complex tasks */
+  type: 'chat' | 'agent'
+  /** Reason for mode selection */
+  reason: string
+  /** Confidence level of the classification */
+  confidence: 'high' | 'medium' | 'low'
+}
+
 export type ChatMessage = {
   id: string
   role: Role
@@ -134,6 +146,8 @@ export type ChatMessage = {
   toolUseHistory?: ToolUseStatus[]
   /** Whether this message represents an error */
   isError?: boolean
+  /** Processing mode used for this message */
+  mode?: MessageMode
 }
 
 export type SavedChat = {

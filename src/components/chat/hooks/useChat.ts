@@ -10,7 +10,6 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { getChat, saveChat, createChat } from '@/lib/chat/history'
 import { useAuth } from '@/lib/providers/auth-provider'
 import type { ChatMessage } from '@/lib/types'
@@ -69,7 +68,6 @@ export type UseChatReturn = {
  * ```
  */
 export function useChat({ chatId }: UseChatOptions = {}): UseChatReturn {
-  const router = useRouter()
   const { user } = useAuth()
 
   const [id, setId] = useState<string | undefined>(chatId)
@@ -120,9 +118,8 @@ export function useChat({ chatId }: UseChatOptions = {}): UseChatReturn {
     const newId = newChat.id
     setId(newId)
     await saveChat(newChat, user?.id)
-    router.replace(`/?id=${newId}`)
     return newId
-  }, [router, user?.id])
+  }, [user?.id])
 
   /**
    * Update an existing chat with new messages

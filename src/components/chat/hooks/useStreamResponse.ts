@@ -31,6 +31,20 @@ export type StreamError = {
 }
 
 /**
+ * Processing mode information from the server
+ */
+export type StreamMode = {
+  /** Processing mode: 'chat' for simple queries, 'agent' for complex tasks */
+  type: 'chat' | 'agent'
+  /** Reason for mode selection */
+  reason: string
+  /** Confidence level of the classification */
+  confidence: 'high' | 'medium' | 'low'
+  /** Reasoning effort level being used */
+  reasoningEffort: 'none' | 'low' | 'medium' | 'high'
+}
+
+/**
  * Accumulated state during stream processing
  */
 export type StreamState = {
@@ -46,6 +60,8 @@ export type StreamState = {
   activeToolUse: ToolUseStatus | null
   /** History of completed tool uses */
   toolUseHistory: ToolUseStatus[]
+  /** Processing mode information */
+  mode: StreamMode | undefined
 }
 
 /**
@@ -98,6 +114,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
     let accumulatedReasoning = ''
     let accumulatedThinkingTime: number | undefined
     let accumulatedError: StreamError | undefined
+    let accumulatedMode: StreamMode | undefined
     let activeToolUse: ToolUseStatus | null = null
     const toolUseHistory: ToolUseStatus[] = []
     
@@ -143,6 +160,27 @@ export function useStreamResponse(): UseStreamResponseReturn {
               error: accumulatedError,
               activeToolUse,
               toolUseHistory,
+              mode: accumulatedMode,
+            })
+            continue
+          }
+
+          // Handle mode event (sent at start of stream)
+          if (json.mode) {
+            accumulatedMode = {
+              type: json.mode.type,
+              reason: json.mode.reason,
+              confidence: json.mode.confidence,
+              reasoningEffort: json.mode.reasoningEffort,
+            }
+            callbacks.onUpdate({
+              content: accumulatedContent,
+              reasoning: accumulatedReasoning,
+              thinkingTime: accumulatedThinkingTime,
+              error: accumulatedError,
+              activeToolUse,
+              toolUseHistory,
+              mode: accumulatedMode,
             })
             continue
           }
@@ -168,6 +206,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
               error: accumulatedError,
               activeToolUse,
               toolUseHistory,
+              mode: accumulatedMode,
             })
             continue
           }
@@ -247,6 +286,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
               error: accumulatedError,
               activeToolUse,
               toolUseHistory,
+              mode: accumulatedMode,
             })
           }
         } catch {
@@ -263,6 +303,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
       error: accumulatedError,
       activeToolUse: null, // Clear active tool use when done
       toolUseHistory,
+      mode: accumulatedMode,
     })
 
     return {
@@ -272,6 +313,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
       error: accumulatedError,
       activeToolUse: null,
       toolUseHistory,
+      mode: accumulatedMode,
     }
   }, [])
 
@@ -298,5 +340,10 @@ export function buildMessageFromStreamState(
     thinkingDurationSeconds: state.thinkingTime,
     activeToolUse: state.activeToolUse,
     toolUseHistory: state.toolUseHistory.length > 0 ? state.toolUseHistory : undefined,
+    mode: state.mode ? {
+      type: state.mode.type,
+      reason: state.mode.reason,
+      confidence: state.mode.confidence,
+    } : undefined,
   }
 }
