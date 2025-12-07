@@ -97,9 +97,9 @@ export function processCitations(rawCitations: RawCitation[]): MessageCitation[]
     .filter(c => c.type === 'char_location')
     .map(c => ({
       type: 'char_location' as const,
-      citedText: c.cited_text || '',
+      citedText: c.cited_text,
       documentIndex: c.document_index ?? 0,
-      documentTitle: c.document_title || null,
+      documentTitle: c.document_title,
       startCharIndex: c.start_char_index ?? 0,
       endCharIndex: c.end_char_index ?? 0,
     }))
@@ -109,9 +109,9 @@ export function processCitations(rawCitations: RawCitation[]): MessageCitation[]
     .filter(c => c.type === 'page_location')
     .map(c => ({
       type: 'page_location' as const,
-      citedText: c.cited_text || '',
+      citedText: c.cited_text,
       documentIndex: c.document_index ?? 0,
-      documentTitle: c.document_title || null,
+      documentTitle: c.document_title,
       startPageNumber: c.start_page_number ?? 1,
       endPageNumber: c.end_page_number ?? 1,
     }))
@@ -121,9 +121,9 @@ export function processCitations(rawCitations: RawCitation[]): MessageCitation[]
     .filter(c => c.type === 'content_block_location')
     .map(c => ({
       type: 'content_block_location' as const,
-      citedText: c.cited_text || '',
+      citedText: c.cited_text,
       documentIndex: c.document_index ?? 0,
-      documentTitle: c.document_title || null,
+      documentTitle: c.document_title,
       startBlockIndex: c.start_block_index ?? 0,
       endBlockIndex: c.end_block_index ?? 0,
     }))
