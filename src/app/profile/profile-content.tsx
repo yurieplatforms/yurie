@@ -15,14 +15,12 @@ import {
   Check, 
   X, 
   Mail,
-  Calendar,
   ChevronRight,
   ChevronDown,
   User as UserIcon,
   Cake,
   MapPin,
   Globe,
-  Settings,
   Palette,
   Trash2,
   Link2,
@@ -376,9 +374,9 @@ export function ProfileContent({
 
       <main className="space-y-6 pb-8">
         {/* Profile Header with Cover */}
-        <section className="flex flex-col items-center text-center">
+        <section className="flex flex-col items-center text-center pb-6">
           {/* Cover Background */}
-          <div className="relative w-full h-36 sm:h-44 rounded-[var(--radius-card)] overflow-hidden group/cover">
+          <div className="relative w-full h-48 sm:h-64 rounded-[var(--radius-card)] overflow-hidden group/cover shadow-sm">
             {coverUrl ? (
               <img 
                 src={coverUrl} 
@@ -386,15 +384,15 @@ export function ProfileContent({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-[var(--color-background)]" />
+              <div className="w-full h-full bg-gradient-to-br from-[var(--color-surface-hover)] to-[var(--color-surface)]" />
             )}
             
             {/* Cover upload button */}
-            <div className="absolute bottom-3 right-3 flex items-center gap-2 opacity-0 group-hover/cover:opacity-100 transition-all duration-[var(--transition-base)]">
+            <div className="absolute bottom-3 right-3 flex items-center gap-2 opacity-0 group-hover/cover:opacity-100 transition-all duration-[var(--transition-base)] translate-y-2 group-hover/cover:translate-y-0">
               <button 
                 onClick={() => coverInputRef.current?.click()}
                 disabled={isUploadingCover}
-                className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius-full)] bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white text-xs font-medium cursor-pointer"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius-full)] bg-black/50 hover:bg-black/70 backdrop-blur-md text-white text-xs font-medium cursor-pointer transition-colors"
               >
                 {isUploadingCover ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -407,7 +405,7 @@ export function ProfileContent({
               {coverUrl && !isUploadingCover && (
                 <button
                   onClick={handleRemoveCover}
-                  className="flex items-center justify-center h-8 w-8 rounded-[var(--radius-full)] bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white transition-colors cursor-pointer"
+                  className="flex items-center justify-center h-8 w-8 rounded-[var(--radius-full)] bg-black/50 hover:bg-black/70 backdrop-blur-md text-white transition-colors cursor-pointer"
                   title="Remove cover photo"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -427,14 +425,14 @@ export function ProfileContent({
 
           {/* Avatar - Overlapping Cover */}
           <div 
-            className="relative -mt-14 mb-3 group/avatar w-fit mx-auto"
+            className="relative -mt-16 mb-4 group/avatar w-fit mx-auto"
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
           >
             <div 
               className={cn(
-                "relative h-28 w-28 rounded-full overflow-hidden ring-4 ring-[var(--color-background)] transition-all duration-300",
+                "relative h-32 w-32 rounded-full overflow-hidden ring-[6px] ring-[var(--color-background)] shadow-xl transition-all duration-300",
                 isDragging && "ring-[var(--color-accent)] scale-105"
               )}
             >
@@ -445,7 +443,9 @@ export function ProfileContent({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="h-full w-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-info)] flex items-center justify-center" />
+                <div className="h-full w-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-info)] flex items-center justify-center text-4xl font-medium text-white/90">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
               )}
               
               {/* Upload overlay */}
@@ -454,11 +454,11 @@ export function ProfileContent({
                 disabled={isUploading}
                 className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 transition-all duration-[var(--transition-base)] cursor-pointer group/upload"
               >
-                <div className="opacity-0 group-hover/upload:opacity-100 transition-opacity duration-[var(--transition-base)]">
+                <div className="opacity-0 group-hover/upload:opacity-100 transition-all duration-[var(--transition-base)] transform translate-y-2 group-hover/upload:translate-y-0">
                   {isUploading ? (
-                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                    <Loader2 className="h-8 w-8 animate-spin text-white" />
                   ) : (
-                    <Camera className="h-6 w-6 text-white" />
+                    <Camera className="h-8 w-8 text-white" />
                   )}
                 </div>
               </button>
@@ -467,10 +467,10 @@ export function ProfileContent({
             {avatarUrl && !isUploading && (
               <button
                 onClick={handleRemoveAvatar}
-                className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 p-1.5 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white transition-all opacity-0 group-hover/avatar:opacity-100 z-10 cursor-pointer"
+                className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 p-2 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md text-white transition-all opacity-0 group-hover/avatar:opacity-100 z-10 cursor-pointer shadow-lg"
                 title="Remove profile photo"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-4 w-4" />
               </button>
             )}
 
@@ -484,32 +484,38 @@ export function ProfileContent({
             />
           </div>
 
-          {/* Name */}
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-foreground)]">
-            {displayName}
-          </h1>
+          {/* Name & Title */}
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold tracking-tight text-[var(--color-foreground)]">
+              {displayName}
+            </h1>
+            <p className="text-sm font-medium text-[var(--color-muted-foreground)]">
+              Member since {memberSince}
+            </p>
+          </div>
         </section>
 
         {/* Unified Profile Details */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-medium text-[var(--color-muted-foreground)]">Settings</h2>
-            {!isEditingPreferences && (
-              <button
-                onClick={startEditingPreferences}
-                className="flex items-center gap-1.5 px-2 py-1 -mr-2 rounded-[var(--radius-full)] text-sm font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] hover:bg-[var(--color-accent)]/10 transition-all cursor-pointer"
-              >
-                <Settings className="h-4 w-4" />
-                Edit
-              </button>
-            )}
-          </div>
-          
-          <Card variant="ghost" padding="none" className="bg-transparent overflow-hidden border-none">
+        <section className="space-y-4">
+          <Card variant="outline" padding="none" className="bg-[var(--color-card)]/50 backdrop-blur-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+              <h2 className="text-sm font-medium text-[var(--color-muted-foreground)]">Profile Settings</h2>
+              {!isEditingPreferences && (
+                <Button
+                  onClick={startEditingPreferences}
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 -mr-2 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+                >
+                  Edit
+                </Button>
+              )}
+            </div>
+            
             {isEditingPreferences ? (
-              <div className="space-y-8 px-1">
+              <div className="space-y-6 p-6">
                 {/* Name Field (Editable) */}
-                <div className="space-y-5">
+                <div className="space-y-2">
                   <Label variant="muted" size="xs">
                     Name
                   </Label>
@@ -518,12 +524,12 @@ export function ProfileContent({
                     onChange={(e) => setEditingFullName(e.target.value)}
                     placeholder="Your name"
                     variant="filled"
-                    className="h-12 text-base px-4"
+                    className="h-10"
                   />
                 </div>
                 
                 {/* Birthday Field (Editable) */}
-                <div className="space-y-5">
+                <div className="space-y-2">
                   <Label variant="muted" size="xs">
                     Birthday
                   </Label>
@@ -533,13 +539,13 @@ export function ProfileContent({
                       value={editingBirthday}
                       onChange={(e) => setEditingBirthday(e.target.value)}
                       variant="filled"
-                      className="h-12 text-base px-4 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-4 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-100 [&::-webkit-calendar-picker-indicator]:transition-opacity"
+                      className="h-10 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-3 [&::-webkit-calendar-picker-indicator]:top-1/2 [&::-webkit-calendar-picker-indicator]:-translate-y-1/2 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
                     />
                   </div>
                 </div>
                 
                 {/* Location Field (Editable) */}
-                <div className="space-y-5">
+                <div className="space-y-2">
                   <Label variant="muted" size="xs">
                     Location
                   </Label>
@@ -548,12 +554,12 @@ export function ProfileContent({
                     onChange={(e) => setEditingLocation(e.target.value)}
                     placeholder="City, Country"
                     variant="filled"
-                    className="h-12 text-base px-4"
+                    className="h-10"
                   />
                 </div>
                 
                 {/* Timezone Field (Editable) */}
-                <div className="space-y-5">
+                <div className="space-y-2">
                   <Label variant="muted" size="xs">
                     Timezone
                   </Label>
@@ -561,7 +567,7 @@ export function ProfileContent({
                     <select
                       value={editingTimezone}
                       onChange={(e) => setEditingTimezone(e.target.value)}
-                      className="w-full h-12 px-4 pr-10 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] rounded-[var(--radius-input)] text-base text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:outline-none appearance-none cursor-pointer transition-all"
+                      className="w-full h-10 px-3 pr-8 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] rounded-[var(--radius-input)] text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:outline-none appearance-none cursor-pointer transition-all"
                     >
                       <option value="">Select timezone</option>
                       <optgroup label="Detected">
@@ -602,16 +608,15 @@ export function ProfileContent({
                         <option value="Pacific/Auckland">Pacific/Auckland (NZST/NZDT)</option>
                       </optgroup>
                     </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-muted-foreground)] pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-muted-foreground)] pointer-events-none" />
                   </div>
                 </div>
                 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-2">
                   <Button
                     onClick={handleSavePreferences}
                     disabled={isSavingPreferences}
-                    size="lg"
                     className="flex-1"
                   >
                     {isSavingPreferences ? (
@@ -619,53 +624,49 @@ export function ProfileContent({
                     ) : (
                       <Check className="h-4 w-4" />
                     )}
-                    Save
+                    Save Changes
                   </Button>
                   <Button
                     onClick={cancelEditingPreferences}
                     variant="ghost"
-                    size="icon-lg"
-                    title="Cancel"
-                    className="text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface-hover)]"
+                    disabled={isSavingPreferences}
+                    className="flex-1"
                   >
-                    <X className="h-5 w-5" />
+                    Cancel
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="divide-y divide-[var(--color-border)]">
                 {/* Name Row */}
-                <div className="flex items-center gap-4 px-4 py-3">
-                  <UserIcon className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                    <UserIcon className="h-4 w-4" />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Name</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)] mb-0.5">Name</p>
                     <p className="text-sm font-medium text-[var(--color-foreground)] truncate">{displayName}</p>
                   </div>
                 </div>
 
                 {/* Email Row */}
-                <div className="flex items-center gap-4 px-4 py-3">
-                  <Mail className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                    <Mail className="h-4 w-4" />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Email</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)] mb-0.5">Email</p>
                     <p className="text-sm font-medium text-[var(--color-foreground)] truncate">{user.email}</p>
                   </div>
                 </div>
 
-                {/* Member Since Row */}
-                <div className="flex items-center gap-4 px-4 py-3">
-                  <Calendar className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Member since</p>
-                    <p className="text-sm font-medium text-[var(--color-foreground)]">{memberSince}</p>
-                  </div>
-                </div>
-                
                 {/* Birthday Row */}
-                <div className="flex items-center gap-4 px-4 py-3">
-                  <Cake className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                    <Cake className="h-4 w-4" />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Birthday</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)] mb-0.5">Birthday</p>
                     <p className="text-sm font-medium text-[var(--color-foreground)] truncate">
                       {birthday ? new Date(birthday + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Not set'}
                     </p>
@@ -673,10 +674,12 @@ export function ProfileContent({
                 </div>
                 
                 {/* Location Row */}
-                <div className="flex items-center gap-4 px-4 py-3">
-                  <MapPin className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                    <MapPin className="h-4 w-4" />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Location</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)] mb-0.5">Location</p>
                     <p className="text-sm font-medium text-[var(--color-foreground)] truncate">
                       {location || 'Not set'}
                     </p>
@@ -684,10 +687,12 @@ export function ProfileContent({
                 </div>
                 
                 {/* Timezone Row */}
-                <div className="flex items-center gap-4 px-4 py-3">
-                  <Globe className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                    <Globe className="h-4 w-4" />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Timezone</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)] mb-0.5">Timezone</p>
                     <p className="text-sm font-medium text-[var(--color-foreground)] truncate">
                       {displayTimezone}
                     </p>
@@ -695,41 +700,33 @@ export function ProfileContent({
                 </div>
                 
                 {/* Theme Row */}
-                <div className="flex items-center gap-4 px-4 py-3">
-                  <Palette className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                    <Palette className="h-4 w-4" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Theme</p>
                   </div>
-                  <ThemeSwitch />
-                </div>
-
-                {/* Sign Out Row */}
-                <button
-                  onClick={() => signOut()}
-                  className="flex w-full items-center gap-4 px-4 py-3 hover:bg-[var(--color-surface-hover)] rounded-[var(--radius-lg)] transition-all cursor-pointer"
-                >
-                  <LogOut className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="text-sm font-medium text-[var(--color-foreground)]">Sign out</p>
+                  <div className="scale-90 origin-right">
+                    <ThemeSwitch />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-[var(--color-muted-foreground)]" />
-                </button>
+                </div>
               </div>
             )}
           </Card>
         </section>
 
         {/* Connected Apps Section */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-medium text-[var(--color-muted-foreground)]">Apps</h2>
-          </div>
-          
-          <Card variant="ghost" padding="none" className="bg-transparent overflow-hidden border-none">
-            <div className="space-y-2">
+        <section className="space-y-4">
+          <Card variant="outline" padding="none" className="bg-[var(--color-card)]/50 backdrop-blur-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+              <h2 className="text-sm font-medium text-[var(--color-muted-foreground)]">Connected Apps</h2>
+            </div>
+
+            <div className="divide-y divide-[var(--color-border)]">
               {/* Gmail Connection Row */}
-              <div className="flex items-center gap-4 px-4 py-3">
-                <div className="relative h-10 w-10 flex items-center justify-center shrink-0">
+              <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
+                <div className="relative h-10 w-10 flex items-center justify-center shrink-0 p-1 bg-white rounded-lg border border-[var(--color-border)]">
                   <img 
                     src="/Gmail.svg" 
                     alt="Gmail" 
@@ -737,10 +734,12 @@ export function ProfileContent({
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[var(--color-foreground)]">Gmail</p>
-                  <p className="text-xs font-medium text-[var(--color-muted-foreground)]">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-[var(--color-foreground)]">Gmail</p>
+                  </div>
+                  <p className="text-xs text-[var(--color-muted-foreground)]">
                     {isCheckingGmail 
-                      ? 'Checking...' 
+                      ? 'Checking status...' 
                       : 'Send emails on your behalf'}
                   </p>
                 </div>
@@ -750,7 +749,7 @@ export function ProfileContent({
                   <button
                     onClick={handleDisconnectGmail}
                     disabled={isDisconnectingGmail}
-                    className="inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium bg-[var(--color-surface-hover)] text-[var(--color-foreground)] hover:bg-red-500/20 hover:text-red-500 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] hover:bg-red-500/10 hover:text-red-500 transition-all cursor-pointer"
                   >
                     {isDisconnectingGmail ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -764,7 +763,7 @@ export function ProfileContent({
                     disabled={isConnectingGmail}
                     size="sm"
                     variant="outline"
-                    className="gap-1.5"
+                    className="gap-1.5 h-8"
                   >
                     {isConnectingGmail ? (
                       <>
@@ -782,6 +781,20 @@ export function ProfileContent({
               </div>
             </div>
           </Card>
+        </section>
+
+        {/* Sign Out Section */}
+        <section className="pt-2">
+          <button
+            onClick={() => signOut()}
+            className="group flex w-full items-center justify-between px-4 py-3 rounded-[var(--radius-card)] border border-transparent hover:border-red-200 dark:hover:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 transition-all cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <LogOut className="h-5 w-5 shrink-0" />
+              <span className="text-sm font-medium">Sign out</span>
+            </div>
+            <ChevronRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+          </button>
         </section>
       </main>
     </>

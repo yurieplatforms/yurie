@@ -63,7 +63,7 @@ export function Header() {
               className={cn(
                 "group relative inline-flex items-center justify-center rounded-full h-10 w-10 transition-all duration-[var(--transition-base)]",
                 pathname === '/profile'
-                  ? "ring-1 ring-primary ring-offset-2 ring-offset-[var(--color-background)]"
+                  ? "ring-2 ring-primary ring-offset-2 ring-offset-[var(--color-background)]"
                   : "hover:opacity-80"
               )}
             >

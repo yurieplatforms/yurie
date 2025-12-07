@@ -13,14 +13,14 @@ const THEMES_OPTIONS = [
     icon: <SunIcon className="h-4 w-4" />,
   },
   {
-    label: 'Dark',
-    id: 'dark',
-    icon: <MoonIcon className="h-4 w-4" />,
-  },
-  {
     label: 'System',
     id: 'system',
     icon: <MonitorIcon className="h-4 w-4" />,
+  },
+  {
+    label: 'Dark',
+    id: 'dark',
+    icon: <MoonIcon className="h-4 w-4" />,
   },
 ]
 
@@ -37,7 +37,7 @@ export function ThemeSwitch() {
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2">
       {THEMES_OPTIONS.map((option) => {
         const isActive = theme === option.id
         return (
