@@ -200,3 +200,56 @@ export type MessageCitation =
   | CharLocationCitation
   | PageLocationCitation
   | ContentBlockLocationCitation
+
+/**
+ * Web search result from built-in web search tool
+ */
+export type WebSearchResult = {
+  url: string
+  title?: string
+  pageAge?: string
+}
+
+/**
+ * Web search response from the web search tool
+ */
+export type WebSearchResponse = {
+  query?: string
+  results: WebSearchResult[]
+  errorCode?: 'max_uses_exceeded' | 'too_many_requests' | 'query_too_long' | 'invalid_input' | string
+}
+
+/**
+ * Exa search result from Exa API
+ */
+export type ExaSearchResult = {
+  url: string
+  title?: string
+  author?: string
+  publishedDate?: string
+  score?: number
+  text?: string
+  highlights?: string[]
+  summary?: string
+}
+
+/**
+ * Exa search response
+ */
+export type ExaSearchResponse = {
+  query?: string
+  category?: string
+  results: ExaSearchResult[]
+  error?: string
+}
+
+/**
+ * Tool use event for tracking tool execution status
+ */
+export type ToolUseEvent = {
+  name: string
+  status: 'start' | 'end'
+  result?: string
+  webSearch?: WebSearchResponse
+  exaSearch?: ExaSearchResponse
+}
