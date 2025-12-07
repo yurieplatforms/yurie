@@ -178,7 +178,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
         transition={TRANSITION_SECTION}
       >
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-lg font-semibold tracking-tight text-[var(--color-foreground)]">Your conversations</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-foreground)]">Your conversations</h1>
           <div className="flex items-center gap-2">
             <Link
               href="/"

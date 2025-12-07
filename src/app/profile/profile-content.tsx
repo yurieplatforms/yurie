@@ -486,7 +486,7 @@ export function ProfileContent({
 
           {/* Name & Title */}
           <div className="space-y-1">
-            <h1 className="text-3xl font-semibold tracking-tight text-[var(--color-foreground)]">
+            <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-foreground)]">
               {displayName}
             </h1>
             <p className="text-sm font-medium text-[var(--color-muted-foreground)]">

@@ -137,9 +137,9 @@ function UserMessageContent({ message }: UserMessageContentProps) {
       {/* Text content - inside bubble */}
       {hasText && (
         <div className={cn(
-          "w-fit rounded-[26px] px-5 py-3.5 shadow-sm",
-          "bg-muted text-foreground",
-          "dark:bg-[#404040] dark:text-zinc-50"
+          "w-fit rounded-[var(--radius-xl)] px-5 py-3.5 shadow-sm",
+          "bg-[var(--color-muted)] text-[var(--color-foreground)]",
+          "dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-foreground)]"
         )}>
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
@@ -155,11 +155,11 @@ type AttachmentPreviewProps = {
 function AttachmentPreview({ attachment }: AttachmentPreviewProps) {
   if (attachment.type === 'image_url') {
     return (
-      <div className="relative overflow-hidden rounded-xl">
+      <div className="relative overflow-hidden rounded-[var(--radius-lg)]">
         <img
           src={attachment.image_url.url}
           alt="Attached image"
-          className="max-h-48 max-w-full rounded-xl object-cover"
+          className="max-h-48 max-w-full rounded-[var(--radius-lg)] object-cover"
         />
       </div>
     )
@@ -167,11 +167,11 @@ function AttachmentPreview({ attachment }: AttachmentPreviewProps) {
 
   if (attachment.type === 'url_image') {
     return (
-      <div className="relative overflow-hidden rounded-xl">
+      <div className="relative overflow-hidden rounded-[var(--radius-lg)]">
         <img
           src={attachment.url_image.url}
           alt={attachment.url_image.alt || 'Attached image'}
-          className="max-h-48 max-w-full rounded-xl object-cover"
+          className="max-h-48 max-w-full rounded-[var(--radius-lg)] object-cover"
         />
       </div>
     )
@@ -180,9 +180,9 @@ function AttachmentPreview({ attachment }: AttachmentPreviewProps) {
   if (attachment.type === 'file') {
     // For PDFs and other files, show a file icon with name (same style as chat bubble)
     return (
-      <div className="flex items-center gap-2 rounded-[20px] bg-muted px-4 py-2.5 shadow-sm dark:bg-[#404040]">
-        <FileTextIcon className="h-4 w-4 shrink-0 text-foreground/70 dark:text-zinc-50/70" />
-        <span className="max-w-[200px] truncate text-base text-foreground dark:text-zinc-50">
+      <div className="flex items-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-muted)] px-4 py-2.5 shadow-sm dark:bg-[var(--color-surface-hover)]">
+        <FileTextIcon className="h-4 w-4 shrink-0 text-[var(--color-foreground)]/70" />
+        <span className="max-w-[200px] truncate text-base text-[var(--color-foreground)]">
           {attachment.file.filename}
         </span>
       </div>
@@ -191,9 +191,9 @@ function AttachmentPreview({ attachment }: AttachmentPreviewProps) {
 
   if (attachment.type === 'url_document') {
     return (
-      <div className="flex items-center gap-2 rounded-[20px] bg-muted px-4 py-2.5 shadow-sm dark:bg-[#404040]">
-        <FileTextIcon className="h-4 w-4 shrink-0 text-foreground/70 dark:text-zinc-50/70" />
-        <span className="max-w-[200px] truncate text-base text-foreground dark:text-zinc-50">
+      <div className="flex items-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-muted)] px-4 py-2.5 shadow-sm dark:bg-[var(--color-surface-hover)]">
+        <FileTextIcon className="h-4 w-4 shrink-0 text-[var(--color-foreground)]/70" />
+        <span className="max-w-[200px] truncate text-base text-[var(--color-foreground)]">
           {attachment.url_document.title || 'Document'}
         </span>
       </div>
@@ -249,14 +249,14 @@ function AssistantMessageContent({
               }
               label={
                 !isThinkingStage && !hasActiveToolUse && typeof thoughtSeconds === 'number' ? (
-                  <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">
+                  <span className="text-base font-normal text-[var(--color-muted-foreground)]">
                     Thought for{' '}
                     {thoughtSeconds >= 60
                       ? `${Math.floor(thoughtSeconds / 60)}m ${thoughtSeconds % 60}s`
                       : `${thoughtSeconds}s`}
                   </span>
                 ) : !isThinkingStage && !hasActiveToolUse ? (
-                  <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">
+                  <span className="text-base font-normal text-[var(--color-muted-foreground)]">
                     Thought
                   </span>
                 ) : undefined
@@ -264,7 +264,7 @@ function AssistantMessageContent({
             />
             <ReasoningContent>
               {hasReasoning ? (
-                <MessageResponse className="italic text-zinc-500 dark:text-zinc-400 prose-headings:text-zinc-500 dark:prose-headings:text-zinc-400 prose-strong:text-zinc-500 dark:prose-strong:text-zinc-400">
+                <MessageResponse className="italic text-[var(--color-muted-foreground)] prose-headings:text-[var(--color-muted-foreground)] prose-strong:text-[var(--color-muted-foreground)]">
                   {message.reasoning}
                 </MessageResponse>
               ) : null}
@@ -319,14 +319,14 @@ function SuggestionsList({
           type="button"
           onClick={() => onSuggestionClick(suggestion)}
           className={cn(
-            'group relative w-full cursor-pointer rounded-2xl px-3.5 py-2.5 text-left text-base font-normal transition-all duration-[var(--transition-base)]',
+            'group relative w-full cursor-pointer rounded-[var(--radius-xl)] px-3.5 py-2.5 text-left text-base font-normal transition-all duration-[var(--transition-base)]',
             'hover:bg-[var(--color-surface-hover)] active:bg-[var(--color-surface-active)]',
           )}
           data-id={`${suggestion}-${i}`}
         >
           <div className="flex items-center gap-3">
-            <CornerDownRight className="h-4 w-4 shrink-0 text-zinc-500 transition-colors group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100" />
-            <span className="text-zinc-700 transition-colors group-hover:text-zinc-900 dark:text-zinc-300 dark:group-hover:text-zinc-100">
+            <CornerDownRight className="h-4 w-4 shrink-0 text-[var(--color-muted-foreground)] transition-colors group-hover:text-[var(--color-foreground)]" />
+            <span className="text-[var(--color-muted-foreground)] transition-colors group-hover:text-[var(--color-foreground)]">
               {suggestion}
             </span>
           </div>

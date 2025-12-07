@@ -287,7 +287,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
                 disabled={isLoading}
-                className="custom-scrollbar w-full resize-none border-0 bg-transparent p-3 font-medium text-[var(--color-foreground)] dark:text-white placeholder:text-[var(--color-muted-foreground)] dark:placeholder:text-[#b7b5a9] focus:ring-0 focus-visible:outline-none min-h-[48px]" 
+                className="custom-scrollbar w-full resize-none border-0 bg-transparent p-3 font-medium text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)] focus:ring-0 focus-visible:outline-none min-h-[48px]" 
             />
 
         <div className="mt-0.5 p-1 pt-0">
@@ -298,7 +298,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                     <button 
                         type="button" 
                         onClick={handlePlusClick} 
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] focus-visible:outline-none cursor-pointer"
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-surface-hover)] focus-visible:outline-none cursor-pointer"
                         disabled={isLoading}
                     >
                         <Plus className="h-5 w-5" />
@@ -320,7 +320,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                     <PopoverTrigger asChild>
                       <button 
                         type="button" 
-                        className="flex h-8 items-center gap-2 rounded-full p-2 text-sm font-medium text-[var(--color-foreground)] dark:text-white transition-colors hover:bg-[var(--color-surface-hover)] focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                        className="flex h-8 items-center gap-2 rounded-full p-2 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-surface-hover)] focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
                         disabled={isLoading}
                       >
                         <LayoutGrid className="h-4 w-4" />
@@ -337,11 +337,11 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                           key={tool.id} 
                           onClick={() => handleSelectTool(tool.id)} 
                           className={cn(
-                              "flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-[var(--color-surface-hover)] dark:hover:bg-[#2f2f2f] transition-colors cursor-pointer",
-                              selectedTools.includes(tool.id) && "bg-[var(--color-surface-active)] dark:bg-[#2f2f2f]"
+                              "flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-[var(--color-surface-hover)] transition-colors cursor-pointer",
+                              selectedTools.includes(tool.id) && "bg-[var(--color-surface-active)]"
                           )}
                       > 
-                          <div className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 bg-[var(--color-surface-hover)] dark:bg-[#2f2f2f]">
+                          <div className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 bg-[var(--color-surface-hover)]">
                             {tool.iconUrl ? (
                               <img src={tool.iconUrl} alt={tool.name} className="h-4 w-4 object-contain" />
                             ) : tool.icon ? (
@@ -381,7 +381,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.8 }}
                                 onClick={() => handleRemoveTool(tool.id)}
-                                className="flex h-8 items-center gap-2 rounded-full px-2.5 text-sm bg-[var(--color-surface-hover)] dark:bg-white/5 hover:bg-[var(--color-surface-active)] dark:hover:bg-white/10 cursor-pointer text-[var(--color-muted-foreground)] dark:text-zinc-300 transition-colors flex-shrink-0"
+                                className="flex h-8 items-center gap-2 rounded-full px-2.5 text-sm bg-[var(--color-surface-hover)] hover:bg-[var(--color-surface-active)] cursor-pointer text-[var(--color-foreground)] transition-colors flex-shrink-0"
                             >
                                 {tool.iconUrl ? (
                                   <img src={tool.iconUrl} alt={tool.name} className="h-4 w-4 object-contain" />
@@ -404,7 +404,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                       type="submit" 
                       onClick={handleSubmit}
                       disabled={!hasValue || isLoading} 
-                      className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] dark:hover:bg-[var(--color-accent-hover)] disabled:bg-zinc-300 dark:disabled:bg-zinc-700 cursor-pointer"
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-50 disabled:bg-[var(--color-accent)] cursor-pointer"
                     >
                       {isLoading ? (
                         <Square className="h-4 w-4 fill-current animate-pulse" />
