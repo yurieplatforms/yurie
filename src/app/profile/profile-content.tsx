@@ -525,7 +525,7 @@ export function ProfileContent({
             <div 
               className={cn(
                 "relative h-32 w-32 rounded-full overflow-hidden ring-[6px] ring-[var(--color-background)] shadow-xl transition-all duration-300",
-                isDragging && "ring-[var(--color-accent)] scale-105"
+                isDragging && "ring-[var(--color-primary)] scale-105"
               )}
             >
               {avatarUrl ? (
@@ -535,7 +535,7 @@ export function ProfileContent({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="h-full w-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-info)] flex items-center justify-center text-4xl font-medium text-white/90">
+                <div className="h-full w-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-info)] flex items-center justify-center text-4xl font-medium text-white/90">
                   {displayName.charAt(0).toUpperCase()}
                 </div>
               )}
@@ -659,7 +659,7 @@ export function ProfileContent({
                     <select
                       value={editingTimezone}
                       onChange={(e) => setEditingTimezone(e.target.value)}
-                      className="w-full h-10 px-3 pr-8 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] rounded-[var(--radius-input)] text-sm text-[var(--color-foreground)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/30 focus:outline-none appearance-none cursor-pointer transition-all"
+                      className="w-full h-10 px-3 pr-8 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] rounded-[var(--radius-input)] text-sm text-[var(--color-foreground)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/30 focus:outline-none appearance-none cursor-pointer transition-all"
                     >
                       <option value="">Select timezone</option>
                       <optgroup label="Detected">

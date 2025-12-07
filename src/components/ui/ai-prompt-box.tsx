@@ -358,7 +358,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                             </p>
                           </div>
                           {selectedTools.includes(tool.id) && (
-                            <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-accent)] flex items-center justify-center shrink-0 self-center">
+                            <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-primary)] flex items-center justify-center shrink-0 self-center">
                               <Check className="h-2 w-2 text-white" strokeWidth={3} />
                             </div>
                           )}
@@ -405,7 +405,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                       type="submit" 
                       onClick={handleSubmit}
                       disabled={!hasValue || isLoading} 
-                      className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)] disabled:opacity-50 disabled:bg-[var(--color-accent)] cursor-pointer"
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] disabled:opacity-50 disabled:bg-[var(--color-primary)] cursor-pointer"
                     >
                       {isLoading ? (
                         <Square className="h-4 w-4 fill-current animate-pulse" />

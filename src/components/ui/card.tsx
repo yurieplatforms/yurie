@@ -12,9 +12,9 @@ const cardVariants = cva(
         outline: "border border-[var(--color-border)] bg-transparent hover:border-[var(--color-muted-foreground)]/30 hover:bg-[var(--color-surface)]/50",
         ghost: "bg-transparent",
         accent: [
-          "bg-gradient-to-br from-[var(--color-accent)]/10 via-transparent to-transparent",
-          "border border-[var(--color-accent)]/20",
-          "hover:border-[var(--color-accent)]/40 hover:from-[var(--color-accent)]/15",
+          "bg-gradient-to-br from-[var(--color-primary)]/10 via-transparent to-transparent",
+          "border border-[var(--color-primary)]/20",
+          "hover:border-[var(--color-primary)]/40 hover:from-[var(--color-primary)]/15",
         ],
         interactive: [
           "bg-[var(--color-surface)] cursor-pointer",

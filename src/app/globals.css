@@ -80,64 +80,60 @@
     --sidebar-accent-foreground: #343434;
     --sidebar-primary-foreground: #fbfbfb;
 
-    /* Mapping Legacy Variables to New Tokens */
+    /* Semantic Aliases & Compatibility */
     --color-background: var(--background);
     --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
     --color-muted: var(--muted);
     --color-muted-foreground: var(--muted-foreground);
-    --color-accent: var(--primary);
-    --color-accent-foreground: var(--primary-foreground);
-    --color-accent-hover: var(--ring); /* Using ring as a darker/hover shade for primary */
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-radius: var(--radius);
+
+    /* Enhanced Semantic Tokens */
+    --color-primary-hover: var(--chart-1); /* Darker shade of primary for hover */
     
-    /* Surface colors mapped to new tokens */
+    /* Legacy Mappings */
     --color-surface: var(--card);
     --color-surface-hover: var(--muted);
     --color-surface-active: var(--accent);
     --color-surface-elevated: var(--popover);
-    --color-border: var(--border);
     --color-border-subtle: var(--muted);
     
-    /* Semantic Colors - Keeping mostly original but tweaking to fit earthy theme */
-    --color-success: #4c7c64; /* Earthy green */
-    --color-success-foreground: #ffffff;
-    --color-warning: #c7863e; /* Earthy orange/gold */
-    --color-warning-foreground: #ffffff;
-    --color-destructive: var(--destructive);
-    --color-destructive-foreground: var(--destructive-foreground);
-    --color-info: var(--chart-2); /* Using chart color for info */
-    --color-info-foreground: #ffffff;
-    
-    /* Unified Design Tokens */
-    --color-surface-dark: #202020; /* Keep as is or map to dark sidebar */
-    --color-prompt-bg: var(--sidebar);
-    --color-prompt-dark-bg: #212121;
-
+    /* Input Specifics */
     --color-input-bg: var(--background);
     --color-input-border: var(--input);
-    
-    /* Profile Gradients - Mapped to Chart Colors */
-    --color-gradient-mid-1: var(--chart-2);
-    --color-gradient-mid-2: var(--chart-4);
-    --color-gradient-dark-start: var(--chart-1);
-    
-    /* Radius */
-    --radius-sm: calc(var(--radius) - 2px);
-    --radius-md: var(--radius);
-    --radius-lg: var(--radius); /* Making cards match base radius or slightly larger */
-    --radius-xl: calc(var(--radius) + 4px);
-    --radius-2xl: calc(var(--radius) + 8px);
-    --radius-full: 9999px;
-    --radius-input: 28px; /* Keeping pill shape for inputs */
-    --radius-card: var(--radius);
-    --radius-dialog: calc(var(--radius) + 8px);
-    --radius-prompt: 1.625rem;
     
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
     --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
-    --shadow-accent: 0 4px 14px rgba(201, 100, 66, 0.25); /* Updated to primary color */
+    --shadow-accent: 0 4px 14px rgba(201, 100, 66, 0.25);
     --shadow-destructive: 0 4px 14px rgba(20, 20, 19, 0.2);
+
+    /* Radius */
+    --radius-sm: calc(var(--radius) - 2px);
+    --radius-md: var(--radius);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-full: 9999px;
+    --radius-input: 28px;
+    --radius-card: var(--radius);
+    --radius-dialog: calc(var(--radius) + 8px);
+    --radius-prompt: 1.625rem;
     
     /* Spacing */
     --space-input-x: 1rem;
@@ -149,6 +145,31 @@
     --transition-fast: 150ms ease;
     --transition-base: 200ms ease;
     --transition-slow: 300ms ease;
+
+    /* Chart Colors exposed as vars */
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    /* Sidebar Colors */
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Info/Success/Warning Colors */
+    --color-info: var(--chart-2);
+    --color-info-foreground: #ffffff;
+    --color-success: #4c7c64;
+    --color-success-foreground: #ffffff;
+    --color-warning: #c7863e;
+    --color-warning-foreground: #ffffff;
   }
 
   .dark {
@@ -186,45 +207,55 @@
     --sidebar-accent-foreground: #c3c0b6;
     --sidebar-primary-foreground: #fbfbfb;
 
-    /* Mapping Legacy Variables to New Tokens (Dark) */
+    /* Semantic Aliases & Compatibility (Dark) */
     --color-background: var(--background);
     --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
     --color-muted: var(--muted);
     --color-muted-foreground: var(--muted-foreground);
-    --color-accent: var(--primary);
-    --color-accent-foreground: var(--primary-foreground);
-    --color-accent-hover: var(--ring);
-    
-    /* Surface colors mapped */
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    /* Enhanced Semantic Tokens */
+    --color-primary-hover: var(--chart-1); 
+
+    /* Legacy Mappings */
     --color-surface: var(--card);
     --color-surface-hover: #404040;
     --color-surface-active: var(--accent);
     --color-surface-elevated: var(--popover);
-    --color-border: var(--border);
     --color-border-subtle: var(--muted);
-    
-    /* Semantic Colors */
-    --color-success: #34d399;
-    --color-success-foreground: #ffffff;
-    --color-warning: #fbbf24;
-    --color-warning-foreground: #ffffff;
-    --color-destructive: var(--destructive);
-    --color-destructive-foreground: var(--destructive-foreground);
-    --color-info: var(--chart-2);
-    --color-info-foreground: #ffffff;
-    
-    /* Unified Design Tokens */
-    --color-prompt-bg: var(--sidebar);
 
+    /* Input Specifics */
     --color-input-bg: var(--background);
     --color-input-border: var(--input);
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.4);
     --shadow-accent: 0 4px 14px rgba(217, 119, 87, 0.15);
     --shadow-destructive: 0 4px 14px rgba(239, 68, 68, 0.15);
+
+    /* Info/Success/Warning Colors */
+    --color-info: var(--chart-2);
+    --color-info-foreground: #ffffff;
+    --color-success: #34d399;
+    --color-success-foreground: #ffffff;
+    --color-warning: #fbbf24;
+    --color-warning-foreground: #ffffff;
   }
 }
 
@@ -284,6 +315,34 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  
+  /* Additional Semantic Tokens */
+  --color-primary-hover: var(--color-primary-hover);
+  --color-surface: var(--color-surface);
+  --color-surface-hover: var(--color-surface-hover);
+  --color-surface-active: var(--color-surface-active);
+  --color-surface-elevated: var(--color-surface-elevated);
+  
+  /* Success/Warning/Info */
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-info: var(--color-info);
+  
+  /* Radius & Shadows */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
+  --radius-input: var(--radius-input);
+  --radius-card: var(--radius-card);
+  
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-accent: var(--shadow-accent);
+  --shadow-destructive: var(--shadow-destructive);
 }
 
 @layer utilities {
@@ -546,11 +605,11 @@
     color: var(--color-muted-foreground) !important;
   }
 
-  /* AI-generated links in prose content - use accent color */
+  /* AI-generated links in prose content - use primary color */
   .prose a,
   .prose-gray a,
   [data-streamdown] a {
-    color: var(--color-accent);
+    color: var(--color-primary);
     text-decoration: underline;
     text-underline-offset: 2px;
     transition: color 0.15s ease;
@@ -559,19 +618,19 @@
   .prose a:hover,
   .prose-gray a:hover,
   [data-streamdown] a:hover {
-    color: var(--color-accent-hover);
+    color: var(--color-primary-hover);
   }
 
   .dark .prose a,
   .dark .prose-gray a,
   .dark [data-streamdown] a {
-    color: var(--color-accent);
+    color: var(--color-primary);
   }
 
   .dark .prose a:hover,
   .dark .prose-gray a:hover,
   .dark [data-streamdown] a:hover {
-    color: var(--color-accent-hover);
+    color: var(--color-primary-hover);
   }
 
   /* KaTeX LaTeX math styling */

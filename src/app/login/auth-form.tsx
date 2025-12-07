@@ -79,7 +79,7 @@ export function AuthForm({
           <motion.div
             layoutId="active-tab"
             className={cn(
-              "absolute inset-y-1 w-[calc(50%-4px)] rounded-[calc(var(--radius-input)-4px)] bg-[var(--color-accent)] shadow-sm",
+              "absolute inset-y-1 w-[calc(50%-4px)] rounded-[calc(var(--radius-input)-4px)] bg-[var(--color-primary)] shadow-sm",
               mode === 'signup' ? "left-[50%]" : "left-1"
             )}
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
@@ -147,7 +147,7 @@ export function AuthForm({
                   type="button"
                   variant="link"
                   size="sm"
-                  className="h-auto p-0 text-xs text-[var(--color-muted-foreground)] hover:text-[var(--color-accent)] hover:no-underline"
+                  className="h-auto p-0 text-xs text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)] hover:no-underline"
                   onClick={() => alert("Password reset not implemented yet.")}
                 >
                   Forgot password?
@@ -199,11 +199,11 @@ export function AuthForm({
       
       <p className="text-center text-xs text-[var(--color-muted-foreground)]">
         By continuing, you agree to our{' '}
-        <a href="#" className="underline hover:text-[var(--color-accent)] transition-colors">
+        <a href="#" className="underline hover:text-[var(--color-primary)] transition-colors">
           Terms of Service
         </a>{' '}
         and{' '}
-        <a href="#" className="underline hover:text-[var(--color-accent)] transition-colors">
+        <a href="#" className="underline hover:text-[var(--color-primary)] transition-colors">
           Privacy Policy
         </a>
         .

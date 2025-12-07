@@ -74,7 +74,7 @@ export function Header() {
                   className="h-full w-full rounded-full object-cover shadow-sm"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-info)]" />
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-info)]" />
               )}
             </Link>
           ) : (
