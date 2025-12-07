@@ -241,3 +241,61 @@ export type MessageCitation =
   | ContentBlockLocationCitation
   | WebSearchCitation
   | SearchResultLocationCitation
+
+/**
+ * Web search result from OpenAI's web search tool
+ */
+export type WebSearchResult = {
+  url: string
+  title?: string
+  pageAge?: string
+}
+
+/**
+ * Web search tool output
+ */
+export type WebSearchOutput = {
+  query?: string
+  results: WebSearchResult[]
+  errorCode?: 'max_uses_exceeded' | 'too_many_requests' | 'query_too_long' | 'invalid_input' | string
+}
+
+/**
+ * Exa search result
+ */
+export type ExaSearchResult = {
+  url: string
+  title?: string
+  text?: string
+  author?: string
+  publishedDate?: string
+  score?: number
+  highlights?: string[]
+  summary?: string
+}
+
+/**
+ * Exa search tool output
+ */
+export type ExaSearchOutput = {
+  query?: string
+  category?: string
+  results: ExaSearchResult[]
+  error?: string
+}
+
+/**
+ * Tool use event for streaming tool execution status
+ */
+export type ToolUseEvent = {
+  /** Tool name (e.g., 'web_search', 'calculator') */
+  name: string
+  /** Status of the tool execution */
+  status: 'start' | 'end'
+  /** Result of the tool execution (for non-search tools) */
+  result?: string
+  /** Web search output (for web_search tool) */
+  webSearch?: WebSearchOutput
+  /** Exa search output (for exa_search tool) */
+  exaSearch?: ExaSearchOutput
+}
