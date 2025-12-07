@@ -31,6 +31,16 @@ export type StreamError = {
 }
 
 /**
+ * Warning information (e.g., truncation)
+ */
+export type StreamWarning = {
+  /** Warning type identifier */
+  type: string
+  /** User-friendly warning message */
+  message: string
+}
+
+/**
  * Accumulated state during stream processing
  */
 export type StreamState = {
@@ -42,6 +52,8 @@ export type StreamState = {
   thinkingTime: number | undefined
   /** Error information if stream encountered an error */
   error: StreamError | undefined
+  /** Warning information (e.g., response truncated) */
+  warning: StreamWarning | undefined
   /** Active tool use status */
   activeToolUse: ToolUseStatus | null
   /** History of completed tool uses */
@@ -98,6 +110,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
     let accumulatedReasoning = ''
     let accumulatedThinkingTime: number | undefined
     let accumulatedError: StreamError | undefined
+    let accumulatedWarning: StreamWarning | undefined
     let activeToolUse: ToolUseStatus | null = null
     const toolUseHistory: ToolUseStatus[] = []
     
@@ -141,6 +154,25 @@ export function useStreamResponse(): UseStreamResponseReturn {
               reasoning: accumulatedReasoning,
               thinkingTime: accumulatedThinkingTime,
               error: accumulatedError,
+              warning: accumulatedWarning,
+              activeToolUse,
+              toolUseHistory,
+            })
+            continue
+          }
+
+          // Handle SSE warning events (e.g., truncation)
+          if (json.warning) {
+            accumulatedWarning = {
+              type: json.warning.type ?? 'unknown',
+              message: json.warning.message ?? 'Something unexpected happened',
+            }
+            callbacks.onUpdate({
+              content: accumulatedContent,
+              reasoning: accumulatedReasoning,
+              thinkingTime: accumulatedThinkingTime,
+              error: accumulatedError,
+              warning: accumulatedWarning,
               activeToolUse,
               toolUseHistory,
             })
@@ -166,6 +198,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
               reasoning: accumulatedReasoning,
               thinkingTime: accumulatedThinkingTime,
               error: accumulatedError,
+              warning: accumulatedWarning,
               activeToolUse,
               toolUseHistory,
             })
@@ -245,6 +278,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
               reasoning: accumulatedReasoning,
               thinkingTime: accumulatedThinkingTime,
               error: accumulatedError,
+              warning: accumulatedWarning,
               activeToolUse,
               toolUseHistory,
             })
@@ -261,6 +295,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
       reasoning: accumulatedReasoning,
       thinkingTime: accumulatedThinkingTime,
       error: accumulatedError,
+      warning: accumulatedWarning,
       activeToolUse: null, // Clear active tool use when done
       toolUseHistory,
     })
@@ -270,6 +305,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
       reasoning: accumulatedReasoning,
       thinkingTime: accumulatedThinkingTime,
       error: accumulatedError,
+      warning: accumulatedWarning,
       activeToolUse: null,
       toolUseHistory,
     }

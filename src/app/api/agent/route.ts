@@ -255,7 +255,8 @@ export async function POST(request: Request) {
               // Options: 'none' (fastest), 'low', 'medium', 'high' (most thorough)
               reasoning: { effort: 'high' },
               // Latency optimizations
-              max_output_tokens: 4096, // Limit output tokens for faster responses
+              // Note: GPT-5.1 supports up to 65k output tokens
+              max_output_tokens: 32768, // Allow longer responses to prevent cutoffs
               parallel_tool_calls: true, // Execute multiple tool calls in parallel
               store: true, // Enable prompt caching for repeated requests
             }
@@ -365,6 +366,20 @@ export async function POST(request: Request) {
               if (event.type === 'response.completed' || event.type === 'response.done') {
                 currentResponseId = event.response?.id ?? currentResponseId
                 currentOutput = event.response?.output ?? event.output
+                
+                // Check for truncation due to max output tokens
+                const status = event.response?.status
+                const incompleteDetails = event.response?.incomplete_details
+                
+                if (status === 'incomplete' && incompleteDetails?.reason === 'max_output_tokens') {
+                  console.warn('[agent] Response truncated due to max_output_tokens limit')
+                  safeEnqueue(`data: ${JSON.stringify({
+                    warning: {
+                      type: 'truncated',
+                      message: 'Response was cut short due to length limits. Try a more specific question.',
+                    }
+                  })}\n\n`)
+                }
               }
             }
             
