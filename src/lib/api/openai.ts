@@ -272,14 +272,65 @@ export function createOpenAIClient(config: OpenAIClientConfig): OpenAI {
 // Input Validation & Sanitization
 // =============================================================================
 
-/** Maximum allowed message length (characters) */
-const MAX_MESSAGE_LENGTH = 100000
+/** Maximum allowed text message length (characters) */
+const MAX_TEXT_MESSAGE_LENGTH = 100000
 
 /** Maximum allowed messages in conversation */
 const MAX_MESSAGES_COUNT = 100
 
 /**
+ * Maximum total payload size (per OpenAI docs: 50MB)
+ * @see https://platform.openai.com/docs/guides/images-vision
+ */
+const MAX_TOTAL_PAYLOAD_SIZE = 50 * 1024 * 1024
+
+/**
+ * Check if content contains image or file data (which have different size limits)
+ * Images and files can be much larger than text and are validated separately.
+ */
+function contentHasMediaAttachments(content: unknown): boolean {
+  if (!Array.isArray(content)) return false
+  
+  return content.some((segment) => {
+    if (!segment || typeof segment !== 'object') return false
+    const type = (segment as { type?: string }).type
+    // Check for image_url, url_image, file, or url_document types
+    return type === 'image_url' || type === 'url_image' || type === 'file' || type === 'url_document'
+  })
+}
+
+/**
+ * Get the text-only length of message content (excluding media attachments)
+ */
+function getTextContentLength(content: unknown): number {
+  if (typeof content === 'string') {
+    return content.length
+  }
+  
+  if (!Array.isArray(content)) {
+    return 0
+  }
+  
+  // Sum up only text segment lengths
+  return content.reduce((total, segment) => {
+    if (!segment || typeof segment !== 'object') return total
+    const type = (segment as { type?: string }).type
+    if (type === 'text') {
+      const text = (segment as { text?: string }).text
+      return total + (typeof text === 'string' ? text.length : 0)
+    }
+    return total
+  }, 0)
+}
+
+/**
  * Validate and sanitize input messages
+ * 
+ * For messages with media attachments (images, PDFs), we skip the text length
+ * validation since OpenAI's actual limit is 50MB total payload per request.
+ * Media validation is handled separately by the file processing utilities.
+ * 
+ * @see https://platform.openai.com/docs/guides/images-vision
  */
 export function validateMessages(
   messages: Array<{ role: string; content: unknown }>
@@ -296,6 +347,9 @@ export function validateMessages(
     return { valid: false, error: `Too many messages (max: ${MAX_MESSAGES_COUNT})` }
   }
 
+  // Track total payload size for media-heavy requests
+  let totalPayloadSize = 0
+
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i]
     
@@ -307,14 +361,28 @@ export function validateMessages(
       return { valid: false, error: `Invalid role "${msg.role}" at index ${i}` }
     }
 
-    // Check content length
-    const contentStr = typeof msg.content === 'string' 
-      ? msg.content 
-      : JSON.stringify(msg.content)
-    
-    if (contentStr && contentStr.length > MAX_MESSAGE_LENGTH) {
-      return { valid: false, error: `Message at index ${i} is too long` }
+    // For messages with media attachments, validate total payload size instead of text length
+    // OpenAI accepts up to 50MB total per request for images/files
+    if (contentHasMediaAttachments(msg.content)) {
+      const contentStr = JSON.stringify(msg.content)
+      totalPayloadSize += contentStr.length
+      
+      // Check individual message doesn't exceed total payload limit
+      if (contentStr.length > MAX_TOTAL_PAYLOAD_SIZE) {
+        return { valid: false, error: `Message at index ${i} exceeds 50MB payload limit` }
+      }
+    } else {
+      // For text-only messages, apply the text length limit
+      const textLength = getTextContentLength(msg.content)
+      if (textLength > MAX_TEXT_MESSAGE_LENGTH) {
+        return { valid: false, error: `Message at index ${i} is too long` }
+      }
     }
+  }
+
+  // Check total payload doesn't exceed 50MB
+  if (totalPayloadSize > MAX_TOTAL_PAYLOAD_SIZE) {
+    return { valid: false, error: 'Total message payload exceeds 50MB limit' }
   }
 
   return { valid: true }
