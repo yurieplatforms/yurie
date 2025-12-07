@@ -1,6 +1,6 @@
 'use client'
 
-import type { ChatMessage } from '@/lib/types'
+import type { ChatMessage, MessageContentSegment } from '@/lib/types'
 import {
   Message,
   MessageActions,
@@ -13,7 +13,7 @@ import {
   ReasoningTrigger,
   StatusShimmer,
 } from '@/components/ai/reasoning'
-import { CornerDownRight, CheckIcon, CopyIcon } from 'lucide-react'
+import { CornerDownRight, CheckIcon, CopyIcon, FileTextIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export type MessageListProps = {
@@ -50,8 +50,10 @@ export function MessageList({
         return (
           <div key={message.id} className="flex flex-col gap-1">
             <Message from={message.role}>
-              <MessageContent from={message.role}>
-                {message.role === 'assistant' ? (
+              {message.role === 'user' ? (
+                <UserMessageContent message={message} />
+              ) : (
+                <MessageContent from={message.role}>
                   <AssistantMessageContent
                     message={message}
                     hasReasoning={hasReasoning}
@@ -62,10 +64,8 @@ export function MessageList({
                     thoughtSeconds={thoughtSeconds}
                     isStreamingPlaceholder={isStreamingPlaceholder}
                   />
-                ) : (
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                )}
-              </MessageContent>
+                </MessageContent>
+              )}
             </Message>
 
             {message.role === 'assistant' &&
@@ -107,6 +107,100 @@ export function MessageList({
       })}
     </>
   )
+}
+
+type UserMessageContentProps = {
+  message: ChatMessage
+}
+
+function UserMessageContent({ message }: UserMessageContentProps) {
+  // Extract attachments from richContent
+  const attachments = message.richContent?.filter(
+    (segment): segment is Exclude<MessageContentSegment, { type: 'text' }> =>
+      segment.type !== 'text'
+  ) || []
+
+  const hasAttachments = attachments.length > 0
+  const hasText = message.content?.trim()
+
+  return (
+    <div className="flex flex-col gap-3 items-end">
+      {/* Attachment previews - outside bubble */}
+      {hasAttachments && (
+        <div className="flex flex-wrap gap-2 justify-end">
+          {attachments.map((attachment, index) => (
+            <AttachmentPreview key={index} attachment={attachment} />
+          ))}
+        </div>
+      )}
+
+      {/* Text content - inside bubble */}
+      {hasText && (
+        <div className={cn(
+          "w-fit rounded-[26px] px-5 py-3.5 shadow-sm",
+          "bg-muted text-foreground",
+          "dark:bg-[#404040] dark:text-zinc-50"
+        )}>
+          <p className="whitespace-pre-wrap">{message.content}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+type AttachmentPreviewProps = {
+  attachment: Exclude<MessageContentSegment, { type: 'text' }>
+}
+
+function AttachmentPreview({ attachment }: AttachmentPreviewProps) {
+  if (attachment.type === 'image_url') {
+    return (
+      <div className="relative overflow-hidden rounded-xl">
+        <img
+          src={attachment.image_url.url}
+          alt="Attached image"
+          className="max-h-48 max-w-full rounded-xl object-cover"
+        />
+      </div>
+    )
+  }
+
+  if (attachment.type === 'url_image') {
+    return (
+      <div className="relative overflow-hidden rounded-xl">
+        <img
+          src={attachment.url_image.url}
+          alt={attachment.url_image.alt || 'Attached image'}
+          className="max-h-48 max-w-full rounded-xl object-cover"
+        />
+      </div>
+    )
+  }
+
+  if (attachment.type === 'file') {
+    // For PDFs and other files, show a file icon with name (same style as chat bubble)
+    return (
+      <div className="flex items-center gap-2 rounded-[20px] bg-muted px-4 py-2.5 shadow-sm dark:bg-[#404040]">
+        <FileTextIcon className="h-4 w-4 shrink-0 text-foreground/70 dark:text-zinc-50/70" />
+        <span className="max-w-[200px] truncate text-base text-foreground dark:text-zinc-50">
+          {attachment.file.filename}
+        </span>
+      </div>
+    )
+  }
+
+  if (attachment.type === 'url_document') {
+    return (
+      <div className="flex items-center gap-2 rounded-[20px] bg-muted px-4 py-2.5 shadow-sm dark:bg-[#404040]">
+        <FileTextIcon className="h-4 w-4 shrink-0 text-foreground/70 dark:text-zinc-50/70" />
+        <span className="max-w-[200px] truncate text-base text-foreground dark:text-zinc-50">
+          {attachment.url_document.title || 'Document'}
+        </span>
+      </div>
+    )
+  }
+
+  return null
 }
 
 type AssistantMessageContentProps = {

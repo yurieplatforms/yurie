@@ -144,18 +144,10 @@ export function useFileProcessor(): UseFileProcessorReturn {
         }
       }
 
-      // Build text segment with attachment summary
-      const attachmentSummary =
-        files.length > 0
-          ? `\n\n[Attached files: ${files.map((file) => file.name).join(', ')}]`
-          : ''
-
-      const contentBase =
-        trimmed || 'I have attached some files for you to review.'
-
+      // Build text segment (no attachment summary needed - previews are shown in UI)
       const textSegment: TextContentSegment = {
         type: 'text',
-        text: `${contentBase}${attachmentSummary}`,
+        text: trimmed,
       }
 
       // Process image files
