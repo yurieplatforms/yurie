@@ -8,13 +8,15 @@
 import type { SSEHandler } from './sse-handler'
 import type {
   WebSearchCitation,
-  SearchResultCitation,
+  SearchResultLocationCitation,
   CharLocationCitation,
   PageLocationCitation,
   ContentBlockLocationCitation,
   MessageCitation,
-  WebSearchErrorCode,
 } from '@/lib/types'
+
+/** Web search error codes */
+type WebSearchErrorCode = 'max_uses_exceeded' | 'too_many_requests' | 'query_too_long' | 'invalid_input' | string
 
 // ============================================================================
 // Types for raw API responses
@@ -79,14 +81,13 @@ export function processCitations(rawCitations: RawCitation[]): MessageCitation[]
     }))
 
   // Search result citations (from document search)
-  const searchResultCitations: SearchResultCitation[] = rawCitations
+  const searchResultCitations: SearchResultLocationCitation[] = rawCitations
     .filter(c => c.type === 'search_result_location')
     .map(c => ({
       type: 'search_result_location' as const,
       source: c.source || '',
-      title: c.title || null,
+      title: c.title,
       citedText: c.cited_text || '',
-      searchResultIndex: c.search_result_index ?? 0,
       startBlockIndex: c.start_block_index ?? 0,
       endBlockIndex: c.end_block_index ?? 0,
     }))
