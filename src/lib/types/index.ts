@@ -145,3 +145,58 @@ export type SavedChat = {
   // Container ID for code execution persistence across messages
   containerId?: string
 }
+
+/**
+ * Citation types for AI-generated responses
+ * These match OpenAI's citation format from the Responses API
+ */
+
+export type WebSearchCitation = {
+  type: 'web_search_result_location'
+  url: string
+  title?: string
+  citedText?: string
+}
+
+export type SearchResultLocationCitation = {
+  type: 'search_result_location'
+  source: string
+  title?: string
+  startBlockIndex: number
+  endBlockIndex?: number
+  citedText?: string
+}
+
+export type CharLocationCitation = {
+  type: 'char_location'
+  documentIndex: number
+  documentTitle?: string
+  startCharIndex: number
+  endCharIndex: number
+  citedText?: string
+}
+
+export type PageLocationCitation = {
+  type: 'page_location'
+  documentIndex: number
+  documentTitle?: string
+  startPageNumber: number
+  endPageNumber: number
+  citedText?: string
+}
+
+export type ContentBlockLocationCitation = {
+  type: 'content_block_location'
+  documentIndex: number
+  documentTitle?: string
+  startBlockIndex: number
+  endBlockIndex: number
+  citedText?: string
+}
+
+export type MessageCitation =
+  | WebSearchCitation
+  | SearchResultLocationCitation
+  | CharLocationCitation
+  | PageLocationCitation
+  | ContentBlockLocationCitation
