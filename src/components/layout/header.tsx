@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { TextEffect } from '@/components/ui/text-effect'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -13,6 +14,12 @@ const NAV_ITEMS = [
 export function Header() {
   const pathname = usePathname()
   const { user, isLoading } = useAuth()
+  const [avatarError, setAvatarError] = useState(false)
+  
+  // Reset error state when user changes
+  useEffect(() => {
+    setAvatarError(false)
+  }, [user?.user_metadata?.avatar_url])
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 bg-[var(--color-background)]" suppressHydrationWarning>
@@ -67,14 +74,18 @@ export function Header() {
                   : "hover:opacity-80"
               )}
             >
-              {user.user_metadata?.avatar_url ? (
+              {user.user_metadata?.avatar_url && 
+               typeof user.user_metadata.avatar_url === 'string' && 
+               user.user_metadata.avatar_url.startsWith('http') && 
+               !avatarError ? (
                 <img
                   src={user.user_metadata.avatar_url}
                   alt="Profile"
                   className="h-full w-full rounded-full object-cover shadow-sm"
+                  onError={() => setAvatarError(true)}
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-info)]" />
+                <div className="h-full w-full rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-info)] shadow-sm" />
               )}
             </Link>
           ) : (

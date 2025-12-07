@@ -38,8 +38,21 @@ export function ProfileContent({
 }) {
   const { signOut, refreshUser } = useAuth()
   const [fullName, setFullName] = useState(user.user_metadata?.full_name || '')
-  const [avatarUrl, setAvatarUrl] = useState(user.user_metadata?.avatar_url || null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(() => {
+    const url = user.user_metadata?.avatar_url
+    // Only set if it's a valid URL
+    if (url && typeof url === 'string' && url.startsWith('http')) {
+      return url
+    }
+    return null
+  })
+  const [avatarError, setAvatarError] = useState(false)
   const [coverUrl, setCoverUrl] = useState(user.user_metadata?.cover_url || null)
+  
+  // Reset avatar error when URL changes
+  useEffect(() => {
+    setAvatarError(false)
+  }, [avatarUrl])
   const [isUploading, setIsUploading] = useState(false)
   const [isUploadingCover, setIsUploadingCover] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -528,16 +541,15 @@ export function ProfileContent({
                 isDragging && "ring-[var(--color-primary)] scale-105"
               )}
             >
-              {avatarUrl ? (
+              {avatarUrl && !avatarError ? (
                 <img 
                   src={avatarUrl} 
                   alt="Profile" 
                   className="h-full w-full object-cover"
+                  onError={() => setAvatarError(true)}
                 />
               ) : (
-                <div className="h-full w-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-info)] flex items-center justify-center text-4xl font-medium text-white/90">
-                  {displayName.charAt(0).toUpperCase()}
-                </div>
+                <div className="h-full w-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-info)]" />
               )}
               
               {/* Upload overlay */}
@@ -556,7 +568,7 @@ export function ProfileContent({
               </button>
             </div>
             
-            {avatarUrl && !isUploading && (
+            {avatarUrl && !avatarError && !isUploading && (
               <button
                 onClick={handleRemoveAvatar}
                 className="absolute top-0 right-0 translate-x-1/4 -translate-y-1/4 p-2 flex items-center justify-center rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md text-white transition-all opacity-0 group-hover/avatar:opacity-100 z-10 cursor-pointer shadow-lg"
