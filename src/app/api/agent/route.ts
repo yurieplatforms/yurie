@@ -45,7 +45,7 @@ function formatToolName(name: string): string {
   if (name === 'web_search') return 'Web search'
   
   // Remove common prefixes like GMAIL_, SLACK_, etc.
-  const withoutPrefix = name.replace(/^(GMAIL|SLACK|GITHUB|NOTION|GOOGLE)_/i, '')
+  const withoutPrefix = name.replace(/^(GMAIL|SLACK|NOTION|GOOGLE)_/i, '')
   
   // Convert SCREAMING_SNAKE_CASE to Title case
   return withoutPrefix
@@ -98,17 +98,6 @@ export async function POST(request: Request) {
   // Fetch user personalization context if user is authenticated
   let userName: string | null = null
   let userPreferences: { birthday?: string | null; location?: string | null; timezone?: string | null } = {}
-  let focusedRepo: {
-    owner: string
-    name: string
-    fullName: string
-    description: string | null
-    htmlUrl: string
-    private: boolean
-    language: string | null
-    defaultBranch: string
-  } | null = null
-  
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -124,22 +113,6 @@ export async function POST(request: Request) {
           location: personalizationContext.profile.location,
           timezone: personalizationContext.profile.timezone,
         }
-      }
-      
-      // Get focused GitHub repo if set
-      const githubFocusedRepo = user.user_metadata?.github_focused_repo as {
-        owner: string
-        name: string
-        fullName: string
-        description: string | null
-        htmlUrl: string
-        private: boolean
-        language: string | null
-        defaultBranch: string
-      } | undefined
-      if (githubFocusedRepo) {
-        focusedRepo = githubFocusedRepo
-        console.log(`[agent] Using focused GitHub repo: ${githubFocusedRepo.fullName}`)
       }
     }
   } catch (e) {

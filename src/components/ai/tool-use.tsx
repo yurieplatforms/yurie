@@ -42,7 +42,7 @@ export function ToolResults({ toolUses }: ToolResultsProps) {
             <div className="flex items-center gap-2 px-3 py-2 text-zinc-500 dark:text-zinc-400">
               <Code className="h-4 w-4" />
               <span className="text-base font-medium">
-                {toolCompletedLabels[tool.name] || tool.name.replace(/_/g, ' ').replace(/github/i, 'GitHub')} result
+                {toolCompletedLabels[tool.name] || tool.name.replace(/_/g, ' ')} result
               </span>
               {isWebSearch && !tool.webSearch?.errorCode && (
                 <span className="ml-auto text-xs text-[var(--color-success)]">

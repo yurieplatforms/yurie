@@ -220,13 +220,13 @@ export async function getGmailToolsByGroup(
  * Get tools from any toolkit
  *
  * @param externalUserId - Unique identifier for the user in your system
- * @param toolkit - Toolkit name (e.g., 'GMAIL', 'SLACK', 'GITHUB')
+ * @param toolkit - Toolkit name (e.g., 'GMAIL', 'SLACK', 'NOTION')
  * @param options - Additional options
  * @returns Array of tools from the specified toolkit
  *
  * @example
- * // Get GitHub tools
- * const tools = await getToolkitTools('user-123', 'GITHUB')
+ * // Get Notion tools
+ * const tools = await getToolkitTools('user-123', 'NOTION')
  *
  * @see https://docs.composio.dev/docs/fetching-tools#by-toolkit
  */

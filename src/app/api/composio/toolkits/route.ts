@@ -28,7 +28,7 @@ export async function GET() {
       }
     })
 
-    const SUPPORTED_TOOLKITS = ['GMAIL', 'GOOGLECALENDAR', 'GITHUB', 'NOTION']
+    const SUPPORTED_TOOLKITS = ['GMAIL', 'GOOGLECALENDAR', 'NOTION']
 
     // Fetch toolkit data from slugs
     const toolkitPromises = SUPPORTED_TOOLKITS.map(async (slug) => {

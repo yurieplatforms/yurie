@@ -10,7 +10,7 @@
 import OpenAI from 'openai'
 // Agent modules
 import { createSSEHandler, sendDoneSignal, type SSEHandler } from '@/lib/agent/sse-handler'
-import { createRunnableTools, type FocusedRepoContext } from '@/lib/agent/runnable-tools'
+import { createRunnableTools } from '@/lib/agent/runnable-tools'
 
 // Tools
 import { createServerTools } from '@/lib/tools'
@@ -31,8 +31,6 @@ export type RunnerParams = {
   userLocation?: WebSearchUserLocation
   /** User ID for agent context */
   userId?: string
-  /** Focused GitHub repository for default context */
-  focusedRepo?: FocusedRepoContext | null
 }
 
 /**
@@ -44,7 +42,6 @@ export async function runAgent({
   systemPrompt,
   userLocation,
   userId,
-  focusedRepo,
 }: RunnerParams): Promise<Response> {
   const openai = new OpenAI({
     apiKey,
@@ -59,7 +56,7 @@ export async function runAgent({
   const sseHandler = createSSEHandler(writer)
 
   // Create runnable tools
-  const runnableTools = await createRunnableTools(sseHandler, userId, focusedRepo)
+  const runnableTools = await createRunnableTools(sseHandler, userId)
 
   // Run the agent loop in the background
   ;(async () => {

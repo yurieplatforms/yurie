@@ -2,7 +2,7 @@ import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { CornerRightUp, Square, X as XIcon, FileText, Plus, LayoutGrid, Github, Mail, Check } from "lucide-react";
+import { CornerRightUp, Square, X as XIcon, FileText, Plus, LayoutGrid, Mail, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/providers/auth-provider";
@@ -65,8 +65,7 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
 
 // Mock tools list for UI placeholder
 const toolsList = [
-  { id: 'github', name: 'GitHub', shortName: 'GitHub', icon: Github, iconUrl: null, description: 'Access GitHub repositories' },
-  { id: 'gmail', name: 'Gmail', shortName: 'Gmail', icon: null, iconUrl: '/Gmail.svg', description: 'Send emails on your behalf' },
+  { id: 'gmail', name: 'Gmail', shortName: 'Gmail', icon: Mail, iconUrl: '/Gmail.svg', description: 'Send emails on your behalf' },
 ];
 
 interface PromptInputBoxProps {
