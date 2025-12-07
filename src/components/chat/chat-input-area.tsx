@@ -16,7 +16,7 @@ export type ChatInputAreaProps = {
 export function ChatInputArea({
   isLoading,
   onSend,
-  placeholder = "Ask anything",
+  placeholder = "How can I help you?",
   variant = 'fixed',
   selectedTools,
   onSelectedToolsChange,

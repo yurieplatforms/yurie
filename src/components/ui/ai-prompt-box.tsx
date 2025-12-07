@@ -287,7 +287,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
                 disabled={isLoading}
-                className="custom-scrollbar w-full resize-none border-0 bg-transparent p-3 text-[var(--color-foreground)] dark:text-white placeholder:text-[var(--color-muted-foreground)] dark:placeholder:text-zinc-400 focus:ring-0 focus-visible:outline-none min-h-[48px]" 
+                className="custom-scrollbar w-full resize-none border-0 bg-transparent p-3 font-medium text-[var(--color-foreground)] dark:text-white placeholder:text-[var(--color-muted-foreground)] dark:placeholder:text-zinc-400 focus:ring-0 focus-visible:outline-none min-h-[48px]" 
             />
 
         <div className="mt-0.5 p-1 pt-0">
@@ -352,7 +352,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                             <div className="flex items-center gap-1.5">
                               <span className="font-medium">{tool.name}</span>
                             </div>
-                            <p className="text-[10px] text-[var(--color-muted-foreground)] truncate leading-tight">
+                            <p className="text-[10px] font-medium text-[var(--color-muted-foreground)] truncate leading-tight">
                               {tool.description}
                             </p>
                           </div>

@@ -497,9 +497,9 @@ export function ProfileContent({
             {!isEditingPreferences && (
               <button
                 onClick={startEditingPreferences}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-md)] text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] hover:bg-[var(--color-accent)]/10 active:bg-[var(--color-accent)]/20 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-2 py-1 -mr-2 rounded-[var(--radius-full)] text-sm font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] hover:bg-[var(--color-accent)]/10 transition-all cursor-pointer"
               >
-                <Settings className="h-3.5 w-3.5" />
+                <Settings className="h-4 w-4" />
                 Edit
               </button>
             )}
@@ -638,7 +638,7 @@ export function ProfileContent({
                 <div className="flex items-center gap-4 px-4 py-3">
                   <UserIcon className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-[var(--color-muted-foreground)]">Name</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Name</p>
                     <p className="text-sm font-medium text-[var(--color-foreground)] truncate">{displayName}</p>
                   </div>
                 </div>
@@ -647,7 +647,7 @@ export function ProfileContent({
                 <div className="flex items-center gap-4 px-4 py-3">
                   <Mail className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-[var(--color-muted-foreground)]">Email</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Email</p>
                     <p className="text-sm font-medium text-[var(--color-foreground)] truncate">{user.email}</p>
                   </div>
                 </div>
@@ -656,7 +656,7 @@ export function ProfileContent({
                 <div className="flex items-center gap-4 px-4 py-3">
                   <Calendar className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
                   <div className="flex-1">
-                    <p className="text-xs text-[var(--color-muted-foreground)]">Member since</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Member since</p>
                     <p className="text-sm font-medium text-[var(--color-foreground)]">{memberSince}</p>
                   </div>
                 </div>
@@ -665,7 +665,7 @@ export function ProfileContent({
                 <div className="flex items-center gap-4 px-4 py-3">
                   <Cake className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-[var(--color-muted-foreground)]">Birthday</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Birthday</p>
                     <p className="text-sm font-medium text-[var(--color-foreground)] truncate">
                       {birthday ? new Date(birthday + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : 'Not set'}
                     </p>
@@ -676,7 +676,7 @@ export function ProfileContent({
                 <div className="flex items-center gap-4 px-4 py-3">
                   <MapPin className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-[var(--color-muted-foreground)]">Location</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Location</p>
                     <p className="text-sm font-medium text-[var(--color-foreground)] truncate">
                       {location || 'Not set'}
                     </p>
@@ -687,7 +687,7 @@ export function ProfileContent({
                 <div className="flex items-center gap-4 px-4 py-3">
                   <Globe className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-[var(--color-muted-foreground)]">Timezone</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Timezone</p>
                     <p className="text-sm font-medium text-[var(--color-foreground)] truncate">
                       {displayTimezone}
                     </p>
@@ -698,7 +698,7 @@ export function ProfileContent({
                 <div className="flex items-center gap-4 px-4 py-3">
                   <Palette className="h-5 w-5 text-[var(--color-muted-foreground)] shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-[var(--color-muted-foreground)]">Theme</p>
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)]">Theme</p>
                   </div>
                   <ThemeSwitch />
                 </div>
@@ -738,7 +738,7 @@ export function ProfileContent({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-[var(--color-foreground)]">Gmail</p>
-                  <p className="text-xs text-[var(--color-muted-foreground)]">
+                  <p className="text-xs font-medium text-[var(--color-muted-foreground)]">
                     {isCheckingGmail 
                       ? 'Checking...' 
                       : 'Send emails on your behalf'}
