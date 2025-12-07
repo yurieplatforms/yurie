@@ -145,3 +145,99 @@ export type SavedChat = {
   // Container ID for code execution persistence across messages
   containerId?: string
 }
+
+/**
+ * Citation Types for OpenAI Responses API
+ * @see https://platform.openai.com/docs/api-reference/responses
+ */
+
+/**
+ * Character location citation - references a specific character range in a document
+ */
+export type CharLocationCitation = {
+  type: 'char_location'
+  /** Index of the document in the input */
+  documentIndex: number
+  /** Starting character index in the document */
+  startCharIndex: number
+  /** Ending character index in the document */
+  endCharIndex: number
+  /** Title of the referenced document */
+  documentTitle?: string
+  /** The cited text */
+  citedText?: string
+}
+
+/**
+ * Page location citation - references specific pages in a document
+ */
+export type PageLocationCitation = {
+  type: 'page_location'
+  /** Index of the document in the input */
+  documentIndex: number
+  /** Starting page number (1-indexed) */
+  startPageNumber: number
+  /** Ending page number (exclusive) */
+  endPageNumber: number
+  /** Title of the referenced document */
+  documentTitle?: string
+  /** The cited text */
+  citedText?: string
+}
+
+/**
+ * Content block location citation - references content blocks in a document
+ */
+export type ContentBlockLocationCitation = {
+  type: 'content_block_location'
+  /** Index of the document in the input */
+  documentIndex: number
+  /** Starting block index */
+  startBlockIndex: number
+  /** Ending block index */
+  endBlockIndex: number
+  /** Title of the referenced document */
+  documentTitle?: string
+  /** The cited text */
+  citedText?: string
+}
+
+/**
+ * Web search result citation - references a web search result
+ */
+export type WebSearchCitation = {
+  type: 'web_search_result_location'
+  /** URL of the web page */
+  url: string
+  /** Title of the web page */
+  title?: string
+  /** The cited text */
+  citedText?: string
+}
+
+/**
+ * Search result location citation - references a search result
+ */
+export type SearchResultLocationCitation = {
+  type: 'search_result_location'
+  /** Source identifier */
+  source: string
+  /** Starting block index */
+  startBlockIndex: number
+  /** Ending block index */
+  endBlockIndex: number
+  /** Title of the source */
+  title?: string
+  /** The cited text */
+  citedText?: string
+}
+
+/**
+ * Union type for all citation types
+ */
+export type MessageCitation =
+  | CharLocationCitation
+  | PageLocationCitation
+  | ContentBlockLocationCitation
+  | WebSearchCitation
+  | SearchResultLocationCitation
