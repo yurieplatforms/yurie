@@ -189,20 +189,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             )
           }
         }
-
-        // Check for truncation warning in final stream state
-        if (finalStreamState?.warning?.type === 'truncated') {
-          // Append truncation notice to the message content
-          setMessages((prev) =>
-            prev.map((msg) => {
-              if (msg.id !== assistantMessageId) return msg
-              return {
-                ...msg,
-                content: msg.content + '\n\n---\n\n*⚠️ Response was cut short due to length limits. Try asking a more specific question for a complete answer.*',
-              }
-            }),
-          )
-        }
       } catch (err) {
         if ((err as Error).name === 'AbortError') {
           return
