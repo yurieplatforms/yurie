@@ -82,7 +82,6 @@ export function Loader({
           as="span"
           className={cn(textSizeBySize[size])}
           duration={2.5}
-          dynamic={false}
         >
           {resolvedText}
         </Shimmer>
