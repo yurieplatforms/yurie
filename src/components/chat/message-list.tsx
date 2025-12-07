@@ -180,7 +180,11 @@ function AssistantMessageContent({
       )}
 
       {message.content && !isStreamingPlaceholder && (
-        <MessageResponse>{message.content}</MessageResponse>
+        message.isError ? (
+          <p className="text-red-500 dark:text-red-400">{message.content}</p>
+        ) : (
+          <MessageResponse>{message.content}</MessageResponse>
+        )
       )}
 
       {message.richContent && message.richContent.length > 0 && (

@@ -132,6 +132,8 @@ export type ChatMessage = {
   activeToolUse?: ToolUseStatus | null
   /** History of completed tool uses */
   toolUseHistory?: ToolUseStatus[]
+  /** Whether this message represents an error */
+  isError?: boolean
 }
 
 export type SavedChat = {

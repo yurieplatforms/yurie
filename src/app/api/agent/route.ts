@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import OpenAI from 'openai'
 
 // Agent modules
 import { buildSystemPrompt } from '@/lib/agent/system-prompt'
@@ -8,6 +7,22 @@ import { convertToOpenAIContent } from '@/lib/agent/message-converter'
 
 // API types
 import type { AgentRequestBody } from '@/lib/api/types'
+
+// Production utilities
+import {
+  createOpenAIClient,
+  parseAPIError,
+  validateMessages,
+  checkRateLimit,
+  getRateLimitWaitTime,
+  generateRequestId,
+  logRequest,
+  getRecommendedServiceTier,
+  withServiceTier,
+} from '@/lib/api/openai'
+
+// Latency optimization utilities
+import { createLatencyTracker } from '@/lib/api/latency'
 
 // User context
 import {
@@ -40,20 +55,24 @@ function formatToolName(name: string): string {
 }
 
 export async function POST(request: Request) {
+  const requestId = generateRequestId()
+  const startTime = Date.now()
   let body: AgentRequestBody
 
   try {
     body = await request.json()
   } catch {
     return NextResponse.json(
-      { error: 'Invalid JSON body' },
+      { error: 'Invalid JSON body', requestId },
       { status: 400 },
     )
   }
 
-  if (!Array.isArray(body.messages) || body.messages.length === 0) {
+  // Validate input messages
+  const validation = validateMessages(body.messages || [])
+  if (!validation.valid) {
     return NextResponse.json(
-      { error: 'Request must include at least one message' },
+      { error: validation.error, requestId },
       { status: 400 },
     )
   }
@@ -66,14 +85,15 @@ export async function POST(request: Request) {
   if (!apiKey) {
     return NextResponse.json(
       {
-        error:
-          'OPENAI_API_KEY is not set. Add it to your environment variables.',
+        error: 'OPENAI_API_KEY is not set. Add it to your environment variables.',
+        requestId,
       },
       { status: 500 },
     )
   }
 
-  const openai = new OpenAI({ apiKey })
+  // Create OpenAI client with production defaults (timeout, etc.)
+  const openai = createOpenAIClient({ apiKey, timeout: 120000 })
 
   // Fetch user personalization context if user is authenticated
   let userName: string | null = null
@@ -139,6 +159,23 @@ export async function POST(request: Request) {
   } catch {
     // Continue without user ID
   }
+
+  // Rate limiting: 10 requests per user, refill 1 per second
+  const rateLimitKey = userId || request.headers.get('x-forwarded-for') || 'anonymous'
+  if (!checkRateLimit(rateLimitKey, 10, 1)) {
+    const waitTime = getRateLimitWaitTime(rateLimitKey, 10, 1)
+    return NextResponse.json(
+      { 
+        error: `Rate limit exceeded. Please wait ${Math.ceil(waitTime / 1000)} seconds.`,
+        requestId,
+        retryAfter: Math.ceil(waitTime / 1000),
+      },
+      { 
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil(waitTime / 1000)) },
+      },
+    )
+  }
   
   if (selectedTools.includes('gmail') && userId) {
     try {
@@ -200,6 +237,9 @@ export async function POST(request: Request) {
         const encoder = new TextEncoder()
         let isClosed = false
         
+        // Latency tracking for monitoring
+        const latencyTracker = createLatencyTracker()
+        
         const safeEnqueue = (data: string) => {
           if (!isClosed) {
             try {
@@ -217,21 +257,39 @@ export async function POST(request: Request) {
           let maxIterations = 10 // Safety limit
           let iteration = 0
           
+          // Determine service tier for this request
+          // Reference: https://platform.openai.com/docs/guides/priority-processing
+          const projectKey = userId ?? 'anonymous'
+          const { tier: serviceTier, reason: tierReason } = getRecommendedServiceTier(projectKey, {
+            isUserFacing: true, // Agent chat is always user-facing
+          })
+          console.log(`[agent] Service tier: ${serviceTier} (${tierReason})`)
+          
           while (iteration < maxIterations) {
             iteration++
             console.log(`[agent] Iteration ${iteration}`)
             
             // Build input for this iteration
+            // Latency optimization: https://platform.openai.com/docs/guides/latency-optimization
+            // Priority processing: https://platform.openai.com/docs/guides/priority-processing
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const requestParams: any = {
+            const baseParams: any = {
               model: 'gpt-5.1-2025-11-13',
               instructions: systemPrompt,
               tools,
               stream: true,
-              // GPT-5.1 reasoning config: 'low' for balanced speed/quality
+              // GPT-5.1 reasoning config: 'high' for most thorough reasoning
               // Options: 'none' (fastest), 'low', 'medium', 'high' (most thorough)
-              reasoning: { effort: 'low' },
+              reasoning: { effort: 'high' },
+              // Latency optimizations
+              max_output_tokens: 4096, // Limit output tokens for faster responses
+              parallel_tool_calls: true, // Execute multiple tool calls in parallel
+              store: true, // Enable prompt caching for repeated requests
             }
+            
+            // Add service tier for priority processing
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const requestParams: any = withServiceTier(baseParams, serviceTier)
             
             if (toolResultsInput) {
               // Continue with tool results - append to original messages
@@ -264,6 +322,10 @@ export async function POST(request: Request) {
               if (event.type === 'response.output_text.delta') {
                 const content = event.delta
                 if (content) {
+                  // Track time to first token for latency monitoring
+                  latencyTracker.onFirstToken()
+                  latencyTracker.onToken()
+                  
                   hasTextContent = true
                   const data = {
                     choices: [{
@@ -416,11 +478,49 @@ export async function POST(request: Request) {
             }
           }
           
+          // Get latency metrics and log successful request
+          const latencyMetrics = latencyTracker.getMetrics()
+          console.log(`[agent] Latency: TTFT=${latencyMetrics.ttft}ms, Total=${latencyMetrics.totalDuration}ms`)
+          
+          logRequest({
+            requestId,
+            model: 'gpt-5.1-2025-11-13',
+            timestamp: startTime,
+            userId: userId ?? undefined,
+            durationMs: latencyMetrics.totalDuration,
+            serviceTier,
+            success: true,
+          })
+          
           safeEnqueue('data: [DONE]\n\n')
         } catch (err) {
-          console.error('Streaming error:', err)
-          const errorData = { error: { message: 'Stream processing failed' } }
+          // Parse error using production utility
+          const errorInfo = parseAPIError(err)
+          console.error(`[agent] Streaming error (${errorInfo.code}):`, errorInfo.message)
+          
+          // Log failed request
+          logRequest({
+            requestId,
+            model: 'gpt-5.1-2025-11-13',
+            timestamp: startTime,
+            userId: userId ?? undefined,
+            durationMs: Date.now() - startTime,
+            serviceTier,
+            error: errorInfo.code,
+            success: false,
+          })
+          
+          const errorData = { 
+            error: { 
+              type: errorInfo.code, // Frontend expects 'type' not 'code'
+              message: errorInfo.userMessage,
+              retryable: errorInfo.isRetryable,
+              requestId,
+            } 
+          }
           safeEnqueue(`data: ${JSON.stringify(errorData)}\n\n`)
+          // Send [DONE] after error so frontend knows stream is complete
+          safeEnqueue('data: [DONE]\n\n')
         } finally {
           if (!isClosed) {
             isClosed = true

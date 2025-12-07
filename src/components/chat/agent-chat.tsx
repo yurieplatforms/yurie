@@ -175,6 +175,19 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         // Check for errors in final stream state
         if (finalStreamState?.error) {
           setError(finalStreamState.error.message)
+          // Update the assistant message to show the error if no content was received
+          if (!finalStreamState.content || finalStreamState.content.trim().length === 0) {
+            setMessages((prev) =>
+              prev.map((msg) => {
+                if (msg.id !== assistantMessageId) return msg
+                return {
+                  ...msg,
+                  content: `⚠️ ${finalStreamState!.error!.message}`,
+                  isError: true,
+                }
+              }),
+            )
+          }
         }
       } catch (err) {
         if ((err as Error).name === 'AbortError') {
