@@ -4,7 +4,7 @@
  * Re-exports file handling utilities from a single entry point.
  * Includes vision processing, PDF support, file validation, and file type helpers.
  * 
- * @see https://docs.x.ai/docs
+ * @see https://platform.openai.com/docs/guides/vision
  */
 
 // Vision and image processing

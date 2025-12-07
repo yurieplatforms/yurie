@@ -1,7 +1,7 @@
 /**
  * Memory Tool Configuration
  * 
- * Creates the memory tool definition for use with the xAI/OpenAI SDK's tool runner.
+ * Creates the memory tool definition for use with OpenAI's tool runner.
  * The memory tool provides persistent file-based storage in a /memories directory.
  * 
  * @see https://platform.openai.com/docs/guides/function-calling
