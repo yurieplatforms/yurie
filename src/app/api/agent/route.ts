@@ -250,20 +250,20 @@ export async function POST(request: Request) {
           }
         }
         
+        // Determine service tier for this request (outside try block so it's accessible in catch)
+        // Reference: https://platform.openai.com/docs/guides/priority-processing
+        const projectKey = userId ?? 'anonymous'
+        const { tier: serviceTier, reason: tierReason } = getRecommendedServiceTier(projectKey, {
+          isUserFacing: true, // Agent chat is always user-facing
+        })
+        console.log(`[agent] Service tier: ${serviceTier} (${tierReason})`)
+        
         try {
           // Agentic loop - continue until we get a text response (no more tool calls)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let toolResultsInput: any[] | null = null
           let maxIterations = 10 // Safety limit
           let iteration = 0
-          
-          // Determine service tier for this request
-          // Reference: https://platform.openai.com/docs/guides/priority-processing
-          const projectKey = userId ?? 'anonymous'
-          const { tier: serviceTier, reason: tierReason } = getRecommendedServiceTier(projectKey, {
-            isUserFacing: true, // Agent chat is always user-facing
-          })
-          console.log(`[agent] Service tier: ${serviceTier} (${tierReason})`)
           
           while (iteration < maxIterations) {
             iteration++
