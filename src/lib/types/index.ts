@@ -261,30 +261,6 @@ export type WebSearchOutput = {
 }
 
 /**
- * Exa search result
- */
-export type ExaSearchResult = {
-  url: string
-  title?: string
-  text?: string
-  author?: string
-  publishedDate?: string
-  score?: number
-  highlights?: string[]
-  summary?: string
-}
-
-/**
- * Exa search tool output
- */
-export type ExaSearchOutput = {
-  query?: string
-  category?: string
-  results: ExaSearchResult[]
-  error?: string
-}
-
-/**
  * Tool use event for streaming tool execution status
  */
 export type ToolUseEvent = {
@@ -296,6 +272,4 @@ export type ToolUseEvent = {
   result?: string
   /** Web search output (for web_search tool) */
   webSearch?: WebSearchOutput
-  /** Exa search output (for exa_search tool) */
-  exaSearch?: ExaSearchOutput
 }
