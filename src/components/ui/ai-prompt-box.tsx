@@ -2,7 +2,7 @@ import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { CornerRightUp, Square, X as XIcon, FileText, Plus, LayoutGrid, Github } from "lucide-react";
+import { CornerRightUp, Square, X as XIcon, FileText, Plus, LayoutGrid, Github, Mail, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/providers/auth-provider";
@@ -65,7 +65,8 @@ const ImageViewDialog: React.FC<ImageViewDialogProps> = ({ imageUrl, onClose }) 
 
 // Mock tools list for UI placeholder
 const toolsList = [
-  { id: 'github', name: 'GitHub', shortName: 'GitHub', icon: Github, description: 'Access GitHub repositories' },
+  { id: 'github', name: 'GitHub', shortName: 'GitHub', icon: Github, iconUrl: null, description: 'Access GitHub repositories' },
+  { id: 'gmail', name: 'Gmail', shortName: 'Gmail', icon: null, iconUrl: '/Gmail.svg', description: 'Send emails on your behalf' },
 ];
 
 interface PromptInputBoxProps {
@@ -203,8 +204,10 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
 
     const handleSelectTool = (id: string) => {
         setSelectedTools((prev) => {
-            if (prev.includes(id)) return prev;
-            return [...prev, id];
+            // If already selected, deselect it
+            if (prev.includes(id)) return [];
+            // Only allow one tool at a time
+            return [id];
         });
         setIsPopoverOpen(false);
     };
@@ -340,7 +343,11 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                           )}
                       > 
                           <div className="h-7 w-7 rounded-md flex items-center justify-center shrink-0 bg-[var(--color-surface-hover)] dark:bg-[#2f2f2f]">
-                            <tool.icon className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+                            {tool.iconUrl ? (
+                              <img src={tool.iconUrl} alt={tool.name} className="h-4 w-4 object-contain" />
+                            ) : tool.icon ? (
+                              <tool.icon className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+                            ) : null}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
@@ -352,7 +359,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                           </div>
                           {selectedTools.includes(tool.id) && (
                             <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-accent)] flex items-center justify-center shrink-0 self-center">
-                              <XIcon className="h-2 w-2 text-white" />
+                              <Check className="h-2 w-2 text-white" strokeWidth={3} />
                             </div>
                           )}
                       </button>
@@ -375,9 +382,13 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.8 }}
                                 onClick={() => handleRemoveTool(tool.id)}
-                                className="flex h-8 items-center gap-2 rounded-full px-2 text-sm hover:bg-[var(--color-surface-hover)] cursor-pointer dark:text-[var(--color-accent)] text-[var(--color-accent)] transition-colors flex-shrink-0 border border-transparent hover:border-[var(--color-border)]"
+                                className="flex h-8 items-center gap-2 rounded-full px-2.5 text-sm bg-[var(--color-surface-hover)] dark:bg-white/5 hover:bg-[var(--color-surface-active)] dark:hover:bg-white/10 cursor-pointer text-[var(--color-muted-foreground)] dark:text-zinc-300 transition-colors flex-shrink-0"
                             >
-                                <tool.icon className="h-4 w-4" />
+                                {tool.iconUrl ? (
+                                  <img src={tool.iconUrl} alt={tool.name} className="h-4 w-4 object-contain" />
+                                ) : tool.icon ? (
+                                  <tool.icon className="h-4 w-4" />
+                                ) : null}
                                 <span className="whitespace-nowrap font-medium">{tool.shortName}</span>
                                 <XIcon className="h-3 w-3 opacity-50" />
                             </motion.button>

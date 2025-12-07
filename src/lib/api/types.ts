@@ -32,4 +32,6 @@ export type AgentRequestBody = {
     timeZone: string
   }
   userPersonalization?: UserPersonalizationContext
+  /** Selected tools/apps to use (e.g., 'github', 'gmail') */
+  selectedTools?: string[]
 }

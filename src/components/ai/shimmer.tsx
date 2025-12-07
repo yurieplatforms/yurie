@@ -64,4 +64,53 @@ const ShimmerComponent = ({
 
 export const Shimmer = memo(ShimmerComponent);
 
+// Animated pulsing dot indicator
+const PulsingDot = memo(() => {
+  return (
+    <span className="relative flex h-4 w-4 items-center justify-center shrink-0">
+      {/* Pulsing ring */}
+      <motion.span
+        className="absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-75"
+        animate={{
+          scale: [1, 2, 1],
+          opacity: [0.75, 0, 0.75],
+        }}
+        transition={{
+          duration: 1.5,
+          repeat: Number.POSITIVE_INFINITY,
+          ease: "easeOut",
+        }}
+      />
+      {/* Static dot */}
+      <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+    </span>
+  );
+});
 
+PulsingDot.displayName = "PulsingDot";
+
+// Dynamic status shimmer - shows pulsing dot + shimmer text
+export const StatusShimmer = memo(({ 
+  children = "Thinking",
+  className,
+}: { 
+  children?: string;
+  className?: string;
+}) => (
+  <span className="inline-flex items-center gap-2.5">
+    <PulsingDot />
+    <Shimmer
+      as="span"
+      className={cn("text-base font-medium", className)}
+      duration={2.5}
+    >
+      {children}
+    </Shimmer>
+  </span>
+));
+
+StatusShimmer.displayName = "StatusShimmer";
+
+// Re-export for backwards compatibility
+export const ThinkingShimmer = StatusShimmer;
+export const ToolUseShimmer = StatusShimmer;

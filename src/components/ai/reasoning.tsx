@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 import type { ToolUseStatus } from "@/lib/types";
-import { Shimmer } from "@/components/ai/shimmer";
+import { StatusShimmer } from "@/components/ai/shimmer";
 
 export type ReasoningProps = React.HTMLAttributes<HTMLDivElement> & {
   /**
@@ -56,15 +56,30 @@ export type ReasoningTriggerProps = React.HTMLAttributes<HTMLDivElement> & {
  * Get display name for a tool
  */
 function getToolDisplayName(tool: string): string {
-  switch (tool) {
+  // Normalize tool name for comparison
+  const normalizedTool = tool.toLowerCase().replace(/\s+/g, '_');
+  
+  switch (normalizedTool) {
     case 'web_search':
-      return 'Searching';
+      return 'Searching the web';
     case 'code_interpreter':
       return 'Running code';
     case 'file_search':
       return 'Searching files';
+    case 'gmail_fetch_emails':
+      return 'Fetching emails';
+    case 'gmail_send_email':
+      return 'Sending email';
+    case 'gmail_create_email_draft':
+      return 'Creating draft';
     default:
-      return `Using ${tool}`;
+      // Handle other Gmail tools or unknown tools
+      if (normalizedTool.startsWith('gmail_')) {
+        return 'Using Gmail';
+      }
+      // Return the tool name as-is if it's already nicely formatted
+      // (e.g., "Web search" becomes "Searching" not "Using Web search")
+      return tool;
   }
 }
 
@@ -89,13 +104,9 @@ export function ReasoningTrigger({
     // Custom tool use label
     dynamicLabel = toolUseLabel;
   } else if (activeToolUse && (activeToolUse.status === 'in_progress' || activeToolUse.status === 'searching')) {
-    // Active tool use display - use same shimmer style as Thinking
+    // Active tool use display with dynamic shimmer label
     const displayName = getToolDisplayName(activeToolUse.tool);
-    dynamicLabel = (
-      <Shimmer as="span" className="text-base" duration={2.5}>
-        {displayName}
-      </Shimmer>
-    );
+    dynamicLabel = <StatusShimmer>{displayName}</StatusShimmer>;
   } else if (thinkingLabel) {
     // Show thinking label (shimmer while thinking)
     dynamicLabel = thinkingLabel;
@@ -144,3 +155,6 @@ export function ReasoningContent({
     </div>
   );
 }
+
+// Re-export the shimmer components for external use
+export { StatusShimmer } from "@/components/ai/shimmer";

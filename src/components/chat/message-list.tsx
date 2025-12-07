@@ -1,7 +1,6 @@
 'use client'
 
 import type { ChatMessage } from '@/lib/types'
-import { Loader } from '@/components/ai/loader'
 import {
   Message,
   MessageActions,
@@ -12,6 +11,7 @@ import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
+  StatusShimmer,
 } from '@/components/ai/reasoning'
 import { CornerDownRight, CheckIcon, CopyIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -150,7 +150,7 @@ function AssistantMessageContent({
               activeToolUse={isActiveAssistant ? message.activeToolUse : null}
               thinkingLabel={
                 isThinkingStage && !hasActiveToolUse ? (
-                  <Loader variant="text-shimmer" size="lg" text="Thinking" />
+                  <StatusShimmer>Thinking</StatusShimmer>
                 ) : undefined
               }
               label={
@@ -173,13 +173,7 @@ function AssistantMessageContent({
                 <MessageResponse className="italic text-zinc-500 dark:text-zinc-400 prose-headings:text-zinc-500 dark:prose-headings:text-zinc-400 prose-strong:text-zinc-500 dark:prose-strong:text-zinc-400">
                   {message.reasoning}
                 </MessageResponse>
-              ) : (
-                isThinkingStage && !hasActiveToolUse && (
-                  <span className="inline-flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
-                    <Loader variant="text-shimmer" size="sm" text="" />
-                  </span>
-                )
-              )}
+              ) : null}
             </ReasoningContent>
           </Reasoning>
         </div>

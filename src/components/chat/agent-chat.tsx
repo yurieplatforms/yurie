@@ -125,6 +125,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             })),
             userContext: { time, date, timeZone },
             containerId,
+            selectedTools,
           }),
         })
 
@@ -204,6 +205,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       id,
       containerId,
       user,
+      selectedTools,
       setError,
       setMessages,
       setIsLoading,

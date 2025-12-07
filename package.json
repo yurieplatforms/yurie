@@ -12,6 +12,10 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@composio/core": "^0.2.6",
+    "@composio/openai": "^0.2.6",
+    "@composio/openai-agents": "^0.2.6",
+    "@openai/agents": "^0.3.4",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",

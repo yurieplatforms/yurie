@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { User } from '@supabase/supabase-js'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,9 @@ import {
   Globe,
   Settings,
   Palette,
-  Trash2
+  Trash2,
+  Link2,
+  ExternalLink
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { ThemeSwitch } from '@/components/layout/footer'
@@ -212,6 +214,106 @@ export function ProfileContent({
 
   // Auto-detect timezone on first load
   const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+
+  // Gmail connection state
+  const [isGmailConnected, setIsGmailConnected] = useState(false)
+  const [isCheckingGmail, setIsCheckingGmail] = useState(true)
+  const [isConnectingGmail, setIsConnectingGmail] = useState(false)
+  const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false)
+
+  // Check Gmail connection status on mount
+  useEffect(() => {
+    const checkGmailStatus = async () => {
+      try {
+        const response = await fetch(`/api/composio/status?userId=${user.id}`)
+        const data = await response.json()
+        // Only mark as connected if status is ACTIVE (the API handles this)
+        setIsGmailConnected(data.connected === true)
+        
+        // Log if there's a non-active connection that needs attention
+        if (!data.connected && data.requiresReauth) {
+          console.log('[Gmail] Connection requires re-authentication:', data.status)
+        }
+      } catch (error) {
+        console.error('Failed to check Gmail status:', error)
+      } finally {
+        setIsCheckingGmail(false)
+      }
+    }
+    checkGmailStatus()
+  }, [user.id])
+
+  const handleConnectGmail = async () => {
+    setIsConnectingGmail(true)
+    try {
+      const response = await fetch('/api/composio/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      const data = await response.json()
+      
+      if (data.redirectUrl) {
+        window.open(data.redirectUrl, '_blank', 'noopener,noreferrer')
+        showToast('Complete the authorization in the new tab', 'info')
+        
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          try {
+            const statusResponse = await fetch(`/api/composio/status?userId=${user.id}`)
+            const statusData = await statusResponse.json()
+            if (statusData.connected) {
+              setIsGmailConnected(true)
+              clearInterval(pollInterval)
+              showToast('Gmail connected successfully!', 'success')
+              setIsConnectingGmail(false)
+            }
+          } catch {
+            // Continue polling
+          }
+        }, 2000)
+        
+        // Stop polling after 5 minutes
+        setTimeout(() => {
+          clearInterval(pollInterval)
+          setIsConnectingGmail(false)
+        }, 300000)
+      } else {
+        showToast('Failed to initiate Gmail connection', 'error')
+        setIsConnectingGmail(false)
+      }
+    } catch (error) {
+      console.error('Gmail connect error:', error)
+      showToast('Failed to connect Gmail', 'error')
+      setIsConnectingGmail(false)
+    }
+  }
+
+  const handleDisconnectGmail = async () => {
+    if (!confirm('Are you sure you want to disconnect Gmail?')) return
+    
+    setIsDisconnectingGmail(true)
+    try {
+      const response = await fetch('/api/composio/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      const data = await response.json()
+      
+      if (data.success) {
+        setIsGmailConnected(false)
+        showToast('Gmail disconnected', 'success')
+      } else {
+        showToast(data.error || 'Failed to disconnect Gmail', 'error')
+      }
+    } catch (error) {
+      console.error('Gmail disconnect error:', error)
+      showToast('Failed to disconnect Gmail', 'error')
+    } finally {
+      setIsDisconnectingGmail(false)
+    }
+  }
   
   const startEditingPreferences = () => {
     setEditingFullName(fullName)
@@ -614,6 +716,71 @@ export function ProfileContent({
                 </button>
               </div>
             )}
+          </Card>
+        </section>
+
+        {/* Connected Apps Section */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-sm font-medium text-[var(--color-muted-foreground)]">Apps</h2>
+          </div>
+          
+          <Card variant="ghost" padding="none" className="bg-transparent overflow-hidden border-none">
+            <div className="space-y-2">
+              {/* Gmail Connection Row */}
+              <div className="flex items-center gap-4 px-4 py-3">
+                <div className="relative h-10 w-10 flex items-center justify-center shrink-0">
+                  <img 
+                    src="/Gmail.svg" 
+                    alt="Gmail" 
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-[var(--color-foreground)]">Gmail</p>
+                  <p className="text-xs text-[var(--color-muted-foreground)]">
+                    {isCheckingGmail 
+                      ? 'Checking...' 
+                      : 'Send emails on your behalf'}
+                  </p>
+                </div>
+                {isCheckingGmail ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-[var(--color-muted-foreground)]" />
+                ) : isGmailConnected ? (
+                  <button
+                    onClick={handleDisconnectGmail}
+                    disabled={isDisconnectingGmail}
+                    className="inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium bg-[var(--color-surface-hover)] text-[var(--color-foreground)] hover:bg-red-500/20 hover:text-red-500 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDisconnectingGmail ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      'Connected'
+                    )}
+                  </button>
+                ) : (
+                  <Button
+                    onClick={handleConnectGmail}
+                    disabled={isConnectingGmail}
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                  >
+                    {isConnectingGmail ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Connect
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
           </Card>
         </section>
       </main>

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { cn } from '@/lib/utils'
-import { Shimmer } from '@/components/ai/shimmer'
+import { Shimmer, StatusShimmer } from '@/components/ai/shimmer'
 
 export type LoaderVariant =
   | 'circular'
@@ -16,6 +16,7 @@ export type LoaderVariant =
   | 'terminal'
   | 'text-blink'
   | 'text-shimmer'
+  | 'text-shimmer-dynamic'
   | 'loading-dots'
 
 export type LoaderSize = 'sm' | 'md' | 'lg'
@@ -54,9 +55,23 @@ export function Loader({
     text ??
     (variant === 'terminal'
       ? 'Loading'
-      : 'Thinking...')
+      : 'Thinking')
 
   // Text-only variants -------------------------------------------------------
+  
+  // New dynamic shimmer with pulsing dot
+  if (variant === 'text-shimmer-dynamic') {
+    return (
+      <span
+        className={cn('inline-flex items-center', textSizeBySize[size], className)}
+        {...props}
+      >
+        <StatusShimmer>{resolvedText}</StatusShimmer>
+      </span>
+    )
+  }
+  
+  // Original simple shimmer (now with dynamic option disabled for backwards compat)
   if (variant === 'text-shimmer') {
     return (
       <span
@@ -67,6 +82,7 @@ export function Loader({
           as="span"
           className={cn(textSizeBySize[size])}
           duration={2.5}
+          dynamic={false}
         >
           {resolvedText}
         </Shimmer>

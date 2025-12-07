@@ -20,13 +20,15 @@ type SystemPromptParams = {
     timeZone: string
   }
   userPreferences?: UserPreferences
+  /** Available tools/capabilities enabled for this conversation */
+  enabledCapabilities?: string[]
 }
 
 /**
  * Builds the complete system prompt for the agent
  */
 export function buildSystemPrompt(params: SystemPromptParams = {}): string {
-  const { userName, userContext, userPreferences } = params
+  const { userName, userContext, userPreferences, enabledCapabilities = [] } = params
 
   // Build user info lines
   const userInfoLines: string[] = []
@@ -40,6 +42,24 @@ export function buildSystemPrompt(params: SystemPromptParams = {}): string {
   const environmentString = userContext
     ? 'Current Time: ' + userContext.time + ' | Date: ' + userContext.date + ' | Timezone: ' + userContext.timeZone
     : 'Time unknown'
+
+  // Build capabilities section if any are enabled
+  let capabilitiesSection = ''
+  if (enabledCapabilities.includes('gmail')) {
+    capabilitiesSection = `
+<capabilities>
+  Gmail Integration (ACTIVE):
+  - You can send emails on behalf of the user using GMAIL_SEND_EMAIL
+  - You can fetch and read emails using GMAIL_FETCH_EMAILS
+  - You can create email drafts using GMAIL_CREATE_EMAIL_DRAFT
+  
+  When the user asks you to send an email, compose a draft, or check their inbox:
+  - Use the appropriate Gmail tool
+  - Confirm the action with the user before sending
+  - Be helpful in composing professional, friendly, or appropriate emails based on context
+</capabilities>
+`
+  }
 
   const promptLines = [
     '<identity>',
@@ -103,6 +123,7 @@ export function buildSystemPrompt(params: SystemPromptParams = {}): string {
     '    ' + environmentString,
     '  </environment>',
     '</context>',
+    capabilitiesSection,
     '',
     '<output_format>',
     '  Response Length Guidelines:',
