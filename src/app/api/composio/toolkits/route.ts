@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getComposioClient } from '@/lib/composio/client'
+import { getComposioClient } from '@/lib/ai/integrations/composio/client'
 
 export async function GET() {
   const supabase = await createClient()

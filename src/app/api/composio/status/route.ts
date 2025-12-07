@@ -14,7 +14,7 @@ import {
   getConnectedAccount,
   listConnectedAccounts,
   ConnectionStatuses,
-} from '@/lib/composio'
+} from '@/lib/ai/integrations/composio'
 
 /**
  * Check connection status for a user

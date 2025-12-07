@@ -2,13 +2,13 @@
 
 import { useState, useCallback } from 'react'
 import { useAuth } from '@/lib/providers/auth-provider'
-import { useChat } from '@/hooks/useChat'
+import { useChat } from '@/components/chat/hooks/useChat'
 import {
   useStreamResponse,
   buildMessageFromStreamState,
   type StreamState,
-} from '@/hooks/useStreamResponse'
-import { useFileProcessor } from '@/hooks/useFileProcessor'
+} from '@/components/chat/hooks/useStreamResponse'
+import { useFileProcessor } from '@/components/chat/hooks/useFileProcessor'
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 import type { ChatMessage } from '@/lib/types'
 

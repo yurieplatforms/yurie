@@ -16,7 +16,7 @@ import {
   isUserConnected,
   GmailTools,
   type GmailToolName,
-} from '@/lib/composio'
+} from '@/lib/ai/integrations/composio'
 
 /**
  * Tool name mapping for cleaner API

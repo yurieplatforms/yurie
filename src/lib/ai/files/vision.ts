@@ -326,7 +326,6 @@ export const isTextFile = (file: File): boolean => {
  */
 export const validateFileSize = (
   file: File,
-  _isImage: boolean = false
 ): { valid: boolean; error?: string } => {
   // Per OpenAI: 50MB total payload per request
   const maxSize = MAX_DOCUMENT_FILE_SIZE
@@ -500,7 +499,7 @@ export const validateFile = async (
   }
 
   // Validate file size
-  const sizeValidation = validateFileSize(file, isImage)
+  const sizeValidation = validateFileSize(file)
   if (!sizeValidation.valid) {
     return sizeValidation
   }

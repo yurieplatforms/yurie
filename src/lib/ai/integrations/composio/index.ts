@@ -8,7 +8,7 @@
  *
  * @example
  * // Connect a user to Gmail
- * import { connectUserAccount, isUserConnected } from '@/lib/composio'
+ * import { connectUserAccount, isUserConnected } from '@/lib/ai/integrations/composio'
  *
  * const request = await connectUserAccount(userId)
  * // Redirect user to: request.redirectUrl
@@ -16,7 +16,7 @@
  *
  * @example
  * // Get Gmail tools for an agent
- * import { getGmailTools, GmailTools } from '@/lib/composio'
+ * import { getGmailTools, GmailTools } from '@/lib/ai/integrations/composio'
  *
  * const tools = await getGmailTools(userId, [
  *   GmailTools.SEND_EMAIL,

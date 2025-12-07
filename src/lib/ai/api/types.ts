@@ -5,7 +5,7 @@
  */
 
 import type { MessageContentSegment } from '@/lib/types'
-import type { UserPersonalizationContext } from '@/lib/agent/user-context'
+import type { UserPersonalizationContext } from '@/lib/ai/agent/user-context'
 
 /**
  * API-specific role type (includes 'system' and 'tool' not in UI Role)

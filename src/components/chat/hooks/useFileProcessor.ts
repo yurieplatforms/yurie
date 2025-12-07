@@ -15,7 +15,7 @@ import {
   validatePdfFile,
   validateImageCount,
   PDF_REQUIREMENTS,
-} from '@/lib/files'
+} from '@/lib/ai/files'
 
 export type FileProcessorResult = {
   textSegment: TextContentSegment

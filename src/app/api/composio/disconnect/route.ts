@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getConnectedAccount, disconnectAccount } from '@/lib/composio'
+import { getConnectedAccount, disconnectAccount } from '@/lib/ai/integrations/composio'
 
 /**
  * Disconnect a user's Gmail account

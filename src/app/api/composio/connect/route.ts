@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { connectUserAccount, getConnectedAccount, ConnectionStatuses } from '@/lib/composio'
+import { connectUserAccount, getConnectedAccount, ConnectionStatuses } from '@/lib/ai/integrations/composio'
 
 /**
  * Initiate a connection for a user

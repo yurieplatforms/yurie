@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 // Agent modules
-import { buildSystemPrompt } from '@/lib/agent/system-prompt'
-import { convertToOpenAIContent } from '@/lib/agent/message-converter'
+import { buildSystemPrompt } from '@/lib/ai/agent/system-prompt'
+import { convertToOpenAIContent } from '@/lib/ai/agent/message-converter'
 
 // API types
-import type { AgentRequestBody } from '@/lib/api/types'
+import type { AgentRequestBody } from '@/lib/ai/api/types'
 
 // Production utilities
 import {
@@ -19,21 +19,21 @@ import {
   logRequest,
   getRecommendedServiceTier,
   withServiceTier,
-} from '@/lib/api/openai'
+} from '@/lib/ai/api/openai'
 
 // Latency optimization utilities
-import { createLatencyTracker } from '@/lib/api/latency'
+import { createLatencyTracker } from '@/lib/ai/api/latency'
 
 // User context
 import {
   getUserPersonalizationContext,
   getUserName,
-} from '@/lib/agent/user-context'
+} from '@/lib/ai/agent/user-context'
 import { env } from '@/lib/config/env'
 
 // Composio integration
-import { getComposioClient, handleToolCalls } from '@/lib/composio/client'
-import { isUserConnected } from '@/lib/composio/auth'
+import { getComposioClient, handleToolCalls } from '@/lib/ai/integrations/composio/client'
+import { isUserConnected } from '@/lib/ai/integrations/composio/auth'
 
 /**
  * Format tool names for display (e.g., "GMAIL_FETCH_EMAILS" -> "Gmail fetch emails")
