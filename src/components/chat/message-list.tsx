@@ -48,7 +48,7 @@ export function MessageList({
           isAssistant && isLoading && message.content.length === 0
 
         return (
-          <div key={message.id} className="flex flex-col gap-1">
+          <div key={message.id} className="flex flex-col gap-2">
             <Message from={message.role}>
               {message.role === 'user' ? (
                 <UserMessageContent message={message} />

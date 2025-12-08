@@ -397,15 +397,28 @@ export const MessageResponse = memo(
         className={cn(
           // Match blog typography (see blog layout) for AI-generated content
           // while letting prose handle its own inner spacing.
-          "prose prose-gray dark:prose-invert",
-          "prose-h4:prose-base",
-          "prose-h1:text-xl prose-h1:font-medium",
-          "prose-h2:mt-12 prose-h2:scroll-m-20 prose-h2:text-lg prose-h2:font-medium",
-          "prose-h3:text-base prose-h3:font-medium",
-          "prose-h4:font-medium",
-          "prose-h5:text-base prose-h5:font-medium",
-          "prose-h6:text-base prose-h6:font-medium",
-          "prose-strong:font-medium",
+          "prose prose-gray dark:prose-invert max-w-none",
+          // Headings - clear hierarchy with proper spacing
+          "prose-h1:text-xl prose-h1:font-semibold prose-h1:mt-8 prose-h1:mb-4 prose-h1:leading-tight",
+          "prose-h2:text-lg prose-h2:font-semibold prose-h2:mt-8 prose-h2:mb-3 prose-h2:leading-snug",
+          "prose-h3:text-base prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-2 prose-h3:leading-snug",
+          "prose-h4:text-base prose-h4:font-medium prose-h4:mt-5 prose-h4:mb-2",
+          "prose-h5:text-base prose-h5:font-medium prose-h5:mt-4 prose-h5:mb-2",
+          "prose-h6:text-sm prose-h6:font-medium prose-h6:mt-4 prose-h6:mb-2 prose-h6:uppercase prose-h6:tracking-wide prose-h6:text-muted-foreground",
+          // Paragraphs - comfortable reading spacing
+          "prose-p:my-4 prose-p:leading-relaxed",
+          // Lists - improved spacing and structure
+          "prose-ul:my-4 prose-ul:space-y-2 prose-ol:my-4 prose-ol:space-y-2",
+          "prose-li:my-0 prose-li:leading-relaxed",
+          // Nested lists
+          "[&_ul_ul]:mt-2 [&_ul_ul]:mb-0 [&_ol_ol]:mt-2 [&_ol_ol]:mb-0",
+          "[&_ul_ol]:mt-2 [&_ul_ol]:mb-0 [&_ol_ul]:mt-2 [&_ol_ul]:mb-0",
+          // Strong text
+          "prose-strong:font-semibold",
+          // Blockquotes
+          "prose-blockquote:my-5 prose-blockquote:pl-4 prose-blockquote:border-l-2 prose-blockquote:italic",
+          // First element no top margin
+          "[&>*:first-child]:mt-0",
           className
         )}
         // Enable LaTeX math rendering with single dollar signs ($...$)

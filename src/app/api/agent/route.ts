@@ -351,7 +351,7 @@ export async function POST(request: Request) {
               instructions: systemPrompt,
               stream: true,
               // Latency optimizations
-              max_output_tokens: mode === 'chat' ? 2048 : 4096, // Shorter for chat mode
+              max_output_tokens: mode === 'chat' ? 16384 : 32768, // Increased token limits
               store: true, // Enable prompt caching for repeated requests
             }
             

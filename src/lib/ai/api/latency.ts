@@ -151,7 +151,7 @@ export function optimizeMessages(
  */
 export const DEFAULT_LATENCY_CONFIG: Required<LatencyConfig> = {
   streaming: true,
-  maxTokens: 4096,
+  maxTokens: 32768,
   parallelToolCalls: true,
   promptCaching: true,
 }

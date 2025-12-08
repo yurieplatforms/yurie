@@ -294,7 +294,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   return (
     <div className="relative">
       <div className="flex flex-col gap-4 pb-36">
-        <div className="space-y-3">
+        <div className="space-y-6">
           <MessageList
             messages={messages}
             isLoading={isLoading}

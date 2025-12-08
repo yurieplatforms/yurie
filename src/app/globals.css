@@ -568,13 +568,26 @@
   .prose blockquote,
   .prose-gray blockquote,
   [data-streamdown] blockquote {
-    border-left-color: var(--muted);
+    border-left-color: var(--color-primary);
+    background: linear-gradient(to right, color-mix(in srgb, var(--color-primary) 5%, transparent), transparent);
+    padding: 0.75rem 1rem;
+    margin-left: 0;
+    margin-right: 0;
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-style: italic;
+  }
+
+  .prose blockquote p,
+  .prose-gray blockquote p,
+  [data-streamdown] blockquote p {
+    margin: 0;
   }
 
   .dark .prose blockquote,
   .dark .prose-gray blockquote,
   .dark [data-streamdown] blockquote {
-    border-left-color: #404040;
+    border-left-color: var(--color-primary);
+    background: linear-gradient(to right, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent);
   }
 
   /* Match inline code background to border/separator color */
@@ -603,6 +616,66 @@
   .dark .prose ol > li::marker,
   .dark .prose-gray ol > li::marker {
     color: var(--color-muted-foreground) !important;
+  }
+
+  /* Enhanced list typography */
+  .prose ul,
+  .prose-gray ul,
+  .prose ol,
+  .prose-gray ol {
+    padding-left: 1.5rem;
+  }
+
+  .prose li,
+  .prose-gray li {
+    padding-left: 0.25rem;
+  }
+
+  /* Nested list styling */
+  .prose ul ul,
+  .prose-gray ul ul,
+  .prose ol ol,
+  .prose-gray ol ol,
+  .prose ul ol,
+  .prose-gray ul ol,
+  .prose ol ul,
+  .prose-gray ol ul {
+    margin-top: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Horizontal rules as section dividers */
+  .prose hr,
+  .prose-gray hr {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+    border-top-width: 1px;
+    opacity: 0.5;
+  }
+
+  /* Paragraph with better rhythm */
+  .prose p + p,
+  .prose-gray p + p {
+    margin-top: 1rem;
+  }
+
+  /* Better heading separation from content */
+  .prose h1 + *,
+  .prose h2 + *,
+  .prose h3 + *,
+  .prose-gray h1 + *,
+  .prose-gray h2 + *,
+  .prose-gray h3 + * {
+    margin-top: 0 !important;
+  }
+
+  /* Numbered list prefix styling */
+  .prose ol > li {
+    counter-increment: list-counter;
+  }
+
+  .prose ol > li::marker {
+    font-weight: 500;
   }
 
   /* AI-generated links in prose content - use primary color */

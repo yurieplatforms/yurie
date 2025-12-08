@@ -99,7 +99,7 @@ yurie/
 │   │   ├── config/          # Environment and constants
 │   │   ├── integrations/    # External service integrations (Composio)
 │   │   └── supabase/        # Database clients and schemas
-│   └── ...
+│   │   └── ...
 ├── supabase/                # Database migrations
 ├── public/                  # Static assets
 └── ...
@@ -112,4 +112,3 @@ This project is private, but contributions are welcome from authorized collabora
 ## 📄 License
 
 This project is proprietary and private.
-
