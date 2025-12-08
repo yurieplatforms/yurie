@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAuth } from '@/lib/providers/auth-provider'
 import { useChat } from '@/components/chat/hooks/useChat'
 import {
@@ -257,6 +257,18 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
   const hasMessages = messages.length > 0
 
+  // Enable scrolling when messages exist (overrides CSS overflow:hidden for home page)
+  useEffect(() => {
+    if (hasMessages) {
+      document.documentElement.style.overflow = 'auto'
+      document.body.style.overflow = 'auto'
+    }
+    return () => {
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+    }
+  }, [hasMessages])
+
   // Home page: clean, centered input only (no scrolling)
   if (!hasMessages) {
     return (
@@ -280,8 +292,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
   // Chat page: messages with fixed bottom input
   return (
-    <div className="relative h-full">
-      <div className="flex h-full flex-col gap-4 pb-36">
+    <div className="relative">
+      <div className="flex flex-col gap-4 pb-36">
         <div className="space-y-3">
           <MessageList
             messages={messages}
