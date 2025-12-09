@@ -2,7 +2,7 @@
  * Composio Status API Route
  *
  * Check if a user has an active Composio connection for a specific app.
- * Supports Gmail and Spotify.
+ * Supports Gmail, Spotify, and GitHub.
  *
  * GET /api/composio/status?userId=xxx&app=gmail
  * Returns: { connected: boolean, accountId?: string, status?: string, app: string }
@@ -39,10 +39,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Validate app type
-    if (app !== 'gmail' && app !== 'spotify') {
+    if (app !== 'gmail' && app !== 'spotify' && app !== 'github') {
       return NextResponse.json(
         {
-          error: 'Invalid app type. Must be "gmail" or "spotify"',
+          error: 'Invalid app type. Must be "gmail", "spotify", or "github"',
           code: 'INVALID_APP',
         },
         { status: 400 }

@@ -16,7 +16,7 @@ export type { ConnectionRequest, ConnectedAccount }
 /**
  * Supported app types for Composio integration
  */
-export type ComposioApp = 'gmail' | 'spotify'
+export type ComposioApp = 'gmail' | 'spotify' | 'github'
 
 /**
  * Get the auth config ID for a specific app
@@ -27,6 +27,8 @@ export function getAuthConfigId(app: ComposioApp): string | undefined {
       return env.COMPOSIO_AUTH_CONFIG_ID
     case 'spotify':
       return env.COMPOSIO_SPOTIFY_AUTH_CONFIG_ID
+    case 'github':
+      return env.COMPOSIO_GITHUB_AUTH_CONFIG_ID
     default:
       return undefined
   }

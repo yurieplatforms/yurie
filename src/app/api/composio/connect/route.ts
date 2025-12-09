@@ -5,7 +5,7 @@
  * Supports Gmail and Spotify.
  *
  * POST /api/composio/connect
- * Body: { userId: string, app?: 'gmail' | 'spotify', authConfigId?: string, forceReconnect?: boolean }
+ * Body: { userId: string, app?: 'gmail' | 'spotify' | 'github', authConfigId?: string, forceReconnect?: boolean }
  * Returns: { redirectUrl: string, connectionId: string }
  *
  * @see https://docs.composio.dev/docs/authenticating-tools#connecting-an-account
@@ -38,10 +38,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate app type
-    if (app !== 'gmail' && app !== 'spotify') {
+    if (app !== 'gmail' && app !== 'spotify' && app !== 'github') {
       return NextResponse.json(
         {
-          error: 'Invalid app type. Must be "gmail" or "spotify"',
+          error: 'Invalid app type. Must be "gmail", "spotify", or "github"',
           code: 'INVALID_APP',
         },
         { status: 400 }

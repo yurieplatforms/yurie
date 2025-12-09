@@ -24,7 +24,8 @@ import {
   Palette,
   Trash2,
   Link2,
-  ExternalLink
+  ExternalLink,
+  Github
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { ThemeSwitch } from '@/components/layout/footer'
@@ -238,6 +239,12 @@ export function ProfileContent({
   const [isConnectingSpotify, setIsConnectingSpotify] = useState(false)
   const [isDisconnectingSpotify, setIsDisconnectingSpotify] = useState(false)
 
+  // GitHub connection state
+  const [isGitHubConnected, setIsGitHubConnected] = useState(false)
+  const [isCheckingGitHub, setIsCheckingGitHub] = useState(true)
+  const [isConnectingGitHub, setIsConnectingGitHub] = useState(false)
+  const [isDisconnectingGitHub, setIsDisconnectingGitHub] = useState(false)
+
   // Check Gmail and Spotify connection status on mount
   useEffect(() => {
     const checkConnectionStatus = async () => {
@@ -269,6 +276,21 @@ export function ProfileContent({
         console.error('Failed to check Spotify status:', error)
       } finally {
         setIsCheckingSpotify(false)
+      }
+
+      // Check GitHub
+      try {
+        const githubResponse = await fetch(`/api/composio/status?userId=${user.id}&app=github`)
+        const githubData = await githubResponse.json()
+        setIsGitHubConnected(githubData.connected === true)
+        
+        if (!githubData.connected && githubData.requiresReauth) {
+          console.log('[GitHub] Connection requires re-authentication:', githubData.status)
+        }
+      } catch (error) {
+        console.error('Failed to check GitHub status:', error)
+      } finally {
+        setIsCheckingGitHub(false)
       }
     }
     checkConnectionStatus()
@@ -417,6 +439,78 @@ export function ProfileContent({
       setIsDisconnectingSpotify(false)
     }
   }
+
+  const handleConnectGitHub = async () => {
+    setIsConnectingGitHub(true)
+    try {
+      const response = await fetch('/api/composio/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, app: 'github' }),
+      })
+      const data = await response.json()
+      
+      if (data.redirectUrl) {
+        window.open(data.redirectUrl, '_blank', 'noopener,noreferrer')
+        showToast('Complete the authorization in the new tab', 'info')
+        
+        // Poll for connection status
+        const pollInterval = setInterval(async () => {
+          try {
+            const statusResponse = await fetch(`/api/composio/status?userId=${user.id}&app=github`)
+            const statusData = await statusResponse.json()
+            if (statusData.connected) {
+              setIsGitHubConnected(true)
+              clearInterval(pollInterval)
+              showToast('GitHub connected successfully!', 'success')
+              setIsConnectingGitHub(false)
+            }
+          } catch {
+            // Continue polling
+          }
+        }, 2000)
+        
+        // Stop polling after 5 minutes
+        setTimeout(() => {
+          clearInterval(pollInterval)
+          setIsConnectingGitHub(false)
+        }, 300000)
+      } else {
+        showToast('Failed to initiate GitHub connection', 'error')
+        setIsConnectingGitHub(false)
+      }
+    } catch (error) {
+      console.error('GitHub connect error:', error)
+      showToast('Failed to connect GitHub', 'error')
+      setIsConnectingGitHub(false)
+    }
+  }
+
+  const handleDisconnectGitHub = async () => {
+    if (!confirm('Are you sure you want to disconnect GitHub?')) return
+    
+    setIsDisconnectingGitHub(true)
+    try {
+      const response = await fetch('/api/composio/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, app: 'github' }),
+      })
+      const data = await response.json()
+      
+      if (data.success) {
+        setIsGitHubConnected(false)
+        showToast('GitHub disconnected', 'success')
+      } else {
+        showToast(data.error || 'Failed to disconnect GitHub', 'error')
+      }
+    } catch (error) {
+      console.error('GitHub disconnect error:', error)
+      showToast('Failed to disconnect GitHub', 'error')
+    } finally {
+      setIsDisconnectingGitHub(false)
+    }
+  }
   
   const startEditingPreferences = () => {
     setEditingFullName(fullName)
@@ -489,7 +583,7 @@ export function ProfileContent({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-[var(--color-surface-hover)] to-[var(--color-surface)]" />
+              <div className="w-full h-full bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-surface)]" />
             )}
             
             {/* Cover upload button */}
@@ -743,8 +837,8 @@ export function ProfileContent({
             ) : (
               <div className="divide-y divide-[var(--color-border)]">
                 {/* Name Row */}
-                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-accent)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-muted-foreground)] shrink-0">
                     <UserIcon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -754,8 +848,8 @@ export function ProfileContent({
                 </div>
 
                 {/* Email Row */}
-                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-accent)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-muted-foreground)] shrink-0">
                     <Mail className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -765,8 +859,8 @@ export function ProfileContent({
                 </div>
 
                 {/* Birthday Row */}
-                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-accent)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-muted-foreground)] shrink-0">
                     <Cake className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -778,8 +872,8 @@ export function ProfileContent({
                 </div>
                 
                 {/* Location Row */}
-                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-accent)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-muted-foreground)] shrink-0">
                     <MapPin className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -791,8 +885,8 @@ export function ProfileContent({
                 </div>
                 
                 {/* Timezone Row */}
-                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-accent)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-muted-foreground)] shrink-0">
                     <Globe className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -804,8 +898,8 @@ export function ProfileContent({
                 </div>
                 
                 {/* Theme Row */}
-                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] shrink-0">
+                <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-accent)]/30 transition-colors">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-muted-foreground)] shrink-0">
                     <Palette className="h-4 w-4" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -829,7 +923,7 @@ export function ProfileContent({
 
             <div className="divide-y divide-[var(--color-border)]">
               {/* Gmail Connection Row */}
-              <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
+              <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-accent)]/30 transition-colors">
                 <div className="relative h-10 w-10 flex items-center justify-center shrink-0">
                   <img 
                     src="/Gmail.svg" 
@@ -853,7 +947,7 @@ export function ProfileContent({
                   <button
                     onClick={handleDisconnectGmail}
                     disabled={isDisconnectingGmail}
-                    className="inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] hover:bg-red-500/10 hover:text-red-500 transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium bg-[var(--color-accent)] text-[var(--color-muted-foreground)] hover:bg-red-500/10 hover:text-red-500 transition-all cursor-pointer"
                   >
                     {isDisconnectingGmail ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -885,7 +979,7 @@ export function ProfileContent({
               </div>
 
               {/* Spotify Connection Row */}
-              <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-surface-hover)]/30 transition-colors">
+              <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-accent)]/30 transition-colors">
                 <div className="relative h-10 w-10 flex items-center justify-center shrink-0">
                   <img 
                     src="/Spotify.png" 
@@ -909,7 +1003,7 @@ export function ProfileContent({
                   <button
                     onClick={handleDisconnectSpotify}
                     disabled={isDisconnectingSpotify}
-                    className="inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium bg-[var(--color-surface-hover)] text-[var(--color-muted-foreground)] hover:bg-red-500/10 hover:text-red-500 transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium bg-[var(--color-accent)] text-[var(--color-muted-foreground)] hover:bg-red-500/10 hover:text-red-500 transition-all cursor-pointer"
                   >
                     {isDisconnectingSpotify ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -926,6 +1020,62 @@ export function ProfileContent({
                     className="gap-1.5 h-8"
                   >
                     {isConnectingSpotify ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Connect
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+
+              {/* GitHub Connection Row */}
+              <div className="flex items-center gap-4 px-4 py-4 hover:bg-[var(--color-accent)]/30 transition-colors">
+                <div className="relative h-10 w-10 flex items-center justify-center shrink-0">
+                  <img 
+                    src="/GitHub.svg" 
+                    alt="GitHub" 
+                    className="h-8 w-8 object-contain dark:invert"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-[var(--color-foreground)]">GitHub</p>
+                  </div>
+                  <p className="text-xs text-[var(--color-muted-foreground)]">
+                    {isCheckingGitHub 
+                      ? 'Checking status...' 
+                      : 'Manage repositories and issues'}
+                  </p>
+                </div>
+                {isCheckingGitHub ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-[var(--color-muted-foreground)]" />
+                ) : isGitHubConnected ? (
+                  <button
+                    onClick={handleDisconnectGitHub}
+                    disabled={isDisconnectingGitHub}
+                    className="inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium bg-[var(--color-accent)] text-[var(--color-muted-foreground)] hover:bg-red-500/10 hover:text-red-500 transition-all cursor-pointer"
+                  >
+                    {isDisconnectingGitHub ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      'Connected'
+                    )}
+                  </button>
+                ) : (
+                  <Button
+                    onClick={handleConnectGitHub}
+                    disabled={isConnectingGitHub}
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 h-8"
+                  >
+                    {isConnectingGitHub ? (
                       <>
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         Connecting...

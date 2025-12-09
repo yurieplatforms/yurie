@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 // Agent modules
-import { buildSystemPrompt } from '@/lib/ai/agent/system-prompt'
-import { convertToOpenAIContent } from '@/lib/ai/agent/message-converter'
+import { buildSystemPrompt, formatToolName } from '@/lib/ai/agent'
+import { convertToOpenAIContent, sanitizeMessageContent } from '@/lib/ai/agent/message-converter'
 import { classifyRequest, type RequestMode } from '@/lib/ai/agent/classifier'
 
 // API types
@@ -35,25 +35,7 @@ import { env } from '@/lib/config/env'
 // Composio integration
 import { getComposioClient, handleToolCalls } from '@/lib/ai/integrations/composio/client'
 import { isUserConnected } from '@/lib/ai/integrations/composio/auth'
-
-/**
- * Format tool names for display (e.g., "GMAIL_FETCH_EMAILS" -> "Gmail fetch emails")
- */
-function formatToolName(name: string): string {
-  if (!name) return 'Tool'
-  
-  // Handle web_search specially
-  if (name === 'web_search') return 'Web search'
-  
-  // Remove common prefixes like GMAIL_, SPOTIFY_, SLACK_, etc.
-  const withoutPrefix = name.replace(/^(GMAIL|SPOTIFY|SLACK|NOTION|GOOGLE)_/i, '')
-  
-  // Convert SCREAMING_SNAKE_CASE to Title case
-  return withoutPrefix
-    .toLowerCase()
-    .replace(/_/g, ' ')
-    .replace(/^\w/, c => c.toUpperCase())
-}
+import { getGitHubTools } from '@/lib/ai/integrations/composio/tools'
 
 export async function POST(request: Request) {
   const requestId = generateRequestId()
@@ -70,7 +52,13 @@ export async function POST(request: Request) {
   }
 
   // Validate input messages
-  const validation = validateMessages(body.messages || [])
+  // First sanitize messages to remove large base64 data that would fail validation
+  const sanitizedMessages = (body.messages || []).map(msg => ({
+    ...msg,
+    content: sanitizeMessageContent(msg.content)
+  }))
+
+  const validation = validateMessages(sanitizedMessages)
   if (!validation.valid) {
     return NextResponse.json(
       { error: validation.error, requestId },
@@ -78,7 +66,8 @@ export async function POST(request: Request) {
     )
   }
 
-  const { messages, userContext, selectedTools = [] } = body
+  const { userContext, selectedTools = [] } = body
+  const messages = sanitizedMessages
 
   // Check for OpenAI API key
   const apiKey = env.OPENAI_API_KEY
@@ -126,6 +115,8 @@ export async function POST(request: Request) {
   let gmailTools: any[] = []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let spotifyTools: any[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let githubTools: any[] = []
   let userId: string | null = null
   
   try {
@@ -212,6 +203,25 @@ export async function POST(request: Request) {
     }
   }
 
+  // Fetch GitHub tools if GitHub is selected
+  if (selectedTools.includes('github') && userId) {
+    try {
+      // Check if user is connected to GitHub
+      const connected = await isUserConnected(userId, 'github')
+      
+      if (connected) {
+        console.log('[agent] Fetching GitHub tools from Composio for user:', userId)
+        // Fetch commonly used GitHub tools using the utility function
+        githubTools = await getGitHubTools(userId)
+        console.log('[agent] Loaded GitHub tools:', githubTools.length)
+      } else {
+        console.log('[agent] User not connected to GitHub, skipping GitHub tools')
+      }
+    } catch (error) {
+      console.error('[agent] Failed to fetch GitHub tools:', error)
+    }
+  }
+
   // Build enabled capabilities list
   const enabledCapabilities: string[] = []
   if (gmailTools.length > 0) {
@@ -220,6 +230,12 @@ export async function POST(request: Request) {
   if (spotifyTools.length > 0) {
     enabledCapabilities.push('spotify')
   }
+  if (githubTools.length > 0) {
+    enabledCapabilities.push('github')
+  }
+
+  // Always enable image generation capability
+  enabledCapabilities.push('image_generation')
 
   // ==========================================================================
   // ADAPTIVE MODE CLASSIFICATION
@@ -264,7 +280,7 @@ export async function POST(request: Request) {
     
     if (mode === 'agent') {
       // Agent mode: Include all relevant tools
-      tools = [{ type: 'web_search' }]
+      tools = [{ type: 'web_search' }, { type: 'image_generation' }]
       
       // Add Gmail tools if available
       if (gmailTools.length > 0) {
@@ -274,6 +290,11 @@ export async function POST(request: Request) {
       // Add Spotify tools if available
       if (spotifyTools.length > 0) {
         tools.push(...spotifyTools)
+      }
+
+      // Add GitHub tools if available
+      if (githubTools.length > 0) {
+        tools.push(...githubTools)
       }
       
       console.log('[agent] Agent mode tools:', tools.map(t => t.type || t.function?.name || 'unknown').join(', '))
@@ -430,6 +451,27 @@ export async function POST(request: Request) {
                 safeEnqueue(`data: ${JSON.stringify({
                   tool_use: { tool: 'Web search', status: 'completed', details: 'Done' }
                 })}\n\n`)
+              }
+
+              // Handle image generation output
+              if (event.type === 'response.output_item.done') {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const item = (event as any).item
+                if (item?.type === 'image_generation_call' && item.result) {
+                  const displayName = 'Image Generation'
+                  // Send completion status
+                  safeEnqueue(`data: ${JSON.stringify({
+                    tool_use: { tool: displayName, status: 'completed', details: 'Image generated' }
+                  })}\n\n`)
+                  
+                  // Send the image data
+                  safeEnqueue(`data: ${JSON.stringify({
+                    generated_image: { 
+                      base64: item.result,
+                      prompt: item.revised_prompt || 'Generated image'
+                    }
+                  })}\n\n`)
+                }
               }
               
               // Capture function call item when it's added (this has the function name)

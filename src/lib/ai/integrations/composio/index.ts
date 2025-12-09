@@ -77,6 +77,9 @@ export {
   getSpotifyTools,
   getSpotifyToolsForAgents,
   getSpotifyToolsByGroup,
+  getGitHubTools,
+  getGitHubToolsForAgents,
+  getGitHubToolsByGroup,
   getToolkitTools,
   searchTools,
   getToolSchemas,
@@ -86,8 +89,12 @@ export {
   SpotifyTools,
   SpotifyToolGroups,
   DEFAULT_SPOTIFY_TOOLS,
+  GitHubTools,
+  GitHubToolGroups,
+  DEFAULT_GITHUB_TOOLS,
   type GmailToolName,
   type SpotifyToolName,
+  type GitHubToolName,
 } from './tools'
 
 // Agents

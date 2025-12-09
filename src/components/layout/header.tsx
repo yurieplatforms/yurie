@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { TextEffect } from '@/components/ui/text-effect'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -21,11 +21,22 @@ export function Header() {
     setAvatarError(false)
   }, [user?.user_metadata?.avatar_url])
 
+  // Handle logo click - stops AI response and navigates to home
+  const handleLogoClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    // Hard navigation aborts any pending fetch requests and resets state
+    window.location.href = '/'
+  }, [])
+
   return (
     <header className="fixed left-0 right-0 top-0 z-50 bg-[var(--color-background)]" suppressHydrationWarning>
       <div className="mx-auto flex h-16 max-w-2xl items-center justify-between px-4" suppressHydrationWarning>
         <div className="flex items-center gap-1.5">
-          <Link href="/" className="group flex items-center gap-2">
+          <a 
+            href="/" 
+            onClick={handleLogoClick}
+            className="group flex items-center gap-2 cursor-pointer"
+          >
             <TextEffect
               as="span"
               preset="fade"
@@ -34,11 +45,11 @@ export function Header() {
             >
               yurie
             </TextEffect>
-          </Link>
+          </a>
         </div>
 
         <div className="flex items-center gap-1" suppressHydrationWarning>
-          <nav className="flex items-center gap-0.5 text-sm" suppressHydrationWarning>
+          <nav className="flex items-center gap-0.5" suppressHydrationWarning>
             {NAV_ITEMS.map((item) => {
               const isActive = pathname === item.href
               return (
@@ -48,8 +59,8 @@ export function Header() {
                   className={cn(
                     "relative inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium transition-all duration-[var(--transition-base)]",
                     isActive
-                      ? "bg-[var(--color-surface-hover)] text-[var(--color-foreground)]"
-                      : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-foreground)] active:bg-[var(--color-surface-active)]"
+                      ? "bg-accent text-accent-foreground"
+                      : "text-foreground hover:bg-accent hover:text-accent-foreground active:bg-accent"
                   )}
                 >
                   <TextEffect as="span" preset="fade" per="char">
@@ -71,7 +82,7 @@ export function Header() {
                 "group relative inline-flex items-center justify-center rounded-full h-10 w-10 transition-all duration-[var(--transition-base)]",
                 pathname === '/profile'
                   ? "ring-2 ring-primary ring-offset-2 ring-offset-[var(--color-background)]"
-                  : "hover:opacity-80"
+                  : "hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-[var(--color-background)]"
               )}
             >
               {user.user_metadata?.avatar_url && 
@@ -89,7 +100,7 @@ export function Header() {
               )}
             </Link>
           ) : (
-            <Button asChild size="sm" className="text-sm">
+            <Button asChild size="sm" className="text-sm font-medium">
               <Link href="/login">
                 <TextEffect as="span" preset="fade" per="char">
                   Log in

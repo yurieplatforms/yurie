@@ -47,8 +47,8 @@ export function ThemeSwitch() {
             className={cn(
               'inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-[var(--radius-full)] transition-all duration-[var(--transition-base)]',
               isActive
-                ? 'bg-[var(--color-surface-hover)] text-[var(--color-foreground)]'
-                : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface)] active:bg-[var(--color-surface-hover)]',
+                ? 'bg-[var(--color-accent)] text-[var(--color-foreground)]'
+                : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface)] active:bg-[var(--color-accent)]',
             )}
             type="button"
             aria-label={`Switch to ${option.label} theme`}

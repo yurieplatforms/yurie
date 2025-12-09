@@ -211,6 +211,24 @@ export function useStreamResponse(): UseStreamResponseReturn {
             continue
           }
 
+          // Handle generated image events
+          if (json.generated_image) {
+            const { base64, prompt } = json.generated_image
+            // Append markdown image to content
+            accumulatedContent += `\n\n![${prompt}](data:image/png;base64,${base64})\n\n`
+            
+            callbacks.onUpdate({
+              content: accumulatedContent,
+              reasoning: accumulatedReasoning,
+              thinkingTime: accumulatedThinkingTime,
+              error: accumulatedError,
+              activeToolUse,
+              toolUseHistory,
+              mode: accumulatedMode,
+            })
+            continue
+          }
+
           const choice = json.choices?.[0]
 
           const deltaContent =

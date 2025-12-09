@@ -13,7 +13,7 @@ import {
   ReasoningTrigger,
   StatusShimmer,
 } from '@/components/ai/reasoning'
-import { CornerDownRight, CheckIcon, CopyIcon, FileTextIcon } from 'lucide-react'
+import { CornerDownRight, CheckIcon, CopyIcon, FileTextIcon, DownloadIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export type MessageListProps = {
@@ -47,6 +47,32 @@ export function MessageList({
         const isStreamingPlaceholder =
           isAssistant && isLoading && message.content.length === 0
 
+        // Check for images in content to show download button
+        const imageMatch = message.content.match(/!\[(.*?)\]\((.*?)\)/)
+        const imageUrl = imageMatch ? imageMatch[2] : null
+        const imageAlt = imageMatch ? imageMatch[1] : 'generated-image'
+        
+        // Check if there is actual text content (excluding the image markdown)
+        const textContent = message.content.replace(/!\[(.*?)\]\((.*?)\)/g, '').trim()
+        const hasTextContent = textContent.length > 0
+
+        const handleDownloadImage = () => {
+          if (!imageUrl) return
+          
+          const link = document.createElement('a')
+          link.href = imageUrl
+          
+          let filename = 'generated-image.png'
+          if (imageAlt) {
+             filename = imageAlt.slice(0, 50).replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.png'
+          }
+          
+          link.download = filename
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+        }
+
         return (
           <div key={message.id} className="flex flex-col gap-2">
             <Message from={message.role}>
@@ -74,21 +100,36 @@ export function MessageList({
               isLastMessage &&
               message.content.trim().length > 0 && (
                 <MessageActions>
-                  <button
-                    type="button"
-                    onClick={() => onCopyMessage(message.content)}
-                    className={`cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 ${
-                      hasJustCopied ? 'scale-95' : ''
-                    }`}
-                    aria-label="Copy message"
-                    title="Copy message"
-                  >
-                    {hasJustCopied ? (
-                      <CheckIcon size={14} />
-                    ) : (
-                      <CopyIcon size={14} />
-                    )}
-                  </button>
+                  {/* Download button if image exists */}
+                  {imageUrl && (
+                    <button
+                      type="button"
+                      onClick={handleDownloadImage}
+                      className="cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Download image"
+                      title="Download image"
+                    >
+                      <DownloadIcon size={14} />
+                    </button>
+                  )}
+                  
+                  {hasTextContent && (
+                    <button
+                      type="button"
+                      onClick={() => onCopyMessage(message.content)}
+                      className={`cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 ${
+                        hasJustCopied ? 'scale-95' : ''
+                      }`}
+                      aria-label="Copy message"
+                      title="Copy message"
+                    >
+                      {hasJustCopied ? (
+                        <CheckIcon size={14} />
+                      ) : (
+                        <CopyIcon size={14} />
+                      )}
+                    </button>
+                  )}
                 </MessageActions>
               )}
 
@@ -137,9 +178,8 @@ function UserMessageContent({ message }: UserMessageContentProps) {
       {/* Text content - inside bubble */}
       {hasText && (
         <div className={cn(
-          "w-fit rounded-[var(--radius-xl)] px-5 py-3.5 shadow-sm",
-          "bg-[var(--color-muted)] text-[var(--color-foreground)]",
-          "dark:bg-[var(--color-surface-hover)] dark:text-[var(--color-foreground)]"
+          "w-fit rounded-2xl px-5 py-3.5 shadow-sm font-medium",
+          "bg-muted text-zinc-900 dark:text-zinc-100"
         )}>
           <p className="whitespace-pre-wrap">{message.content}</p>
         </div>
@@ -180,9 +220,9 @@ function AttachmentPreview({ attachment }: AttachmentPreviewProps) {
   if (attachment.type === 'file') {
     // For PDFs and other files, show a file icon with name (same style as chat bubble)
     return (
-      <div className="flex items-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-muted)] px-4 py-2.5 shadow-sm dark:bg-[var(--color-surface-hover)]">
-        <FileTextIcon className="h-4 w-4 shrink-0 text-[var(--color-foreground)]/70" />
-        <span className="max-w-[200px] truncate text-base text-[var(--color-foreground)]">
+      <div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-2.5 shadow-sm text-zinc-900 dark:text-zinc-100">
+        <FileTextIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span className="max-w-[200px] truncate text-base text-zinc-900 dark:text-zinc-100">
           {attachment.file.filename}
         </span>
       </div>
@@ -191,9 +231,9 @@ function AttachmentPreview({ attachment }: AttachmentPreviewProps) {
 
   if (attachment.type === 'url_document') {
     return (
-      <div className="flex items-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-muted)] px-4 py-2.5 shadow-sm dark:bg-[var(--color-surface-hover)]">
-        <FileTextIcon className="h-4 w-4 shrink-0 text-[var(--color-foreground)]/70" />
-        <span className="max-w-[200px] truncate text-base text-[var(--color-foreground)]">
+      <div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-2.5 shadow-sm text-zinc-900 dark:text-zinc-100">
+        <FileTextIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span className="max-w-[200px] truncate text-base text-zinc-900 dark:text-zinc-100">
           {attachment.url_document.title || 'Document'}
         </span>
       </div>
@@ -249,14 +289,14 @@ function AssistantMessageContent({
               }
               label={
                 !isThinkingStage && !hasActiveToolUse && typeof thoughtSeconds === 'number' ? (
-                  <span className="text-base font-normal text-[var(--color-muted-foreground)]">
+                  <span className="text-base font-normal text-muted-foreground">
                     Thought for{' '}
                     {thoughtSeconds >= 60
                       ? `${Math.floor(thoughtSeconds / 60)}m ${thoughtSeconds % 60}s`
                       : `${thoughtSeconds}s`}
                   </span>
                 ) : !isThinkingStage && !hasActiveToolUse ? (
-                  <span className="text-base font-normal text-[var(--color-muted-foreground)]">
+                  <span className="text-base font-normal text-muted-foreground">
                     Thought
                   </span>
                 ) : undefined
@@ -264,7 +304,7 @@ function AssistantMessageContent({
             />
             <ReasoningContent>
               {hasReasoning ? (
-                <MessageResponse className="italic text-[var(--color-muted-foreground)] prose-headings:text-[var(--color-muted-foreground)] prose-strong:text-[var(--color-muted-foreground)]">
+                <MessageResponse className="italic text-muted-foreground prose-headings:text-muted-foreground prose-strong:text-muted-foreground">
                   {message.reasoning}
                 </MessageResponse>
               ) : null}
@@ -319,14 +359,14 @@ function SuggestionsList({
           type="button"
           onClick={() => onSuggestionClick(suggestion)}
           className={cn(
-            'group relative w-full cursor-pointer rounded-[var(--radius-xl)] px-3.5 py-2.5 text-left text-base font-normal transition-all duration-[var(--transition-base)]',
-            'hover:bg-[var(--color-surface-hover)] active:bg-[var(--color-surface-active)]',
+            'group relative w-full cursor-pointer rounded-xl px-3.5 py-2.5 text-left text-base font-medium transition-all duration-200',
+            'hover:bg-accent hover:text-accent-foreground',
           )}
           data-id={`${suggestion}-${i}`}
         >
           <div className="flex items-center gap-3">
-            <CornerDownRight className="h-4 w-4 shrink-0 text-[var(--color-muted-foreground)] transition-colors group-hover:text-[var(--color-foreground)]" />
-            <span className="text-[var(--color-muted-foreground)] transition-colors group-hover:text-[var(--color-foreground)]">
+            <CornerDownRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-accent-foreground" />
+            <span className="text-muted-foreground transition-colors group-hover:text-accent-foreground">
               {suggestion}
             </span>
           </div>

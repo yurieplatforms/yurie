@@ -64,6 +64,40 @@ type OpenAIContentPart =
   | OpenAIInputFileUrl
 
 /**
+ * Sanitize message content by removing large base64 image data.
+ * This prevents API errors when sending chat history back to the server.
+ * 
+ * Replaces markdown images with base64 data:
+ * ![Alt](data:image/png;base64,...) -> ![Alt]([Image Data Omitted])
+ */
+export function sanitizeMessageContent(content: string | MessageContentSegment[]): string | MessageContentSegment[] {
+  if (typeof content === 'string') {
+    // Replace base64 data in markdown images
+    return content.replace(
+      /!\[(.*?)\]\(data:image\/[a-zA-Z]+;base64,[^)]+\)/g,
+      '![Image: $1]([Image Data Omitted])'
+    )
+  }
+
+  if (Array.isArray(content)) {
+    return content.map(segment => {
+      if (segment.type === 'text' && typeof segment.text === 'string') {
+        return {
+          ...segment,
+          text: segment.text.replace(
+            /!\[(.*?)\]\(data:image\/[a-zA-Z]+;base64,[^)]+\)/g,
+            '![Image: $1]([Image Data Omitted])'
+          )
+        }
+      }
+      return segment
+    })
+  }
+
+  return content
+}
+
+/**
  * Converts message content to OpenAI Responses API format
  *
  * Follows OpenAI best practices:

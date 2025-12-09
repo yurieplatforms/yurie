@@ -16,6 +16,7 @@ import type { Role } from "@/lib/types";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  DownloadIcon,
   PaperclipIcon,
   XIcon,
 } from "lucide-react";
@@ -66,14 +67,12 @@ export const MessageContent = ({
   <div
     className={cn(
       // Match assistant text size (blog-style prose)
-      "flex max-w-full flex-col gap-2 overflow-hidden text-base",
+      "flex max-w-full flex-col gap-2 overflow-hidden text-base font-medium",
       from === "user"
         ? [
-            // User bubble: matches blockquote/muted surface color
-            "w-fit ml-auto rounded-[26px] px-5 py-3.5 shadow-sm",
-            "bg-muted text-foreground",
-            // Dark mode bubble color override
-            "dark:bg-[#404040] dark:text-zinc-50",
+            // User bubble: matches secondary color
+            "w-fit ml-auto rounded-2xl px-5 py-3.5 shadow-sm",
+            "bg-muted text-zinc-900 dark:text-zinc-100",
           ]
         : "w-full text-zinc-900 dark:text-zinc-100",
       className
@@ -382,6 +381,19 @@ function escapeCurrencyDollars(content: string): string {
   );
 }
 
+const MarkdownImage = ({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => {
+  if (!src) return null;
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className="h-auto max-w-full rounded-xl object-contain bg-muted my-2 shadow-sm"
+      {...props}
+    />
+  );
+};
+
 export const MessageResponse = memo(
   ({ className, components, children, ...props }: MessageResponseProps) => {
     // Preprocess content: escape currency dollar signs, then convert latex code blocks
@@ -397,7 +409,7 @@ export const MessageResponse = memo(
         className={cn(
           // Match blog typography (see blog layout) for AI-generated content
           // while letting prose handle its own inner spacing.
-          "prose prose-gray dark:prose-invert max-w-none",
+          "prose prose-gray dark:prose-invert max-w-none font-medium",
           // Headings - clear hierarchy with proper spacing
           "prose-h1:text-xl prose-h1:font-semibold prose-h1:mt-8 prose-h1:mb-4 prose-h1:leading-tight",
           "prose-h2:text-lg prose-h2:font-semibold prose-h2:mt-8 prose-h2:mb-3 prose-h2:leading-snug",
@@ -432,6 +444,7 @@ export const MessageResponse = memo(
           suggestions: () => null,
           // Handle <thinking> tags from AI output - suppress React warning
           thinking: () => null,
+          img: MarkdownImage,
           blockquote({ children, ...rest }: React.ComponentPropsWithoutRef<'blockquote'>) {
             return <blockquote {...rest}>{children}</blockquote>;
           },

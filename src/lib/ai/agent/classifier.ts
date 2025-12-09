@@ -80,6 +80,12 @@ const EXPLANATION_PATTERNS = [
   /\b(meaning of|definition of)\b/i,
 ]
 
+/** Patterns indicating image generation tasks */
+const IMAGE_GENERATION_PATTERNS = [
+  /\b(generate|create|make|draw|paint|render|visualize).{0,20}(image|picture|photo|illustration|art|drawing|painting)\b/i,
+  /\b(image|picture|drawing|sketch) of\b/i,
+]
+
 // =============================================================================
 // Classification Logic
 // =============================================================================
@@ -204,6 +210,22 @@ export function classifyRequest(
       agentSignals += musicMatches * 2
       if (!toolsRecommended.includes('spotify')) {
         toolsRecommended.push('spotify')
+      }
+    }
+  }
+
+  // ==========================================================================
+  // Signal 4.5: Image generation patterns (if available)
+  // ==========================================================================
+  if (
+    connectedIntegrations.includes('image_generation') ||
+    selectedTools.includes('image_generation')
+  ) {
+    const imageMatches = countMatches(userContent, IMAGE_GENERATION_PATTERNS)
+    if (imageMatches > 0) {
+      agentSignals += imageMatches * 3 // Strong signal
+      if (!toolsRecommended.includes('image_generation')) {
+        toolsRecommended.push('image_generation')
       }
     }
   }

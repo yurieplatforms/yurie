@@ -16,7 +16,7 @@ const inputVariants = cva(
         ghost: [
           "h-10 rounded-[var(--radius-lg)] bg-transparent border-none",
           "px-3 py-2 text-[var(--color-foreground)]",
-          "hover:bg-[var(--color-surface-hover)] focus:bg-[var(--color-surface-hover)]",
+          "hover:bg-[var(--color-accent)] focus:bg-[var(--color-accent)]",
         ],
         filled: [
           "h-11 rounded-[var(--radius-input)] border border-[var(--color-input-border)] bg-[var(--color-input-bg)]",

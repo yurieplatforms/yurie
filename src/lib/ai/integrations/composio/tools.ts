@@ -258,6 +258,128 @@ export const SpotifyToolGroups = {
 }
 
 /**
+ * Available GitHub tools
+ * 
+ * @see https://docs.composio.dev/toolkits/github
+ */
+export const GitHubTools = {
+  // Repositories
+  /** Create a repository for the authenticated user */
+  CREATE_REPO_FOR_USER: 'GITHUB_CREATE_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER',
+  /** Get a repository */
+  GET_REPO: 'GITHUB_GET_A_REPOSITORY',
+  /** List repositories for the authenticated user */
+  LIST_REPOS_FOR_USER: 'GITHUB_LIST_REPOSITORIES_FOR_THE_AUTHENTICATED_USER',
+  /** Star a repository */
+  STAR_REPO: 'GITHUB_STAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER',
+  /** Search repositories */
+  SEARCH_REPOS: 'GITHUB_SEARCH_REPOSITORIES',
+
+  // Issues
+  /** Create an issue */
+  CREATE_ISSUE: 'GITHUB_CREATE_AN_ISSUE',
+  /** Get an issue */
+  GET_ISSUE: 'GITHUB_GET_AN_ISSUE',
+  /** List repository issues */
+  LIST_REPO_ISSUES: 'GITHUB_LIST_REPOSITORY_ISSUES',
+  /** Update an issue */
+  UPDATE_ISSUE: 'GITHUB_UPDATE_AN_ISSUE',
+  /** Create an issue comment */
+  CREATE_ISSUE_COMMENT: 'GITHUB_CREATE_AN_ISSUE_COMMENT',
+  /** List issue comments */
+  LIST_ISSUE_COMMENTS: 'GITHUB_LIST_ISSUE_COMMENTS',
+
+  // Pull Requests
+  /** Create a pull request */
+  CREATE_PR: 'GITHUB_CREATE_A_PULL_REQUEST',
+  /** Get a pull request */
+  GET_PR: 'GITHUB_GET_A_PULL_REQUEST',
+  /** List pull requests */
+  LIST_PRS: 'GITHUB_LIST_PULL_REQUESTS',
+  /** Merge a pull request */
+  MERGE_PR: 'GITHUB_MERGE_A_PULL_REQUEST',
+  
+  // File Operations
+  /** Create or update file contents */
+  CREATE_OR_UPDATE_FILE: 'GITHUB_CREATE_OR_UPDATE_FILE_CONTENTS',
+  /** Get repository content */
+  GET_REPO_CONTENT: 'GITHUB_GET_REPOSITORY_CONTENT',
+  /** Delete a file */
+  DELETE_FILE: 'GITHUB_DELETE_A_FILE',
+  
+  // User
+  /** Get the authenticated user */
+  GET_AUTHENTICATED_USER: 'GITHUB_GET_THE_AUTHENTICATED_USER',
+  
+  // Commits
+  /** Get a commit */
+  GET_COMMIT: 'GITHUB_GET_A_COMMIT',
+  /** List commits */
+  LIST_COMMITS: 'GITHUB_LIST_COMMITS',
+  
+  // Other
+  /** Fork a repository */
+  CREATE_FORK: 'GITHUB_CREATE_A_FORK',
+  /** Unstar a repository */
+  UNSTAR_REPO: 'GITHUB_UNSTAR_A_REPOSITORY_FOR_THE_AUTHENTICATED_USER',
+} as const
+
+export type GitHubToolName = (typeof GitHubTools)[keyof typeof GitHubTools]
+
+/**
+ * Default GitHub tools for common operations
+ */
+export const DEFAULT_GITHUB_TOOLS: GitHubToolName[] = [
+  GitHubTools.LIST_REPOS_FOR_USER,
+  GitHubTools.GET_REPO,
+  GitHubTools.SEARCH_REPOS,
+  GitHubTools.LIST_REPO_ISSUES,
+  GitHubTools.CREATE_ISSUE,
+  GitHubTools.LIST_PRS,
+  GitHubTools.GET_REPO_CONTENT,
+  GitHubTools.CREATE_OR_UPDATE_FILE,
+  GitHubTools.CREATE_ISSUE_COMMENT,
+  GitHubTools.LIST_ISSUE_COMMENTS,
+]
+
+/**
+ * GitHub tools grouped by operation type
+ */
+export const GitHubToolGroups = {
+  /** Tools for managing repositories */
+  repos: [
+    GitHubTools.CREATE_REPO_FOR_USER,
+    GitHubTools.GET_REPO,
+    GitHubTools.LIST_REPOS_FOR_USER,
+    GitHubTools.STAR_REPO,
+    GitHubTools.UNSTAR_REPO,
+    GitHubTools.SEARCH_REPOS,
+    GitHubTools.GET_REPO_CONTENT,
+    GitHubTools.CREATE_OR_UPDATE_FILE,
+    GitHubTools.DELETE_FILE,
+    GitHubTools.CREATE_FORK,
+    GitHubTools.GET_COMMIT,
+    GitHubTools.LIST_COMMITS,
+  ] as GitHubToolName[],
+  /** Tools for managing issues */
+  issues: [
+    GitHubTools.CREATE_ISSUE,
+    GitHubTools.GET_ISSUE,
+    GitHubTools.LIST_REPO_ISSUES,
+    GitHubTools.UPDATE_ISSUE,
+    GitHubTools.CREATE_ISSUE_COMMENT,
+    GitHubTools.LIST_ISSUE_COMMENTS,
+  ] as GitHubToolName[],
+  /** Tools for managing pull requests */
+  pullRequests: [
+    GitHubTools.CREATE_PR,
+    GitHubTools.GET_PR,
+    GitHubTools.LIST_PRS,
+    GitHubTools.MERGE_PR,
+  ] as GitHubToolName[],
+}
+
+/**
  * Get specific tools from Composio for a user
  *
  * @param externalUserId - Unique identifier for the user in your system
@@ -448,6 +570,54 @@ export async function getSpotifyToolsByGroup(
   group: keyof typeof SpotifyToolGroups
 ): Promise<ComposioTool[]> {
   return getSpotifyTools(externalUserId, SpotifyToolGroups[group])
+}
+
+/**
+ * Get GitHub-specific tools for a user (uses Responses provider by default)
+ *
+ * @param externalUserId - Unique identifier for the user in your system
+ * @param toolNames - Optional specific GitHub tools to fetch (defaults to DEFAULT_GITHUB_TOOLS)
+ * @param options - Additional options including provider type
+ * @returns Array of GitHub tools ready for use with agents
+ */
+export async function getGitHubTools(
+  externalUserId: string,
+  toolNames: GitHubToolName[] = DEFAULT_GITHUB_TOOLS,
+  options?: { limit?: number; provider?: ProviderType }
+): Promise<ComposioTool[]> {
+  return getTools(externalUserId, {
+    tools: toolNames,
+  }, options?.provider ?? 'responses')
+}
+
+/**
+ * Get GitHub-specific tools for use with @openai/agents SDK
+ *
+ * @param externalUserId - Unique identifier for the user in your system
+ * @param toolNames - Optional specific GitHub tools to fetch (defaults to DEFAULT_GITHUB_TOOLS)
+ * @returns Array of GitHub tools formatted for OpenAI Agents SDK
+ */
+export async function getGitHubToolsForAgents(
+  externalUserId: string,
+  toolNames: GitHubToolName[] = DEFAULT_GITHUB_TOOLS
+): Promise<ComposioTool[]> {
+  return getTools(externalUserId, {
+    tools: toolNames,
+  }, 'agents')
+}
+
+/**
+ * Get GitHub tools by group
+ *
+ * @param externalUserId - Unique identifier for the user in your system
+ * @param group - Tool group: 'repos', 'issues', or 'pullRequests'
+ * @returns Array of GitHub tools for the specified group
+ */
+export async function getGitHubToolsByGroup(
+  externalUserId: string,
+  group: keyof typeof GitHubToolGroups
+): Promise<ComposioTool[]> {
+  return getGitHubTools(externalUserId, GitHubToolGroups[group])
 }
 
 /**

@@ -18,7 +18,7 @@ const cardVariants = cva(
         ],
         interactive: [
           "bg-[var(--color-surface)] cursor-pointer",
-          "hover:bg-[var(--color-surface-hover)] hover:shadow-[var(--shadow-sm)]",
+          "hover:bg-[var(--color-accent)] hover:shadow-[var(--shadow-sm)]",
           "active:bg-[var(--color-surface-active)] active:scale-[0.99]",
         ],
       },

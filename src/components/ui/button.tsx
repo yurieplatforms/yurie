@@ -15,11 +15,11 @@ const buttonVariants = cva(
         "destructive-ghost":
           "bg-transparent text-[var(--color-destructive)] hover:bg-[var(--color-destructive)]/15 active:bg-[var(--color-destructive)]/25",
         outline:
-          "border border-[var(--color-border)] bg-transparent hover:bg-[var(--color-surface-hover)] hover:border-[var(--color-muted-foreground)]/30 active:bg-[var(--color-surface-active)] text-[var(--color-foreground)]",
+          "border border-[var(--color-border)] bg-transparent hover:bg-[var(--color-accent)] hover:border-[var(--color-muted-foreground)]/30 active:bg-[var(--color-surface-active)] text-[var(--color-foreground)]",
         secondary:
-          "bg-[var(--color-surface)] text-[var(--color-foreground)] hover:bg-[var(--color-surface-hover)] active:bg-[var(--color-surface-active)]",
+          "bg-[var(--color-surface)] text-[var(--color-foreground)] hover:bg-[var(--color-accent)] active:bg-[var(--color-surface-active)]",
         ghost:
-          "hover:bg-[var(--color-surface-hover)] active:bg-[var(--color-surface-active)] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
+          "hover:bg-[var(--color-accent)] active:bg-[var(--color-surface-active)] text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
         link: "text-[var(--color-primary)] underline-offset-4 hover:underline hover:text-[var(--color-primary-hover)]",
       },
       size: {
