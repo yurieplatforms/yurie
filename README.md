@@ -7,6 +7,8 @@ Built with **Next.js 16**, **Supabase**, **OpenAI**, and **Composio**, Yurie com
 ## ✨ Key Features
 
 -   **🧠 Emotional Intelligence**: Yurie adapts her tone and personality based on the conversation, offering a genuine connection rather than robotic responses.
+-   **🔬 Deep Research**: Leverage OpenAI's o3/o4-mini deep research models to analyze and synthesize hundreds of sources into comprehensive reports.
+-   **⏳ Background Tasks**: Long-running operations persist across page refreshes and server restarts, with real-time status updates.
 -   **🛠️ Tool Integration**:
     -   **Gmail**: Send, read, and draft emails seamlessly.
     -   **Web Search**: Access real-time information to answer your questions.
@@ -19,7 +21,7 @@ Built with **Next.js 16**, **Supabase**, **OpenAI**, and **Composio**, Yurie com
 -   **Frontend**: Next.js 16 (App Router), React 19, Tailwind CSS v4, Radix UI, Framer Motion
 -   **Backend**: Next.js API Routes (Serverless)
 -   **Database**: Supabase (PostgreSQL) + Storage (Avatars)
--   **AI Intelligence**: OpenAI (GPT-5.1 Preview/Custom Models)
+-   **AI Intelligence**: OpenAI (GPT-4.1 Preview, o3/o4-mini Deep Research)
 -   **Agent Tools**: Composio (Gmail Integration, etc.)
 -   **Testing**: Vitest
 
@@ -57,7 +59,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 1.  **Clone the repository**
 
     ```bash
-    git clone https://github.com/yourusername/yurie.git
+    git clone https://github.com/yurieplatforms/yurie.git
     cd yurie
     ```
 
@@ -87,23 +89,44 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 yurie/
 ├── src/
 │   ├── app/                 # Next.js App Router pages and API routes
-│   │   ├── api/             # Backend API endpoints (agent, composio, etc.)
+│   │   ├── api/             # Backend API endpoints
+│   │   │   ├── agent/       # AI agent routes (chat, background tasks)
+│   │   │   ├── composio/    # Tool integration routes
+│   │   │   └── research/    # Deep research API routes
 │   │   ├── login/           # Authentication pages
+│   │   ├── history/         # Chat history page
+│   │   ├── profile/         # User profile page
 │   │   └── ...
 │   ├── components/          # React components
 │   │   ├── ai/              # AI-specific UI (chat bubbles, reasoning)
 │   │   ├── chat/            # Chat interface components
+│   │   │   └── hooks/       # Chat-related React hooks
+│   │   ├── layout/          # Layout components (header, footer)
 │   │   └── ui/              # Reusable UI primitives
 │   ├── lib/                 # Core logic and utilities
-│   │   ├── ai/              # AI agent logic, system prompts, stream processing
+│   │   ├── ai/              # AI agent logic
+│   │   │   ├── agent/       # Agent system prompts, tools, classifiers
+│   │   │   ├── api/         # OpenAI API utilities, background tasks
+│   │   │   └── files/       # File processing (PDF, vision)
+│   │   ├── chat/            # Chat utilities (history, suggestions)
 │   │   ├── config/          # Environment and constants
 │   │   ├── integrations/    # External service integrations (Composio)
-│   │   └── supabase/        # Database clients and schemas
-│   │   └── ...
+│   │   ├── providers/       # React context providers
+│   │   ├── supabase/        # Database clients and schemas
+│   │   └── types/           # TypeScript type definitions
 ├── supabase/                # Database migrations
 ├── public/                  # Static assets
 └── ...
 ```
+
+## 🔬 Deep Research
+
+Yurie supports OpenAI's deep research models for complex analysis tasks:
+
+-   **o4-mini-deep-research**: Faster, cost-effective research (default)
+-   **o3-deep-research**: Premium model for comprehensive analysis
+
+Deep research can find, analyze, and synthesize hundreds of sources to create detailed reports with inline citations. Tasks run in the background and can take several minutes to complete.
 
 ## 🤝 Contributing
 
