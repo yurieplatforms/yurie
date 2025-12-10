@@ -46,7 +46,7 @@
 @layer base {
   :root {
     /* User Provided Design Tokens */
-    --card: #faf9f5;
+    --card: #ffffff;
     --ring: #c96442;
     --input: #b4b2a7;
     --muted: #ede9de;
@@ -79,6 +79,35 @@
     --destructive-foreground: #ffffff;
     --sidebar-accent-foreground: #343434;
     --sidebar-primary-foreground: #fbfbfb;
+
+    /* Typography Scale */
+    --font-size-xs: 0.75rem;      /* 12px */
+    --font-size-sm: 0.8125rem;    /* 13px */
+    --font-size-base: 0.9375rem;  /* 15px */
+    --font-size-lg: 1.0625rem;    /* 17px */
+    --font-size-xl: 1.25rem;      /* 20px */
+    --font-size-2xl: 1.5rem;      /* 24px */
+    --font-size-3xl: 1.875rem;    /* 30px */
+    
+    /* Line Heights */
+    --line-height-tight: 1.25;
+    --line-height-snug: 1.375;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.625;
+    --line-height-loose: 1.75;
+    
+    /* Letter Spacing */
+    --tracking-tighter: -0.03em;
+    --tracking-tight: -0.015em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.015em;
+    --tracking-wider: 0.03em;
+    
+    /* Font Weights */
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
 
     /* Semantic Aliases & Compatibility */
     --color-background: var(--background);
@@ -741,6 +770,57 @@
   [data-streamdown] .math-inline {
     padding: 0.1em 0.2em;
     border-radius: 0.25rem;
+  }
+
+  /* Profile avatar ring animation */
+  .avatar-ring {
+    position: relative;
+  }
+
+  .avatar-ring::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 9999px;
+    padding: 2px;
+    background: conic-gradient(
+      from 0deg,
+      var(--color-primary),
+      var(--color-info),
+      var(--color-primary)
+    );
+    -webkit-mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .avatar-ring:hover::before {
+    opacity: 1;
+    transform: scale(1);
+    animation: avatar-ring-spin 3s linear infinite;
+  }
+
+  .avatar-ring.active::before {
+    opacity: 1;
+    transform: scale(1);
+    animation: avatar-ring-spin 3s linear infinite;
+  }
+
+  @keyframes avatar-ring-spin {
+    from {
+      transform: scale(1) rotate(0deg);
+    }
+    to {
+      transform: scale(1) rotate(360deg);
+    }
   }
 
   /* PromptKit-style text loaders (text-blink, loading-dots) */

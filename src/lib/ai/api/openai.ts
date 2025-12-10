@@ -652,3 +652,64 @@ export function getRecommendedServiceTier(
   }
 }
 
+// =============================================================================
+// Background Mode Support
+// Reference: https://platform.openai.com/docs/guides/background
+// =============================================================================
+
+/**
+ * Build request parameters with background mode enabled
+ * 
+ * Background mode requirements:
+ * - `background: true` - Enable background mode
+ * - `store: true` - Required for background mode
+ * - `stream: true` (optional) - Enable streaming with resume capability
+ */
+export function withBackgroundMode(
+  params: Record<string, unknown>,
+  options: { stream?: boolean } = {}
+): Record<string, unknown> {
+  return {
+    ...params,
+    background: true,
+    store: true,
+    ...(options.stream !== undefined && { stream: options.stream }),
+  }
+}
+
+/**
+ * Check if background mode should be used based on request characteristics
+ * 
+ * Background mode is beneficial for:
+ * - Agent mode tasks (complex, multi-step)
+ * - Tasks with multiple tools
+ * - Long conversations
+ * - High complexity requests
+ */
+export function shouldUseBackgroundMode(options: {
+  mode: 'chat' | 'agent'
+  hasTools: boolean
+  estimatedComplexity?: 'low' | 'medium' | 'high'
+  messageCount?: number
+}): boolean {
+  const { mode, hasTools, estimatedComplexity = 'medium', messageCount = 0 } = options
+  
+  // Agent mode with tools benefits most from background mode
+  if (mode === 'agent' && hasTools) {
+    return true
+  }
+  
+  // High complexity always uses background mode
+  if (estimatedComplexity === 'high') {
+    return true
+  }
+  
+  // Long conversations in agent mode
+  if (mode === 'agent' && messageCount > 10) {
+    return true
+  }
+  
+  // Agent mode generally benefits from background mode
+  return mode === 'agent'
+}
+

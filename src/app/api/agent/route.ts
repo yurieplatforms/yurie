@@ -20,7 +20,17 @@ import {
   logRequest,
   getRecommendedServiceTier,
   withServiceTier,
+  withBackgroundMode,
+  shouldUseBackgroundMode,
 } from '@/lib/ai/api/openai'
+
+// Background mode utilities
+import {
+  StreamCursor,
+  backgroundResponseStore,
+  isTerminalStatus,
+  getStatusMessage,
+} from '@/lib/ai/api/background'
 
 // Latency optimization utilities
 import { createLatencyTracker } from '@/lib/ai/api/latency'
@@ -336,6 +346,21 @@ export async function POST(request: Request) {
         })
         console.log(`[agent] Service tier: ${serviceTier} (${tierReason})`)
         
+        // Background mode configuration
+        // Reference: https://platform.openai.com/docs/guides/background
+        const useBackgroundMode = shouldUseBackgroundMode({
+          mode,
+          hasTools: Boolean(tools && tools.length > 0),
+          estimatedComplexity: classification.reasoningEffort === 'high' ? 'high' : 
+                               classification.reasoningEffort === 'medium' ? 'medium' : 'low',
+          messageCount: messages.length,
+        })
+        
+        // Stream cursor for tracking resumable stream position
+        const streamCursor = new StreamCursor()
+        
+        console.log(`[agent] Background mode: ${useBackgroundMode}`)
+        
         try {
           // Send mode indicator to frontend for UI feedback
           safeEnqueue(`data: ${JSON.stringify({
@@ -344,6 +369,7 @@ export async function POST(request: Request) {
               reason: classification.reason,
               confidence: classification.confidence,
               reasoningEffort: classification.reasoningEffort,
+              backgroundMode: useBackgroundMode,
             }
           })}\n\n`)
           
@@ -352,16 +378,22 @@ export async function POST(request: Request) {
           // In agent mode, we loop until all tool calls are resolved
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let toolResultsInput: any[] | null = null
-          const maxIterations = mode === 'chat' ? 3 : 10 // Fewer iterations for chat mode
+          const maxToolIterations = mode === 'chat' ? 3 : 10 // Max iterations with tool calls
           let iteration = 0
           
-          while (iteration < maxIterations) {
+          // Allow loop to continue if:
+          // 1. We haven't hit max iterations yet, OR
+          // 2. We have pending tool results that need a final response (one extra iteration allowed)
+          const maxTotalIterations = maxToolIterations + 1 // Allow one extra iteration for final response
+          while (iteration < maxTotalIterations) {
             iteration++
-            console.log(`[agent] Iteration ${iteration}`)
+            const isFinalIteration = iteration > maxToolIterations
+            console.log(`[agent] Iteration ${iteration}${isFinalIteration ? ' (final - tools disabled)' : ''}`)
             
             // Build input for this iteration
             // Latency optimization: https://platform.openai.com/docs/guides/latency-optimization
             // Priority processing: https://platform.openai.com/docs/guides/priority-processing
+            // Background mode: https://platform.openai.com/docs/guides/background
             
             // GPT-5.1 with high reasoning for best quality responses
             const selectedModel = 'gpt-5.1-2025-11-13'
@@ -371,13 +403,13 @@ export async function POST(request: Request) {
               model: selectedModel,
               instructions: systemPrompt,
               stream: true,
-              // Latency optimizations
-              max_output_tokens: mode === 'chat' ? 16384 : 32768, // Increased token limits
-              store: true, // Enable prompt caching for repeated requests
+              // No max_output_tokens set - use model's maximum output capacity
+              store: true, // Enable prompt caching for repeated requests (also required for background mode)
             }
             
-            // Add tools only if we have them (undefined = no tools)
-            if (tools && tools.length > 0) {
+            // Add tools only if we have them AND we haven't exceeded max tool iterations
+            // After maxToolIterations, disable tools to force a final text response
+            if (tools && tools.length > 0 && !isFinalIteration) {
               baseParams.tools = tools
               baseParams.parallel_tool_calls = true // Execute multiple tool calls in parallel
             }
@@ -387,7 +419,13 @@ export async function POST(request: Request) {
             
             // Add service tier for priority processing
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const requestParams: any = withServiceTier(baseParams, serviceTier)
+            let requestParams: any = withServiceTier(baseParams, serviceTier)
+            
+            // Enable background mode for agent tasks to avoid timeouts
+            // Background mode allows the request to continue processing even if the connection drops
+            if (useBackgroundMode) {
+              requestParams = withBackgroundMode(requestParams, { stream: true })
+            }
             
             if (toolResultsInput) {
               // Continue with tool results - append to original messages
@@ -411,15 +449,87 @@ export async function POST(request: Request) {
             for await (const event of response as any) {
               if (isClosed) break
               
-              // Capture response ID for continuation
+              // Debug: Log event types to understand stream content
+              // Uncomment for debugging: console.log('[agent] Event:', event.type)
+              
+              // Track sequence number for stream resumption (background mode)
+              if (useBackgroundMode && event.sequence_number !== undefined) {
+                streamCursor.update(event)
+              }
+              
+              // Skip content_part events that contain tool call arguments
+              // These are streamed tool call data, not text for the user
+              if (event.type === 'response.content_part.delta' || 
+                  event.type === 'response.content_part.added' ||
+                  event.type === 'response.function_call_arguments.delta') {
+                // These events contain tool call arguments, not text content
+                continue
+              }
+              
+              // Capture response ID for continuation and background tracking
               if (event.type === 'response.created' || event.type === 'response.in_progress') {
                 currentResponseId = event.response?.id ?? currentResponseId
+                
+                // Track sequence number from response.created event
+                if (useBackgroundMode && event.response?.id) {
+                  streamCursor.update(event)
+                  
+                  // Register background response for tracking (first iteration only)
+                  if (iteration === 1) {
+                    backgroundResponseStore.register(
+                      requestId,
+                      event.response.id,
+                      userId,
+                      streamCursor
+                    )
+                    
+                    // Send background response ID to frontend for potential resumption
+                    safeEnqueue(`data: ${JSON.stringify({
+                      background: {
+                        responseId: event.response.id,
+                        status: 'in_progress',
+                        message: getStatusMessage('in_progress'),
+                      }
+                    })}\n\n`)
+                  }
+                }
+              }
+              
+              // Handle background mode status updates
+              if (useBackgroundMode && event.type === 'response.completed') {
+                const status = event.response?.status
+                if (status && isTerminalStatus(status)) {
+                  backgroundResponseStore.updateStatus(requestId, status)
+                  
+                  // Send final status to frontend
+                  safeEnqueue(`data: ${JSON.stringify({
+                    background: {
+                      responseId: currentResponseId,
+                      status: status,
+                      message: getStatusMessage(status),
+                    }
+                  })}\n\n`)
+                }
               }
               
               // Handle text content streaming
               if (event.type === 'response.output_text.delta') {
                 const content = event.delta
                 if (content) {
+                  // Filter out raw JSON tool call data that the model sometimes outputs
+                  // This happens when the model "thinks aloud" about what tools to use
+                  const trimmedContent = content.trim()
+                  const looksLikeToolJson = trimmedContent.startsWith('{"tool"') || 
+                                            trimmedContent.startsWith('{"function"') ||
+                                            trimmedContent.startsWith('{"name"') ||
+                                            (trimmedContent.startsWith('{') && trimmedContent.includes('"owner"') && trimmedContent.includes('"repo"'))
+                  
+                  if (looksLikeToolJson) {
+                    // Skip this content - it's likely tool call description, not actual response
+                    console.log('[agent] Filtering out tool-like JSON from text stream')
+                    continue
+                  }
+                  
                   // Track time to first token for latency monitoring
                   latencyTracker.onFirstToken()
                   latencyTracker.onToken()
@@ -520,6 +630,23 @@ export async function POST(request: Request) {
             // If we got text content and no pending function calls, we're done
             if (hasTextContent && pendingFunctionCalls.length === 0) {
               console.log('[agent] Got text response, completing')
+              break
+            }
+            
+            // If this is the final iteration (tools disabled), we must exit
+            // regardless of whether we got text or not
+            if (isFinalIteration) {
+              if (hasTextContent) {
+                console.log('[agent] Final iteration complete with text response')
+              } else {
+                console.log('[agent] Final iteration complete, but no text response received')
+                // Send a fallback message if no text was generated
+                safeEnqueue(`data: ${JSON.stringify({
+                  choices: [{
+                    delta: { content: "I've gathered the information but ran out of processing steps. Please try a more specific question or break down your request into smaller parts." }
+                  }]
+                })}\n\n`)
+              }
               break
             }
             

@@ -57,7 +57,7 @@ export function Header() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "relative inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3 text-sm font-medium transition-all duration-[var(--transition-base)]",
+                    "relative inline-flex items-center justify-center rounded-[var(--radius-full)] h-8 px-3.5 text-[var(--font-size-sm)] font-medium tracking-normal transition-all duration-[var(--transition-base)]",
                     isActive
                       ? "bg-accent text-accent-foreground"
                       : "text-foreground hover:bg-accent hover:text-accent-foreground active:bg-accent"
@@ -79,10 +79,8 @@ export function Header() {
             <Link
               href="/profile"
               className={cn(
-                "group relative inline-flex items-center justify-center rounded-full h-10 w-10 transition-all duration-[var(--transition-base)]",
-                pathname === '/profile'
-                  ? "ring-2 ring-primary ring-offset-2 ring-offset-[var(--color-background)]"
-                  : "hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-[var(--color-background)]"
+                "avatar-ring group relative inline-flex items-center justify-center rounded-full h-10 w-10 transition-all duration-[var(--transition-base)]",
+                pathname === '/profile' && "active"
               )}
             >
               {user.user_metadata?.avatar_url && 
@@ -100,7 +98,7 @@ export function Header() {
               )}
             </Link>
           ) : (
-            <Button asChild size="sm" className="text-sm font-medium">
+            <Button asChild size="sm" className="text-[var(--font-size-sm)] font-medium tracking-normal">
               <Link href="/login">
                 <TextEffect as="span" preset="fade" per="char">
                   Log in

@@ -65,7 +65,12 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geist.variable} ${geistMono.variable} bg-[var(--color-background)] text-[var(--color-foreground)] tracking-tight antialiased`}
+        className={`${geist.variable} ${geistMono.variable} bg-[var(--color-background)] text-[var(--color-foreground)] antialiased`}
+        style={{
+          fontSize: 'var(--font-size-base)',
+          lineHeight: 'var(--line-height-normal)',
+          letterSpacing: 'var(--tracking-tight)',
+        }}
       >
         <ThemeProvider
           enableSystem={true}

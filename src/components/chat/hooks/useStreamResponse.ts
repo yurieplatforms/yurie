@@ -189,7 +189,7 @@ export function useStreamResponse(): UseStreamResponseReturn {
           if (json.tool_use) {
             const toolEvent = json.tool_use as ToolUseStatus
             
-            if (toolEvent.status === 'completed' || toolEvent.status === 'failed') {
+            if (toolEvent.status === 'completed' || toolEvent.status === 'failed' || toolEvent.status === 'error') {
               // Move to history
               toolUseHistory.push(toolEvent)
               activeToolUse = null
@@ -208,6 +208,19 @@ export function useStreamResponse(): UseStreamResponseReturn {
               toolUseHistory,
               mode: accumulatedMode,
             })
+            continue
+          }
+
+          // Handle tool result events (returned data from tool execution)
+          // We don't display these directly, just acknowledge them
+          if (json.tool_result) {
+            // Tool results are handled internally, no UI update needed
+            continue
+          }
+
+          // Handle background mode events
+          if (json.background) {
+            // Background mode status updates - could show in UI if needed
             continue
           }
 

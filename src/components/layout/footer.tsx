@@ -63,18 +63,16 @@ export function ThemeSwitch() {
 
 export function Footer({ className, hideThemeSwitch }: { className?: string; hideThemeSwitch?: boolean }) {
   return (
-    <footer className={cn("mt-24 border-t border-[var(--color-border)] px-0 py-4", className)}>
+    <footer className={cn("mt-24 border-t border-[var(--color-border)] px-0 py-5", className)}>
       <div className="flex items-center justify-between">
         <Link href="/">
-          <TextLoop className="text-xs text-[var(--color-muted-foreground)]">
+          <TextLoop className="text-[var(--font-size-xs)] text-[var(--color-muted-foreground)] tracking-normal">
             <span>© 2025 Yurie Platforms.</span>
             <span>Built with love and a little bit of magic.</span>
           </TextLoop>
         </Link>
         {!hideThemeSwitch && (
-          <div className="text-xs">
-            <ThemeSwitch />
-          </div>
+          <ThemeSwitch />
         )}
       </div>
     </footer>
