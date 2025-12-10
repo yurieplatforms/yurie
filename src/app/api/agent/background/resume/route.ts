@@ -11,7 +11,9 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createOpenAIClient, generateRequestId } from '@/lib/ai/api/openai'
 import { backgroundResponseStore } from '@/lib/ai/api/background'
+import { updateBackgroundTaskStatus } from '@/lib/ai/api/background-tasks'
 import { env } from '@/lib/config/env'
+import type { BackgroundResponseStatus } from '@/lib/ai/api/types'
 
 interface ResumeRequestBody {
   responseId: string
@@ -104,6 +106,15 @@ export async function POST(request: Request) {
           
           // If response is already complete, send the output
           if (response.status === 'completed' || response.status === 'incomplete') {
+            // Update database with final status
+            const supabase = await createClient()
+            await updateBackgroundTaskStatus(
+              supabase, 
+              responseId, 
+              response.status as BackgroundResponseStatus,
+              response.output_text
+            )
+            
             // Send status update
             safeEnqueue(`data: ${JSON.stringify({
               background: {
@@ -124,6 +135,14 @@ export async function POST(request: Request) {
             
             safeEnqueue('data: [DONE]\n\n')
           } else if (response.status === 'failed' || response.status === 'cancelled') {
+            // Update database with final status
+            const supabase = await createClient()
+            await updateBackgroundTaskStatus(
+              supabase, 
+              responseId, 
+              response.status as BackgroundResponseStatus
+            )
+            
             // Send error status
             safeEnqueue(`data: ${JSON.stringify({
               error: {
@@ -154,6 +173,15 @@ export async function POST(request: Request) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               pollResponse = await (openai.responses as any).retrieve(responseId)
             }
+            
+            // Update database with final status
+            const supabase = await createClient()
+            await updateBackgroundTaskStatus(
+              supabase, 
+              responseId, 
+              pollResponse.status as BackgroundResponseStatus,
+              pollResponse.output_text
+            )
             
             // Send final status and output
             safeEnqueue(`data: ${JSON.stringify({

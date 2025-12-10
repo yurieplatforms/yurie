@@ -93,3 +93,46 @@ CREATE POLICY "Users can update their own avatars" ON storage.objects
 
 CREATE POLICY "Users can delete their own avatars" ON storage.objects
   FOR DELETE USING (bucket_id = 'avatars' AND auth.uid() = owner);
+
+-- ============================================================================
+-- BACKGROUND TASKS TABLE
+-- Persists background AI tasks so they survive page refreshes/navigation
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS background_tasks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  chat_id UUID NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+  message_id UUID NOT NULL,
+  response_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'in_progress',
+  sequence_number INTEGER DEFAULT 0,
+  task_type TEXT NOT NULL DEFAULT 'agent',
+  partial_output TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE background_tasks ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_background_tasks_user_id ON background_tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_background_tasks_chat_id ON background_tasks(chat_id);
+CREATE INDEX IF NOT EXISTS idx_background_tasks_response_id ON background_tasks(response_id);
+CREATE INDEX IF NOT EXISTS idx_background_tasks_status ON background_tasks(status);
+
+DROP POLICY IF EXISTS "Users can view their own background tasks" ON background_tasks;
+DROP POLICY IF EXISTS "Users can insert their own background tasks" ON background_tasks;
+DROP POLICY IF EXISTS "Users can update their own background tasks" ON background_tasks;
+DROP POLICY IF EXISTS "Users can delete their own background tasks" ON background_tasks;
+
+CREATE POLICY "Users can view their own background tasks" ON background_tasks
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own background tasks" ON background_tasks
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own background tasks" ON background_tasks
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own background tasks" ON background_tasks
+  FOR DELETE USING (auth.uid() = user_id);

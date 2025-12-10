@@ -2,7 +2,7 @@ import React from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { CornerRightUp, Square, X as XIcon, FileText, Plus, LayoutGrid, Mail, Music, Check, Github } from "lucide-react";
+import { CornerRightUp, Square, X as XIcon, FileText, Paperclip, LayoutGrid, Mail, Music, Check, Github, Telescope, Plus, ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/providers/auth-provider";
@@ -81,7 +81,7 @@ const toolsList: Tool[] = [
 ];
 
 interface PromptInputBoxProps {
-  onSend?: (message: string, files?: File[]) => void;
+  onSend?: (message: string, files?: File[], options?: { researchMode?: boolean; imageGenMode?: boolean }) => void;
   isLoading?: boolean;
   placeholder?: string;
   className?: string;
@@ -89,10 +89,18 @@ interface PromptInputBoxProps {
   selectedTools?: string[];
   /** Callback when selected tools change */
   onSelectedToolsChange?: (tools: string[]) => void;
+  /** Controlled research mode state */
+  researchMode?: boolean;
+  /** Callback when research mode changes */
+  onResearchModeChange?: (enabled: boolean) => void;
+  /** Controlled image generation mode state */
+  imageGenMode?: boolean;
+  /** Callback when image generation mode changes */
+  onImageGenModeChange?: (enabled: boolean) => void;
 }
 
 export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxProps>(
-  ({ onSend = () => {}, isLoading = false, placeholder = "Message...", className, selectedTools: controlledSelectedTools, onSelectedToolsChange }, ref) => {
+  ({ onSend = () => {}, isLoading = false, placeholder = "Message...", className, selectedTools: controlledSelectedTools, onSelectedToolsChange, researchMode: controlledResearchMode, onResearchModeChange, imageGenMode: controlledImageGenMode, onImageGenModeChange }, ref) => {
     const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [value, setValue] = React.useState("");
@@ -105,6 +113,13 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     // Tools state - support both controlled and uncontrolled modes
     const [internalSelectedTools, setInternalSelectedTools] = React.useState<string[]>([]);
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
+    const [isToolsPopoverOpen, setIsToolsPopoverOpen] = React.useState(false);
+    
+    // Research mode state - support both controlled and uncontrolled modes
+    const [internalResearchMode, setInternalResearchMode] = React.useState(false);
+    
+    // Image generation mode state - support both controlled and uncontrolled modes
+    const [internalImageGenMode, setInternalImageGenMode] = React.useState(false);
     
     const { user } = useAuth();
     const router = useRouter();
@@ -119,6 +134,26 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
         setInternalSelectedTools(newTools);
       }
     }, [selectedTools, onSelectedToolsChange]);
+    
+    // Research mode - controlled or uncontrolled
+    const researchMode = controlledResearchMode ?? internalResearchMode;
+    const setResearchMode = React.useCallback((enabled: boolean) => {
+      if (onResearchModeChange) {
+        onResearchModeChange(enabled);
+      } else {
+        setInternalResearchMode(enabled);
+      }
+    }, [onResearchModeChange]);
+    
+    // Image generation mode - controlled or uncontrolled
+    const imageGenMode = controlledImageGenMode ?? internalImageGenMode;
+    const setImageGenMode = React.useCallback((enabled: boolean) => {
+      if (onImageGenModeChange) {
+        onImageGenModeChange(enabled);
+      } else {
+        setInternalImageGenMode(enabled);
+      }
+    }, [onImageGenModeChange]);
 
     React.useLayoutEffect(() => {
       const textarea = internalTextareaRef.current;
@@ -199,11 +234,29 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
 
     const handleSubmit = () => {
         if (value.trim() || files.length > 0) {
-            onSend(value, files);
+            onSend(value, files, { researchMode, imageGenMode });
             setValue("");
             setFiles([]);
             setFilePreviews({});
+            // Reset modes after sending
+            // Modes should persist across messages
         }
+    };
+    
+    const handleResearchToggle = () => {
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+        setResearchMode(!researchMode);
+    };
+    
+    const handleImageGenToggle = () => {
+        if (!user) {
+            router.push('/login');
+            return;
+        }
+        setImageGenMode(!imageGenMode);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -305,20 +358,132 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
         <div className="mt-0.5 p-1 pt-0">
           <TooltipProvider delayDuration={100}>
             <div className="flex items-center gap-2">
-              <Tooltip> 
-                <TooltipTrigger asChild>
-                    <button 
+              <Popover open={isToolsPopoverOpen} onOpenChange={setIsToolsPopoverOpen}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <button 
                         type="button" 
-                        onClick={handlePlusClick} 
                         className="flex h-8 w-8 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none cursor-pointer"
                         disabled={isLoading}
-                    >
+                      >
                         <Plus className="h-5 w-5" />
-                        <span className="sr-only">Attach file</span>
+                        <span className="sr-only">Tools</span>
+                      </button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  {!isToolsPopoverOpen && <TooltipContent side="top" showArrow={true}><p>Tools</p></TooltipContent>}
+                </Tooltip>
+                <PopoverContent side="top" align="start" className="w-64 dark:bg-[var(--color-input-bg)] dark:border-[var(--color-input-border)] p-1.5">
+                  <div className="flex flex-col gap-0.5">
+                    <button 
+                      onClick={() => {
+                        handlePlusClick();
+                        setIsToolsPopoverOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                    > 
+                      <div className="h-8 w-8 flex items-center justify-center shrink-0">
+                        <Paperclip className="h-5 w-5 text-[var(--color-muted-foreground)]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium">Attach file</span>
+                        </div>
+                        <p className="text-[10px] font-medium text-[var(--color-muted-foreground)] truncate leading-tight">
+                          Upload images, PDFs, or text files
+                        </p>
+                      </div>
                     </button>
-                </TooltipTrigger> 
-                {files.length === 0 && <TooltipContent side="top" showArrow={true}><p>Attach file</p></TooltipContent>}
-              </Tooltip>
+                    <button 
+                      onClick={() => {
+                        handleResearchToggle();
+                        setIsToolsPopoverOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer",
+                        researchMode && "bg-accent text-accent-foreground"
+                      )}
+                    > 
+                      <div className="h-8 w-8 flex items-center justify-center shrink-0">
+                        <Telescope className="h-5 w-5 text-[var(--color-muted-foreground)]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium">Research</span>
+                        </div>
+                        <p className="text-[10px] font-medium text-[var(--color-muted-foreground)] truncate leading-tight">
+                          Deep research with web search
+                        </p>
+                      </div>
+                      {researchMode && (
+                        <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-primary)] flex items-center justify-center shrink-0 self-center">
+                          <Check className="h-2 w-2 text-white" strokeWidth={3} />
+                        </div>
+                      )}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        handleImageGenToggle();
+                        setIsToolsPopoverOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer",
+                        imageGenMode && "bg-accent text-accent-foreground"
+                      )}
+                    > 
+                      <div className="h-8 w-8 flex items-center justify-center shrink-0">
+                        <ImageIcon className="h-5 w-5 text-[var(--color-muted-foreground)]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium">Image Generation</span>
+                        </div>
+                        <p className="text-[10px] font-medium text-[var(--color-muted-foreground)] truncate leading-tight">
+                          Generate images from text
+                        </p>
+                      </div>
+                      {imageGenMode && (
+                        <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-primary)] flex items-center justify-center shrink-0 self-center">
+                          <Check className="h-2 w-2 text-white" strokeWidth={3} />
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Mode Pills */}
+              <AnimatePresence>
+                {researchMode && (
+                  <motion.button
+                    key="research-mode"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={handleResearchToggle}
+                    className="flex h-8 items-center gap-2 rounded-full px-2.5 text-sm bg-accent hover:bg-muted cursor-pointer text-accent-foreground transition-colors flex-shrink-0"
+                  >
+                    <Telescope className="h-4 w-4" />
+                    <span className="whitespace-nowrap font-medium">Research</span>
+                    <XIcon className="h-3 w-3 opacity-50" />
+                  </motion.button>
+                )}
+                {imageGenMode && (
+                  <motion.button
+                    key="image-gen-mode"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={handleImageGenToggle}
+                    className="flex h-8 items-center gap-2 rounded-full px-2.5 text-sm bg-accent hover:bg-muted cursor-pointer text-accent-foreground transition-colors flex-shrink-0"
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                    <span className="whitespace-nowrap font-medium">Image</span>
+                    <XIcon className="h-3 w-3 opacity-50" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
               
               <Popover open={isPopoverOpen} onOpenChange={(open) => {
                 if (open && !user) {
@@ -340,7 +505,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                       </button>
                     </PopoverTrigger>
                   </TooltipTrigger>
-                  {!isPopoverOpen && selectedTools.length === 0 && <TooltipContent side="top" showArrow={true}><p>Explore Apps</p></TooltipContent>}
+                  {!isPopoverOpen && selectedTools.length === 0 && <TooltipContent side="top" showArrow={true}><p>Connect Apps</p></TooltipContent>}
                 </Tooltip>
                 <PopoverContent side="top" align="start" className="w-64 dark:bg-[var(--color-input-bg)] dark:border-[var(--color-input-border)] p-1.5">
                   <div className="flex flex-col gap-0.5">

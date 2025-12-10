@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/providers/auth-provider'
 import { useChat } from '@/components/chat/hooks/useChat'
 import {
@@ -9,8 +9,13 @@ import {
   type StreamState,
 } from '@/components/chat/hooks/useStreamResponse'
 import { useFileProcessor } from '@/components/chat/hooks/useFileProcessor'
+import { 
+  useBackgroundTasks,
+  buildMessageFromResumedContent,
+} from '@/components/chat/hooks/useBackgroundTasks'
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 import type { ChatMessage } from '@/lib/types'
+import type { BackgroundResponseStatus } from '@/lib/ai/api/types'
 
 // Extracted subcomponents
 import { MessageList } from './message-list'
@@ -21,6 +26,9 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   const { user } = useAuth()
   const [hasJustCopied, setHasJustCopied] = useState(false)
   const [selectedTools, setSelectedTools] = useState<string[]>([])
+  const [researchMode, setResearchMode] = useState(false)
+  const researchPollingRef = useRef<NodeJS.Timeout | null>(null)
+  const hasResumedTaskRef = useRef<string | null>(null)
 
   // Use custom hooks for chat state and stream processing
   const {
@@ -41,10 +49,123 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
   const { processStream, thinkingStartRef } = useStreamResponse()
   const { processFiles } = useFileProcessor()
+  
+  // Background tasks hook for persistent task tracking
+  const { 
+    getActiveTaskForChat, 
+    resumeTask,
+    checkActiveTasks,
+  } = useBackgroundTasks()
+
+  // Deep research polling function
+  const pollResearchStatus = useCallback(
+    async (
+      responseId: string,
+      assistantMessageId: string,
+      currentChatId: string,
+      nextMessages: ChatMessage[]
+    ) => {
+      const pollInterval = 3000 // Poll every 3 seconds
+      const maxPolls = 200 // Max ~10 minutes of polling
+
+      let pollCount = 0
+
+      const poll = async () => {
+        pollCount++
+        
+        try {
+          const statusResponse = await fetch('/api/research/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ responseId }),
+          })
+
+          if (!statusResponse.ok) {
+            throw new Error('Failed to check research status')
+          }
+
+          const statusData = await statusResponse.json() as {
+            status: string
+            outputText?: string
+            message: string
+            annotations?: Array<{ url: string; title: string }>
+            error?: { message: string }
+          }
+
+          // Update message with current status
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.id !== assistantMessageId) return msg
+              
+              if (statusData.status === 'completed' && statusData.outputText) {
+                const { content, suggestions } = parseSuggestions(statusData.outputText)
+                return {
+                  ...msg,
+                  content,
+                  suggestions,
+                  mode: { type: 'research' as const, reason: 'Deep research completed', confidence: 1 },
+                }
+              } else if (statusData.status === 'failed') {
+                return {
+                  ...msg,
+                  content: `⚠️ Research failed: ${statusData.error?.message || 'Unknown error'}`,
+                  isError: true,
+                }
+              } else {
+                // Still in progress - content stays empty, UI shows shimmer
+                return {
+                  ...msg,
+                  content: '',
+                  mode: { type: 'research' as const, reason: statusData.message, confidence: 0.5 },
+                }
+              }
+            }),
+          )
+
+          // Check if we should stop polling
+          if (['completed', 'failed', 'cancelled', 'incomplete'].includes(statusData.status)) {
+            setIsLoading(false)
+            researchPollingRef.current = null
+
+            // Save final messages
+            const finalMessages = nextMessages.map((msg) => {
+              if (msg.id === assistantMessageId) {
+                if (statusData.status === 'completed' && statusData.outputText) {
+                  const { content, suggestions } = parseSuggestions(statusData.outputText)
+                  return { ...msg, content, suggestions }
+                }
+              }
+              return msg
+            })
+            await updateChat(currentChatId, finalMessages)
+            return
+          }
+
+          // Continue polling if under max polls
+          if (pollCount < maxPolls) {
+            researchPollingRef.current = setTimeout(poll, pollInterval)
+          } else {
+            setError('Research is taking too long. Please try again.')
+            setIsLoading(false)
+          }
+        } catch (err) {
+          console.error('Research polling error:', err)
+          setError('Failed to check research status.')
+          setIsLoading(false)
+          researchPollingRef.current = null
+        }
+      }
+
+      // Start polling
+      poll()
+    },
+    [setMessages, setIsLoading, setError, updateChat]
+  )
 
   const sendMessage = useCallback(
-    async (rawContent: string, filesToSend: File[] = []) => {
+    async (rawContent: string, filesToSend: File[] = [], options?: { researchMode?: boolean }) => {
       const content = rawContent
+      const isResearchMode = options?.researchMode || false
 
       const trimmed = content.trim()
       if ((trimmed.length === 0 && filesToSend.length === 0) || isLoading) {
@@ -81,6 +202,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         role: 'assistant',
         content: '',
         name: 'Yurie',
+        mode: isResearchMode ? { type: 'research', reason: 'Deep research mode', confidence: 0.5 } : undefined,
       }
 
       const nextMessages = [...messages, userMessage, assistantPlaceholder]
@@ -96,6 +218,65 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         await updateChat(currentId, nextMessages)
       }
 
+      // Handle deep research mode differently
+      if (isResearchMode) {
+        try {
+          const researchResponse = await fetch('/api/research', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: textSegment.text,
+              // useMiniModel defaults to true (o4-mini-deep-research) for faster results
+              includeCodeInterpreter: true, // Enable data analysis
+            }),
+          })
+
+          if (!researchResponse.ok) {
+            const errorData = await researchResponse.json() as { error?: string }
+            throw new Error(errorData.error || 'Failed to start research')
+          }
+
+          const researchData = await researchResponse.json() as {
+            responseId: string
+            status: string
+            message: string
+          }
+
+          // Update message with initial status - content stays empty, UI shows shimmer
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.id !== assistantMessageId) return msg
+              return {
+                ...msg,
+                content: '',
+                mode: { type: 'research' as const, reason: researchData.message, confidence: 0.5 },
+              }
+            }),
+          )
+
+          // Start polling for results
+          pollResearchStatus(researchData.responseId, assistantMessageId, currentId, nextMessages)
+          
+        } catch (err) {
+          console.error('Research error:', err)
+          setError((err as Error).message || 'Failed to start research')
+          setIsLoading(false)
+          
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.id !== assistantMessageId) return msg
+              return {
+                ...msg,
+                content: `⚠️ Failed to start research: ${(err as Error).message}`,
+                isError: true,
+              }
+            }),
+          )
+        }
+        return
+      }
+
+      // Regular chat flow (non-research mode)
       abortControllerRef.current = new AbortController()
 
       const now = new Date()
@@ -126,6 +307,9 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             userContext: { time, date, timeZone },
             containerId,
             selectedTools,
+            // Include chat and message ID for background task persistence
+            chatId: currentId,
+            messageId: assistantMessageId,
           }),
         })
 
@@ -236,8 +420,97 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       thinkingStartRef,
       processStream,
       processFiles,
+      pollResearchStatus,
     ],
   )
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (researchPollingRef.current) {
+        clearTimeout(researchPollingRef.current)
+      }
+    }
+  }, [])
+
+  // Check for and resume background tasks when chat loads
+  useEffect(() => {
+    async function resumeBackgroundTask() {
+      if (!id || !user) return
+      
+      // Check if we already resumed this task
+      if (hasResumedTaskRef.current === id) return
+      
+      // Refresh active tasks
+      await checkActiveTasks()
+      
+      // Check if there's an active task for this chat
+      const activeTask = getActiveTaskForChat(id)
+      if (!activeTask) return
+      
+      // Mark that we're resuming this task
+      hasResumedTaskRef.current = id
+      
+      const { task } = activeTask
+      console.log(`[AgentChat] Resuming background task for chat ${id}`)
+      
+      // Set loading state
+      setIsLoading(true)
+      
+      // Resume the task
+      await resumeTask(
+        task,
+        // onUpdate - called with content updates
+        (content, status) => {
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg.id !== task.messageId) return msg
+              
+              const { content: parsedContent, suggestions } = parseSuggestions(content)
+              
+              return {
+                ...msg,
+                content: parsedContent,
+                suggestions,
+                mode: {
+                  type: 'agent' as const,
+                  reason: status === 'in_progress' ? 'Resuming background task...' : 'Background task running',
+                  confidence: 0.8,
+                },
+              }
+            }),
+          )
+        },
+        // onComplete - called when task completes
+        async (finalContent) => {
+          setIsLoading(false)
+          
+          // Update message with final content
+          setMessages((prev) => {
+            const updatedMessages = prev.map((msg) => {
+              if (msg.id !== task.messageId) return msg
+              return buildMessageFromResumedContent(msg, finalContent)
+            })
+            
+            // Save to database
+            updateChat(id, updatedMessages)
+            
+            return updatedMessages
+          })
+          
+          console.log(`[AgentChat] Background task completed for chat ${id}`)
+        },
+        // onError - called on error
+        (errorMessage) => {
+          setIsLoading(false)
+          setError(errorMessage)
+          console.error(`[AgentChat] Background task error for chat ${id}:`, errorMessage)
+        }
+      )
+    }
+    
+    resumeBackgroundTask()
+  }, [id, user, checkActiveTasks, getActiveTaskForChat, resumeTask, setMessages, setIsLoading, setError, updateChat])
 
   const handleSuggestionClick = (suggestion: string) => {
     void sendMessage(suggestion)
@@ -283,7 +556,9 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             onSend={sendMessage} 
             variant="inline" 
             selectedTools={selectedTools} 
-            onSelectedToolsChange={setSelectedTools} 
+            onSelectedToolsChange={setSelectedTools}
+            researchMode={researchMode}
+            onResearchModeChange={setResearchMode}
           />
         </div>
       </div>
@@ -313,7 +588,9 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         isLoading={isLoading} 
         onSend={sendMessage} 
         selectedTools={selectedTools} 
-        onSelectedToolsChange={setSelectedTools} 
+        onSelectedToolsChange={setSelectedTools}
+        researchMode={researchMode}
+        onResearchModeChange={setResearchMode}
       />
     </div>
   )

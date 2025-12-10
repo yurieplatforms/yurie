@@ -4,13 +4,21 @@ import { PromptInputBox } from '@/components/ui/ai-prompt-box'
 
 export type ChatInputAreaProps = {
   isLoading: boolean
-  onSend: (content: string, files?: File[]) => void
+  onSend: (content: string, files?: File[], options?: { researchMode?: boolean; imageGenMode?: boolean }) => void
   placeholder?: string
   variant?: 'fixed' | 'inline'
   /** Controlled selected tools state */
   selectedTools?: string[]
   /** Callback when selected tools change */
   onSelectedToolsChange?: (tools: string[]) => void
+  /** Controlled research mode state */
+  researchMode?: boolean
+  /** Callback when research mode changes */
+  onResearchModeChange?: (enabled: boolean) => void
+  /** Controlled image generation mode state */
+  imageGenMode?: boolean
+  /** Callback when image generation mode changes */
+  onImageGenModeChange?: (enabled: boolean) => void
 }
 
 export function ChatInputArea({
@@ -20,6 +28,10 @@ export function ChatInputArea({
   variant = 'fixed',
   selectedTools,
   onSelectedToolsChange,
+  researchMode,
+  onResearchModeChange,
+  imageGenMode,
+  onImageGenModeChange,
 }: ChatInputAreaProps) {
   if (variant === 'inline') {
     return (
@@ -31,6 +43,10 @@ export function ChatInputArea({
           placeholder={placeholder}
           selectedTools={selectedTools}
           onSelectedToolsChange={onSelectedToolsChange}
+          researchMode={researchMode}
+          onResearchModeChange={onResearchModeChange}
+          imageGenMode={imageGenMode}
+          onImageGenModeChange={onImageGenModeChange}
         />
       </div>
     )
@@ -47,6 +63,10 @@ export function ChatInputArea({
             placeholder={placeholder}
             selectedTools={selectedTools}
             onSelectedToolsChange={onSelectedToolsChange}
+            researchMode={researchMode}
+            onResearchModeChange={onResearchModeChange}
+            imageGenMode={imageGenMode}
+            onImageGenModeChange={onImageGenModeChange}
           />
         </div>
       </div>

@@ -59,6 +59,19 @@ export type {
 // Latency tracking
 export { createLatencyTracker } from './latency'
 
+// Background task persistence
+export {
+  createBackgroundTask,
+  getBackgroundTaskByResponseId,
+  getActiveBackgroundTasks,
+  getBackgroundTasksForChat,
+  updateBackgroundTaskStatus,
+  updateBackgroundTaskSequence,
+  deleteBackgroundTask,
+  cleanupOldTasks,
+  isTerminalTaskStatus,
+} from './background-tasks'
+
 // API types
 export type {
   ApiRole,
@@ -67,4 +80,7 @@ export type {
   BackgroundStatusRequestBody,
   BackgroundCancelRequestBody,
   BackgroundStatusResponse,
+  PersistedBackgroundTask,
+  CreateBackgroundTaskRequest,
+  ActiveBackgroundTasksResponse,
 } from './types'

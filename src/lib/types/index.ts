@@ -114,7 +114,7 @@ export type ToolUseStatus = {
   /** Tool name (e.g., 'web_search', 'code_interpreter') */
   tool: string
   /** Current status of the tool */
-  status: 'in_progress' | 'searching' | 'completed' | 'failed'
+  status: 'in_progress' | 'searching' | 'executing' | 'completed' | 'failed' | 'error'
   /** Optional details (e.g., search query) */
   details?: string
 }
@@ -123,12 +123,12 @@ export type ToolUseStatus = {
  * Processing mode information for a message
  */
 export type MessageMode = {
-  /** Processing mode: 'chat' for simple queries, 'agent' for complex tasks */
-  type: 'chat' | 'agent'
+  /** Processing mode: 'chat' for simple queries, 'agent' for complex tasks, 'research' for deep research */
+  type: 'chat' | 'agent' | 'research'
   /** Reason for mode selection */
   reason: string
-  /** Confidence level of the classification */
-  confidence: 'high' | 'medium' | 'low'
+  /** Confidence level of the classification (number 0-1 or string) */
+  confidence: 'high' | 'medium' | 'low' | number
 }
 
 export type ChatMessage = {

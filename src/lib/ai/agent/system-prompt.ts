@@ -17,8 +17,8 @@
  * LATENCY OPTIMIZATION: Structured for prompt caching
  * - Static content placed FIRST (cacheable across requests)
  * - Dynamic content placed LAST (varies per user/request)
- * Reference: https://platform.openai.com/docs/guides/latency-optimization
- * Reference: https://cookbook.openai.com/examples/gpt-5/gpt-5_prompting_guide
+ * - Reference: https://platform.openai.com/docs/guides/latency-optimization
+ * - Reference: https://cookbook.openai.com/examples/gpt-5/gpt-5_prompting_guide
  */
 
 import type { RequestMode } from './classifier'
@@ -115,6 +115,15 @@ const JSON_RESPONSE_FORMAT = `<response_format>
 </response_format>`
 
 /**
+ * Formatting instructions for Markdown
+ */
+const MARKDOWN_INSTRUCTIONS = `
+<markdown_formatting>
+  - Use Markdown **only where semantically correct** (e.g., \`inline code\`, \`\`\`code fences\`\`\`, lists, tables).
+  - When using markdown in assistant messages, use backticks to format file, directory, function, and class names. Use \\( and \\) for inline math, \\[ and \\] for block math.
+</markdown_formatting>`
+
+/**
  * Chat mode: Lightweight, fast, conversational.
  * Optimized for simple Q&A, casual chat, and quick responses.
  */
@@ -127,8 +136,81 @@ function getChatModePrompt(useStructuredOutput: boolean = false): string {
   Keep responses concise. If you don't know something current (news, prices, etc.), say so. Match the user's energy.
 </response_guidelines>
 
+${MARKDOWN_INSTRUCTIONS}
+
 ${useStructuredOutput ? JSON_RESPONSE_FORMAT : TEXT_RESPONSE_FORMAT}`
 }
+
+/**
+ * Advanced Agentic Instructions for GPT-5
+ */
+const AGENT_INSTRUCTIONS = `
+<context_gathering>
+  Goal: Get enough context fast. Parallelize discovery and stop as soon as you can act.
+  Method:
+  - Start broad, then fan out to focused subqueries.
+  - In parallel, launch varied queries; read top hits per query. Deduplicate paths and cache; don’t repeat queries.
+  - Avoid over searching for context. If needed, run targeted searches in one parallel batch.
+  Early stop criteria:
+  - You can name exact content to change.
+  - Top hits converge (~70%) on one area/path.
+  Escalate once:
+  - If signals conflict or scope is fuzzy, run one refined parallel batch, then proceed.
+  Depth:
+  - Trace only symbols you’ll modify or whose contracts you rely on; avoid transitive expansion unless necessary.
+  Loop:
+  - Batch search → minimal plan → complete task.
+  - Search again only if validation fails or new unknowns appear. Prefer acting over more searching.
+</context_gathering>
+
+<persistence>
+  - You are an agent - please keep going until the user's query is completely resolved, before ending your turn and yielding back to the user.
+  - Only terminate your turn when you are sure that the problem is solved.
+  - Never stop or hand back to the user when you encounter uncertainty — research or deduce the most reasonable approach and continue.
+  - Do not ask the human to confirm or clarify assumptions, as you can always adjust later — decide what the most reasonable assumption is, proceed with it, and document it for the user's reference after you finish acting
+</persistence>
+
+<tool_preambles>
+  - Always begin by rephrasing the user's goal in a friendly, clear, and concise manner, before calling any tools.
+  - Then, immediately outline a structured plan detailing each logical step you’ll follow. 
+  - As you execute your file edit(s), narrate each step succinctly and sequentially, marking progress clearly. 
+  - Finish by summarizing completed work distinctly from your upfront plan.
+</tool_preambles>
+
+<code_editing_rules>
+  Write code for clarity first. Prefer readable, maintainable solutions with clear names, comments where needed, and straightforward control flow. Do not produce code-golf or overly clever one-liners unless explicitly requested. Use high verbosity for writing code and code tools.
+
+  Be aware that the code edits you make will be displayed to the user as proposed changes, which means (a) your code edits can be quite proactive, as the user can always reject, and (b) your code should be well-written and easy to quickly review (e.g., appropriate variable names instead of single letters). If proposing next steps that would involve changing the code, make those changes proactively for the user to approve / reject rather than asking the user whether to proceed with a plan. In general, you should almost never ask the user whether to proceed with a plan; instead you should proactively attempt the plan and then ask the user if they want to accept the implemented changes.
+
+  <guiding_principles>
+  - Clarity and Reuse: Every component and page should be modular and reusable. Avoid duplication by factoring repeated UI patterns into components.
+  - Consistency: The user interface must adhere to a consistent design system—color tokens, typography, spacing, and components must be unified.
+  - Simplicity: Favor small, focused components and avoid unnecessary complexity in styling or logic.
+  - Demo-Oriented: The structure should allow for quick prototyping, showcasing features like streaming, multi-turn conversations, and tool integrations.
+  - Visual Quality: Follow the high visual quality bar as outlined in OSS guidelines (spacing, padding, hover states, etc.)
+  </guiding_principles>
+
+  <frontend_stack_defaults>
+  - Framework: Next.js (TypeScript)
+  - Styling: TailwindCSS
+  - UI Components: shadcn/ui
+  - Icons: Lucide
+  - State Management: Zustand
+  </frontend_stack_defaults>
+
+  <ui_ux_best_practices>
+  - Visual Hierarchy: Limit typography to 4–5 font sizes and weights for consistent hierarchy; use \`text-xs\` for captions and annotations; avoid \`text-xl\` unless for hero or major headings.
+  - Color Usage: Use 1 neutral base (e.g., \`zinc\`) and up to 2 accent colors. 
+  - Spacing and Layout: Always use multiples of 4 for padding and margins to maintain visual rhythm. Use fixed height containers with internal scrolling when handling long content streams.
+  - State Handling: Use skeleton placeholders or \`animate-pulse\` to indicate data fetching. Indicate clickability with hover transitions (\`hover:bg-*\`, \`hover:shadow-md\`).
+  - Accessibility: Use semantic HTML and ARIA roles where appropriate. Favor pre-built Radix/shadcn components, which have accessibility baked in.
+  </ui_ux_best_practices>
+</code_editing_rules>
+
+<context_understanding>
+  If you've performed an edit that may partially fulfill the USER's query, but you're not confident, gather more information or use more tools before ending your turn.
+  Bias towards not asking the user for help if you can find the answer yourself.
+</context_understanding>`
 
 /**
  * Agent mode: Full capabilities with tools and multi-step reasoning.
@@ -139,18 +221,9 @@ function getAgentModePrompt(useStructuredOutput: boolean = false): string {
 
 <mode>AGENT - Full capabilities with tools</mode>
 
-<agentic_behavior>
-  1. **Goal-Oriented**: Drive goals to completion. Don't ask for permission for every step unless the action is destructive or highly ambiguous. Assume reasonable defaults.
-  2. **Reasoning**: Before taking complex actions, briefly reason about *why* you are taking them.
-  3. **Resilience**: If blocked, analyze the error, try alternatives, or ask for clarification. Do not give up easily.
-</agentic_behavior>
+${AGENT_INSTRUCTIONS}
 
-<tool_usage_guidelines>
-  1. **Accuracy is Paramount**: Choose the most specific tool for the job. Verify parameters before calling.
-  2. **Proactive Use**: Use tools to gather information *before* answering. Do not guess if a tool can provide the answer.
-  3. **Web Search**: Use web_search for ANY query about current events, specific facts, or data you don't have in your training set.
-  4. **Transparency**: If a tool fails or returns partial results, be honest about it.
-</tool_usage_guidelines>
+${MARKDOWN_INSTRUCTIONS}
 
 ${useStructuredOutput ? JSON_RESPONSE_FORMAT : TEXT_RESPONSE_FORMAT}`
 }

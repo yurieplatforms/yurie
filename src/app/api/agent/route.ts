@@ -32,6 +32,13 @@ import {
   getStatusMessage,
 } from '@/lib/ai/api/background'
 
+// Background task persistence
+import {
+  createBackgroundTask,
+  updateBackgroundTaskStatus,
+  updateBackgroundTaskSequence,
+} from '@/lib/ai/api/background-tasks'
+
 // Latency optimization utilities
 import { createLatencyTracker } from '@/lib/ai/api/latency'
 
@@ -76,7 +83,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const { userContext, selectedTools = [] } = body
+  const { userContext, selectedTools = [], chatId, messageId } = body
   const messages = sanitizedMessages
 
   // Check for OpenAI API key
@@ -325,6 +332,9 @@ export async function POST(request: Request) {
         const encoder = new TextEncoder()
         let isClosed = false
         
+        // Create supabase client for background task persistence
+        const supabaseClient = userId ? await createClient() : null
+        
         // Latency tracking for monitoring
         const latencyTracker = createLatencyTracker()
         
@@ -483,6 +493,19 @@ export async function POST(request: Request) {
                       streamCursor
                     )
                     
+                    // Persist background task to database for page refresh survival
+                    if (userId && chatId && messageId && supabaseClient) {
+                      createBackgroundTask(supabaseClient, {
+                        userId,
+                        chatId,
+                        messageId,
+                        responseId: event.response.id,
+                        taskType: 'agent',
+                      }).catch((err) => {
+                        console.error('[agent] Failed to persist background task:', err)
+                      })
+                    }
+                    
                     // Send background response ID to frontend for potential resumption
                     safeEnqueue(`data: ${JSON.stringify({
                       background: {
@@ -501,6 +524,14 @@ export async function POST(request: Request) {
                 if (status && isTerminalStatus(status)) {
                   backgroundResponseStore.updateStatus(requestId, status)
                   
+                  // Update database with final status
+                  if (currentResponseId && supabaseClient) {
+                    updateBackgroundTaskStatus(supabaseClient, currentResponseId, status)
+                      .catch((err) => {
+                        console.error('[agent] Failed to update background task status:', err)
+                      })
+                  }
+                  
                   // Send final status to frontend
                   safeEnqueue(`data: ${JSON.stringify({
                     background: {
@@ -509,6 +540,15 @@ export async function POST(request: Request) {
                       message: getStatusMessage(status),
                     }
                   })}\n\n`)
+                }
+              }
+              
+              // Update sequence number in database for potential stream resumption
+              if (useBackgroundMode && event.sequence_number !== undefined && currentResponseId && supabaseClient) {
+                // Debounce database updates - only update every 10 sequence numbers
+                if (event.sequence_number % 10 === 0) {
+                  updateBackgroundTaskSequence(supabaseClient, currentResponseId, event.sequence_number)
+                    .catch(() => { /* Ignore sequence update errors */ })
                 }
               }
               

@@ -268,7 +268,13 @@ function AssistantMessageContent({
     message.activeToolUse.status === 'in_progress' || 
     message.activeToolUse.status === 'searching'
   )
-  const showThinkingSection = hasReasoning || isThinkingStage || hasActiveToolUse
+  
+  // Check if this is an in-progress research message
+  const isResearchInProgress = message.mode?.type === 'research' && 
+    isLoading && 
+    message.mode.confidence !== 1 // confidence === 1 means completed
+  
+  const showThinkingSection = hasReasoning || isThinkingStage || hasActiveToolUse || isResearchInProgress
 
   return (
     <>
@@ -283,25 +289,32 @@ function AssistantMessageContent({
               isLoading={isActiveAssistant && isLoading}
               activeToolUse={isActiveAssistant ? message.activeToolUse : null}
               thinkingLabel={
-                isThinkingStage && !hasActiveToolUse ? (
+                isResearchInProgress ? (
+                  <StatusShimmer>Researching</StatusShimmer>
+                ) : isThinkingStage && !hasActiveToolUse ? (
                   <StatusShimmer>Thinking</StatusShimmer>
                 ) : undefined
               }
               label={
-                !isThinkingStage && !hasActiveToolUse && typeof thoughtSeconds === 'number' ? (
+                !isThinkingStage && !hasActiveToolUse && !isResearchInProgress && typeof thoughtSeconds === 'number' ? (
                   <span className="text-base font-normal text-muted-foreground">
                     Thought for{' '}
                     {thoughtSeconds >= 60
-                      ? `${Math.floor(thoughtSeconds / 60)}m ${thoughtSeconds % 60}s`
-                      : `${thoughtSeconds}s`}
+                      ? `${Math.floor(thoughtSeconds / 60)}m ${Math.round(thoughtSeconds % 60)}s`
+                      : `${Math.round(thoughtSeconds)}s`}
                   </span>
-                ) : !isThinkingStage && !hasActiveToolUse ? (
+                ) : !isThinkingStage && !hasActiveToolUse && !isResearchInProgress ? (
                   <span className="text-base font-normal text-muted-foreground">
                     Thought
                   </span>
                 ) : undefined
               }
             />
+            {isResearchInProgress && (
+              <div className="py-1 text-sm italic text-muted-foreground">
+                This may take several minutes as we analyze multiple sources...
+              </div>
+            )}
             <ReasoningContent>
               {hasReasoning ? (
                 <MessageResponse className="italic text-muted-foreground prose-headings:text-muted-foreground prose-strong:text-muted-foreground">
@@ -313,7 +326,7 @@ function AssistantMessageContent({
         </div>
       )}
 
-      {message.content && !isStreamingPlaceholder && (
+      {message.content && !isStreamingPlaceholder && !isResearchInProgress && (
         message.isError ? (
           <p className="text-red-500 dark:text-red-400">{message.content}</p>
         ) : (
