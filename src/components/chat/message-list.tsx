@@ -13,6 +13,7 @@ import {
   ReasoningTrigger,
   StatusShimmer,
 } from '@/components/ai/reasoning'
+import { ResearchProgress } from '@/components/ai/research-progress'
 import { CornerDownRight, CheckIcon, CopyIcon, FileTextIcon, DownloadIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -269,12 +270,16 @@ function AssistantMessageContent({
     message.activeToolUse.status === 'searching'
   )
   
-  // Check if this is an in-progress research message
-  const isResearchInProgress = message.mode?.type === 'research' && 
+  // Check if this is a research message
+  const isResearchMode = message.mode?.type === 'research'
+  const isResearchInProgress = isResearchMode && 
     isLoading && 
-    message.mode.confidence !== 1 // confidence === 1 means completed
+    message.researchProgress?.stage !== 'completed'
   
-  const showThinkingSection = hasReasoning || isThinkingStage || hasActiveToolUse || isResearchInProgress
+  const hasResearchProgress = isResearchMode && message.researchProgress
+  
+  // Show thinking section for: reasoning, thinking stage, tool use, OR research mode
+  const showThinkingSection = hasReasoning || isThinkingStage || hasActiveToolUse || hasResearchProgress
 
   return (
     <>
@@ -285,39 +290,42 @@ function AssistantMessageContent({
             isStreaming={isReasoningStreaming && hasReasoning}
             isLoading={isActiveAssistant && isLoading}
           >
-            <ReasoningTrigger
-              isLoading={isActiveAssistant && isLoading}
-              activeToolUse={isActiveAssistant ? message.activeToolUse : null}
-              thinkingLabel={
-                isResearchInProgress ? (
-                  <StatusShimmer>Researching</StatusShimmer>
-                ) : isThinkingStage && !hasActiveToolUse ? (
-                  <StatusShimmer>Thinking</StatusShimmer>
-                ) : undefined
-              }
-              label={
-                !isThinkingStage && !hasActiveToolUse && !isResearchInProgress && typeof thoughtSeconds === 'number' ? (
-                  <span className="text-base font-normal text-muted-foreground">
-                    Thought for{' '}
-                    {thoughtSeconds >= 60
-                      ? `${Math.floor(thoughtSeconds / 60)}m ${Math.round(thoughtSeconds % 60)}s`
-                      : `${Math.round(thoughtSeconds)}s`}
-                  </span>
-                ) : !isThinkingStage && !hasActiveToolUse && !isResearchInProgress ? (
-                  <span className="text-base font-normal text-muted-foreground">
-                    Thought
-                  </span>
-                ) : undefined
-              }
-            />
-            {isResearchInProgress && (
-              <div className="py-1 text-sm italic text-muted-foreground">
-                This may take several minutes as we analyze multiple sources...
-              </div>
+            {/* Research mode: show ResearchProgress instead of ReasoningTrigger */}
+            {hasResearchProgress ? (
+              <ResearchProgress state={message.researchProgress!} />
+            ) : (
+              <ReasoningTrigger
+                isLoading={isActiveAssistant && isLoading}
+                activeToolUse={isActiveAssistant ? message.activeToolUse : null}
+                thinkingLabel={
+                  isThinkingStage && !hasActiveToolUse ? (
+                    <StatusShimmer>Thinking</StatusShimmer>
+                  ) : undefined
+                }
+                label={
+                  !isThinkingStage && !hasActiveToolUse && typeof thoughtSeconds === 'number' ? (
+                    <span className="text-base font-normal text-muted-foreground">
+                      Thought for{' '}
+                      {thoughtSeconds >= 60
+                        ? `${Math.floor(thoughtSeconds / 60)}m ${Math.round(thoughtSeconds % 60)}s`
+                        : `${Math.round(thoughtSeconds)}s`}
+                    </span>
+                  ) : !isThinkingStage && !hasActiveToolUse ? (
+                    <span className="text-base font-normal text-muted-foreground">
+                      Thought
+                    </span>
+                  ) : undefined
+                }
+              />
             )}
+            
+            {/* Reasoning content - shown for both regular and research modes */}
             <ReasoningContent>
               {hasReasoning ? (
-                <MessageResponse className="italic text-muted-foreground prose-headings:text-muted-foreground prose-strong:text-muted-foreground">
+                <MessageResponse 
+                  className="italic text-muted-foreground prose-headings:text-muted-foreground prose-strong:text-muted-foreground"
+                  mode={isReasoningStreaming ? "streaming" : "static"}
+                >
                   {message.reasoning}
                 </MessageResponse>
               ) : null}
@@ -326,11 +334,14 @@ function AssistantMessageContent({
         </div>
       )}
 
+      {/* Message content - hide during research in progress */}
       {message.content && !isStreamingPlaceholder && !isResearchInProgress && (
         message.isError ? (
           <p className="text-red-500 dark:text-red-400">{message.content}</p>
         ) : (
-          <MessageResponse>{message.content}</MessageResponse>
+          <MessageResponse mode={isActiveAssistant && isLoading ? "streaming" : "static"}>
+            {message.content}
+          </MessageResponse>
         )
       )}
 

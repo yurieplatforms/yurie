@@ -5,7 +5,7 @@ import 'katex/dist/katex.min.css'
 import './globals.css'
 import { Header } from '@/components/layout/header'
 import { FooterWrapper } from '@/components/layout/footer-wrapper'
-import { ThemeProvider } from 'next-themes'
+import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/lib/providers/auth-provider'
 
 export const viewport: Viewport = {
@@ -73,10 +73,10 @@ export default function RootLayout({
         }}
       >
         <ThemeProvider
-          enableSystem={true}
           attribute="class"
-          storageKey="theme"
           defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
         >
           <AuthProvider>
             <div className="flex min-h-screen w-full flex-col font-sans">

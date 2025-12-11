@@ -521,3 +521,4 @@ export function getStatusMessage(status: BackgroundResponseStatus): string {
       return 'Unknown status'
   }
 }
+

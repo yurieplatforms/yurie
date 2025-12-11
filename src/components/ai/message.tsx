@@ -11,6 +11,20 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  TypographyH1,
+  TypographyH2,
+  TypographyH3,
+  TypographyH4,
+  TypographyP,
+  TypographyBlockquote,
+  TypographyList,
+  TypographyTable,
+  TypographyTh,
+  TypographyTd,
+  TypographyTr,
+  TypographyInlineCode,
+} from "@/components/ui/typography";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/types";
 import {
@@ -410,25 +424,7 @@ export const MessageResponse = memo(
           // Match blog typography (see blog layout) for AI-generated content
           // while letting prose handle its own inner spacing.
           "prose prose-gray dark:prose-invert max-w-none font-medium",
-          // Headings - clear hierarchy with proper spacing
-          "prose-h1:text-xl prose-h1:font-semibold prose-h1:mt-8 prose-h1:mb-4 prose-h1:leading-tight",
-          "prose-h2:text-lg prose-h2:font-semibold prose-h2:mt-8 prose-h2:mb-3 prose-h2:leading-snug",
-          "prose-h3:text-base prose-h3:font-semibold prose-h3:mt-6 prose-h3:mb-2 prose-h3:leading-snug",
-          "prose-h4:text-base prose-h4:font-medium prose-h4:mt-5 prose-h4:mb-2",
-          "prose-h5:text-base prose-h5:font-medium prose-h5:mt-4 prose-h5:mb-2",
-          "prose-h6:text-sm prose-h6:font-medium prose-h6:mt-4 prose-h6:mb-2 prose-h6:uppercase prose-h6:tracking-wide prose-h6:text-muted-foreground",
-          // Paragraphs - comfortable reading spacing
-          "prose-p:my-4 prose-p:leading-relaxed",
-          // Lists - improved spacing and structure
-          "prose-ul:my-4 prose-ul:space-y-2 prose-ol:my-4 prose-ol:space-y-2",
-          "prose-li:my-0 prose-li:leading-relaxed",
-          // Nested lists
-          "[&_ul_ul]:mt-2 [&_ul_ul]:mb-0 [&_ol_ol]:mt-2 [&_ol_ol]:mb-0",
-          "[&_ul_ol]:mt-2 [&_ul_ol]:mb-0 [&_ol_ul]:mt-2 [&_ol_ul]:mb-0",
-          // Strong text
-          "prose-strong:font-semibold",
-          // Blockquotes
-          "prose-blockquote:my-5 prose-blockquote:pl-4 prose-blockquote:border-l-2 prose-blockquote:italic",
+          // Remove manual overrides as we are using Typography components
           // First element no top margin
           "[&>*:first-child]:mt-0",
           className
@@ -445,30 +441,26 @@ export const MessageResponse = memo(
           // Handle <thinking> tags from AI output - suppress React warning
           thinking: () => null,
           img: MarkdownImage,
-          blockquote({ children, ...rest }: React.ComponentPropsWithoutRef<'blockquote'>) {
-            return <blockquote {...rest}>{children}</blockquote>;
-          },
+          h1: ({ className, ...props }) => <TypographyH1 className={className} {...props} />,
+          h2: ({ className, ...props }) => <TypographyH2 className={className} {...props} />,
+          h3: ({ className, ...props }) => <TypographyH3 className={className} {...props} />,
+          h4: ({ className, ...props }) => <TypographyH4 className={className} {...props} />,
+          p: ({ className, ...props }) => <TypographyP className={className} {...props} />,
+          blockquote: ({ className, ...props }) => <TypographyBlockquote className={className} {...props} />,
+          ul: ({ className, ...props }) => <TypographyList className={className} {...props} />,
           hr(rest: React.ComponentPropsWithoutRef<'hr'>) {
-            return <hr {...rest} />;
+            return <hr className="my-8 border-muted" {...rest} />;
           },
-          table({ children, ...rest }: React.ComponentPropsWithoutRef<'table'>) {
-            return <table {...rest}>{children}</table>;
-          },
+          table: ({ className, ...props }) => <TypographyTable className={className} {...props} />,
           thead({ children, ...rest }: React.ComponentPropsWithoutRef<'thead'>) {
             return <thead {...rest}>{children}</thead>;
           },
           tbody({ children, ...rest }: React.ComponentPropsWithoutRef<'tbody'>) {
             return <tbody {...rest}>{children}</tbody>;
           },
-          tr({ children, ...rest }: React.ComponentPropsWithoutRef<'tr'>) {
-            return <tr {...rest}>{children}</tr>;
-          },
-          th({ children, ...rest }: React.ComponentPropsWithoutRef<'th'>) {
-            return <th {...rest}>{children}</th>;
-          },
-          td({ children, ...rest }: React.ComponentPropsWithoutRef<'td'>) {
-            return <td {...rest}>{children}</td>;
-          },
+          tr: ({ className, ...props }) => <TypographyTr className={className} {...props} />,
+          th: ({ className, ...props }) => <TypographyTh className={className} {...props} />,
+          td: ({ className, ...props }) => <TypographyTd className={className} {...props} />,
           ...components,
         } as ComponentProps<typeof Streamdown>['components']}
         {...props}

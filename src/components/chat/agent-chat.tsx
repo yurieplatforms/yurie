@@ -15,7 +15,6 @@ import {
 } from '@/components/chat/hooks/useBackgroundTasks'
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 import type { ChatMessage } from '@/lib/types'
-import type { BackgroundResponseStatus } from '@/lib/ai/api/types'
 
 // Extracted subcomponents
 import { MessageList } from './message-list'
@@ -27,7 +26,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   const [hasJustCopied, setHasJustCopied] = useState(false)
   const [selectedTools, setSelectedTools] = useState<string[]>([])
   const [researchMode, setResearchMode] = useState(false)
-  const researchPollingRef = useRef<NodeJS.Timeout | null>(null)
   const hasResumedTaskRef = useRef<string | null>(null)
 
   // Use custom hooks for chat state and stream processing
@@ -56,111 +54,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
     resumeTask,
     checkActiveTasks,
   } = useBackgroundTasks()
-
-  // Deep research polling function
-  const pollResearchStatus = useCallback(
-    async (
-      responseId: string,
-      assistantMessageId: string,
-      currentChatId: string,
-      nextMessages: ChatMessage[]
-    ) => {
-      const pollInterval = 3000 // Poll every 3 seconds
-      const maxPolls = 200 // Max ~10 minutes of polling
-
-      let pollCount = 0
-
-      const poll = async () => {
-        pollCount++
-        
-        try {
-          const statusResponse = await fetch('/api/research/status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ responseId }),
-          })
-
-          if (!statusResponse.ok) {
-            throw new Error('Failed to check research status')
-          }
-
-          const statusData = await statusResponse.json() as {
-            status: string
-            outputText?: string
-            message: string
-            annotations?: Array<{ url: string; title: string }>
-            error?: { message: string }
-          }
-
-          // Update message with current status
-          setMessages((prev) =>
-            prev.map((msg) => {
-              if (msg.id !== assistantMessageId) return msg
-              
-              if (statusData.status === 'completed' && statusData.outputText) {
-                const { content, suggestions } = parseSuggestions(statusData.outputText)
-                return {
-                  ...msg,
-                  content,
-                  suggestions,
-                  mode: { type: 'research' as const, reason: 'Deep research completed', confidence: 1 },
-                }
-              } else if (statusData.status === 'failed') {
-                return {
-                  ...msg,
-                  content: `⚠️ Research failed: ${statusData.error?.message || 'Unknown error'}`,
-                  isError: true,
-                }
-              } else {
-                // Still in progress - content stays empty, UI shows shimmer
-                return {
-                  ...msg,
-                  content: '',
-                  mode: { type: 'research' as const, reason: statusData.message, confidence: 0.5 },
-                }
-              }
-            }),
-          )
-
-          // Check if we should stop polling
-          if (['completed', 'failed', 'cancelled', 'incomplete'].includes(statusData.status)) {
-            setIsLoading(false)
-            researchPollingRef.current = null
-
-            // Save final messages
-            const finalMessages = nextMessages.map((msg) => {
-              if (msg.id === assistantMessageId) {
-                if (statusData.status === 'completed' && statusData.outputText) {
-                  const { content, suggestions } = parseSuggestions(statusData.outputText)
-                  return { ...msg, content, suggestions }
-                }
-              }
-              return msg
-            })
-            await updateChat(currentChatId, finalMessages)
-            return
-          }
-
-          // Continue polling if under max polls
-          if (pollCount < maxPolls) {
-            researchPollingRef.current = setTimeout(poll, pollInterval)
-          } else {
-            setError('Research is taking too long. Please try again.')
-            setIsLoading(false)
-          }
-        } catch (err) {
-          console.error('Research polling error:', err)
-          setError('Failed to check research status.')
-          setIsLoading(false)
-          researchPollingRef.current = null
-        }
-      }
-
-      // Start polling
-      poll()
-    },
-    [setMessages, setIsLoading, setError, updateChat]
-  )
 
   const sendMessage = useCallback(
     async (rawContent: string, filesToSend: File[] = [], options?: { researchMode?: boolean }) => {
@@ -203,6 +96,15 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         content: '',
         name: 'Yurie',
         mode: isResearchMode ? { type: 'research', reason: 'Deep research mode', confidence: 0.5 } : undefined,
+        // Initialize research progress for research mode
+        researchProgress: isResearchMode ? {
+          stage: 'starting',
+          sourcesFound: 0,
+          sourcesAnalyzed: 0,
+          sources: [],
+          searchQueries: [],
+          startTime: Date.now(),
+        } : undefined,
       }
 
       const nextMessages = [...messages, userMessage, assistantPlaceholder]
@@ -218,65 +120,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         await updateChat(currentId, nextMessages)
       }
 
-      // Handle deep research mode differently
-      if (isResearchMode) {
-        try {
-          const researchResponse = await fetch('/api/research', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              query: textSegment.text,
-              // useMiniModel defaults to true (o4-mini-deep-research) for faster results
-              includeCodeInterpreter: true, // Enable data analysis
-            }),
-          })
-
-          if (!researchResponse.ok) {
-            const errorData = await researchResponse.json() as { error?: string }
-            throw new Error(errorData.error || 'Failed to start research')
-          }
-
-          const researchData = await researchResponse.json() as {
-            responseId: string
-            status: string
-            message: string
-          }
-
-          // Update message with initial status - content stays empty, UI shows shimmer
-          setMessages((prev) =>
-            prev.map((msg) => {
-              if (msg.id !== assistantMessageId) return msg
-              return {
-                ...msg,
-                content: '',
-                mode: { type: 'research' as const, reason: researchData.message, confidence: 0.5 },
-              }
-            }),
-          )
-
-          // Start polling for results
-          pollResearchStatus(researchData.responseId, assistantMessageId, currentId, nextMessages)
-          
-        } catch (err) {
-          console.error('Research error:', err)
-          setError((err as Error).message || 'Failed to start research')
-          setIsLoading(false)
-          
-          setMessages((prev) =>
-            prev.map((msg) => {
-              if (msg.id !== assistantMessageId) return msg
-              return {
-                ...msg,
-                content: `⚠️ Failed to start research: ${(err as Error).message}`,
-                isError: true,
-              }
-            }),
-          )
-        }
-        return
-      }
-
-      // Regular chat flow (non-research mode)
+      // Both regular chat and research mode use the same flow
+      // Research mode enables high reasoning effort on the agent endpoint
       abortControllerRef.current = new AbortController()
 
       const now = new Date()
@@ -310,6 +155,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             // Include chat and message ID for background task persistence
             chatId: currentId,
             messageId: assistantMessageId,
+            // Research mode uses high reasoning effort
+            researchMode: isResearchMode,
           }),
         })
 
@@ -356,6 +203,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
                     reason: state.mode.reason,
                     confidence: state.mode.confidence,
                   } : msg.mode,
+                  // Include research progress for research mode
+                  researchProgress: state.researchProgress ?? msg.researchProgress,
                 }
               }),
             )
@@ -420,18 +269,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       thinkingStartRef,
       processStream,
       processFiles,
-      pollResearchStatus,
     ],
   )
-
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => {
-      if (researchPollingRef.current) {
-        clearTimeout(researchPollingRef.current)
-      }
-    }
-  }, [])
 
   // Check for and resume background tasks when chat loads
   useEffect(() => {

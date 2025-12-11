@@ -13,6 +13,9 @@ import { useCallback, useRef } from 'react'
 import type {
   ChatMessage,
   ToolUseStatus,
+  ResearchProgressState,
+  ResearchStage,
+  ResearchSource,
 } from '@/lib/types'
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 
@@ -62,6 +65,10 @@ export type StreamState = {
   toolUseHistory: ToolUseStatus[]
   /** Processing mode information */
   mode: StreamMode | undefined
+  /** Research progress state for research mode */
+  researchProgress: ResearchProgressState | undefined
+  /** Whether the stream is complete */
+  isComplete: boolean
 }
 
 /**
@@ -118,6 +125,12 @@ export function useStreamResponse(): UseStreamResponseReturn {
     let activeToolUse: ToolUseStatus | null = null
     const toolUseHistory: ToolUseStatus[] = []
     
+    // Research progress tracking
+    let researchProgress: ResearchProgressState | undefined
+    const researchSources: ResearchSource[] = []
+    const searchQueries: string[] = []
+    let researchStartTime: number | undefined
+    
     let lastUpdateTime = 0
     const THROTTLE_MS = 50
 
@@ -153,6 +166,16 @@ export function useStreamResponse(): UseStreamResponseReturn {
               retryable: json.error.retryable ?? false,
               retryAfterMs: json.error.retryAfterMs,
             }
+            
+            // Update research progress to failed if in research mode
+            if (researchProgress) {
+              researchProgress = {
+                ...researchProgress,
+                stage: 'failed' as ResearchStage,
+                currentActivity: 'Research failed',
+              }
+            }
+            
             callbacks.onUpdate({
               content: accumulatedContent,
               reasoning: accumulatedReasoning,
@@ -161,6 +184,8 @@ export function useStreamResponse(): UseStreamResponseReturn {
               activeToolUse,
               toolUseHistory,
               mode: accumulatedMode,
+              researchProgress,
+              isComplete: false,
             })
             continue
           }
@@ -173,6 +198,20 @@ export function useStreamResponse(): UseStreamResponseReturn {
               confidence: json.mode.confidence,
               reasoningEffort: json.mode.reasoningEffort,
             }
+            
+            // Initialize research progress if in research mode
+            if (json.mode.type === 'research') {
+              researchStartTime = Date.now()
+              researchProgress = {
+                stage: 'starting',
+                sourcesFound: 0,
+                sourcesAnalyzed: 0,
+                sources: [],
+                searchQueries: [],
+                startTime: researchStartTime,
+              }
+            }
+            
             callbacks.onUpdate({
               content: accumulatedContent,
               reasoning: accumulatedReasoning,
@@ -181,6 +220,8 @@ export function useStreamResponse(): UseStreamResponseReturn {
               activeToolUse,
               toolUseHistory,
               mode: accumulatedMode,
+              researchProgress,
+              isComplete: false,
             })
             continue
           }
@@ -193,9 +234,37 @@ export function useStreamResponse(): UseStreamResponseReturn {
               // Move to history
               toolUseHistory.push(toolEvent)
               activeToolUse = null
+              
+              // Update research progress if in research mode
+              if (researchProgress && toolEvent.tool.toLowerCase().includes('search')) {
+                // When search completes, move to analyzing stage
+                researchProgress = {
+                  ...researchProgress,
+                  stage: 'analyzing' as ResearchStage,
+                  currentActivity: 'Analyzing search results...',
+                }
+              }
             } else {
               // Update active tool
               activeToolUse = toolEvent
+              
+              // Update research progress if in research mode
+              if (researchProgress) {
+                const toolName = toolEvent.tool.toLowerCase()
+                if (toolName.includes('search')) {
+                  researchProgress = {
+                    ...researchProgress,
+                    stage: 'searching' as ResearchStage,
+                    currentActivity: toolEvent.details || 'Searching the web...',
+                  }
+                  
+                  // Track search query if available
+                  if (toolEvent.details && !searchQueries.includes(toolEvent.details)) {
+                    searchQueries.push(toolEvent.details)
+                    researchProgress.searchQueries = [...searchQueries]
+                  }
+                }
+              }
             }
             
             // Immediately notify of tool use updates
@@ -207,20 +276,135 @@ export function useStreamResponse(): UseStreamResponseReturn {
               activeToolUse,
               toolUseHistory,
               mode: accumulatedMode,
+              researchProgress,
+              isComplete: false,
             })
             continue
           }
 
           // Handle tool result events (returned data from tool execution)
-          // We don't display these directly, just acknowledge them
           if (json.tool_result) {
-            // Tool results are handled internally, no UI update needed
+            // Update research progress with source counts if in research mode
+            if (researchProgress) {
+              const result = json.tool_result
+              const toolName = (result.tool || result.name || '').toLowerCase()
+              
+              // If this is a web search result, increment source count
+              if (toolName.includes('search') && result.success !== false) {
+                // Try to parse the output for source count
+                let newSourceCount = 1
+                try {
+                  const output = typeof result.output === 'string' 
+                    ? JSON.parse(result.output) 
+                    : result.output
+                  
+                  if (output?.results && Array.isArray(output.results)) {
+                    newSourceCount = output.results.length
+                    
+                    // Add sources to the list
+                    for (const source of output.results) {
+                      if (source.url && !researchSources.find(s => s.url === source.url)) {
+                        researchSources.push({
+                          url: source.url,
+                          title: source.title,
+                          status: 'found' as const,
+                        })
+                      }
+                    }
+                  }
+                } catch {
+                  // Ignore parse errors
+                }
+                
+                researchProgress = {
+                  ...researchProgress,
+                  sourcesFound: researchProgress.sourcesFound + newSourceCount,
+                  sources: [...researchSources],
+                  stage: 'analyzing' as ResearchStage,
+                  currentActivity: `Analyzing ${researchProgress.sourcesFound + newSourceCount} sources...`,
+                }
+                
+                callbacks.onUpdate({
+                  content: accumulatedContent,
+                  reasoning: accumulatedReasoning,
+                  thinkingTime: accumulatedThinkingTime,
+                  error: accumulatedError,
+                  activeToolUse,
+                  toolUseHistory,
+                  mode: accumulatedMode,
+                  researchProgress,
+                  isComplete: false,
+                })
+              }
+            }
             continue
           }
 
           // Handle background mode events
           if (json.background) {
             // Background mode status updates - could show in UI if needed
+            continue
+          }
+          
+          // Handle research stage events (sent during research mode)
+          // These provide more granular stage updates from the backend
+          if (json.research_stage) {
+            const { stage, activity } = json.research_stage
+            if (researchProgress && stage) {
+              researchProgress = {
+                ...researchProgress,
+                stage: stage as ResearchStage,
+                currentActivity: activity,
+              }
+              
+              callbacks.onUpdate({
+                content: accumulatedContent,
+                reasoning: accumulatedReasoning,
+                thinkingTime: accumulatedThinkingTime,
+                error: accumulatedError,
+                activeToolUse,
+                toolUseHistory,
+                mode: accumulatedMode,
+                researchProgress,
+                isComplete: false,
+              })
+            }
+            continue
+          }
+          
+          // Handle research sources event (sent when research completes with citations)
+          if (json.research_sources && Array.isArray(json.research_sources)) {
+            if (researchProgress) {
+              // Add sources to research progress
+              for (const source of json.research_sources) {
+                if (source.url && !researchSources.find(s => s.url === source.url)) {
+                  researchSources.push({
+                    url: source.url,
+                    title: source.title,
+                    status: 'analyzed' as const,
+                  })
+                }
+              }
+              
+              researchProgress = {
+                ...researchProgress,
+                sourcesFound: researchSources.length,
+                sourcesAnalyzed: researchSources.length,
+                sources: [...researchSources],
+              }
+              
+              callbacks.onUpdate({
+                content: accumulatedContent,
+                reasoning: accumulatedReasoning,
+                thinkingTime: accumulatedThinkingTime,
+                error: accumulatedError,
+                activeToolUse,
+                toolUseHistory,
+                mode: accumulatedMode,
+                researchProgress,
+                isComplete: false,
+              })
+            }
             continue
           }
 
@@ -238,6 +422,8 @@ export function useStreamResponse(): UseStreamResponseReturn {
               activeToolUse,
               toolUseHistory,
               mode: accumulatedMode,
+              researchProgress,
+              isComplete: false,
             })
             continue
           }
@@ -249,7 +435,10 @@ export function useStreamResponse(): UseStreamResponseReturn {
 
           let deltaReasoning = ''
 
-          // Reasoning fields (OpenRouter-compatible format) or reasoning_details
+          // Reasoning fields - support multiple formats:
+          // 1. Direct reasoning field from our backend (response.reasoning_summary_text.delta)
+          // 2. OpenRouter-compatible format
+          // 3. Legacy reasoning_details array format
           const directReasoning = choice?.delta?.reasoning
           if (
             typeof directReasoning === 'string' &&
@@ -306,6 +495,15 @@ export function useStreamResponse(): UseStreamResponseReturn {
             accumulatedThinkingTime = Math.max(0, elapsed)
           }
 
+          // Update research progress when we start getting content
+          if (researchProgress && accumulatedContent.length > 0 && researchProgress.stage !== 'synthesizing' && researchProgress.stage !== 'completed') {
+            researchProgress = {
+              ...researchProgress,
+              stage: 'synthesizing' as ResearchStage,
+              currentActivity: 'Synthesizing research findings...',
+            }
+          }
+          
           // Notify of update
           const now = Date.now()
           if (now - lastUpdateTime > THROTTLE_MS) {
@@ -318,6 +516,8 @@ export function useStreamResponse(): UseStreamResponseReturn {
               activeToolUse,
               toolUseHistory,
               mode: accumulatedMode,
+              researchProgress,
+              isComplete: false,
             })
           }
         } catch {
@@ -326,6 +526,16 @@ export function useStreamResponse(): UseStreamResponseReturn {
       }
     }
 
+    // Mark research as completed if in research mode and we have content
+    if (researchProgress && accumulatedContent.length > 0) {
+      researchProgress = {
+        ...researchProgress,
+        stage: 'completed' as ResearchStage,
+        sourcesAnalyzed: researchProgress.sourcesFound, // All sources analyzed when complete
+        currentActivity: undefined,
+      }
+    }
+    
     // Final update to ensure we have the latest state
     callbacks.onUpdate({
       content: accumulatedContent,
@@ -335,6 +545,8 @@ export function useStreamResponse(): UseStreamResponseReturn {
       activeToolUse: null, // Clear active tool use when done
       toolUseHistory,
       mode: accumulatedMode,
+      researchProgress,
+      isComplete: true,
     })
 
     return {
@@ -345,6 +557,8 @@ export function useStreamResponse(): UseStreamResponseReturn {
       activeToolUse: null,
       toolUseHistory,
       mode: accumulatedMode,
+      researchProgress,
+      isComplete: true,
     }
   }, [])
 
@@ -376,5 +590,6 @@ export function buildMessageFromStreamState(
       reason: state.mode.reason,
       confidence: state.mode.confidence,
     } : undefined,
+    researchProgress: state.researchProgress,
   }
 }

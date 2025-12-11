@@ -131,6 +131,39 @@ export type MessageMode = {
   confidence: 'high' | 'medium' | 'low' | number
 }
 
+/**
+ * Research stage for tracking deep research progress
+ */
+export type ResearchStage = 
+  | 'starting'
+  | 'searching'
+  | 'analyzing'
+  | 'synthesizing'
+  | 'completed'
+  | 'failed';
+
+/**
+ * Research source found during deep research
+ */
+export type ResearchSource = {
+  url: string;
+  title?: string;
+  status: 'found' | 'analyzing' | 'analyzed';
+};
+
+/**
+ * Research progress state for tracking deep research tasks
+ */
+export type ResearchProgressState = {
+  stage: ResearchStage;
+  sourcesFound: number;
+  sourcesAnalyzed: number;
+  currentActivity?: string;
+  sources: ResearchSource[];
+  startTime?: number;
+  searchQueries: string[];
+};
+
 export type ChatMessage = {
   id: string
   role: Role
@@ -148,6 +181,8 @@ export type ChatMessage = {
   isError?: boolean
   /** Processing mode used for this message */
   mode?: MessageMode
+  /** Research progress state for research mode messages */
+  researchProgress?: ResearchProgressState
 }
 
 export type SavedChat = {

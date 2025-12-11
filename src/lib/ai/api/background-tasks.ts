@@ -263,3 +263,4 @@ export async function cleanupOldTasks(
 export function isTerminalTaskStatus(status: BackgroundResponseStatus): boolean {
   return ['completed', 'failed', 'cancelled', 'incomplete'].includes(status)
 }
+

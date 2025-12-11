@@ -453,22 +453,108 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 </PopoverContent>
               </Popover>
 
+              {!imageGenMode && (
+                <Popover open={isPopoverOpen} onOpenChange={(open) => {
+                  if (open && !user) {
+                    router.push('/login');
+                    return;
+                  }
+                  setIsPopoverOpen(open);
+                }}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <PopoverTrigger asChild>
+                        <button 
+                          type="button" 
+                          className="flex h-8 items-center gap-2 rounded-full p-2 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
+                          disabled={isLoading}
+                        >
+                          <LayoutGrid className="h-4 w-4" />
+                          {selectedTools.length === 0 && 'Apps'}
+                        </button>
+                      </PopoverTrigger>
+                    </TooltipTrigger>
+                    {!isPopoverOpen && selectedTools.length === 0 && <TooltipContent side="top" showArrow={true}><p>Connect Apps</p></TooltipContent>}
+                  </Tooltip>
+                  <PopoverContent side="top" align="start" className="w-64 dark:bg-[var(--color-input-bg)] dark:border-[var(--color-input-border)] p-1.5">
+                    <div className="flex flex-col gap-0.5">
+                      {toolsList.map(tool => (
+                        <button 
+                            key={tool.id} 
+                            onClick={() => handleSelectTool(tool.id)} 
+                            className={cn(
+                                "flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer",
+                                selectedTools.includes(tool.id) && "bg-accent text-accent-foreground"
+                            )}
+                        > 
+                            <div className="h-8 w-8 flex items-center justify-center shrink-0">
+                              {tool.iconUrl ? (
+                                <img 
+                                  src={tool.iconUrl} 
+                                  alt={tool.name} 
+                                  className={cn("h-6 w-6 object-contain", tool.darkInvert && "dark:invert")} 
+                                />
+                              ) : tool.icon ? (
+                                <tool.icon className="h-6 w-6 text-[var(--color-muted-foreground)]" />
+                              ) : null}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium">{tool.name}</span>
+                              </div>
+                              <p className="text-[10px] font-medium text-[var(--color-muted-foreground)] truncate leading-tight">
+                                {tool.description}
+                              </p>
+                            </div>
+                            {selectedTools.includes(tool.id) && (
+                              <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-primary)] flex items-center justify-center shrink-0 self-center">
+                                <Check className="h-2 w-2 text-white" strokeWidth={3} />
+                              </div>
+                            )}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+
+              {/* Selected Apps Pills */}
+              {!imageGenMode && (
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[300px]">
+                  <AnimatePresence>
+                      {selectedTools.map(toolId => {
+                          const tool = toolsList.find(t => t.id === toolId);
+                          if (!tool) return null;
+                          
+                          return (
+                              <motion.button
+                                  key={tool.id}
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  onClick={() => handleRemoveTool(tool.id)}
+                                  className="flex h-8 items-center gap-2 rounded-full px-2.5 text-sm bg-accent hover:bg-muted cursor-pointer text-accent-foreground transition-colors flex-shrink-0"
+                              >
+                                  {tool.iconUrl ? (
+                                    <img 
+                                      src={tool.iconUrl} 
+                                      alt={tool.name} 
+                                      className={cn("h-4 w-4 object-contain", tool.darkInvert && "dark:invert")} 
+                                    />
+                                  ) : tool.icon ? (
+                                    <tool.icon className="h-4 w-4" />
+                                  ) : null}
+                                  <span className="whitespace-nowrap font-medium">{tool.shortName}</span>
+                                  <XIcon className="h-3 w-3 opacity-50" />
+                              </motion.button>
+                          );
+                      })}
+                  </AnimatePresence>
+                </div>
+              )}
+
               {/* Mode Pills */}
               <AnimatePresence>
-                {researchMode && (
-                  <motion.button
-                    key="research-mode"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    onClick={handleResearchToggle}
-                    className="flex h-8 items-center gap-2 rounded-full px-2.5 text-sm bg-accent hover:bg-muted cursor-pointer text-accent-foreground transition-colors flex-shrink-0"
-                  >
-                    <Telescope className="h-4 w-4" />
-                    <span className="whitespace-nowrap font-medium">Research</span>
-                    <XIcon className="h-3 w-3 opacity-50" />
-                  </motion.button>
-                )}
                 {imageGenMode && (
                   <motion.button
                     key="image-gen-mode"
@@ -483,103 +569,21 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                     <XIcon className="h-3 w-3 opacity-50" />
                   </motion.button>
                 )}
+                {researchMode && (
+                  <motion.button
+                    key="research-mode"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={handleResearchToggle}
+                    className="flex h-8 items-center gap-2 rounded-full px-2.5 text-sm bg-accent hover:bg-muted cursor-pointer text-accent-foreground transition-colors flex-shrink-0"
+                  >
+                    <Telescope className="h-4 w-4" />
+                    <span className="whitespace-nowrap font-medium">Research</span>
+                    <XIcon className="h-3 w-3 opacity-50" />
+                  </motion.button>
+                )}
               </AnimatePresence>
-              
-              <Popover open={isPopoverOpen} onOpenChange={(open) => {
-                if (open && !user) {
-                  router.push('/login');
-                  return;
-                }
-                setIsPopoverOpen(open);
-              }}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                      <button 
-                        type="button" 
-                        className="flex h-8 items-center gap-2 rounded-full p-2 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-0 cursor-pointer"
-                        disabled={isLoading}
-                      >
-                        <LayoutGrid className="h-4 w-4" />
-                        {selectedTools.length === 0 && 'Apps'}
-                      </button>
-                    </PopoverTrigger>
-                  </TooltipTrigger>
-                  {!isPopoverOpen && selectedTools.length === 0 && <TooltipContent side="top" showArrow={true}><p>Connect Apps</p></TooltipContent>}
-                </Tooltip>
-                <PopoverContent side="top" align="start" className="w-64 dark:bg-[var(--color-input-bg)] dark:border-[var(--color-input-border)] p-1.5">
-                  <div className="flex flex-col gap-0.5">
-                    {toolsList.map(tool => (
-                      <button 
-                          key={tool.id} 
-                          onClick={() => handleSelectTool(tool.id)} 
-                          className={cn(
-                              "flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer",
-                              selectedTools.includes(tool.id) && "bg-accent text-accent-foreground"
-                          )}
-                      > 
-                          <div className="h-8 w-8 flex items-center justify-center shrink-0">
-                            {tool.iconUrl ? (
-                              <img 
-                                src={tool.iconUrl} 
-                                alt={tool.name} 
-                                className={cn("h-6 w-6 object-contain", tool.darkInvert && "dark:invert")} 
-                              />
-                            ) : tool.icon ? (
-                              <tool.icon className="h-6 w-6 text-[var(--color-muted-foreground)]" />
-                            ) : null}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-medium">{tool.name}</span>
-                            </div>
-                            <p className="text-[10px] font-medium text-[var(--color-muted-foreground)] truncate leading-tight">
-                              {tool.description}
-                            </p>
-                          </div>
-                          {selectedTools.includes(tool.id) && (
-                            <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-primary)] flex items-center justify-center shrink-0 self-center">
-                              <Check className="h-2 w-2 text-white" strokeWidth={3} />
-                            </div>
-                          )}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              {/* Selected Apps Pills */}
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[300px]">
-                <AnimatePresence>
-                    {selectedTools.map(toolId => {
-                        const tool = toolsList.find(t => t.id === toolId);
-                        if (!tool) return null;
-                        
-                        return (
-                            <motion.button
-                                key={tool.id}
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                onClick={() => handleRemoveTool(tool.id)}
-                                className="flex h-8 items-center gap-2 rounded-full px-2.5 text-sm bg-accent hover:bg-muted cursor-pointer text-accent-foreground transition-colors flex-shrink-0"
-                            >
-                                {tool.iconUrl ? (
-                                  <img 
-                                    src={tool.iconUrl} 
-                                    alt={tool.name} 
-                                    className={cn("h-4 w-4 object-contain", tool.darkInvert && "dark:invert")} 
-                                  />
-                                ) : tool.icon ? (
-                                  <tool.icon className="h-4 w-4" />
-                                ) : null}
-                                <span className="whitespace-nowrap font-medium">{tool.shortName}</span>
-                                <XIcon className="h-3 w-3 opacity-50" />
-                            </motion.button>
-                        );
-                    })}
-                </AnimatePresence>
-              </div>
 
               {/* Send button */}
               <div className="ml-auto">

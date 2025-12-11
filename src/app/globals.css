@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import "tw-animate-css";
 @plugin '@tailwindcss/typography';
 @source "../node_modules/streamdown/dist/index.js";
 @custom-variant dark (&:is(.dark *));
@@ -24,7 +25,7 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: var(--color-border);
   }
 }
 
@@ -88,21 +89,21 @@
     --font-size-xl: 1.25rem;      /* 20px */
     --font-size-2xl: 1.5rem;      /* 24px */
     --font-size-3xl: 1.875rem;    /* 30px */
-    
+
     /* Line Heights */
     --line-height-tight: 1.25;
     --line-height-snug: 1.375;
     --line-height-normal: 1.5;
     --line-height-relaxed: 1.625;
     --line-height-loose: 1.75;
-    
+
     /* Letter Spacing */
     --tracking-tighter: -0.03em;
     --tracking-tight: -0.015em;
     --tracking-normal: 0;
     --tracking-wide: 0.015em;
     --tracking-wider: 0.03em;
-    
+
     /* Font Weights */
     --font-normal: 400;
     --font-medium: 500;
@@ -133,18 +134,18 @@
 
     /* Enhanced Semantic Tokens */
     --color-primary-hover: var(--chart-1);
-    
+
     /* Legacy Mappings */
     --color-surface: var(--card);
     --color-surface-hover: var(--muted);
     --color-surface-active: var(--accent);
     --color-surface-elevated: var(--popover);
     --color-border-subtle: var(--muted);
-    
+
     /* Input Specifics */
     --color-input-bg: var(--background);
     --color-input-border: var(--input);
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -163,13 +164,13 @@
     --radius-card: var(--radius);
     --radius-dialog: calc(var(--radius) + 8px);
     --radius-prompt: 1.625rem;
-    
+
     /* Spacing */
     --space-input-x: 1rem;
     --space-input-y: 0.625rem;
     --space-card: 1rem;
     --space-section: 1.5rem;
-    
+
     /* Transitions */
     --transition-fast: 150ms ease;
     --transition-base: 200ms ease;
@@ -342,19 +343,19 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  
+
   /* Additional Semantic Tokens (from legacy) */
   --color-primary-hover: var(--color-primary-hover);
   --color-surface: var(--color-surface);
   --color-surface-hover: var(--color-surface-hover);
   --color-surface-active: var(--color-surface-active);
   --color-surface-elevated: var(--color-surface-elevated);
-  
+
   /* Success/Warning/Info */
   --color-success: var(--color-success);
   --color-warning: var(--color-warning);
   --color-info: var(--color-info);
-  
+
   /* Radius & Shadows */
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -364,7 +365,7 @@
   --radius-full: var(--radius-full);
   --radius-input: var(--radius-input);
   --radius-card: var(--radius-card);
-  
+
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
@@ -373,50 +374,86 @@
 }
 
 @layer utilities {
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  /* Hide Streamdown streaming cursor indicator */
+  [data-streamdown-cursor],
+  .streamdown-cursor,
+  [data-streamdown] [data-cursor],
+  [data-streamdown]::after {
+    display: none !important;
+  }
+
   /* Remove outer border from Streamdown-rendered tables (chat tables, markdown, etc.) */
   [data-streamdown="table"] {
     border-width: 0 !important;
   }
 
   /* Match table separator lines to PromptInput outline color */
+  [data-streamdown="table"],
   [data-streamdown="table"] thead,
   [data-streamdown="table"] tbody,
   [data-streamdown="table"] tr,
-  [data-streamdown="table"] th,
-  [data-streamdown="table"] td,
   .prose table,
   .prose thead,
   .prose tbody,
   .prose tr,
-  .prose th,
-  .prose td,
   .prose-gray table,
   .prose-gray thead,
   .prose-gray tbody,
-  .prose-gray tr,
+  .prose-gray tr {
+    border-color: var(--color-border);
+    background-color: transparent;
+  }
+
+  /* Remove vertical borders from table cells, keep only horizontal */
+  [data-streamdown="table"] th,
+  [data-streamdown="table"] td,
+  .prose th,
+  .prose td,
   .prose-gray th,
   .prose-gray td {
     border-color: var(--color-border);
+    border-left: none;
+    border-right: none;
+    background-color: transparent;
   }
 
+  .dark [data-streamdown="table"],
   .dark [data-streamdown="table"] thead,
   .dark [data-streamdown="table"] tbody,
   .dark [data-streamdown="table"] tr,
-  .dark [data-streamdown="table"] th,
-  .dark [data-streamdown="table"] td,
   .dark .prose table,
   .dark .prose thead,
   .dark .prose tbody,
   .dark .prose tr,
-  .dark .prose th,
-  .dark .prose td,
   .dark .prose-gray table,
   .dark .prose-gray thead,
   .dark .prose-gray tbody,
-  .dark .prose-gray tr,
+  .dark .prose-gray tr {
+    border-color: var(--color-border);
+    background-color: transparent;
+  }
+
+  .dark [data-streamdown="table"] th,
+  .dark [data-streamdown="table"] td,
+  .dark .prose th,
+  .dark .prose td,
   .dark .prose-gray th,
   .dark .prose-gray td {
     border-color: var(--color-border);
+    border-left: none;
+    border-right: none;
+    background-color: transparent;
   }
 
   /* Remove outer border from Streamdown-rendered code blocks */
@@ -519,7 +556,6 @@
     filter: brightness(1.7) saturate(1.15) !important;
   }
 
-
   /* Specific token color overrides for dark mode - vibrant palette */
   .dark pre code .token.comment,
   .dark pre code .token.prolog,
@@ -578,17 +614,17 @@
     color: #ffa657 !important;
   }
 
-  /* Match AI-generated horizontal rule separators to PromptInput outline color */
+  /* Hide horizontal rule separators in AI responses */
   [data-streamdown="horizontal-rule"],
   .prose hr,
   .prose-gray hr {
-    border-color: var(--color-border);
+    display: none;
   }
 
   .dark [data-streamdown="horizontal-rule"],
   .dark .prose hr,
   .dark .prose-gray hr {
-    border-color: var(--color-border);
+    display: none;
   }
 
   /* Match blockquote left border to user chat bubble color */
@@ -629,7 +665,7 @@
   .dark [data-streamdown] code:not(pre code) {
     background-color: var(--color-border);
   }
-  
+
   /* Bullet points - force them to use the muted-foreground color */
   .prose ul > li::marker,
   .prose-gray ul > li::marker,
@@ -671,19 +707,26 @@
     margin-bottom: 0.25rem;
   }
 
-  /* Horizontal rules as section dividers */
-  .prose hr,
-  .prose-gray hr {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-    border-top-width: 1px;
-    opacity: 0.5;
-  }
 
   /* Paragraph with better rhythm */
   .prose p + p,
   .prose-gray p + p {
-    margin-top: 1rem;
+    margin-top: 1.25rem;
+  }
+
+  /* Add spacing before headings (when not first element) */
+  .prose h1,
+  .prose h2,
+  .prose-gray h1,
+  .prose-gray h2 {
+    margin-top: 2.5rem;
+  }
+
+  .prose h3,
+  .prose h4,
+  .prose-gray h3,
+  .prose-gray h4 {
+    margin-top: 2rem;
   }
 
   /* Better heading separation from content */
@@ -693,7 +736,7 @@
   .prose-gray h1 + *,
   .prose-gray h2 + *,
   .prose-gray h3 + * {
-    margin-top: 0 !important;
+    margin-top: 1.25rem !important;
   }
 
   /* Numbered list prefix styling */
@@ -862,3 +905,4 @@
     }
   }
 }
+

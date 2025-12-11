@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const { userContext, selectedTools = [], chatId, messageId } = body
+  const { userContext, selectedTools = [], chatId, messageId, researchMode = false } = body
   const messages = sanitizedMessages
 
   // Check for OpenAI API key
@@ -264,16 +264,17 @@ export async function POST(request: Request) {
   })
   
   const mode: RequestMode = classification.mode
-  console.log(`[agent] Mode: ${mode} (${classification.reason}, confidence: ${classification.confidence})`)
-  console.log(`[agent] Reasoning effort: ${classification.reasoningEffort}, tools recommended: ${classification.toolsRecommended.join(', ') || 'none'}`)
+  console.log(`[agent] Mode: ${mode} (${classification.reason}, confidence: ${classification.confidence})${researchMode ? ' [RESEARCH MODE]' : ''}`)
+  console.log(`[agent] Reasoning effort: ${researchMode ? 'high (research)' : classification.reasoningEffort}, tools recommended: ${classification.toolsRecommended.join(', ') || 'none'}`)
 
   // Build system prompt with user context, preferences, and mode
+  // Use 'research' mode for research requests, otherwise use classified mode
   const systemPrompt = buildSystemPrompt({
     userName,
     userContext,
     userPreferences,
     enabledCapabilities,
-    mode,
+    mode: researchMode ? 'research' : mode,
   })
 
   // Convert messages to OpenAI format
@@ -375,10 +376,10 @@ export async function POST(request: Request) {
           // Send mode indicator to frontend for UI feedback
           safeEnqueue(`data: ${JSON.stringify({
             mode: {
-              type: mode,
-              reason: classification.reason,
+              type: researchMode ? 'research' : mode,
+              reason: researchMode ? 'Research mode with high reasoning' : classification.reason,
               confidence: classification.confidence,
-              reasoningEffort: classification.reasoningEffort,
+              reasoningEffort: researchMode ? 'high' : classification.reasoningEffort,
               backgroundMode: useBackgroundMode,
             }
           })}\n\n`)
@@ -424,8 +425,8 @@ export async function POST(request: Request) {
               baseParams.parallel_tool_calls = true // Execute multiple tool calls in parallel
             }
             
-            // GPT-5.1 supports reasoning - use high effort for best quality
-            baseParams.reasoning = { effort: 'high' }
+            // GPT-5.1 supports reasoning - use 'high' for research mode, 'none' for regular chat
+            baseParams.reasoning = { effort: researchMode ? 'high' : 'none' }
             
             // Add service tier for priority processing
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -552,6 +553,28 @@ export async function POST(request: Request) {
                 }
               }
               
+              // Handle reasoning summary text streaming (for models with reasoning)
+              // @see https://platform.openai.com/docs/api-reference/responses-streaming
+              if (event.type === 'response.reasoning_summary_text.delta') {
+                const reasoningDelta = event.delta
+                if (reasoningDelta && typeof reasoningDelta === 'string') {
+                  // Stream reasoning to frontend as reasoning delta
+                  const data = {
+                    choices: [{
+                      delta: { reasoning: reasoningDelta }
+                    }]
+                  }
+                  safeEnqueue(`data: ${JSON.stringify(data)}\n\n`)
+                }
+                continue
+              }
+              
+              // Handle reasoning summary text completion
+              if (event.type === 'response.reasoning_summary_text.done') {
+                // Reasoning complete - no action needed, we've already streamed the deltas
+                continue
+              }
+              
               // Handle text content streaming
               if (event.type === 'response.output_text.delta') {
                 const content = event.delta
@@ -574,6 +597,13 @@ export async function POST(request: Request) {
                   latencyTracker.onFirstToken()
                   latencyTracker.onToken()
                   
+                  // Emit synthesizing stage on first content for research mode
+                  if (researchMode && !hasTextContent) {
+                    safeEnqueue(`data: ${JSON.stringify({
+                      research_stage: { stage: 'synthesizing', activity: 'Crafting response...' }
+                    })}\n\n`)
+                  }
+                  
                   hasTextContent = true
                   const data = {
                     choices: [{
@@ -584,23 +614,74 @@ export async function POST(request: Request) {
                 }
               }
               
+              // Handle text completion event for annotations/citations
+              if (event.type === 'response.output_text.done') {
+                // Text is complete - extract annotations if present
+                // Annotations contain URL citations for web search results
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const annotations = (event as any).annotations
+                if (researchMode && annotations && Array.isArray(annotations)) {
+                  const sources: Array<{ url: string; title?: string }> = []
+                  const seenUrls = new Set<string>()
+                  
+                  for (const annotation of annotations) {
+                    if (annotation.type === 'url_citation' && annotation.url && !seenUrls.has(annotation.url)) {
+                      seenUrls.add(annotation.url)
+                      sources.push({
+                        url: annotation.url,
+                        title: annotation.title || undefined,
+                      })
+                    }
+                  }
+                  
+                  if (sources.length > 0) {
+                    console.log(`[agent] Found ${sources.length} sources from text annotations`)
+                    safeEnqueue(`data: ${JSON.stringify({
+                      research_sources: sources
+                    })}\n\n`)
+                  }
+                }
+              }
+              
               // Handle web search tool use events
+              // @see https://platform.openai.com/docs/api-reference/responses-streaming
               if (event.type === 'response.web_search_call.in_progress') {
                 safeEnqueue(`data: ${JSON.stringify({
                   tool_use: { tool: 'Web search', status: 'in_progress', details: 'Searching...' }
                 })}\n\n`)
+                
+                // Emit research stage update for research mode
+                if (researchMode) {
+                  safeEnqueue(`data: ${JSON.stringify({
+                    research_stage: { stage: 'searching', activity: 'Searching the web...' }
+                  })}\n\n`)
+                }
               }
               
               if (event.type === 'response.web_search_call.searching') {
                 safeEnqueue(`data: ${JSON.stringify({
                   tool_use: { tool: 'Web search', status: 'searching', details: 'Looking up results...' }
                 })}\n\n`)
+                
+                // Emit research stage update for research mode
+                if (researchMode) {
+                  safeEnqueue(`data: ${JSON.stringify({
+                    research_stage: { stage: 'searching', activity: 'Browsing web sources...' }
+                  })}\n\n`)
+                }
               }
               
               if (event.type === 'response.web_search_call.completed') {
                 safeEnqueue(`data: ${JSON.stringify({
                   tool_use: { tool: 'Web search', status: 'completed', details: 'Done' }
                 })}\n\n`)
+                
+                // Emit research stage update for research mode
+                if (researchMode) {
+                  safeEnqueue(`data: ${JSON.stringify({
+                    research_stage: { stage: 'analyzing', activity: 'Analyzing search results...' }
+                  })}\n\n`)
+                }
               }
 
               // Handle image generation output
@@ -661,6 +742,38 @@ export async function POST(request: Request) {
               if (event.type === 'response.completed' || event.type === 'response.done') {
                 currentResponseId = event.response?.id ?? currentResponseId
                 currentOutput = event.response?.output ?? event.output
+                
+                // Extract and send sources from annotations (for research mode)
+                if (researchMode && currentOutput && Array.isArray(currentOutput)) {
+                  const sources: Array<{ url: string; title?: string }> = []
+                  const seenUrls = new Set<string>()
+                  
+                  for (const item of currentOutput) {
+                    // Check message items for annotations
+                    if (item.type === 'message' && item.content) {
+                      for (const content of item.content) {
+                        if (content.annotations && Array.isArray(content.annotations)) {
+                          for (const annotation of content.annotations) {
+                            if (annotation.type === 'url_citation' && annotation.url && !seenUrls.has(annotation.url)) {
+                              seenUrls.add(annotation.url)
+                              sources.push({
+                                url: annotation.url,
+                                title: annotation.title || undefined,
+                              })
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                  
+                  if (sources.length > 0) {
+                    console.log(`[agent] Found ${sources.length} sources from annotations`)
+                    safeEnqueue(`data: ${JSON.stringify({
+                      research_sources: sources
+                    })}\n\n`)
+                  }
+                }
               }
             }
             
