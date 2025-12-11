@@ -248,7 +248,12 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
             router.push('/login');
             return;
         }
-        setResearchMode(!researchMode);
+        const newResearchMode = !researchMode;
+        setResearchMode(newResearchMode);
+        // Disable image gen mode when enabling research mode (mutually exclusive)
+        if (newResearchMode && imageGenMode) {
+            setImageGenMode(false);
+        }
     };
     
     const handleImageGenToggle = () => {
@@ -256,7 +261,12 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
             router.push('/login');
             return;
         }
-        setImageGenMode(!imageGenMode);
+        const newImageGenMode = !imageGenMode;
+        setImageGenMode(newImageGenMode);
+        // Disable research mode when enabling image gen mode (mutually exclusive)
+        if (newImageGenMode && researchMode) {
+            setResearchMode(false);
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
