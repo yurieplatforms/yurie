@@ -555,7 +555,6 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                                     <tool.icon className="h-4 w-4" />
                                   ) : null}
                                   <span className="whitespace-nowrap font-medium">{tool.shortName}</span>
-                                  <XIcon className="h-3 w-3 opacity-50" />
                               </motion.button>
                           );
                       })}
@@ -576,7 +575,6 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   >
                     <ImageIcon className="h-4 w-4" />
                     <span className="whitespace-nowrap font-medium">Image</span>
-                    <XIcon className="h-3 w-3 opacity-50" />
                   </motion.button>
                 )}
                 {researchMode && (
@@ -590,7 +588,6 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                   >
                     <Telescope className="h-4 w-4" />
                     <span className="whitespace-nowrap font-medium">Research</span>
-                    <XIcon className="h-3 w-3 opacity-50" />
                   </motion.button>
                 )}
               </AnimatePresence>
