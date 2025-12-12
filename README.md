@@ -121,10 +121,9 @@ yurie/
 
 ## 🔬 Deep Research
 
-Yurie supports OpenAI's deep research models for complex analysis tasks:
+Yurie runs research workflows using OpenAI Responses API with background mode and web search:
 
--   **o4-mini-deep-research**: Faster, cost-effective research (default)
--   **o3-deep-research**: Premium model for comprehensive analysis
+-   **gpt-5.2-2025-12-11**: Pinned model for all research requests
 
 Deep research can find, analyze, and synthesize hundreds of sources to create detailed reports with inline citations. Tasks run in the background and can take several minutes to complete.
 

@@ -69,7 +69,7 @@ export type UrlImageContentSegment = {
  * Usage considerations:
  * - Max file size: 50MB per file
  * - Max total: 50MB across all files in a request
- * - Supported models: gpt-4o, gpt-4o-mini, o1, gpt-5, gpt-5.1
+ * - Supported models: gpt-5.2-2025-12-11
  */
 export type FileContentSegment = {
   type: 'file'

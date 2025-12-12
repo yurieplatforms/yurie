@@ -8,6 +8,12 @@
 
 import OpenAI from 'openai'
 
+/**
+ * Default OpenAI model used across this app.
+ * Kept as a single constant to ensure we only ever send requests to one model.
+ */
+export const DEFAULT_OPENAI_MODEL = 'gpt-5.2-2025-12-11' as const
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -94,7 +100,7 @@ export function parseAPIError(error: unknown): APIErrorInfo {
       userMessage = 'Invalid API key. Please check your configuration.'
       break
     case 'model_not_found':
-      userMessage = 'Model not available. Please try a different model.'
+      userMessage = 'Model not available right now. Please try again later.'
       break
     case 'server_error':
       userMessage = 'OpenAI server error. Please try again in a moment.'
@@ -462,11 +468,8 @@ export interface ServiceTierConfig {
  * 4. Share rate limits with standard processing
  * 5. Not all models support priority processing
  * 
- * Supported models (as of 2024):
- * - gpt-4o, gpt-4o-mini
- * - gpt-4.1, gpt-4.1-mini, gpt-4.1-nano
- * - gpt-5.1
- * - o1, o1-mini, o1-pro
+ * Model policy (this repo):
+ * - Only gpt-5.2-2025-12-11 is used.
  */
 
 /**

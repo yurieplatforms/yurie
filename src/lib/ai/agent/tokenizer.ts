@@ -22,7 +22,7 @@ import {
 export type TokenCountResult = {
   /** Total number of tokens */
   tokens: number
-  /** Estimated cost in USD (based on GPT-4 pricing) */
+  /** Estimated cost in USD (based on the pricing table below) */
   estimatedCost?: number
 }
 
@@ -37,14 +37,8 @@ export type ChatMessage = {
 // =============================================================================
 
 const TOKEN_PRICING = {
-  'gpt-4': { input: 0.03, output: 0.06 },
-  'gpt-4-turbo': { input: 0.01, output: 0.03 },
-  'gpt-4o': { input: 0.005, output: 0.015 },
-  'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
-  'gpt-3.5-turbo': { input: 0.0005, output: 0.0015 },
-  // GPT-5 series (estimated/placeholder)
-  'gpt-5.1': { input: 0.01, output: 0.03 },
-  'gpt-5.1-2025-11-13': { input: 0.01, output: 0.03 },
+  // GPT-5.2 pricing (estimated/placeholder)
+  'gpt-5.2-2025-12-11': { input: 0.01, output: 0.03 },
 } as const
 
 type ModelId = keyof typeof TOKEN_PRICING
@@ -72,17 +66,17 @@ export function countTokens(text: string): number {
  * Count tokens in a string with cost estimation
  *
  * @param text - The text to tokenize
- * @param model - The model to use for pricing (default: gpt-4o)
+ * @param model - The model to use for pricing (default: gpt-5.2-2025-12-11)
  * @param type - Whether this is input or output tokens
  * @returns Token count and estimated cost
  *
  * @example
- * const result = countTokensWithCost("Hello!", "gpt-4o", "input")
+ * const result = countTokensWithCost("Hello!", "gpt-5.2-2025-12-11", "input")
  * console.log(result) // { tokens: 2, estimatedCost: 0.00001 }
  */
 export function countTokensWithCost(
   text: string,
-  model: string = 'gpt-4o',
+  model: string = 'gpt-5.2-2025-12-11',
   type: 'input' | 'output' = 'input'
 ): TokenCountResult {
   const tokens = countTokens(text)
@@ -224,14 +218,7 @@ export function decodeTokens(tokens: number[]): string {
 // =============================================================================
 
 const MODEL_CONTEXT_WINDOWS = {
-  'gpt-3.5-turbo': 16385,
-  'gpt-4': 8192,
-  'gpt-4-32k': 32768,
-  'gpt-4-turbo': 128000,
-  'gpt-4o': 128000,
-  'gpt-4o-mini': 128000,
-  'gpt-5.1': 256000,
-  'gpt-5.1-2025-11-13': 256000,
+  'gpt-5.2-2025-12-11': 256000,
 } as const
 
 /**

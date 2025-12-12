@@ -1,9 +1,10 @@
 /**
  * Deep Research API Route
  * 
- * Uses OpenAI's o3-deep-research or o4-mini-deep-research models for complex
- * analysis and research tasks. These models can find, analyze, and synthesize
- * hundreds of sources to create comprehensive reports.
+ * Runs a research workflow using OpenAI Responses API + tools (web search, optional
+ * code interpreter) and background mode for long-running tasks.
+ *
+ * Model policy: this repo pins all requests to a single model.
  * 
  * Reference: https://platform.openai.com/docs/guides/deep-research
  */
@@ -12,6 +13,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
   createOpenAIClient,
+  DEFAULT_OPENAI_MODEL,
   parseAPIError,
   validateMessages,
   checkRateLimit,
@@ -19,7 +21,6 @@ import {
   generateRequestId,
   logRequest,
 } from '@/lib/ai/api/openai'
-import { sanitizeMessageContent } from '@/lib/ai/agent/message-converter'
 import { env } from '@/lib/config/env'
 import type { BackgroundResponseStatus } from '@/lib/ai/api/types'
 
@@ -30,8 +31,6 @@ import type { BackgroundResponseStatus } from '@/lib/ai/api/types'
 interface DeepResearchRequestBody {
   /** The research query/prompt */
   query: string
-  /** Optional: Use the mini model for faster/cheaper results */
-  useMiniModel?: boolean
   /** Optional: Include code interpreter for data analysis */
   includeCodeInterpreter?: boolean
   /** Optional: Maximum number of tool calls (controls cost/latency) */
@@ -148,8 +147,8 @@ export async function POST(request: Request) {
   // Deep research can take tens of minutes, so we use a long timeout
   const openai = createOpenAIClient({ apiKey, timeout: 3600000 }) // 1 hour timeout
 
-  // Select model - use o4-mini-deep-research by default (faster/cheaper), o3 for premium
-  const model = body.useMiniModel === false ? 'o3-deep-research' : 'o4-mini-deep-research'
+  // Model is pinned (single-model policy)
+  const model = DEFAULT_OPENAI_MODEL
 
   // Build tools array - must include at least one data source
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

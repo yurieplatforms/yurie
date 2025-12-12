@@ -11,6 +11,7 @@
  */
 
 import { Agent, run } from '@openai/agents'
+import { DEFAULT_OPENAI_MODEL } from '@/lib/ai/api/openai'
 import { getGmailToolsForAgents, GmailTools, DEFAULT_GMAIL_TOOLS, type GmailToolName } from './tools'
 import type { ComposioTool } from './types'
 
@@ -34,8 +35,6 @@ export interface AgentConfig {
   name?: string
   /** Agent instructions/system prompt */
   instructions?: string
-  /** Model to use (if supported by provider) */
-  model?: string
 }
 
 /**
@@ -100,6 +99,7 @@ export async function createEmailAgent(
   const agent = new Agent({
     name: options?.config?.name ?? 'Email Manager',
     instructions: options?.config?.instructions ?? AgentInstructions.emailManager,
+    model: DEFAULT_OPENAI_MODEL,
     // The Composio SDK formats tools correctly for OpenAI Agents
     tools: tools,
   })
@@ -173,6 +173,7 @@ export function createCustomAgent(
   return new Agent({
     name: config.name ?? 'Custom Agent',
     instructions: config.instructions ?? 'You are a helpful assistant.',
+    model: DEFAULT_OPENAI_MODEL,
     tools: tools,
   })
 }

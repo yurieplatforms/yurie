@@ -12,6 +12,7 @@ import type { AgentRequestBody } from '@/lib/ai/api/types'
 // Production utilities
 import {
   createOpenAIClient,
+  DEFAULT_OPENAI_MODEL,
   parseAPIError,
   validateMessages,
   checkRateLimit,
@@ -371,6 +372,9 @@ export async function POST(request: Request) {
         const streamCursor = new StreamCursor()
         
         console.log(`[agent] Background mode: ${useBackgroundMode}`)
+
+        // Model is pinned for this app (single-model policy)
+        const selectedModel = DEFAULT_OPENAI_MODEL
         
         try {
           // Send mode indicator to frontend for UI feedback
@@ -406,9 +410,6 @@ export async function POST(request: Request) {
             // Priority processing: https://platform.openai.com/docs/guides/priority-processing
             // Background mode: https://platform.openai.com/docs/guides/background
             
-            // GPT-5.1 with high reasoning for best quality responses
-            const selectedModel = 'gpt-5.1-2025-11-13'
-            
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const baseParams: any = {
               model: selectedModel,
@@ -425,7 +426,7 @@ export async function POST(request: Request) {
               baseParams.parallel_tool_calls = true // Execute multiple tool calls in parallel
             }
             
-            // GPT-5.1 supports reasoning - use 'high' for research mode, 'none' for regular chat
+            // GPT-5.2 supports reasoning - use 'high' for research mode, 'none' for regular chat
             baseParams.reasoning = { effort: researchMode ? 'high' : 'none' }
             
             // Add service tier for priority processing
@@ -883,7 +884,7 @@ export async function POST(request: Request) {
           
           logRequest({
             requestId,
-            model: 'gpt-5.1-2025-11-13',
+            model: selectedModel,
             timestamp: startTime,
             userId: userId ?? undefined,
             durationMs: latencyMetrics.totalDuration,
@@ -900,7 +901,7 @@ export async function POST(request: Request) {
           // Log failed request
           logRequest({
             requestId,
-            model: 'gpt-5.1-2025-11-13',
+            model: selectedModel,
             timestamp: startTime,
             userId: userId ?? undefined,
             durationMs: Date.now() - startTime,
