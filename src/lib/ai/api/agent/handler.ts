@@ -232,7 +232,6 @@ export async function handleAgentPOST(request: Request): Promise<Response> {
       classification,
       researchMode,
       imageGenMode: forceImageGen,
-      messageCount: sanitizedMessages.length,
     })
   } catch (error) {
     console.error('[agent] Unexpected error', error)

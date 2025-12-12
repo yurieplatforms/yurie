@@ -18,6 +18,110 @@ import type {
 import type { ChatMessage } from '@/lib/types'
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 
+// -----------------------------------------------------------------------------
+// Guest/local background task persistence (localStorage)
+// -----------------------------------------------------------------------------
+
+const LOCAL_BACKGROUND_TASKS_KEY = 'yurie-background-tasks'
+
+type LocalBackgroundTaskRecord = {
+  responseId: string
+  chatId: string
+  messageId: string
+  status: BackgroundResponseStatus
+  sequenceNumber: number
+  taskType: 'agent' | 'research'
+  partialOutput?: string
+  createdAt: number
+  updatedAt: number
+}
+
+function readLocalBackgroundTasks(): LocalBackgroundTaskRecord[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(LOCAL_BACKGROUND_TASKS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(Boolean) as LocalBackgroundTaskRecord[]
+  } catch {
+    return []
+  }
+}
+
+function writeLocalBackgroundTasks(tasks: LocalBackgroundTaskRecord[]): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(LOCAL_BACKGROUND_TASKS_KEY, JSON.stringify(tasks))
+  } catch {
+    // ignore
+  }
+}
+
+export function upsertLocalBackgroundTask(input: {
+  responseId: string
+  chatId: string
+  messageId: string
+  status: BackgroundResponseStatus
+  taskType?: 'agent' | 'research'
+  partialOutput?: string
+  sequenceNumber?: number
+}): void {
+  const now = Date.now()
+  const existing = readLocalBackgroundTasks()
+  const idx = existing.findIndex((t) => t.responseId === input.responseId)
+
+  const nextRecord: LocalBackgroundTaskRecord = {
+    responseId: input.responseId,
+    chatId: input.chatId,
+    messageId: input.messageId,
+    status: input.status,
+    sequenceNumber: input.sequenceNumber ?? (idx >= 0 ? existing[idx].sequenceNumber : 0),
+    taskType: input.taskType ?? (idx >= 0 ? existing[idx].taskType : 'agent'),
+    partialOutput:
+      input.partialOutput !== undefined
+        ? input.partialOutput
+        : idx >= 0
+          ? existing[idx].partialOutput
+          : undefined,
+    createdAt: idx >= 0 ? existing[idx].createdAt : now,
+    updatedAt: now,
+  }
+
+  const next = idx >= 0
+    ? [...existing.slice(0, idx), nextRecord, ...existing.slice(idx + 1)]
+    : [nextRecord, ...existing]
+
+  // Cleanup: drop stale entries (older than 30 minutes)
+  const maxAgeMs = 30 * 60 * 1000
+  const cleaned = next.filter((t) => now - t.createdAt <= maxAgeMs)
+
+  writeLocalBackgroundTasks(cleaned)
+}
+
+export function removeLocalBackgroundTask(responseId: string): void {
+  const existing = readLocalBackgroundTasks()
+  const next = existing.filter((t) => t.responseId !== responseId)
+  writeLocalBackgroundTasks(next)
+}
+
+function toPseudoPersistedTask(local: LocalBackgroundTaskRecord): PersistedBackgroundTask {
+  // Shape it like a PersistedBackgroundTask so the rest of the hook can stay unchanged.
+  return {
+    id: `local_${local.responseId}`,
+    userId: 'guest',
+    chatId: local.chatId,
+    messageId: local.messageId,
+    responseId: local.responseId,
+    status: local.status,
+    sequenceNumber: local.sequenceNumber,
+    taskType: local.taskType,
+    partialOutput: local.partialOutput,
+    createdAt: new Date(local.createdAt),
+    updatedAt: new Date(local.updatedAt),
+  }
+}
+
 /**
  * Active background task with resume capability
  */
@@ -70,33 +174,105 @@ export function useBackgroundTasks(): UseBackgroundTasksReturn {
    * Check for active background tasks
    */
   const checkActiveTasks = useCallback(async () => {
-    if (!user) {
-      setActiveTasks([])
-      return
-    }
-
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await fetch('/api/agent/background/active')
-      
-      if (!response.ok) {
+      // Authenticated: use server+DB persistence
+      if (user) {
+        const response = await fetch('/api/agent/background/active')
+        
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.error || 'Failed to check active tasks')
+        }
+
         const data = await response.json()
-        throw new Error(data.error || 'Failed to check active tasks')
+        const tasks = (data.tasks || []).map((task: PersistedBackgroundTask) => ({
+          task,
+          isResuming: false,
+        }))
+
+        // If server-side persistence is working, prefer it.
+        // Otherwise (e.g. missing `background_tasks` table), fall back to local tracking.
+        if (tasks.length > 0) {
+          setActiveTasks(tasks)
+          console.log(`[useBackgroundTasks] Found ${tasks.length} background task(s)`)
+          return
+        }
       }
 
-      const data = await response.json()
-      const tasks = (data.tasks || []).map((task: PersistedBackgroundTask) => ({
-        task,
-        isResuming: false,
-      }))
-
-      setActiveTasks(tasks)
-      
-      if (tasks.length > 0) {
-        console.log(`[useBackgroundTasks] Found ${tasks.length} active background task(s)`)
+      // Guest: use localStorage persistence + status polling
+      const local = readLocalBackgroundTasks()
+      if (local.length === 0) {
+        setActiveTasks([])
+        return
       }
+
+      const updated: LocalBackgroundTaskRecord[] = []
+
+      for (const task of local) {
+        // Only poll tasks that are potentially still running
+        if (task.status !== 'queued' && task.status !== 'in_progress') {
+          updated.push(task)
+          continue
+        }
+
+        try {
+          const res = await fetch('/api/agent/background/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ responseId: task.responseId }),
+          })
+
+          if (!res.ok) {
+            updated.push(task)
+            continue
+          }
+
+          const data = (await res.json()) as {
+            status?: BackgroundResponseStatus
+            outputText?: string
+          }
+
+          const nextStatus = data.status ?? task.status
+          const isTerminal =
+            nextStatus === 'completed' ||
+            nextStatus === 'failed' ||
+            nextStatus === 'cancelled' ||
+            nextStatus === 'incomplete'
+          const nextPartial = isTerminal ? (data.outputText ?? task.partialOutput) : task.partialOutput
+
+          const nextTask: LocalBackgroundTaskRecord = {
+            ...task,
+            status: nextStatus,
+            partialOutput: nextPartial,
+            updatedAt: Date.now(),
+          }
+
+          // Persist latest status/output locally
+          upsertLocalBackgroundTask({
+            responseId: nextTask.responseId,
+            chatId: nextTask.chatId,
+            messageId: nextTask.messageId,
+            status: nextTask.status,
+            taskType: nextTask.taskType,
+            partialOutput: nextTask.partialOutput,
+            sequenceNumber: nextTask.sequenceNumber,
+          })
+
+          updated.push(nextTask)
+        } catch {
+          updated.push(task)
+        }
+      }
+
+      setActiveTasks(
+        updated.map((t) => ({
+          task: toPseudoPersistedTask(t),
+          isResuming: false,
+        })),
+      )
     } catch (err) {
       console.error('[useBackgroundTasks] Error checking active tasks:', err)
       setError(err instanceof Error ? err.message : 'Failed to check active tasks')
@@ -190,15 +366,9 @@ export function useBackgroundTasks(): UseBackgroundTasksReturn {
             if (json.background) {
               const status = json.background.status as BackgroundResponseStatus
               onUpdate(accumulatedContent, status)
-
-              // If terminal, we're done
-              if (['completed', 'failed', 'cancelled', 'incomplete'].includes(status)) {
-                onComplete(accumulatedContent)
-                setActiveTasks((prev) =>
-                  prev.filter((t) => t.task.responseId !== task.responseId)
-                )
-                return
-              }
+              // Do not early-complete on terminal status.
+              // Some servers send final output after the terminal status event.
+              continue
             }
 
             // Handle content updates
@@ -206,7 +376,17 @@ export function useBackgroundTasks(): UseBackgroundTasksReturn {
             const deltaContent = choice?.delta?.content ?? choice?.message?.content ?? ''
             
             if (typeof deltaContent === 'string' && deltaContent.length > 0) {
-              accumulatedContent += deltaContent
+              // The resume endpoint may send the full `output_text` as a single chunk.
+              // If so, prefer replacing rather than appending to avoid duplication.
+              if (
+                accumulatedContent.length > 0 &&
+                deltaContent.length >= accumulatedContent.length &&
+                deltaContent.startsWith(accumulatedContent)
+              ) {
+                accumulatedContent = deltaContent
+              } else {
+                accumulatedContent += deltaContent
+              }
               onUpdate(accumulatedContent, 'in_progress')
             }
           } catch {
@@ -276,9 +456,7 @@ export function useBackgroundTasks(): UseBackgroundTasksReturn {
 
   // Check for active tasks on mount
   useEffect(() => {
-    if (user) {
-      checkActiveTasks()
-    }
+    checkActiveTasks()
   }, [user, checkActiveTasks])
 
   // Cleanup on unmount

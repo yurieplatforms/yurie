@@ -1,7 +1,8 @@
 /**
  * Active Background Tasks API
  * 
- * Returns all active (non-terminal) background tasks for the current user.
+ * Returns background tasks that are still active, plus tasks that became terminal
+ * during verification (so the frontend can apply final output after refresh).
  * Used by the frontend to detect and resume tasks after page refresh.
  * 
  * Reference: https://platform.openai.com/docs/guides/background
@@ -13,7 +14,6 @@ import { createOpenAIClient, generateRequestId } from '@/lib/ai/api/openai'
 import { 
   getActiveBackgroundTasks, 
   updateBackgroundTaskStatus,
-  isTerminalTaskStatus,
 } from '@/lib/ai/api/background-tasks'
 import { env } from '@/lib/config/env'
 import type { 
@@ -68,11 +68,10 @@ export async function GET() {
               }
             }
 
-            // Only return non-terminal tasks
-            if (!isTerminalTaskStatus(actualStatus)) {
-              return task
-            }
-            return null
+            // Return tasks even if they became terminal during this verification.
+            // This allows the frontend to "apply" the final output after a refresh,
+            // even if the response finished while the user was away.
+            return task
           } catch (error) {
             console.error(`[background/active] Failed to verify task ${task.responseId}:`, error)
             // If we can't verify, assume it's still active
@@ -81,14 +80,11 @@ export async function GET() {
         })
       )
 
-      // Filter out null (terminal) tasks
-      const activeTasks = verifiedTasks.filter((t): t is NonNullable<typeof t> => t !== null)
-
       const response: ActiveBackgroundTasksResponse = {
-        tasks: activeTasks,
+        tasks: verifiedTasks,
       }
 
-      console.log(`[background/active] Found ${activeTasks.length} active tasks for user ${userId}`)
+      console.log(`[background/active] Returning ${verifiedTasks.length} task(s) for user ${userId}`)
       return NextResponse.json(response)
     }
 

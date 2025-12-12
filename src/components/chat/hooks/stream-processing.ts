@@ -12,6 +12,7 @@ import type {
   ResearchStage,
   ResearchSource,
 } from '@/lib/types'
+import type { BackgroundResponseStatus } from '@/lib/ai/api/types'
 
 /**
  * SSE error information from the server
@@ -71,6 +72,12 @@ export type StreamState = {
 export type StreamCallbacks = {
   /** Called with updated state on each chunk */
   onUpdate: (state: StreamState) => void
+  /** Called when the server emits a background-mode status/id update */
+  onBackground?: (background: {
+    responseId: string
+    status: BackgroundResponseStatus
+    message?: string
+  }) => void
 }
 
 export async function processAgentSSEStream(options: {
@@ -288,6 +295,19 @@ export async function processAgentSSEStream(options: {
 
         // Background mode events (optional UI)
         if (json.background) {
+          const responseId = json.background.responseId
+          const status = json.background.status as BackgroundResponseStatus | undefined
+
+          if (typeof responseId === 'string' && responseId.length > 0 && status) {
+            callbacks.onBackground?.({
+              responseId,
+              status,
+              message:
+                typeof json.background.message === 'string'
+                  ? json.background.message
+                  : undefined,
+            })
+          }
           continue
         }
 

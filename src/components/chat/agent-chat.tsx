@@ -13,6 +13,8 @@ import { useFileProcessor } from '@/components/chat/hooks/useFileProcessor'
 import { 
   useBackgroundTasks,
   buildMessageFromResumedContent,
+  upsertLocalBackgroundTask,
+  removeLocalBackgroundTask,
 } from '@/components/chat/hooks/useBackgroundTasks'
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 import type { ChatMessage } from '@/lib/types'
@@ -24,10 +26,8 @@ const MessageList = lazy(() =>
 
 function MessageListFallback({
   messages,
-  isLoading,
 }: {
   messages: ChatMessage[]
-  isLoading: boolean
 }) {
   return (
     <div className="space-y-6">
@@ -167,6 +167,14 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         await updateChat(currentId, nextMessages)
       }
 
+      if (!currentId) {
+        // Should never happen, but narrows type for the rest of the function
+        setError('Failed to initialize chat.')
+        setIsLoading(false)
+        return
+      }
+      const chatIdForRequest = currentId
+
       // Both regular chat and research mode use the same flow
       // Research mode enables xhigh reasoning effort on the agent endpoint
       abortControllerRef.current = new AbortController()
@@ -185,6 +193,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
       let finalStreamState: StreamState | null = null
+      let backgroundResponseId: string | null = null
 
       try {
         const response = await fetch('/api/agent', {
@@ -200,7 +209,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             containerId,
             selectedTools,
             // Include chat and message ID for background task persistence
-            chatId: currentId,
+            chatId: chatIdForRequest,
             messageId: assistantMessageId,
             // Research mode uses xhigh reasoning effort
             researchMode: isResearchMode,
@@ -258,6 +267,17 @@ export function AgentChat({ chatId }: { chatId?: string }) {
               }),
             )
           },
+          onBackground: (background) => {
+            backgroundResponseId = background.responseId
+            // Persist for guest-resume (and as a fallback for authed users too)
+            upsertLocalBackgroundTask({
+              responseId: background.responseId,
+              chatId: chatIdForRequest,
+              messageId: assistantMessageId,
+              status: background.status,
+              taskType: isResearchMode ? 'research' : 'agent',
+            })
+          },
         })
 
         // Check for errors in final stream state
@@ -298,6 +318,11 @@ export function AgentChat({ chatId }: { chatId?: string }) {
 
           await updateChat(currentId, finalMessages)
         }
+
+        // Cleanup local tracking if we finished normally
+        if (backgroundResponseId && finalStreamState && !finalStreamState.error) {
+          removeLocalBackgroundTask(backgroundResponseId)
+        }
       }
     },
     [
@@ -324,7 +349,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   // Check for and resume background tasks when chat loads
   useEffect(() => {
     async function resumeBackgroundTask() {
-      if (!id || !user) return
+      if (!id) return
       
       // Check if we already resumed this task
       if (hasResumedTaskRef.current === id) return
@@ -342,6 +367,37 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       const { task } = activeTask
       console.log(`[AgentChat] Resuming background task for chat ${id}`)
       
+      // If the task already finished while the user was away and we have output,
+      // apply it immediately without hitting the resume endpoint (which may fail
+      // after OpenAI's ~10 minute background retention window).
+      const isTerminalStatus =
+        task.status === 'completed' ||
+        task.status === 'failed' ||
+        task.status === 'cancelled' ||
+        task.status === 'incomplete'
+
+      if (
+        isTerminalStatus &&
+        typeof task.partialOutput === 'string' &&
+        task.partialOutput.trim().length > 0
+      ) {
+        const finalContent = task.partialOutput
+
+        setMessages((prev) => {
+          const updatedMessages = prev.map((msg) => {
+            if (msg.id !== task.messageId) return msg
+            return buildMessageFromResumedContent(msg, finalContent)
+          })
+
+          updateChat(id, updatedMessages)
+          return updatedMessages
+        })
+
+        removeLocalBackgroundTask(task.responseId)
+        console.log(`[AgentChat] Applied completed background task for chat ${id}`)
+        return
+      }
+
       // Set loading state
       setIsLoading(true)
       
@@ -385,6 +441,9 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             
             return updatedMessages
           })
+
+          // Cleanup guest/local task tracking once applied
+          removeLocalBackgroundTask(task.responseId)
           
           console.log(`[AgentChat] Background task completed for chat ${id}`)
         },
@@ -460,7 +519,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
     <div className="relative">
       <div className="flex flex-col gap-4 pb-36">
         <div className="space-y-6">
-          <Suspense fallback={<MessageListFallback messages={messages} isLoading={isLoading} />}>
+          <Suspense fallback={<MessageListFallback messages={messages} />}>
             <MessageList
               messages={messages}
               isLoading={isLoading}

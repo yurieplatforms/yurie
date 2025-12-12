@@ -13,7 +13,6 @@ import {
   getRecommendedServiceTier,
   logRequest,
   parseAPIError,
-  shouldUseBackgroundMode,
   withBackgroundMode,
   withServiceTier,
 } from '@/lib/ai/api/openai'
@@ -58,8 +57,6 @@ export type AgentStreamOptions = {
   researchMode: boolean
   /** If true, force the built-in image generation tool */
   imageGenMode?: boolean
-
-  messageCount: number
 }
 
 export function createAgentSSEResponse(options: AgentStreamOptions): Response {
@@ -78,7 +75,6 @@ export function createAgentSSEResponse(options: AgentStreamOptions): Response {
     classification,
     researchMode,
     imageGenMode = false,
-    messageCount,
   } = options
 
   const stream = new ReadableStream({
@@ -115,19 +111,13 @@ export function createAgentSSEResponse(options: AgentStreamOptions): Response {
 
       // Background mode configuration
       // Reference: https://platform.openai.com/docs/guides/background
-      const useBackground = imageGenMode
-        ? false
-        : shouldUseBackgroundMode({
-            mode: effectiveMode,
-            hasTools: Boolean(tools && tools.length > 0),
-            estimatedComplexity:
-              reasoningEffort === 'xhigh'
-                ? 'high'
-                : reasoningEffort === 'medium'
-                  ? 'medium'
-                  : 'low',
-            messageCount,
-          })
+      // We enable Background mode for all non-image requests so work continues even if the
+      // user refreshes/closes the page. The client can resume later by polling the stored
+      // OpenAI `responseId`.
+      //
+      // NOTE: Background mode stores data ~10 minutes for polling and is not ZDR compatible.
+      // @see https://platform.openai.com/docs/guides/background
+      const useBackground = imageGenMode ? false : true
 
       // Stream cursor for tracking resumable stream position
       const streamCursor = new StreamCursor()
@@ -222,8 +212,6 @@ export function createAgentSSEResponse(options: AgentStreamOptions): Response {
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           for await (const event of response as any) {
-            if (isClosed) break
-
             // Track sequence number for stream resumption (background mode)
             if (useBackground && event.sequence_number !== undefined) {
               streamCursor.update(event)
@@ -802,7 +790,11 @@ export function createAgentSSEResponse(options: AgentStreamOptions): Response {
       } finally {
         if (!isClosed) {
           isClosed = true
+        }
+        try {
           controller.close()
+        } catch {
+          // ignore
         }
       }
     },
