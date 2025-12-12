@@ -1,6 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
-import { TextEffect } from '@/components/ui/text-effect'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/providers/auth-provider'
@@ -14,38 +13,29 @@ const NAV_ITEMS = [
 export function Header() {
   const pathname = usePathname()
   const { user, isLoading } = useAuth()
-  const [avatarError, setAvatarError] = useState(false)
-  
-  // Reset error state when user changes
-  useEffect(() => {
-    setAvatarError(false)
-  }, [user?.user_metadata?.avatar_url])
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null)
 
-  // Handle logo click - stops AI response and navigates to home
-  const handleLogoClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    // Hard navigation aborts any pending fetch requests and resets state
-    window.location.href = '/'
-  }, [])
+  const avatarUrl =
+    user?.user_metadata?.avatar_url &&
+    typeof user.user_metadata.avatar_url === 'string' &&
+    user.user_metadata.avatar_url.startsWith('http')
+      ? user.user_metadata.avatar_url
+      : null
+
+  const showAvatar = !!avatarUrl && failedAvatarUrl !== avatarUrl
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 bg-[var(--color-background)]" suppressHydrationWarning>
       <div className="mx-auto flex h-16 max-w-2xl items-center justify-between px-4" suppressHydrationWarning>
         <div className="flex items-center gap-1.5">
-          <a 
-            href="/" 
-            onClick={handleLogoClick}
-            className="group flex items-center gap-2 cursor-pointer"
+          <Link
+            href="/"
+            className="group flex cursor-pointer items-center gap-2"
           >
-            <TextEffect
-              as="span"
-              preset="fade"
-              per="char"
-              className="font-zalando text-lg text-[var(--color-foreground)]"
-            >
+            <span className="font-zalando text-lg text-[var(--color-foreground)]">
               yurie
-            </TextEffect>
-          </a>
+            </span>
+          </Link>
         </div>
 
         <div className="flex items-center gap-1" suppressHydrationWarning>
@@ -63,9 +53,7 @@ export function Header() {
                       : "text-foreground hover:bg-accent hover:text-accent-foreground active:bg-accent"
                   )}
                 >
-                  <TextEffect as="span" preset="fade" per="char">
-                    {item.label}
-                  </TextEffect>
+                  {item.label}
                 </Link>
               )
             })}
@@ -83,15 +71,14 @@ export function Header() {
                 pathname === '/profile' && "active"
               )}
             >
-              {user.user_metadata?.avatar_url && 
-               typeof user.user_metadata.avatar_url === 'string' && 
-               user.user_metadata.avatar_url.startsWith('http') && 
-               !avatarError ? (
+              {showAvatar ? (
                 <img
-                  src={user.user_metadata.avatar_url}
+                  src={avatarUrl}
                   alt="Profile"
                   className="h-full w-full rounded-full object-cover shadow-sm"
-                  onError={() => setAvatarError(true)}
+                  decoding="async"
+                  loading="lazy"
+                  onError={() => setFailedAvatarUrl(avatarUrl)}
                 />
               ) : (
                 <div className="h-full w-full rounded-full bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-info)] shadow-sm" />
@@ -100,9 +87,7 @@ export function Header() {
           ) : (
             <Button asChild size="sm" className="text-[var(--font-size-sm)] font-medium tracking-normal">
               <Link href="/login">
-                <TextEffect as="span" preset="fade" per="char">
-                  Log in
-                </TextEffect>
+                Log in
               </Link>
             </Button>
           )}

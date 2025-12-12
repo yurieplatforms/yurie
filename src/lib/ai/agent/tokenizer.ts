@@ -38,6 +38,9 @@ export type ChatMessage = {
 
 const TOKEN_PRICING = {
   // GPT-5.2 pricing (estimated/placeholder)
+  'gpt-5.2-chat-latest': { input: 0.01, output: 0.03 },
+  'gpt-5.2': { input: 0.01, output: 0.03 },
+  // Back-compat (older pinned snapshot used in this repo previously)
   'gpt-5.2-2025-12-11': { input: 0.01, output: 0.03 },
 } as const
 
@@ -66,17 +69,17 @@ export function countTokens(text: string): number {
  * Count tokens in a string with cost estimation
  *
  * @param text - The text to tokenize
- * @param model - The model to use for pricing (default: gpt-5.2-2025-12-11)
+ * @param model - The model to use for pricing (default: gpt-5.2)
  * @param type - Whether this is input or output tokens
  * @returns Token count and estimated cost
  *
  * @example
- * const result = countTokensWithCost("Hello!", "gpt-5.2-2025-12-11", "input")
+ * const result = countTokensWithCost("Hello!", "gpt-5.2", "input")
  * console.log(result) // { tokens: 2, estimatedCost: 0.00001 }
  */
 export function countTokensWithCost(
   text: string,
-  model: string = 'gpt-5.2-2025-12-11',
+  model: string = 'gpt-5.2',
   type: 'input' | 'output' = 'input'
 ): TokenCountResult {
   const tokens = countTokens(text)
@@ -218,6 +221,9 @@ export function decodeTokens(tokens: number[]): string {
 // =============================================================================
 
 const MODEL_CONTEXT_WINDOWS = {
+  'gpt-5.2-chat-latest': 256000,
+  'gpt-5.2': 256000,
+  // Back-compat (older pinned snapshot used in this repo previously)
   'gpt-5.2-2025-12-11': 256000,
 } as const
 

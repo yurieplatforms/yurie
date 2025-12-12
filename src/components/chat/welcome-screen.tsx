@@ -4,7 +4,7 @@ type WelcomeScreenProps = {
   onSuggestionClick?: (suggestion: string) => void
 }
 
-export function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
+export function WelcomeScreen(_props: WelcomeScreenProps) {
   return null
 }
 

@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createOpenAIClient, generateRequestId } from '@/lib/ai/api/openai'
-import { backgroundResponseStore, isTerminalStatus, getStatusMessage } from '@/lib/ai/api/background'
+import { backgroundResponseStore, isTerminalStatus } from '@/lib/ai/api/background'
 import { env } from '@/lib/config/env'
 import type { BackgroundStatusRequestBody, BackgroundStatusResponse } from '@/lib/ai/api/types'
 
@@ -135,4 +135,5 @@ export async function GET(request: Request) {
   
   return POST(mockRequest)
 }
+
 

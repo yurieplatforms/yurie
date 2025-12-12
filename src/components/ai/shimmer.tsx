@@ -4,33 +4,32 @@ import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import {
   type CSSProperties,
-  type ElementType,
-  type JSX,
   memo,
   useMemo,
 } from "react";
 
 export type TextShimmerProps = {
   children: string;
-  as?: ElementType;
+  as?: "p" | "span";
   className?: string;
   duration?: number;
   spread?: number;
 };
 
+const MotionP = motion.create("p");
+const MotionSpan = motion.create("span");
+
 const ShimmerComponent = ({
   children,
-  as: Component = "p",
+  as: Tag = "p",
   className,
   duration = 2,
   spread = 2,
 }: TextShimmerProps) => {
-  const MotionComponent = motion.create(
-    Component as keyof JSX.IntrinsicElements
-  );
+  const MotionComponent = Tag === "span" ? MotionSpan : MotionP;
 
   const dynamicSpread = useMemo(
-    () => (children?.length ?? 0) * spread,
+    () => children.length * spread,
     [children, spread]
   );
 

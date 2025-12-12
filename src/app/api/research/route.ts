@@ -4,7 +4,8 @@
  * Runs a research workflow using OpenAI Responses API + tools (web search, optional
  * code interpreter) and background mode for long-running tasks.
  *
- * Model policy: this repo pins all requests to a single model.
+ * Model policy:
+ * - research: gpt-5.2 with reasoning.effort = xhigh
  * 
  * Reference: https://platform.openai.com/docs/guides/deep-research
  */
@@ -13,7 +14,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
   createOpenAIClient,
-  DEFAULT_OPENAI_MODEL,
+  getOpenAIConfigForMode,
   parseAPIError,
   validateMessages,
   checkRateLimit,
@@ -147,8 +148,7 @@ export async function POST(request: Request) {
   // Deep research can take tens of minutes, so we use a long timeout
   const openai = createOpenAIClient({ apiKey, timeout: 3600000 }) // 1 hour timeout
 
-  // Model is pinned (single-model policy)
-  const model = DEFAULT_OPENAI_MODEL
+  const { model, reasoningEffort } = getOpenAIConfigForMode('research')
 
   // Build tools array - must include at least one data source
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -179,6 +179,7 @@ export async function POST(request: Request) {
       input: enhancedQuery,
       background: true, // Required for deep research
       tools,
+      reasoning: { effort: reasoningEffort },
       // Optionally limit tool calls to control cost/latency
       ...(body.maxToolCalls && { max_tool_calls: body.maxToolCalls }),
     }

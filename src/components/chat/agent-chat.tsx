@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/providers/auth-provider'
 import { useChat } from '@/components/chat/hooks/useChat'
 import {
@@ -16,16 +17,51 @@ import {
 import { parseSuggestions } from '@/lib/chat/suggestion-parser'
 import type { ChatMessage } from '@/lib/types'
 
-// Extracted subcomponents
-import { MessageList } from './message-list'
+// Lazy-load the heavy message rendering stack (streamdown/remark/etc)
+const MessageList = lazy(() =>
+  import('./message-list').then((m) => ({ default: m.MessageList })),
+)
+
+function MessageListFallback({
+  messages,
+  isLoading,
+}: {
+  messages: ChatMessage[]
+  isLoading: boolean
+}) {
+  return (
+    <div className="space-y-6">
+      {messages.map((message) => {
+        const isUser = message.role === 'user'
+        const text = message.content.trim().length > 0 ? message.content : ''
+
+        return (
+          <div key={message.id} className="flex flex-col gap-2">
+            <div
+              className={
+                isUser
+                  ? 'ml-auto w-fit max-w-[80%] rounded-2xl bg-muted px-5 py-3.5 text-base font-medium text-zinc-900 shadow-sm dark:text-zinc-100'
+                  : 'w-full text-base font-medium text-zinc-900 dark:text-zinc-100'
+              }
+            >
+              <p className="whitespace-pre-wrap">{text}</p>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 import { WelcomeScreen } from './welcome-screen'
 import { ChatInputArea } from './chat-input-area'
 
 export function AgentChat({ chatId }: { chatId?: string }) {
   const { user } = useAuth()
+  const router = useRouter()
   const [hasJustCopied, setHasJustCopied] = useState(false)
   const [selectedTools, setSelectedTools] = useState<string[]>([])
   const [researchMode, setResearchMode] = useState(false)
+  const [imageGenMode, setImageGenMode] = useState(false)
   const hasResumedTaskRef = useRef<string | null>(null)
 
   // Use custom hooks for chat state and stream processing
@@ -39,7 +75,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
     setMessages,
     setIsLoading,
     setError,
-    setContainerId,
     initializeChat,
     updateChat,
     generateTitle,
@@ -56,9 +91,17 @@ export function AgentChat({ chatId }: { chatId?: string }) {
   } = useBackgroundTasks()
 
   const sendMessage = useCallback(
-    async (rawContent: string, filesToSend: File[] = [], options?: { researchMode?: boolean }) => {
+    async (
+      rawContent: string,
+      filesToSend: File[] = [],
+      options?: { researchMode?: boolean; imageGenMode?: boolean },
+    ) => {
+      // Prefetch the heavy message renderer as soon as we start sending.
+      void import('./message-list')
+
       const content = rawContent
       const isResearchMode = options?.researchMode || false
+      const isImageGenMode = options?.imageGenMode || false
 
       const trimmed = content.trim()
       if ((trimmed.length === 0 && filesToSend.length === 0) || isLoading) {
@@ -96,6 +139,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         content: '',
         name: 'Yurie',
         mode: isResearchMode ? { type: 'research', reason: 'Deep research mode', confidence: 0.5 } : undefined,
+        imageGenMode: isImageGenMode,
         // Initialize research progress for research mode
         researchProgress: isResearchMode ? {
           stage: 'starting',
@@ -115,13 +159,16 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       let currentId = id
       if (!currentId) {
         currentId = await initializeChat(nextMessages)
+        // Keep the URL in sync so navigation (and "new thread") stays fast
+        // without forcing a full page reload.
+        router.replace(`/?id=${currentId}`)
         generateTitle(currentId, userMessage)
       } else {
         await updateChat(currentId, nextMessages)
       }
 
       // Both regular chat and research mode use the same flow
-      // Research mode enables high reasoning effort on the agent endpoint
+      // Research mode enables xhigh reasoning effort on the agent endpoint
       abortControllerRef.current = new AbortController()
 
       const now = new Date()
@@ -155,8 +202,10 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             // Include chat and message ID for background task persistence
             chatId: currentId,
             messageId: assistantMessageId,
-            // Research mode uses high reasoning effort
+            // Research mode uses xhigh reasoning effort
             researchMode: isResearchMode,
+            // Force image generation tool when enabled in UI
+            imageGenMode: isImageGenMode,
           }),
         })
 
@@ -261,7 +310,6 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       setError,
       setMessages,
       setIsLoading,
-      setContainerId,
       initializeChat,
       updateChat,
       generateTitle,
@@ -269,6 +317,7 @@ export function AgentChat({ chatId }: { chatId?: string }) {
       thinkingStartRef,
       processStream,
       processFiles,
+      router,
     ],
   )
 
@@ -398,6 +447,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
             onSelectedToolsChange={setSelectedTools}
             researchMode={researchMode}
             onResearchModeChange={setResearchMode}
+            imageGenMode={imageGenMode}
+            onImageGenModeChange={setImageGenMode}
           />
         </div>
       </div>
@@ -409,13 +460,15 @@ export function AgentChat({ chatId }: { chatId?: string }) {
     <div className="relative">
       <div className="flex flex-col gap-4 pb-36">
         <div className="space-y-6">
-          <MessageList
-            messages={messages}
-            isLoading={isLoading}
-            hasJustCopied={hasJustCopied}
-            onCopyMessage={handleCopyMessage}
-            onSuggestionClick={handleSuggestionClick}
-          />
+          <Suspense fallback={<MessageListFallback messages={messages} isLoading={isLoading} />}>
+            <MessageList
+              messages={messages}
+              isLoading={isLoading}
+              hasJustCopied={hasJustCopied}
+              onCopyMessage={handleCopyMessage}
+              onSuggestionClick={handleSuggestionClick}
+            />
+          </Suspense>
         </div>
 
         {error && (
@@ -430,6 +483,8 @@ export function AgentChat({ chatId }: { chatId?: string }) {
         onSelectedToolsChange={setSelectedTools}
         researchMode={researchMode}
         onResearchModeChange={setResearchMode}
+        imageGenMode={imageGenMode}
+        onImageGenModeChange={setImageGenMode}
       />
     </div>
   )

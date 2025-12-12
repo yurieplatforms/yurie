@@ -8,7 +8,6 @@
  */
 
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createOpenAIClient, generateRequestId, parseAPIError } from '@/lib/ai/api/openai'
 import { isTerminalStatus } from '@/lib/ai/api/background'
 import { env } from '@/lib/config/env'
@@ -155,16 +154,6 @@ export async function POST(request: Request) {
     )
   }
 
-  // Verify user authentication (optional but recommended)
-  let userId: string | null = null
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    userId = user?.id ?? null
-  } catch {
-    // Continue without user ID
-  }
-
   // Check for OpenAI API key
   const apiKey = env.OPENAI_API_KEY
 
@@ -256,4 +245,5 @@ export async function GET(request: Request) {
 
   return POST(mockRequest)
 }
+
 

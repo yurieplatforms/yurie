@@ -474,13 +474,18 @@ export const backgroundResponseStore = new BackgroundResponseStore()
  * - Agent mode requests
  */
 export function shouldUseBackgroundMode(options: {
-  mode: 'chat' | 'agent'
+  mode: 'chat' | 'agent' | 'research'
   hasTools: boolean
   estimatedComplexity?: 'low' | 'medium' | 'high'
   messageCount?: number
 }): boolean {
   const { mode, hasTools, estimatedComplexity = 'medium', messageCount = 0 } = options
   
+  // Research mode should always use background mode (can be long-running)
+  if (mode === 'research') {
+    return true
+  }
+
   // Agent mode with tools should use background mode
   if (mode === 'agent' && hasTools) {
     return true
@@ -521,4 +526,5 @@ export function getStatusMessage(status: BackgroundResponseStatus): string {
       return 'Unknown status'
   }
 }
+
 

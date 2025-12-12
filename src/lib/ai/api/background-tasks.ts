@@ -52,6 +52,28 @@ function rowToTask(row: BackgroundTaskRow): PersistedBackgroundTask {
 }
 
 // =============================================================================
+// Error Handling Helpers
+// =============================================================================
+
+const BACKGROUND_TASKS_MISSING_TABLE_CODE = 'PGRST205'
+let didWarnMissingBackgroundTasksTable = false
+
+function isMissingBackgroundTasksTableError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  if (!('code' in error)) return false
+  const code = (error as { code?: unknown }).code
+  return code === BACKGROUND_TASKS_MISSING_TABLE_CODE
+}
+
+function warnMissingBackgroundTasksTableOnce() {
+  if (didWarnMissingBackgroundTasksTable) return
+  didWarnMissingBackgroundTasksTable = true
+  console.warn(
+    "[background-tasks] Table 'background_tasks' not found; background task persistence is disabled. Run the Supabase migration in `supabase/migrations.sql`.",
+  )
+}
+
+// =============================================================================
 // CRUD Operations
 // =============================================================================
 
@@ -83,6 +105,10 @@ export async function createBackgroundTask(
     .single()
 
   if (error) {
+    if (isMissingBackgroundTasksTableError(error)) {
+      warnMissingBackgroundTasksTableOnce()
+      return null
+    }
     console.error('[background-tasks] Failed to create task:', error)
     return null
   }
@@ -104,6 +130,10 @@ export async function getBackgroundTaskByResponseId(
     .single()
 
   if (error) {
+    if (isMissingBackgroundTasksTableError(error)) {
+      warnMissingBackgroundTasksTableOnce()
+      return null
+    }
     if (error.code !== 'PGRST116') { // Not found is expected
       console.error('[background-tasks] Failed to get task:', error)
     }
@@ -129,6 +159,10 @@ export async function getActiveBackgroundTasks(
     .order('created_at', { ascending: false })
 
   if (error) {
+    if (isMissingBackgroundTasksTableError(error)) {
+      warnMissingBackgroundTasksTableOnce()
+      return []
+    }
     console.error('[background-tasks] Failed to get active tasks:', error)
     return []
   }
@@ -150,6 +184,10 @@ export async function getBackgroundTasksForChat(
     .order('created_at', { ascending: false })
 
   if (error) {
+    if (isMissingBackgroundTasksTableError(error)) {
+      warnMissingBackgroundTasksTableOnce()
+      return []
+    }
     console.error('[background-tasks] Failed to get tasks for chat:', error)
     return []
   }
@@ -181,6 +219,10 @@ export async function updateBackgroundTaskStatus(
     .eq('response_id', responseId)
 
   if (error) {
+    if (isMissingBackgroundTasksTableError(error)) {
+      warnMissingBackgroundTasksTableOnce()
+      return false
+    }
     console.error('[background-tasks] Failed to update task status:', error)
     return false
   }
@@ -205,6 +247,10 @@ export async function updateBackgroundTaskSequence(
     .eq('response_id', responseId)
 
   if (error) {
+    if (isMissingBackgroundTasksTableError(error)) {
+      warnMissingBackgroundTasksTableOnce()
+      return false
+    }
     console.error('[background-tasks] Failed to update task sequence:', error)
     return false
   }
@@ -225,6 +271,10 @@ export async function deleteBackgroundTask(
     .eq('response_id', responseId)
 
   if (error) {
+    if (isMissingBackgroundTasksTableError(error)) {
+      warnMissingBackgroundTasksTableOnce()
+      return false
+    }
     console.error('[background-tasks] Failed to delete task:', error)
     return false
   }
@@ -250,6 +300,10 @@ export async function cleanupOldTasks(
     .select()
 
   if (error) {
+    if (isMissingBackgroundTasksTableError(error)) {
+      warnMissingBackgroundTasksTableOnce()
+      return 0
+    }
     console.error('[background-tasks] Failed to cleanup old tasks:', error)
     return 0
   }
@@ -263,4 +317,5 @@ export async function cleanupOldTasks(
 export function isTerminalTaskStatus(status: BackgroundResponseStatus): boolean {
   return ['completed', 'failed', 'cancelled', 'incomplete'].includes(status)
 }
+
 

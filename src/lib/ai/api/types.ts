@@ -245,7 +245,7 @@ export interface ModeEvent {
     type: 'chat' | 'agent' | 'research'
     reason: string
     confidence: 'high' | 'medium' | 'low'
-    reasoningEffort: 'none' | 'low' | 'medium' | 'high'
+    reasoningEffort: 'none' | 'low' | 'medium' | 'high' | 'xhigh'
     backgroundMode?: boolean
   }
 }
@@ -357,8 +357,13 @@ export type AgentRequestBody = {
   chatId?: string
   /** Message ID for background task persistence */
   messageId?: string
-  /** Research mode uses high reasoning effort */
+  /** Research mode uses xhigh reasoning effort */
   researchMode?: boolean
+  /**
+   * Image generation mode forces the built-in image generation tool.
+   * Triggered by the UI "Image" button / pill.
+   */
+  imageGenMode?: boolean
 }
 
 // =============================================================================

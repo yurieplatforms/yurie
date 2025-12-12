@@ -19,5 +19,5 @@ export default async function HistoryPage() {
     initialChats = await getUserChats(user.id, supabase)
   }
 
-  return <HistoryList initialChats={initialChats} />
+  return <HistoryList initialChats={initialChats} initialUserId={user?.id} />
 }

@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
 import { getChats, deleteChat, clearHistory } from '@/lib/chat/history'
 import { useAuth } from '@/lib/providers/auth-provider'
 import type { SavedChat } from '@/lib/types'
 import { motion } from 'motion/react'
 import { AnimatedBackground } from '@/components/ui/animated-background'
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
@@ -33,17 +33,23 @@ const TRANSITION_SECTION = {
 
 interface HistoryListProps {
   initialChats?: SavedChat[]
+  /** If server-rendered, the user id used to fetch `initialChats` */
+  initialUserId?: string
 }
 
-export function HistoryList({ initialChats = [] }: HistoryListProps) {
+export function HistoryList({ initialChats = [], initialUserId }: HistoryListProps) {
   const { user, isLoading: isAuthLoading } = useAuth()
+  const router = useRouter()
   const [chats, setChats] = useState<SavedChat[]>(initialChats)
   const [mounted, setMounted] = useState(false)
   
   // Track whether we've done the initial client-side fetch
   const hasInitializedRef = useRef(false)
-  // Track the user ID that was used for SSR data (if any)
-  const ssrUserIdRef = useRef<string | undefined>(undefined)
+  
+  // Keep local state in sync if server props change (e.g., router.refresh())
+  useEffect(() => {
+    setChats(initialChats)
+  }, [initialChats])
 
   useEffect(() => {
     setMounted(true)
@@ -66,7 +72,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
         if (initialChats.length > 0) {
           // SSR data exists - only refetch if user state differs
           // (e.g., SSR was for guest but now user is logged in)
-          const ssrWasForGuest = ssrUserIdRef.current === undefined
+          const ssrWasForGuest = initialUserId === undefined
           const nowHasUser = !!user?.id
           
           // If SSR was for a guest and we now have a logged-in user, fetch
@@ -98,7 +104,7 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
     return () => {
       window.removeEventListener('history-updated', handleHistoryUpdate)
     }
-  }, [user, isAuthLoading, initialChats.length])
+  }, [user, isAuthLoading, initialChats.length, initialUserId])
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault()
@@ -205,11 +211,11 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
         <div className="-mx-4 overflow-hidden">
           <AnimatedBackground
             enableHover
-            className="h-full w-full rounded-[var(--radius-card)] bg-[var(--color-accent)]"
+            className="h-full w-full rounded-[var(--radius-card)] bg-[var(--color-accent)] border border-[var(--color-border)] shadow-[var(--shadow-sm)]"
             transition={{
               type: 'spring',
-              stiffness: 300,
-              damping: 30,
+              stiffness: 450,
+              damping: 40,
             }}
           >
             {chats.map((chat) => (
@@ -221,8 +227,14 @@ export function HistoryList({ initialChats = [] }: HistoryListProps) {
               >
                   <Link
                     href={`/?id=${chat.id}`}
+                    prefetch={false}
+                    onMouseEnter={() => router.prefetch(`/?id=${chat.id}`)}
+                    onTouchStart={() => router.prefetch(`/?id=${chat.id}`)}
                     className="absolute inset-0 z-0"
-                  />
+                    aria-label={`Open chat: ${chat.title}`}
+                  >
+                    <span className="sr-only">Open chat</span>
+                  </Link>
                   <div className="relative z-10 pointer-events-none flex flex-col space-y-1 pr-8 min-w-0 w-full">
                     <h4 className="font-normal text-[var(--color-foreground)] truncate">
                       {chat.title}

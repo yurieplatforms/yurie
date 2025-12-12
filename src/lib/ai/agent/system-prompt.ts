@@ -5,7 +5,7 @@
  * Supports three modes:
  * - "chat": Lightweight, conversational mode for simple queries
  * - "agent": Full agentic mode with tool use and multi-step reasoning
- * - "research": Deep analysis mode with high reasoning effort for comprehensive research
+ * - "research": Deep analysis mode with xhigh reasoning effort for comprehensive research
  *
  * PROMPT ENGINEERING BEST PRACTICES (GPT-5/5.1):
  * - Structure: Identity → Instructions → Examples → Context
@@ -343,14 +343,14 @@ ${useStructuredOutput ? JSON_RESPONSE_FORMAT : TEXT_RESPONSE_FORMAT}`
 }
 
 /**
- * Research mode instructions for GPT-5/5.1 with high reasoning effort.
+ * Research mode instructions for GPT-5.2 with xhigh reasoning effort.
  * Optimized for deep analysis, exhaustive research, and comprehensive long-form responses.
  * Emphasizes prose over bullets, tables for data visualization.
  * Reference: https://platform.openai.com/docs/guides/prompt-engineering
  */
 const RESEARCH_INSTRUCTIONS = `## Instructions
 
-You are a senior research analyst conducting deep, exhaustive research. You have high reasoning effort enabled—use it fully. Your responses should be extraordinarily comprehensive, thorough, and leave no stone unturned. Think of yourself as writing a detailed research brief that someone could use to make critical decisions.
+You are a senior research analyst conducting deep, exhaustive research. You have xhigh reasoning effort enabled—use it fully. Your responses should be extraordinarily comprehensive, thorough, and leave no stone unturned. Think of yourself as writing a detailed research brief that someone could use to make critical decisions.
 
 ### Core Philosophy: Maximum Depth & Comprehensiveness
 
@@ -493,10 +493,10 @@ The honest bottom line: the question is no longer whether quantum computers will
 </example>`
 
 /**
- * Research mode: Deep analysis with high reasoning effort.
+ * Research mode: Deep analysis with xhigh reasoning effort.
  * Used for comprehensive research, analysis, and investigation tasks.
  */
-function getResearchModePrompt(useStructuredOutput: boolean = false): string {
+function getResearchModePrompt(_useStructuredOutput: boolean = false): string {
   return `${CORE_IDENTITY}
 
 ---

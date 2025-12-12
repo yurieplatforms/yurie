@@ -13,7 +13,6 @@ import {
   Camera, 
   Loader2, 
   Check, 
-  X, 
   Mail,
   ChevronRight,
   ChevronDown,
@@ -23,9 +22,7 @@ import {
   Globe,
   Palette,
   Trash2,
-  Link2,
   ExternalLink,
-  Github
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { ThemeSwitch } from '@/components/layout/footer'
@@ -122,7 +119,7 @@ export function ProfileContent({
     }
   }
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       showToast('Please upload an image file', 'error')
       return
@@ -156,9 +153,9 @@ export function ProfileContent({
     await updateProfile(formData)
     await refreshUser()
     showToast('Profile photo updated', 'success')
-  }
+  }, [fullName, refreshUser, showToast, user.id])
 
-  const handleCoverUpload = async (file: File) => {
+  const handleCoverUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       showToast('Please upload an image file', 'error')
       return
@@ -193,7 +190,7 @@ export function ProfileContent({
     await updateProfile(formData)
     await refreshUser()
     showToast('Cover photo updated', 'success')
-  }
+  }, [avatarUrl, fullName, refreshUser, showToast, user.id])
 
   const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return
@@ -212,7 +209,7 @@ export function ProfileContent({
     if (file) {
       await handleFileUpload(file)
     }
-  }, [user.id, fullName])
+  }, [handleFileUpload])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -245,55 +242,56 @@ export function ProfileContent({
   const [isConnectingGitHub, setIsConnectingGitHub] = useState(false)
   const [isDisconnectingGitHub, setIsDisconnectingGitHub] = useState(false)
 
-  // Check Gmail and Spotify connection status on mount
+  // Check connected app status on mount (parallel)
   useEffect(() => {
-    const checkConnectionStatus = async () => {
-      // Check Gmail
-      try {
-        const gmailResponse = await fetch(`/api/composio/status?userId=${user.id}&app=gmail`)
-        const gmailData = await gmailResponse.json()
-        setIsGmailConnected(gmailData.connected === true)
-        
-        if (!gmailData.connected && gmailData.requiresReauth) {
-          console.log('[Gmail] Connection requires re-authentication:', gmailData.status)
-        }
-      } catch (error) {
-        console.error('Failed to check Gmail status:', error)
-      } finally {
-        setIsCheckingGmail(false)
-      }
+    const controller = new AbortController()
+    const { signal } = controller
 
-      // Check Spotify
+    const checkStatus = async (app: 'gmail' | 'spotify' | 'github') => {
       try {
-        const spotifyResponse = await fetch(`/api/composio/status?userId=${user.id}&app=spotify`)
-        const spotifyData = await spotifyResponse.json()
-        setIsSpotifyConnected(spotifyData.connected === true)
-        
-        if (!spotifyData.connected && spotifyData.requiresReauth) {
-          console.log('[Spotify] Connection requires re-authentication:', spotifyData.status)
-        }
-      } catch (error) {
-        console.error('Failed to check Spotify status:', error)
-      } finally {
-        setIsCheckingSpotify(false)
-      }
+        const response = await fetch(
+          `/api/composio/status?userId=${user.id}&app=${app}`,
+          { signal },
+        )
+        const data = await response.json()
+        if (signal.aborted) return
 
-      // Check GitHub
-      try {
-        const githubResponse = await fetch(`/api/composio/status?userId=${user.id}&app=github`)
-        const githubData = await githubResponse.json()
-        setIsGitHubConnected(githubData.connected === true)
-        
-        if (!githubData.connected && githubData.requiresReauth) {
-          console.log('[GitHub] Connection requires re-authentication:', githubData.status)
+        if (app === 'gmail') {
+          setIsGmailConnected(data.connected === true)
+          if (!data.connected && data.requiresReauth) {
+            console.log('[Gmail] Connection requires re-authentication:', data.status)
+          }
+        } else if (app === 'spotify') {
+          setIsSpotifyConnected(data.connected === true)
+          if (!data.connected && data.requiresReauth) {
+            console.log('[Spotify] Connection requires re-authentication:', data.status)
+          }
+        } else {
+          setIsGitHubConnected(data.connected === true)
+          if (!data.connected && data.requiresReauth) {
+            console.log('[GitHub] Connection requires re-authentication:', data.status)
+          }
         }
       } catch (error) {
-        console.error('Failed to check GitHub status:', error)
+        if ((error as Error).name === 'AbortError') return
+        console.error(`Failed to check ${app} status:`, error)
       } finally {
-        setIsCheckingGitHub(false)
+        if (signal.aborted) return
+        if (app === 'gmail') setIsCheckingGmail(false)
+        if (app === 'spotify') setIsCheckingSpotify(false)
+        if (app === 'github') setIsCheckingGitHub(false)
       }
     }
-    checkConnectionStatus()
+
+    void Promise.allSettled([
+      checkStatus('gmail'),
+      checkStatus('spotify'),
+      checkStatus('github'),
+    ])
+
+    return () => {
+      controller.abort()
+    }
   }, [user.id])
 
   const handleConnectGmail = async () => {
@@ -909,6 +907,25 @@ export function ProfileContent({
                     <ThemeSwitch />
                   </div>
                 </div>
+
+                {/* Sign Out Row */}
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  className="group flex w-full items-center gap-4 px-4 py-4 text-left hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
+                  aria-label="Sign out"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-accent)] text-[var(--color-muted-foreground)] shrink-0 transition-colors group-hover:bg-red-500/10 group-hover:text-red-600 dark:group-hover:text-red-400">
+                    <LogOut className="h-4 w-4 shrink-0" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-[var(--color-muted-foreground)] mb-0.5">Account</p>
+                    <p className="text-sm font-medium text-[var(--color-foreground)] transition-colors group-hover:text-red-600 dark:group-hover:text-red-400">
+                      Sign out
+                    </p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[var(--color-muted-foreground)] group-hover:text-red-600/70 dark:group-hover:text-red-400/70" />
+                </button>
               </div>
             )}
           </Card>
@@ -1091,20 +1108,6 @@ export function ProfileContent({
               </div>
             </div>
           </Card>
-        </section>
-
-        {/* Sign Out Section */}
-        <section className="pt-2">
-          <button
-            onClick={() => signOut()}
-            className="group flex w-full items-center justify-between px-4 py-3 rounded-[var(--radius-card)] border border-transparent hover:border-red-200 dark:hover:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 transition-all cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <LogOut className="h-5 w-5 shrink-0" />
-              <span className="text-sm font-medium">Sign out</span>
-            </div>
-            <ChevronRight className="h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-          </button>
         </section>
       </main>
     </>

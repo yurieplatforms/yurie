@@ -66,6 +66,8 @@ function getToolDisplayName(tool: string): string {
       return 'Running code';
     case 'file_search':
       return 'Searching files';
+    case 'image_generation':
+      return 'Generating an image';
     case 'gmail_fetch_emails':
       return 'Fetching emails';
     case 'gmail_send_email':

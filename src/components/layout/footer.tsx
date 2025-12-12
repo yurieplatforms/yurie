@@ -4,7 +4,6 @@ import { TextLoop } from '@/components/ui/text-loop'
 import { cn } from '@/lib/utils'
 import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useEffect, useState } from 'react'
 
 const THEMES_OPTIONS = [
   {
@@ -25,21 +24,17 @@ const THEMES_OPTIONS = [
 ]
 
 export function ThemeSwitch() {
-  const [mounted, setMounted] = useState(false)
-  const { theme, setTheme } = useTheme()
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return null
-  }
+  const { theme, resolvedTheme, setTheme } = useTheme()
 
   return (
     <div className="flex items-center gap-2">
       {THEMES_OPTIONS.map((option) => {
-        const isActive = theme === option.id
+        // Ensure only ONE button is active at a time.
+        // When the user selects "system", we highlight only the system option,
+        // even if the resolved theme is currently light/dark.
+        const selectedTheme =
+          theme === 'system' ? 'system' : theme ?? resolvedTheme ?? 'system'
+        const isActive = selectedTheme === option.id
         return (
           <button
             key={option.id}

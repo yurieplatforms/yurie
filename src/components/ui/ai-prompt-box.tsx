@@ -254,6 +254,11 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
         if (newResearchMode && imageGenMode) {
             setImageGenMode(false);
         }
+        // Hide/disable apps in research mode
+        if (newResearchMode && selectedTools.length > 0) {
+            setSelectedTools([]);
+            setIsPopoverOpen(false);
+        }
     };
     
     const handleImageGenToggle = () => {
@@ -291,6 +296,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
     };
 
     const hasValue = value.trim().length > 0 || files.length > 0;
+    const showApps = !imageGenMode && !researchMode;
 
     return (
       <div ref={ref} className={cn("flex flex-col rounded-[var(--radius-input)] p-2 transition-colors bg-background border border-input cursor-text", className)}>
@@ -428,7 +434,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                       </div>
                       {researchMode && (
                         <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-primary)] flex items-center justify-center shrink-0 self-center">
-                          <Check className="h-2 w-2 text-white" strokeWidth={3} />
+                          <Check className="h-2 w-2 text-primary-foreground" strokeWidth={3} />
                         </div>
                       )}
                     </button>
@@ -455,7 +461,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                       </div>
                       {imageGenMode && (
                         <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-primary)] flex items-center justify-center shrink-0 self-center">
-                          <Check className="h-2 w-2 text-white" strokeWidth={3} />
+                          <Check className="h-2 w-2 text-primary-foreground" strokeWidth={3} />
                         </div>
                       )}
                     </button>
@@ -463,7 +469,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                 </PopoverContent>
               </Popover>
 
-              {!imageGenMode && (
+              {showApps && (
                 <Popover open={isPopoverOpen} onOpenChange={(open) => {
                   if (open && !user) {
                     router.push('/login');
@@ -518,7 +524,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                             </div>
                             {selectedTools.includes(tool.id) && (
                               <div className="h-3.5 w-3.5 rounded-full bg-[var(--color-primary)] flex items-center justify-center shrink-0 self-center">
-                                <Check className="h-2 w-2 text-white" strokeWidth={3} />
+                                <Check className="h-2 w-2 text-primary-foreground" strokeWidth={3} />
                               </div>
                             )}
                         </button>
@@ -529,7 +535,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
               )}
 
               {/* Selected Apps Pills */}
-              {!imageGenMode && (
+              {showApps && (
                 <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[300px]">
                   <AnimatePresence>
                       {selectedTools.map(toolId => {
@@ -600,7 +606,7 @@ export const PromptInputBox = React.forwardRef<HTMLDivElement, PromptInputBoxPro
                       type="submit" 
                       onClick={handleSubmit}
                       disabled={!hasValue || isLoading} 
-                      className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] disabled:opacity-50 disabled:bg-[var(--color-primary)] cursor-pointer"
+                      className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none bg-[var(--color-primary)] text-primary-foreground hover:bg-[color-mix(in_srgb,var(--color-primary)_90%,black)] dark:hover:bg-[color-mix(in_srgb,var(--color-primary)_90%,white)] disabled:opacity-50 disabled:bg-[var(--color-primary)] cursor-pointer"
                     >
                       {isLoading ? (
                         <Square className="h-4 w-4 fill-current animate-pulse" />

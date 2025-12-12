@@ -637,7 +637,6 @@ export async function getGitHubToolsByGroup(
 export async function getToolkitTools(
   externalUserId: string,
   toolkit: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _options?: { limit?: number; scopes?: string[] }
 ): Promise<ComposioTool[]> {
   return getTools(externalUserId, {
@@ -661,7 +660,6 @@ export async function getToolkitTools(
 export async function searchTools(
   externalUserId: string,
   query: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _options?: { toolkit?: string; limit?: number }
 ): Promise<ComposioTool[]> {
   return getTools(externalUserId, {

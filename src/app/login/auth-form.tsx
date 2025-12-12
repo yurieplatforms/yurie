@@ -166,7 +166,7 @@ export function AuthForm({
             className={cn(
               'relative z-10 w-1/2 py-1.5 text-sm font-semibold transition-colors duration-[var(--transition-base)] cursor-pointer',
               mode === 'signin'
-                ? 'text-white'
+                ? 'text-primary-foreground'
                 : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]'
             )}
           >
@@ -177,7 +177,7 @@ export function AuthForm({
             className={cn(
               'relative z-10 w-1/2 py-1.5 text-sm font-semibold transition-colors duration-[var(--transition-base)] cursor-pointer',
               mode === 'signup'
-                ? 'text-white'
+                ? 'text-primary-foreground'
                 : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]'
             )}
           >

@@ -71,12 +71,24 @@ export function useChat({ chatId }: UseChatOptions = {}): UseChatReturn {
   const { user } = useAuth()
 
   const [id, setId] = useState<string | undefined>(chatId)
+  const idRef = useRef<string | undefined>(chatId)
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const messagesRef = useRef<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [containerId, setContainerId] = useState<string | undefined>(undefined)
 
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Keep a ref to the latest chat id without re-triggering effects
+  useEffect(() => {
+    idRef.current = id
+  }, [id])
+
+  // Keep a ref to the latest messages without re-triggering effects
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
 
   // Cleanup abort controller on unmount
   useEffect(() => {
@@ -91,6 +103,12 @@ export function useChat({ chatId }: UseChatOptions = {}): UseChatReturn {
   useEffect(() => {
     async function loadChat() {
       if (chatId) {
+        // If we're already showing this chat (e.g. URL updated after creating it),
+        // avoid an unnecessary round-trip to storage/Supabase.
+        if (chatId === idRef.current && messagesRef.current.length > 0) {
+          return
+        }
+
         const chat = await getChat(chatId, user?.id)
         if (chat) {
           setId(chatId)

@@ -278,6 +278,8 @@ function AssistantMessageContent({
   
   const hasResearchProgress = isResearchMode && message.researchProgress
   
+  const thinkingStatusText = message.imageGenMode ? 'Generating an image' : 'Thinking'
+  
   // Show thinking section for: reasoning, thinking stage, tool use, OR research mode
   const showThinkingSection = hasReasoning || isThinkingStage || hasActiveToolUse || hasResearchProgress
 
@@ -299,7 +301,7 @@ function AssistantMessageContent({
                 activeToolUse={isActiveAssistant ? message.activeToolUse : null}
                 thinkingLabel={
                   isThinkingStage && !hasActiveToolUse ? (
-                    <StatusShimmer>Thinking</StatusShimmer>
+                    <StatusShimmer>{thinkingStatusText}</StatusShimmer>
                   ) : undefined
                 }
                 label={
@@ -318,7 +320,7 @@ function AssistantMessageContent({
                 }
               />
             )}
-            
+
             {/* Reasoning content - shown for both regular and research modes */}
             <ReasoningContent>
               {hasReasoning ? (

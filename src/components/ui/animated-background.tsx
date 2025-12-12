@@ -4,11 +4,12 @@ import { AnimatePresence, Transition, motion } from 'motion/react'
 import {
   Children,
   cloneElement,
+  FocusEvent,
   ReactElement,
+  useCallback,
   useEffect,
-  useState,
   useId,
-  useRef,
+  useState,
 } from 'react'
 
 export type AnimatedBackgroundProps = {
@@ -30,44 +31,46 @@ export function AnimatedBackground({
   transition,
   enableHover = false,
 }: AnimatedBackgroundProps) {
-  const [activeId, setActiveId] = useState<string | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(() => defaultValue ?? null)
   const uniqueId = useId()
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [pendingClearTimeoutId, setPendingClearTimeoutId] =
+    useState<ReturnType<typeof setTimeout> | null>(null)
 
-  const handleSetActiveId = (id: string | null) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-      timeoutRef.current = null
-    }
+  const clearPendingTimeout = useCallback(() => {
+    setPendingClearTimeoutId((existing) => {
+      if (existing) clearTimeout(existing)
+      return null
+    })
+  }, [])
 
-    if (id === null) {
-      timeoutRef.current = setTimeout(() => {
-        setActiveId(null)
-        if (onValueChange) {
-          onValueChange(null)
-        }
-      }, 50)
-    } else {
-      setActiveId(id)
-      if (onValueChange) {
-        onValueChange(id)
+  const handleSetActiveId = useCallback(
+    (id: string | null) => {
+      clearPendingTimeout()
+
+      if (id === null) {
+        const timeoutId = setTimeout(() => {
+          setActiveId(null)
+          onValueChange?.(null)
+          setPendingClearTimeoutId(null)
+        }, 50)
+
+        setPendingClearTimeoutId(timeoutId)
+        return
       }
-    }
-  }
 
-  useEffect(() => {
-    if (defaultValue !== undefined) {
-      setActiveId(defaultValue)
-    }
-  }, [defaultValue])
+      setActiveId(id)
+      onValueChange?.(id)
+    },
+    [clearPendingTimeout, onValueChange],
+  )
 
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
+      if (pendingClearTimeoutId) {
+        clearTimeout(pendingClearTimeoutId)
       }
     }
-  }, [])
+  }, [pendingClearTimeoutId])
 
   return Children.map(children, (child) => {
     if (!child || typeof child !== 'object' || !('props' in child)) return null
@@ -78,6 +81,12 @@ export function AnimatedBackground({
       ? {
           onMouseEnter: () => handleSetActiveId(id),
           onMouseLeave: () => handleSetActiveId(null),
+          onFocus: () => handleSetActiveId(id),
+          onBlur: (e: FocusEvent<HTMLElement>) => {
+            const nextTarget = e.relatedTarget as Node | null
+            if (nextTarget && e.currentTarget.contains(nextTarget)) return
+            handleSetActiveId(null)
+          },
         }
       : {
           onClick: () => handleSetActiveId(id),
@@ -86,7 +95,7 @@ export function AnimatedBackground({
     return cloneElement(
       element,
       {
-        className: cn('relative flex', element.props.className),
+        className: cn('relative', element.props.className),
         'data-checked': activeId === id ? 'true' : 'false',
         ...interactionProps,
       } as unknown as React.HTMLAttributes<HTMLElement>,
@@ -95,7 +104,7 @@ export function AnimatedBackground({
           {activeId === id && (
             <motion.div
               layoutId={`background-${uniqueId}`}
-              className={cn('absolute inset-0', className)}
+              className={cn('pointer-events-none absolute inset-0 will-change-transform', className)}
               transition={transition}
               initial={{ opacity: defaultValue ? 1 : 0 }}
               animate={{

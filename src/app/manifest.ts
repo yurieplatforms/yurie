@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       'Yurie is a personal website template focused on intuitive, performant web experiences.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#faf9f5',
-    theme_color: '#faf9f5',
+    background_color: '#ffffff',
+    theme_color: '#ffffff',
     orientation: 'portrait-primary',
     icons: [
       {

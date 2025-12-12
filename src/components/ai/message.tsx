@@ -23,14 +23,12 @@ import {
   TypographyTh,
   TypographyTd,
   TypographyTr,
-  TypographyInlineCode,
 } from "@/components/ui/typography";
 import { cn } from "@/lib/utils";
 import type { Role } from "@/lib/types";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
-  DownloadIcon,
   PaperclipIcon,
   XIcon,
 } from "lucide-react";

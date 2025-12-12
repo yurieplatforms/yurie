@@ -178,3 +178,4 @@ export function TypographyTr({ className, children, ...props }: React.HTMLAttrib
     </tr>
   )
 }
+

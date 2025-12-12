@@ -4,7 +4,6 @@ import { Analytics } from '@vercel/analytics/next'
 import 'katex/dist/katex.min.css'
 import './globals.css'
 import { Header } from '@/components/layout/header'
-import { FooterWrapper } from '@/components/layout/footer-wrapper'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/lib/providers/auth-provider'
 
@@ -12,8 +11,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#faf9f5' },
-    { media: '(prefers-color-scheme: dark)', color: '#262624' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
   ],
   viewportFit: 'cover',
 }
@@ -59,6 +58,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Zalando+Sans+Expanded:wght@400;600&display=swap"
           rel="stylesheet"
@@ -83,7 +88,6 @@ export default function RootLayout({
               <Header />
               <div className="relative mx-auto w-full max-w-2xl flex-1 px-4 pt-24">
                 {children}
-                <FooterWrapper />
               </div>
             </div>
           </AuthProvider>

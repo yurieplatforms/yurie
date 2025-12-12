@@ -10,9 +10,43 @@ import OpenAI from 'openai'
 
 /**
  * Default OpenAI model used across this app.
- * Kept as a single constant to ensure we only ever send requests to one model.
+ *
+ * Model + reasoning policy (per user request):
+ * - chat: gpt-5.2-chat-latest with reasoning.effort = medium
+ * - agent: gpt-5.2 with reasoning.effort = medium
+ * - research: gpt-5.2 with reasoning.effort = xhigh
  */
-export const DEFAULT_OPENAI_MODEL = 'gpt-5.2-2025-12-11' as const
+export const OPENAI_MODELS = {
+  chat: 'gpt-5.2-chat-latest',
+  agent: 'gpt-5.2',
+  research: 'gpt-5.2',
+} as const
+
+export const OPENAI_REASONING_EFFORTS = {
+  // gpt-5.2-chat-latest currently only supports reasoning.effort = "medium"
+  chat: 'medium',
+  agent: 'medium',
+  research: 'xhigh',
+} as const
+
+export type OpenAIAppMode = keyof typeof OPENAI_MODELS
+export type OpenAIReasoningEffort = (typeof OPENAI_REASONING_EFFORTS)[OpenAIAppMode]
+
+/**
+ * Default OpenAI model used across this app when a mode isn't specified.
+ * Use agent as the baseline default.
+ */
+export const DEFAULT_OPENAI_MODEL = OPENAI_MODELS.agent
+
+export function getOpenAIConfigForMode(mode: OpenAIAppMode): {
+  model: (typeof OPENAI_MODELS)[OpenAIAppMode]
+  reasoningEffort: OpenAIReasoningEffort
+} {
+  return {
+    model: OPENAI_MODELS[mode],
+    reasoningEffort: OPENAI_REASONING_EFFORTS[mode],
+  }
+}
 
 // =============================================================================
 // Types
@@ -247,7 +281,7 @@ export function checkRateLimit(
  */
 export function getRateLimitWaitTime(
   key: string,
-  maxTokens: number = 10,
+  _maxTokens: number = 10,
   refillRate: number = 1,
 ): number {
   const state = rateLimiters.get(key)
@@ -469,7 +503,9 @@ export interface ServiceTierConfig {
  * 5. Not all models support priority processing
  * 
  * Model policy (this repo):
- * - Only gpt-5.2-2025-12-11 is used.
+ * - chat: gpt-5.2-chat-latest (reasoning: medium)
+ * - agent: gpt-5.2 (reasoning: medium)
+ * - research: gpt-5.2 (reasoning: xhigh)
  */
 
 /**
@@ -690,13 +726,18 @@ export function withBackgroundMode(
  * - High complexity requests
  */
 export function shouldUseBackgroundMode(options: {
-  mode: 'chat' | 'agent'
+  mode: 'chat' | 'agent' | 'research'
   hasTools: boolean
   estimatedComplexity?: 'low' | 'medium' | 'high'
   messageCount?: number
 }): boolean {
   const { mode, hasTools, estimatedComplexity = 'medium', messageCount = 0 } = options
   
+  // Research mode should always use background mode (can be long-running)
+  if (mode === 'research') {
+    return true
+  }
+
   // Agent mode with tools benefits most from background mode
   if (mode === 'agent' && hasTools) {
     return true

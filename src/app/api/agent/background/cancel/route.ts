@@ -10,7 +10,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createOpenAIClient, generateRequestId } from '@/lib/ai/api/openai'
-import { backgroundResponseStore, getStatusMessage } from '@/lib/ai/api/background'
+import { backgroundResponseStore } from '@/lib/ai/api/background'
 import { env } from '@/lib/config/env'
 import type { BackgroundCancelRequestBody, BackgroundStatusResponse } from '@/lib/ai/api/types'
 
@@ -101,4 +101,5 @@ export async function POST(request: Request) {
     )
   }
 }
+
 

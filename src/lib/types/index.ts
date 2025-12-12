@@ -69,7 +69,7 @@ export type UrlImageContentSegment = {
  * Usage considerations:
  * - Max file size: 50MB per file
  * - Max total: 50MB across all files in a request
- * - Supported models: gpt-5.2-2025-12-11
+ * - Supported models: gpt-5.2, gpt-5.2-chat-latest
  */
 export type FileContentSegment = {
   type: 'file'
@@ -140,29 +140,29 @@ export type ResearchStage =
   | 'analyzing'
   | 'synthesizing'
   | 'completed'
-  | 'failed';
+  | 'failed'
 
 /**
  * Research source found during deep research
  */
 export type ResearchSource = {
-  url: string;
-  title?: string;
-  status: 'found' | 'analyzing' | 'analyzed';
-};
+  url: string
+  title?: string
+  status: 'found' | 'analyzing' | 'analyzed'
+}
 
 /**
  * Research progress state for tracking deep research tasks
  */
 export type ResearchProgressState = {
-  stage: ResearchStage;
-  sourcesFound: number;
-  sourcesAnalyzed: number;
-  currentActivity?: string;
-  sources: ResearchSource[];
-  startTime?: number;
-  searchQueries: string[];
-};
+  stage: ResearchStage
+  sourcesFound: number
+  sourcesAnalyzed: number
+  currentActivity?: string
+  sources: ResearchSource[]
+  startTime?: number
+  searchQueries: string[]
+}
 
 export type ChatMessage = {
   id: string
@@ -181,6 +181,8 @@ export type ChatMessage = {
   isError?: boolean
   /** Processing mode used for this message */
   mode?: MessageMode
+  /** Whether image generation mode was enabled for this message */
+  imageGenMode?: boolean
   /** Research progress state for research mode messages */
   researchProgress?: ResearchProgressState
 }
